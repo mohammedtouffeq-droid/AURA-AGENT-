@@ -13,3 +13,15 @@
 [submodule "engines/litellm"]
 	path = engines/litellm
 	url = https://github.com/BerriAI/litellm.git
+[submodule "engines/langgraph"]
+	path = engines/langgraph
+	url = https://github.com/langchain-ai/langgraph.git
+[submodule "engines/agent-framework"]
+	path = engines/agent-framework
+	url = https://github.com/microsoft/agent-framework.git
+[submodule "engines/openai-agents-python"]
+	path = engines/openai-agents-python
+	url = https://github.com/openai/openai-agents-python.git
+[submodule "engines/pydantic-ai"]
+	path = engines/pydantic-ai
+	url = https://github.com/pydantic/pydantic-ai.git
