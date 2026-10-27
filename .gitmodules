@@ -1,0 +1,15 @@
+[submodule "engines/open-interpreter"]
+	path = engines/open-interpreter
+	url = https://github.com/OpenInterpreter/open-interpreter.git
+[submodule "engines/browser-use"]
+	path = engines/browser-use
+	url = https://github.com/browser-use/browser-use.git
+[submodule "engines/aider"]
+	path = engines/aider
+	url = https://github.com/Aider-AI/aider.git
+[submodule "engines/crewAI"]
+	path = engines/crewAI
+	url = https://github.com/crewAIInc/crewAI.git
+[submodule "engines/litellm"]
+	path = engines/litellm
+	url = https://github.com/BerriAI/litellm.git
