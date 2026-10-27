@@ -1,168 +1,200 @@
-"""
-===================================================================================
-                     AURA AGENT - MASTER UNIFIED CORE
-===================================================================================
-Architecture: Multi-Engine Autonomous Controller with 32 Cloned Repositories
-Version: 4.0.0 (Master Universe Edition)
-Author: Mohammed Touffeq & Antigravity
+"""Audit Aura's declared engine submodules without importing or running them."""
+from __future__ import annotations
 
-MOUNTED ENGINES DIRECTORY: c:\\Users\\hp\\AURA-Agent\\engines
-Total Categories:
-1. OS & Desktop Automation      : open-interpreter
-2. Web & Browser Automation     : browser-use, playwright-python, skyvern, stagehand
-3. Autonomous Coding & Patching : aider, OpenHands
-4. Multi-Agent Swarms           : crewAI, langgraph, agent-framework, openai-agents-python, semantic-kernel
-5. Model Routers & Gateways     : litellm, pydantic-ai, dspy
-6. Search, Vector & Memory      : haystack, llama_index, qdrant, pgvector
-7. Enterprise Workflows & SaaS  : dify, n8n, activepieces, composio, python-sdk (MCP)
-8. Background Task Reliability  : temporal, prefect
-9. Offline & High-Perf Inference: llama.cpp, ollama, transformers, vllm
-10. Observability & Tracing     : langfuse, phoenix
-===================================================================================
-"""
-
-import os
-import sys
+import argparse
+import configparser
 import json
+import re
 import subprocess
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-
-AURA_ROOT = Path(__file__).resolve().parent
-ENGINES_DIR = AURA_ROOT / "engines"
-
-# 32 Engine Names
-ALL_32_ENGINES = [
-    # OS & Desktop
-    ("open-interpreter", "Open-Interpreter OS Engine", "OS & Desktop"),
-    
-    # Web Automation
-    ("browser-use", "Browser-Use Web Engine", "Web Automation"),
-    ("playwright-python", "Playwright Deterministic Web", "Web Automation"),
-    ("skyvern", "Skyvern Computer-Vision Browser", "Web Automation"),
-    ("stagehand", "Stagehand AI Browser Automation", "Web Automation"),
-    
-    # Coding
-    ("aider", "Aider Terminal Pair Programmer", "Autonomous Coding"),
-    ("OpenHands", "OpenHands Software Engineer", "Autonomous Coding"),
-    
-    # Orchestration & Swarms
-    ("crewAI", "CrewAI Multi-Agent Swarm", "Multi-Agent Swarm"),
-    ("langgraph", "LangGraph Cyclic State Machine", "Multi-Agent Swarm"),
-    ("agent-framework", "Microsoft Agent Framework Bus", "Multi-Agent Swarm"),
-    ("openai-agents-python", "OpenAI Agents SDK (Guardrails)", "Multi-Agent Swarm"),
-    ("semantic-kernel", "Microsoft Semantic Kernel", "Multi-Agent Swarm"),
-    
-    # Typed Logic & Prompts
-    ("litellm", "LiteLLM Universal Model Router", "Model Gateway"),
-    ("pydantic-ai", "PydanticAI Type-Safe Output", "Model Gateway"),
-    ("dspy", "DSPy Self-Optimizing Programs", "Model Gateway"),
-    
-    # Memory & RAG
-    ("haystack", "Haystack Neural Search & RAG", "Search & Memory"),
-    ("llama_index", "LlamaIndex Document Intelligence", "Search & Memory"),
-    ("qdrant", "Qdrant Vector Neural Database", "Search & Memory"),
-    ("pgvector", "pgvector PostgreSQL Vector Search", "Search & Memory"),
-    
-    # Integrations & SaaS
-    ("dify", "Dify Visual Agent Application Hub", "SaaS & Integrations"),
-    ("n8n", "n8n 400+ SaaS Workflow Bus", "SaaS & Integrations"),
-    ("activepieces", "Activepieces Enterprise Automation", "SaaS & Integrations"),
-    ("composio", "Composio Connected Tools Engine", "SaaS & Integrations"),
-    ("python-sdk", "Model Context Protocol (MCP) SDK", "SaaS & Integrations"),
-    
-    # Reliability
-    ("temporal", "Temporal Crash-Proof State Engine", "Task Reliability"),
-    ("prefect", "Prefect Pipeline Scheduler", "Task Reliability"),
-    
-    # Local Models & Inference
-    ("llama.cpp", "llama.cpp Quantized Local Engine", "Local AI Inference"),
-    ("ollama", "Ollama Local Model Manager", "Local AI Inference"),
-    ("transformers", "Hugging Face Transformers", "Local AI Inference"),
-    ("vllm", "vLLM High-Throughput Serving", "Local AI Inference"),
-    
-    # Observability
-    ("langfuse", "Langfuse LLM Observability & Cost", "Observability"),
-    ("phoenix", "Arize Phoenix Tracing & Eval", "Observability")
-]
-
-# Dynamically mount engine paths
-for key, _, _ in ALL_32_ENGINES:
-    p = ENGINES_DIR / key
-    if p.exists():
-        sys.path.insert(0, str(p))
+from dataclasses import asdict, dataclass
+from pathlib import Path, PurePosixPath
+from urllib.parse import urlsplit
 
 
-class UniversalEngineBridge:
-    def __init__(self, key: str, display_name: str, category: str):
-        self.key = key
-        self.display_name = display_name
-        self.category = category
-        self.repo_path = ENGINES_DIR / key
-        self.is_mounted = self.repo_path.exists()
-
-    def get_status(self) -> Dict[str, Any]:
-        file_count = 0
-        if self.is_mounted:
-            try:
-                file_count = len(list(self.repo_path.glob("**/*")))
-            except Exception:
-                file_count = -1
-        return {
-            "name": self.display_name,
-            "category": self.category,
-            "mounted": self.is_mounted,
-            "path": str(self.repo_path),
-            "files_available": file_count
-        }
+PROJECT_ROOT = Path(__file__).resolve().parent
+STATUS_PATTERN = re.compile(r"^([ \-+U])([0-9a-fA-F]{40}|[0-9a-fA-F]{64})\s+(.+?)(?:\s+\([^)]*\))?$")
+STATUS_LABELS = {
+    " ": "initialized_at_pinned_commit",
+    "-": "not_initialized",
+    "+": "commit_mismatch",
+    "U": "merge_conflict",
+}
 
 
-# ===================================================================================
-# MASTER AURA SUPER-CONTROLLER (32-ENGINE UNIFIED CORE)
-# ===================================================================================
-class AuraAgent:
-    """
-    Unified Super-Agent orchestrating all 32 Mounted Repositories.
-    """
-    def __init__(self):
-        self.name = "AURA Master Super-Agent"
-        self.version = "4.0.0 (Universe Edition)"
-        self.engines = {key: UniversalEngineBridge(key, name, cat) for key, name, cat in ALL_32_ENGINES}
+@dataclass(frozen=True)
+class EngineSpec:
+    name: str
+    path: str
+    url: str
 
-    def audit_all_engines(self) -> Dict[str, Any]:
-        return {k: bridge.get_status() for k, bridge in self.engines.items()}
 
-    def execute_goal(self, goal: str) -> Dict[str, Any]:
-        """Full pipeline execution through the multi-engine mesh."""
-        return {
-            "agent": self.name,
-            "version": self.version,
-            "goal": goal,
-            "total_engines_mounted": len(self.engines),
-            "execution_mesh": [
-                {"phase": "1. Safety & Guardrails", "engines": ["OpenAI Agents SDK", "PydanticAI"]},
-                {"phase": "2. Graph Orchestration", "engines": ["LangGraph", "Semantic Kernel", "CrewAI", "Agent Framework"]},
-                {"phase": "3. Context & RAG", "engines": ["LlamaIndex", "Haystack", "Qdrant", "pgvector"]},
-                {"phase": "4. Local & Cloud AI", "engines": ["LiteLLM", "Ollama", "llama.cpp", "Transformers", "vLLM", "DSPy"]},
-                {"phase": "5. Real-World Execution", "engines": ["Open-Interpreter", "Browser-Use", "Playwright", "Skyvern", "Stagehand", "Aider", "OpenHands"]},
-                {"phase": "6. Connected Tools & SaaS", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
-                {"phase": "7. Fault-Tolerant Resilience", "engines": ["Temporal", "Prefect"]},
-                {"phase": "8. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
-            ],
-            "status": "ALL_32_ENGINES_ACTIVE_AND_SYNCHRONIZED"
-        }
+@dataclass(frozen=True)
+class EngineStatus:
+    name: str
+    path: str
+    url: str
+    state: str
+    pinned_commit: str | None = None
+    checkout_present: bool = False
+
+
+def _validate_engine_path(path: str) -> str:
+    if not path or "\\" in path or path.startswith("/"):
+        raise ValueError(f"unsafe submodule path: {path!r}")
+    parsed = PurePosixPath(path)
+    normalized = parsed.as_posix()
+    if (
+        parsed.is_absolute()
+        or normalized != path
+        or any(part in {"", ".", ".."} for part in parsed.parts)
+        or not normalized.startswith("engines/")
+        or len(parsed.parts) < 2
+    ):
+        raise ValueError(f"unsafe submodule path: {path!r}")
+    return normalized
+
+
+def _validate_github_url(url: str) -> str:
+    try:
+        parsed = urlsplit(url)
+        host = parsed.hostname
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError(f"invalid submodule URL: {url!r}") from error
+    if (
+        parsed.scheme != "https"
+        or host is None
+        or host.casefold() != "github.com"
+        or port is not None
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError(f"submodule URL must be a plain HTTPS github.com URL: {url!r}")
+    pieces = [piece for piece in parsed.path.split("/") if piece]
+    if len(pieces) != 2 or not pieces[0] or not pieces[1] or not pieces[1].endswith(".git"):
+        raise ValueError(f"submodule URL must identify an owner/repo.git: {url!r}")
+    return url
+
+
+def load_engine_specs(root: Path) -> tuple[EngineSpec, ...]:
+    """Read and validate all entries from the submodule registry."""
+    config_path = root / ".gitmodules"
+    if not config_path.is_file():
+        raise FileNotFoundError(f"missing submodule registry: {config_path}")
+    parser = configparser.ConfigParser(interpolation=None, strict=True)
+    parser.optionxform = str.lower
+    try:
+        parser.read_string(config_path.read_text(encoding="utf-8"))
+    except (configparser.Error, UnicodeError) as error:
+        raise ValueError(f"could not parse {config_path.name}: {error}") from error
+    specs: list[EngineSpec] = []
+    seen_paths: set[str] = set()
+    for section in parser.sections():
+        match = re.fullmatch(r'submodule\s+"([^"]+)"', section)
+        if not match:
+            raise ValueError(f"unexpected .gitmodules section: {section!r}")
+        values = parser[section]
+        if "path" not in values or "url" not in values:
+            raise ValueError(f"submodule section is missing path or url: {section!r}")
+        path = _validate_engine_path(values["path"].strip())
+        url = _validate_github_url(values["url"].strip())
+        if path in seen_paths:
+            raise ValueError(f"duplicate submodule path: {path}")
+        seen_paths.add(path)
+        specs.append(EngineSpec(name=match.group(1), path=path, url=url))
+    if not specs:
+        raise ValueError("the .gitmodules registry contains no submodules")
+    return tuple(specs)
+
+
+def parse_submodule_status(output: str) -> dict[str, tuple[str, str]]:
+    """Map git submodule status output to path -> (state, pinned commit)."""
+    statuses: dict[str, tuple[str, str]] = {}
+    for line in output.splitlines():
+        if not line:
+            continue
+        match = STATUS_PATTERN.fullmatch(line)
+        if not match:
+            raise ValueError(f"unrecognized git submodule status line: {line!r}")
+        marker, commit, path = match.groups()
+        statuses[_validate_engine_path(path.strip())] = (STATUS_LABELS[marker], commit.lower())
+    return statuses
+
+
+def audit_engines(root: Path = PROJECT_ROOT) -> dict[str, object]:
+    """Report local submodule metadata; never imports engines or uses a network."""
+    root = root.resolve()
+    specs = load_engine_specs(root)
+    git_problem: str | None = None
+    status_output: str | None = None
+    if not (root / ".git").exists():
+        git_problem = "This folder is not a Git checkout root (.git marker is missing)."
+    else:
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(root), "submodule", "status", "--"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=15,
+                shell=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as error:
+            git_problem = f"Could not read local submodule status: {type(error).__name__}."
+        else:
+            if result.returncode != 0:
+                git_problem = "Git could not read submodule status; inspect the checkout and Git configuration."
+            else:
+                status_output = result.stdout
+
+    statuses = parse_submodule_status(status_output) if status_output is not None else {}
+    entries: list[EngineStatus] = []
+    for spec in specs:
+        checkout = (root / Path(*PurePosixPath(spec.path).parts)).exists()
+        if git_problem:
+            state, pinned_commit = "unverifiable", None
+        else:
+            state, pinned_commit = statuses.get(spec.path, ("status_missing", None))
+        entries.append(EngineStatus(spec.name, spec.path, spec.url, state, pinned_commit, checkout))
+    counts: dict[str, int] = {}
+    for entry in entries:
+        counts[entry.state] = counts.get(entry.state, 0) + 1
+    return {
+        "tool": "Aura submodule registry audit",
+        "scope": "metadata only; no engine code, model, network request, or task execution",
+        "root": str(root),
+        "git_status_available": git_problem is None,
+        "git_status_note": git_problem,
+        "engine_count": len(entries),
+        "counts": counts,
+        "engines": [asdict(entry) for entry in entries],
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Audit Aura's declared Git submodules.")
+    parser.add_argument("--root", type=Path, default=PROJECT_ROOT, help="Aura checkout root")
+    parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    args = parser.parse_args(argv)
+    try:
+        report = audit_engines(args.root)
+    except (FileNotFoundError, ValueError) as error:
+        parser.error(str(error))
+    if args.json:
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+    else:
+        print(f"{report['tool']} — {report['engine_count']} declared entries")
+        print(report["scope"])
+        if report["git_status_note"]:
+            print(f"Status unavailable: {report['git_status_note']}")
+        for entry in report["engines"]:
+            print(f"- {entry['path']}: {entry['state']}; checkout present={str(entry['checkout_present']).lower()}")
+        print("This is not an integration, runtime, compatibility, or security test.")
+    return 0
 
 
 if __name__ == "__main__":
-    aura = AuraAgent()
-    status = aura.audit_all_engines()
-    print(f"\n[*] {aura.name} v{aura.version} - ALL 32 ENGINES VERIFIED:")
-    total_files = 0
-    for key, data in status.items():
-        files = data["files_available"]
-        total_files += files if files > 0 else 0
-        print(f"-> [{data['category']}] {data['name']}: {files} files LIVE")
-    
-    print(f"\n[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: {total_files}")
-    test_run = aura.execute_goal("Orchestrate complete 32-engine universe automation pipeline")
-    print(f"[*] Pipeline Status: {test_run['status']}")
+    raise SystemExit(main())
+

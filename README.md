@@ -1,80 +1,58 @@
-# AURA AGENT (Autonomous Universal Robotics & Automation)
+# AURA AGENT
 
-> **The Definitive Autonomous Super-Agent Architecture**  
-> Unified orchestration combining 32 world-class open-source AI engines (nearly 300,000 live source files) into a single master control system.
+Aura is an early-stage project for exploring a safe, human-supervised AI automation system. This repository currently contains 32 upstream Git submodule pointers and two small Python utilities. It is not a trained language model, a functioning autonomous agent, or a verified integration of the listed projects.
 
----
+## What is in this repository today
 
-## 🌟 The 32 Mounted Super-Engines (298,165 Live Source Files)
+- .gitmodules declares 32 upstream projects beneath engines/.
+- The parent Git tree pins one commit for each submodule; a pointer is not the upstream source itself.
+- aura_agent.py reports local submodule states. It does not import or run engine code, count source files, call a model, or execute user goals.
+- setup_engines.py lists metadata by default. It initializes source only when you explicitly select modules with --init or request all with --all.
+- test_aura_agent.py contains offline tests for registry parsing and status reporting.
 
-### 1. OS & Desktop Automation
-* **Open-Interpreter** (`openinterpreter/open-interpreter`): Native PowerShell, mouse, keyboard & screen automation.
+The project currently has no model weights, training pipeline, model adapter, task planner, durable job worker, browser or desktop runtime, tool permissions system, or end-to-end integration tests.
 
-### 2. Autonomous Web & Browser
-* **Browser-Use** (`browser-use/browser-use`): Vision & LLM-driven browser navigation.
-* **Playwright** (`microsoft/playwright-python`): Deterministic high-speed browser engine.
-* **Skyvern** (`Skyvern-AI/skyvern`): Computer-vision browser automation for complex dynamic sites.
-* **Stagehand** (`browserbase/stagehand`): AI-assisted web actions and resilient extraction.
+## Getting started
 
-### 3. Autonomous Software Engineering
-* **Aider** (`Aider-AI/aider`): Real-time code patching & terminal pair programming.
-* **OpenHands** (`All-Hands-AI/OpenHands`): End-to-end software development agent.
+Requirements: Python 3.10+ and Git. No Python package installation is needed.
 
-### 4. Multi-Agent Swarms & Orchestration
-* **CrewAI** (`crewAIInc/crewAI`): Multi-agent role swarm orchestration.
-* **LangGraph** (`langchain-ai/langgraph`): Cyclic state graphs & human-in-the-loop workflows.
-* **Microsoft Agent Framework** (`microsoft/agent-framework`): Enterprise async agent service bus.
-* **OpenAI Agents SDK** (`openai/openai-agents-python`): Tool safety guardrails and agent delegation.
-* **Semantic Kernel** (`microsoft/semantic-kernel`): Enterprise AI orchestration kernel.
+From an Aura checkout:
 
-### 5. Reasoning, Typed Logic & Prompts
-* **LiteLLM** (`BerriAI/litellm`): Universal router supporting 100+ model backends.
-* **PydanticAI** (`pydantic/pydantic-ai`): Type-safe structured output validation.
-* **DSPy** (`stanfordnlp/dspy`): Self-optimizing prompt compilation.
+    python setup_engines.py --list
+    python aura_agent.py
+    python -m unittest -v test_aura_agent.py
 
-### 6. Long-Term Memory, RAG & Vector Storage
-* **Haystack** (`deepset-ai/haystack`): Production-grade neural search pipelines.
-* **LlamaIndex** (`run-llama/llama_index`): Business document intelligence and retrieval.
-* **Qdrant** (`qdrant/qdrant`): Ultra-fast vector similarity search engine.
-* **pgvector** (`pgvector/pgvector`): PostgreSQL-native vector search.
+The default setup command only lists the registry. To initialize selected source:
 
-### 7. SaaS Integrations & Connected Tools
-* **Dify** (`langgenius/dify`): Visual workflow application hub.
-* **n8n** (`n8n-io/n8n`): 400+ connected SaaS integrations.
-* **Activepieces** (`activepieces/activepieces`): Open-source enterprise business automations.
-* **Composio** (`ComposioHQ/composio`): Production tool integration platform (GitHub, Slack, Google).
-* **Model Context Protocol (MCP)** (`modelcontextprotocol/python-sdk`): Standardized AI tools protocol.
+    python setup_engines.py --init open-interpreter
 
-### 8. Fault-Tolerant Task Reliability
-* **Temporal** (`temporalio/temporal`): Crash-proof state recovery for long-running workflows.
-* **Prefect** (`PrefectHQ/prefect`): Resilient pipeline scheduling and monitoring.
+To initialize every registered submodule:
 
-### 9. Offline & High-Throughput Inference
-* **llama.cpp** (`ggml-org/llama.cpp`): Quantized C/C++ local model execution.
-* **Ollama** (`ollama/ollama`): Local model lifecycle management.
-* **Transformers** (`huggingface/transformers`): World-standard model hub & fine-tuning.
-* **vLLM** (`vllm-project/vllm`): High-throughput GPU inference serving.
+    python setup_engines.py --all
 
-### 10. Observability & Telemetry
-* **Langfuse** (`langfuse/langfuse`): Production LLM observability, cost & latency analytics.
-* **Arize Phoenix** (`Arize-ai/phoenix`): Evaluation, tracing & debugging.
+That operation downloads 32 repositories and can use substantial time, bandwidth, and disk space. Downloaded source is not executed or verified by Aura. Review each selected project, its pinned commit, dependencies, security posture, and license before use or redistribution.
 
----
+## Registry inventory
 
-## 🚀 Live Verification
+The upstream entries cover desktop automation (Open Interpreter); browser automation (Browser Use, Playwright Python, Skyvern, Stagehand); coding assistance (Aider, OpenHands); orchestration (CrewAI, LangGraph, Microsoft Agent Framework, OpenAI Agents SDK, Semantic Kernel); model interfaces (LiteLLM, PydanticAI, DSPy); retrieval/storage (Haystack, LlamaIndex, Qdrant, pgvector); integrations (Dify, n8n, Activepieces, Composio, MCP Python SDK); durable workflows (Temporal, Prefect); inference (llama.cpp, Ollama, Transformers, vLLM); and observability/evaluation (Langfuse, Arize Phoenix).
 
-```bash
-python aura_agent.py
-```
-Output:
-```text
-[*] AURA Master Super-Agent v4.0.0 (Universe Edition) - ALL 32 ENGINES VERIFIED:
-[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: 298,165
-[*] Pipeline Status: ALL_32_ENGINES_ACTIVE_AND_SYNCHRONIZED (Exit Code 0)
-```
+See .gitmodules and REPOSITORIES_PROOF.md for exact URLs and what the registry does and does not prove.
 
----
+## Engineering direction
 
-## 🛡️ Attribution & License
-All integrated engines are open-source and governed by their respective licenses (MIT / Apache 2.0).  
-Architecture designed by **Mohammed Touffeq** with Antigravity.
+Build one small, reviewable vertical slice before combining more frameworks:
+
+1. Define Aura's users, supported tasks, trust boundaries, and prohibited actions.
+2. Implement durable task state with cancellation, retries, and audit events.
+3. Add one model adapter behind a typed interface; choose local or hosted inference based on hardware, privacy, latency, and cost.
+4. Add one low-risk tool integration with least-privilege credentials, dry-run preview, idempotency, and human approval before external changes.
+5. Add isolated browser workflows only after threat modeling prompt injection, secrets, downloads, and destructive actions.
+6. Create evaluations for task success, factuality, tool correctness, refusal behavior, latency, and cost; gate releases on measured results.
+7. Add telemetry with privacy controls, redaction, retention limits, and a way to disable collection.
+
+Adding repositories does not train a model or automatically combine their capabilities. Model quality depends on a suitable base model, data rights and curation, compute, evaluation, and iteration. This repository makes no speed, capability, reliability, or competitor-beating claim.
+
+## Upstream identity and licensing
+
+Aura branding applies to Aura-authored documentation and utilities. Upstream names, ownership, notices, trademarks, and licenses remain with their maintainers. This repository does not claim to own or relicense submodules. Review each pinned commit's license, notices, and redistribution obligations before packaging or distributing an Aura product; terms can differ between projects.
+

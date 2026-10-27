@@ -1,50 +1,58 @@
-# AURA AGENT - TOP GITHUB REPOSITORIES PROOF & BLUEPRINT
+# Aura repository inventory and verification scope
 
-Yeh document saboot (proof) ke sath batata hai ki humne jin 5 projects ka core logic AURA me integrate kiya hai, wo GitHub par kitne bade aur certified hain.
+This document records what the Aura parent repository declares. It is not evidence that any upstream project has been integrated, executed, tested, or endorsed by Aura.
 
----
+## Current inventory
 
-## 1. Top 5 Integrated Repositories (Proof & Metrics)
+The current .gitmodules declares 32 submodule paths. The parent repository pins a commit for each entry. Names and URLs identify their respective upstream projects:
 
-| # | Repository Name | GitHub URL | Stars (Popularity) | AURA Me Iska Kaam |
-|---|---|---|---|---|
-| **1** | **Open-Interpreter** | [github.com/openinterpreter/open-interpreter](https://github.com/openinterpreter/open-interpreter) | **~56,000+ ⭐** | **Desktop & OS Control:** Terminal, PowerShell, Mouse, Keyboard, and Screen control. |
-| **2** | **Browser-Use** | [github.com/browser-use/browser-use](https://github.com/browser-use/browser-use) | **~32,000+ ⭐** | **Web Automation:** Real Chrome/Edge browser automation, clicking buttons, filling forms. |
-| **3** | **OpenHands** *(formerly OpenDevin)* & **Aider** | [github.com/All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands) | **~42,000+ ⭐** | **Autonomous Coding:** Reading files, generating code diffs, debugging and compiling. |
-| **4** | **CrewAI** & **AutoGen** | [github.com/crewAIInc/crewAI](https://github.com/crewAIInc/crewAI) | **~35,000+ ⭐** | **Master Brain & Planner:** Task decomposition, ReAct loop, step memory. |
-| **5** | **LiteLLM** & **Ollama** | [github.com/BerriAI/litellm](https://github.com/BerriAI/litellm) / [ollama/ollama](https://github.com/ollama/ollama) | **~75,000+ ⭐** | **Universal Model Router:** Connects to free local models (Llama 3/Mistral) and cloud APIs. |
+| # | Aura path | Upstream repository |
+|---:|---|---|
+| 1 | engines/open-interpreter | https://github.com/OpenInterpreter/open-interpreter |
+| 2 | engines/browser-use | https://github.com/browser-use/browser-use |
+| 3 | engines/aider | https://github.com/Aider-AI/aider |
+| 4 | engines/crewAI | https://github.com/crewAIInc/crewAI |
+| 5 | engines/litellm | https://github.com/BerriAI/litellm |
+| 6 | engines/langgraph | https://github.com/langchain-ai/langgraph |
+| 7 | engines/agent-framework | https://github.com/microsoft/agent-framework |
+| 8 | engines/openai-agents-python | https://github.com/openai/openai-agents-python |
+| 9 | engines/pydantic-ai | https://github.com/pydantic/pydantic-ai |
+| 10 | engines/semantic-kernel | https://github.com/microsoft/semantic-kernel |
+| 11 | engines/haystack | https://github.com/deepset-ai/haystack |
+| 12 | engines/llama_index | https://github.com/run-llama/llama_index |
+| 13 | engines/dspy | https://github.com/stanfordnlp/dspy |
+| 14 | engines/dify | https://github.com/langgenius/dify |
+| 15 | engines/n8n | https://github.com/n8n-io/n8n |
+| 16 | engines/activepieces | https://github.com/activepieces/activepieces |
+| 17 | engines/temporal | https://github.com/temporalio/temporal |
+| 18 | engines/prefect | https://github.com/PrefectHQ/prefect |
+| 19 | engines/playwright-python | https://github.com/microsoft/playwright-python |
+| 20 | engines/skyvern | https://github.com/Skyvern-AI/skyvern |
+| 21 | engines/stagehand | https://github.com/browserbase/stagehand |
+| 22 | engines/OpenHands | https://github.com/All-Hands-AI/OpenHands |
+| 23 | engines/composio | https://github.com/ComposioHQ/composio |
+| 24 | engines/python-sdk | https://github.com/modelcontextprotocol/python-sdk |
+| 25 | engines/llama.cpp | https://github.com/ggml-org/llama.cpp |
+| 26 | engines/ollama | https://github.com/ollama/ollama |
+| 27 | engines/transformers | https://github.com/huggingface/transformers |
+| 28 | engines/vllm | https://github.com/vllm-project/vllm |
+| 29 | engines/qdrant | https://github.com/qdrant/qdrant |
+| 30 | engines/pgvector | https://github.com/pgvector/pgvector |
+| 31 | engines/langfuse | https://github.com/langfuse/langfuse |
+| 32 | engines/phoenix | https://github.com/Arize-ai/phoenix |
 
----
+Inspect the Git tree or run git submodule status in an initialized Aura checkout to see exact pinned commits.
 
-## 2. Next Stage: 15-20 Top AI Repositories List (Future Expansion)
+## Verification scope
 
-Jab hum in 5 ko polish kar lenge, toh agle 15 modules ke liye yeh best repositories hain:
+- The registry audit validates relative paths beneath engines/ and credential-free HTTPS GitHub URLs.
+- At the Aura checkout root, aura_agent.py asks local Git for submodule status. It does not make a network request.
+- setup_engines.py defaults to listing metadata. Explicit initialization downloads parent-pinned source; it does not run that source.
+- Offline tests cover parsing, URL/path validation, and Git status markers.
 
-### OS & Computer Control:
-1. `microsoft/UFO` (Microsoft ka Windows OS agent)
-2. `xlang-ai/OSWorld` (Real computer control benchmark)
+This does not test upstream code, dependencies, quality, security, or compatibility between projects. A folder existing on disk is not proof of a healthy integration.
 
-### Web & Browser:
-3. `browserbase/stagehand` (AI web scraper & form filler)
-4. `microsoft/playwright-python` (Bulletproof browser engine)
+## Licensing and attribution
 
-### Coding & Engineering:
-5. `paul-gauthier/aider` (Fastest terminal AI pair programmer)
-6. `princeton-nlp/SWE-agent` (Software engineering benchmark agent)
+Each upstream project retains its own author identity, license, trademark, and notices. Terms may differ by project and by dependency. Review pinned source, licenses, notices, and redistribution obligations before distributing an Aura product. Aura-authored documentation does not transfer ownership of upstream work.
 
-### Multi-Agent Swarms:
-7. `microsoft/autogen` (Multi-agent conversational framework)
-8. `run-llama/llama_index` (RAG document memory & search)
-9. `langchain-ai/langgraph` (Complex workflow state machine)
-
-### Vision & Voice (Multimodal):
-10. `openai/whisper` (World #1 Speech-to-text engine)
-11. `coqui-ai/TTS` (Open-source realistic voice synthesizer)
-12. `comfyanonymous/ComfyUI` (Image & video generative workflows)
-
----
-
-## 3. Current Status of `aura_agent.py`
-* **File Location:** `c:\Users\hp\AURA-Agent\aura_agent.py`
-* **Status:** Cleanly Compiled (Exit code 0, zero syntax errors, zero crashes).
-* **Architecture:** Modular, safe fallbacks, zero external dependencies required to initialize.
