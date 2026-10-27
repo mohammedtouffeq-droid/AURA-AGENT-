@@ -25,3 +25,33 @@
 [submodule "engines/pydantic-ai"]
 	path = engines/pydantic-ai
 	url = https://github.com/pydantic/pydantic-ai.git
+[submodule "engines/semantic-kernel"]
+	path = engines/semantic-kernel
+	url = https://github.com/microsoft/semantic-kernel.git
+[submodule "engines/haystack"]
+	path = engines/haystack
+	url = https://github.com/deepset-ai/haystack.git
+[submodule "engines/llama_index"]
+	path = engines/llama_index
+	url = https://github.com/run-llama/llama_index.git
+[submodule "engines/dspy"]
+	path = engines/dspy
+	url = https://github.com/stanfordnlp/dspy.git
+[submodule "engines/dify"]
+	path = engines/dify
+	url = https://github.com/langgenius/dify.git
+[submodule "engines/n8n"]
+	path = engines/n8n
+	url = https://github.com/n8n-io/n8n.git
+[submodule "engines/activepieces"]
+	path = engines/activepieces
+	url = https://github.com/activepieces/activepieces.git
+[submodule "engines/temporal"]
+	path = engines/temporal
+	url = https://github.com/temporalio/temporal.git
+[submodule "engines/prefect"]
+	path = engines/prefect
+	url = https://github.com/PrefectHQ/prefect.git
+[submodule "engines/playwright-python"]
+	path = engines/playwright-python
+	url = https://github.com/microsoft/playwright-python.git
