@@ -55,3 +55,42 @@
 [submodule "engines/playwright-python"]
 	path = engines/playwright-python
 	url = https://github.com/microsoft/playwright-python.git
+[submodule "engines/skyvern"]
+	path = engines/skyvern
+	url = https://github.com/Skyvern-AI/skyvern.git
+[submodule "engines/stagehand"]
+	path = engines/stagehand
+	url = https://github.com/browserbase/stagehand.git
+[submodule "engines/OpenHands"]
+	path = engines/OpenHands
+	url = https://github.com/All-Hands-AI/OpenHands.git
+[submodule "engines/composio"]
+	path = engines/composio
+	url = https://github.com/ComposioHQ/composio.git
+[submodule "engines/python-sdk"]
+	path = engines/python-sdk
+	url = https://github.com/modelcontextprotocol/python-sdk.git
+[submodule "engines/llama.cpp"]
+	path = engines/llama.cpp
+	url = https://github.com/ggml-org/llama.cpp.git
+[submodule "engines/ollama"]
+	path = engines/ollama
+	url = https://github.com/ollama/ollama.git
+[submodule "engines/transformers"]
+	path = engines/transformers
+	url = https://github.com/huggingface/transformers.git
+[submodule "engines/vllm"]
+	path = engines/vllm
+	url = https://github.com/vllm-project/vllm.git
+[submodule "engines/qdrant"]
+	path = engines/qdrant
+	url = https://github.com/qdrant/qdrant.git
+[submodule "engines/pgvector"]
+	path = engines/pgvector
+	url = https://github.com/pgvector/pgvector.git
+[submodule "engines/langfuse"]
+	path = engines/langfuse
+	url = https://github.com/langfuse/langfuse.git
+[submodule "engines/phoenix"]
+	path = engines/phoenix
+	url = https://github.com/Arize-ai/phoenix.git
