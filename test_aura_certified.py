@@ -43,6 +43,10 @@ from aura_brain import (
     tool_browser_action,
     tool_screen_grounding_coordinates,
     tool_mem0_persistent_memory,
+    tool_whatsapp_manager,
+    tool_instagram_manager,
+    tool_github_manager,
+    tool_hyperbrowser_session,
     AuraBrain,
     SAFE_WORKSPACE_ROOTS,
     STRICTLY_FORBIDDEN_PATHS
@@ -264,11 +268,12 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertGreater(res.get("screen_width", 0), 0)
         self.assertGreater(res.get("screen_height", 0), 0)
 
-    def test_25_engine_mesh_catalog_52(self):
+    def test_25_engine_mesh_catalog_57(self):
         engines = aura_agent.AURA_AGENT.get_engine_list()
-        self.assertEqual(len(engines), 52)
+        self.assertEqual(len(engines), 57)
         engine_keys = [e["key"] for e in engines]
         expected_all = [
+            "hyperbrowser", "whatsapp-web.js", "instaloader", "PyGithub", "undetected-chromedriver",
             "ShowUI", "midscene", "owl", "OSWorld-G", "self-operating-computer",
             "pywinauto", "pyautogui", "mem0", "Qwen-Agent", "llama.cpp",
             "Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "terminator"
@@ -299,6 +304,69 @@ class TestAuraProductionCertification(unittest.TestCase):
         res_recall = tool_mem0_persistent_memory(action="recall", key="test_code_pref")
         self.assertTrue(res_recall.get("success"))
         self.assertGreater(res_recall.get("total_facts", 0), 0)
+
+    # -----------------------------------------------------------------------------
+    # 9. GROUP 1 SOCIAL & SECURITY JAIL GATEKEEPER TESTS
+    # -----------------------------------------------------------------------------
+    def test_29_security_jail_blocks_unauthorized_whatsapp(self):
+        # Strict jail mode blocks unauthorized WhatsApp message sending
+        res = tool_whatsapp_manager(
+            action="send_message",
+            contact="1234567890",
+            message="Test unapproved message",
+            permission_mode="request_review",
+            approved=False
+        )
+        self.assertFalse(res.get("success"))
+        self.assertTrue(res.get("requires_approval"))
+        self.assertTrue(res.get("security_jail"))
+        self.assertIn("SECURITY JAIL", res.get("message", ""))
+
+    def test_30_security_jail_blocks_unauthorized_instagram(self):
+        # Strict jail mode blocks unauthorized Instagram DM
+        res = tool_instagram_manager(
+            action="send_dm",
+            username="test_user",
+            reply_text="Test unapproved DM",
+            permission_mode="request_review",
+            approved=False
+        )
+        self.assertFalse(res.get("success"))
+        self.assertTrue(res.get("requires_approval"))
+        self.assertTrue(res.get("security_jail"))
+
+    def test_31_security_jail_blocks_unauthorized_gui_click(self):
+        # Strict jail mode blocks unauthorized mouse clicking
+        res = tool_gui_click_and_type(
+            action="click",
+            x=500,
+            y=400,
+            permission_mode="request_review",
+            approved=False
+        )
+        self.assertFalse(res.get("success"))
+        self.assertTrue(res.get("requires_approval"))
+        self.assertTrue(res.get("security_jail"))
+
+    def test_32_auto_pilot_allows_execution(self):
+        # In 0-permission auto-pilot mode, action executes without blocking
+        res = tool_gui_click_and_type(
+            action="click",
+            x=500,
+            y=400,
+            permission_mode="auto_pilot",
+            approved=False
+        )
+        self.assertTrue(res.get("success"))
+        self.assertFalse(res.get("requires_approval", False))
+
+    def test_33_github_manager_inspects_repos(self):
+        res = tool_github_manager(
+            action="inspect_my_repos",
+            user_login="mohammedtouffeq-droid"
+        )
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("user"), "mohammedtouffeq-droid")
 
 
 if __name__ == "__main__":

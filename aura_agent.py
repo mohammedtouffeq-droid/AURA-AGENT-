@@ -107,14 +107,22 @@ ALL_32_ENGINES = [
     ("pywinauto", "pywinauto Windows Native Automation", "Windows OS Automation", 944, "Direct zero-latency control of Windows apps via native Win32 and MS UI Automation backends."),
     ("pyautogui", "PyAutoGUI Low-Level Hardware Control", "GUI & Desktop Automation", 38, "Cross-platform low-level mouse movement, double-clicks, drags, keyboard hotkeys, and pixel matching."),
     ("mem0", "Mem0 Long-Term Human Memory Engine", "Search & Memory", 1843, "Persistent long-term memory storing user habits, preferences, folder paths, and past workflows."),
-    ("Qwen-Agent", "Qwen-Agent Tool & MCP Engine", "Model Gateway", 345, "Fast function-calling, Model Context Protocol (MCP), and large document RAG for smart agents.")
+    ("Qwen-Agent", "Qwen-Agent Tool & MCP Engine", "Model Gateway", 345, "Fast function-calling, Model Context Protocol (MCP), and large document RAG for smart agents."),
+
+    # 5 Group 1 Real-World Social & Browser Session Engines (57-Engine Master Universe)
+    ("hyperbrowser", "Hyperbrowser Cloud & Local Session Engine", "Social & Session Automation", 215, "Persistent session profiles, cookies auto-save, and CDP browser controller."),
+    ("whatsapp-web.js", "WhatsApp Web Automation Engine", "Social & Session Automation", 186, "Local WhatsApp Web client for reading chats, status, and sending verified messages."),
+    ("instaloader", "Instaloader Profile & Story Scraper", "Social & Session Automation", 78, "Reads Instagram public profiles, stories, comments, and direct message activity."),
+    ("PyGithub", "PyGithub Enterprise GitHub API", "Social & Session Automation", 1504, "Full GitHub API client inspecting user repositories, commits, issues, and pull requests."),
+    ("undetected-chromedriver", "Undetected ChromeDriver Anti-Bot", "Social & Session Automation", 15, "Stealth browser automation driver bypassing anti-bot screens for personal profile sessions.")
 ]
 
-ALL_52_ENGINES = ALL_32_ENGINES
-ALL_43_ENGINES = ALL_52_ENGINES
+ALL_57_ENGINES = ALL_32_ENGINES
+ALL_52_ENGINES = ALL_57_ENGINES
+ALL_43_ENGINES = ALL_57_ENGINES
 
 # Add engine folders to sys.path
-for item in ALL_52_ENGINES:
+for item in ALL_57_ENGINES:
     key = item[0]
     p = ENGINES_DIR / key
     if p.exists():
@@ -181,16 +189,16 @@ class UniversalEngineBridge:
 
 
 # ===================================================================================
-# MASTER AURA SUPER-CONTROLLER (52-ENGINE UNIFIED CORE)
+# MASTER AURA SUPER-CONTROLLER (57-ENGINE UNIFIED CORE)
 # ===================================================================================
 class AuraAgent:
     """
-    Unified Super-Agent orchestrating all 52 Mounted Repositories.
+    Unified Super-Agent orchestrating all 57 Mounted Repositories.
     """
     def __init__(self):
         self.name = "AURA Master Super-Agent"
-        self.version = "5.0.0 (52-Engine Universe Edition)"
-        self.engines = {item[0]: UniversalEngineBridge(*item) for item in ALL_52_ENGINES}
+        self.version = "5.5.0 (57-Engine Universe Edition)"
+        self.engines = {item[0]: UniversalEngineBridge(*item) for item in ALL_57_ENGINES}
 
     def audit_all_engines(self) -> Dict[str, Any]:
         return {k: bridge.get_status() for k, bridge in self.engines.items()}
@@ -199,7 +207,7 @@ class AuraAgent:
         return [bridge.get_status() for bridge in self.engines.values()]
 
     def search_mesh_code(self, keyword: str, target_engine: Optional[str] = None, max_results: int = 6) -> List[Dict[str, Any]]:
-        """Searches across all 52 engines or a specific target engine."""
+        """Searches across all 57 engines or a specific target engine."""
         results = []
         if target_engine and target_engine in self.engines:
             return self.engines[target_engine].search_code(keyword, max_results=max_results)
@@ -227,11 +235,12 @@ class AuraAgent:
                 {"phase": "5. Autonomous Coding", "engines": ["OpenCode", "OpenHands", "Cline", "Aider", "Continue"]},
                 {"phase": "6. Web & Screen Vision Automation", "engines": ["Browser-Use", "Playwright", "Skyvern", "Stagehand", "ShowUI", "Midscene", "OSWorld-G", "Self-Operating-Computer"]},
                 {"phase": "7. Desktop & Native Windows Automation", "engines": ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "Terminator", "OS-Copilot", "Cradle", "Screenpipe", "pywinauto", "pyautogui"]},
-                {"phase": "8. Connected Tools, SaaS & MCP", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
-                {"phase": "9. Fault-Tolerant Reliability", "engines": ["Temporal", "Prefect"]},
-                {"phase": "10. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
+                {"phase": "8. Social & Session Automation", "engines": ["Hyperbrowser", "WhatsApp-Web.js", "Instaloader", "PyGithub", "Undetected-Chromedriver"]},
+                {"phase": "9. Connected Tools, SaaS & MCP", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
+                {"phase": "10. Fault-Tolerant Reliability", "engines": ["Temporal", "Prefect"]},
+                {"phase": "11. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
             ],
-            "status": "ALL_52_ENGINES_ACTIVE_AND_SYNCHRONIZED"
+            "status": "ALL_57_ENGINES_ACTIVE_AND_SYNCHRONIZED"
         }
 
 
@@ -242,8 +251,8 @@ AURA_AGENT = AuraAgent()
 if __name__ == "__main__":
     aura = AURA_AGENT
     status = aura.audit_all_engines()
-    print(f"\n[*] {aura.name} v{aura.version} - ALL 52 ENGINES VERIFIED:")
+    print(f"\n[*] {aura.name} v{aura.version} - ALL 57 ENGINES VERIFIED:")
     total_files = sum(d["files_available"] for d in status.values())
     print(f"[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: {total_files}")
-    test_run = aura.execute_goal("Orchestrate complete 52-engine universe automation pipeline")
+    test_run = aura.execute_goal("Orchestrate complete 57-engine universe automation pipeline")
     print(f"[*] Pipeline Status: {test_run['status']}")

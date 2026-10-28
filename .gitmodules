@@ -154,3 +154,18 @@
 [submodule "engines/Qwen-Agent"]
 	path = engines/Qwen-Agent
 	url = https://github.com/QwenLM/Qwen-Agent.git
+[submodule "engines/hyperbrowser"]
+	path = engines/hyperbrowser
+	url = https://github.com/hyperbrowserai/python-sdk.git
+[submodule "engines/whatsapp-web.js"]
+	path = engines/whatsapp-web.js
+	url = https://github.com/pedroslopez/whatsapp-web.js.git
+[submodule "engines/instaloader"]
+	path = engines/instaloader
+	url = https://github.com/instaloader/instaloader.git
+[submodule "engines/PyGithub"]
+	path = engines/PyGithub
+	url = https://github.com/PyGithub/PyGithub.git
+[submodule "engines/undetected-chromedriver"]
+	path = engines/undetected-chromedriver
+	url = https://github.com/ultrafunkamsterdam/undetected-chromedriver.git
