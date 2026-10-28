@@ -5,7 +5,7 @@
 Enterprise Settings & Preference Manager synthesized from the world's top 15 AI platforms:
 (ChatGPT, Claude, Cursor, Open-Interpreter, Ollama, AutoGPT, CrewAI, LM Studio, etc.)
 
-Author: Mohammed Touffeq & Antigravity
+Author: AURA Technologies Inc.
 ===================================================================================
 """
 
@@ -48,7 +48,7 @@ class AuraSettingsManager:
 
     def get_default_config(self) -> Dict[str, Any]:
         return {
-            "system": {"agent_name": "AURA", "creator": "Mohammed Touffeq", "version": "4.0.0"},
+            "system": {"agent_name": "AURA", "creator": "AURA Technologies Inc.", "version": "4.2.0"},
             "brain_settings": {
                 "active_provider": "gemini",
                 "active_model": "gemini-3.1-flash-lite",

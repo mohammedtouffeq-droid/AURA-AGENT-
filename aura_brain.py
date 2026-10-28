@@ -10,7 +10,7 @@ Multi-Tool Autonomous System:
 - Persistent Long-Term Memory (SQLite)
 - Screen Vision & Inspection
 
-Author: Mohammed Touffeq & Antigravity
+Author: AURA Technologies Inc.
 ===================================================================================
 """
 
@@ -383,5 +383,5 @@ if __name__ == "__main__":
     brain = AuraBrain()
     print("[*] AURA Autonomous Brain Online with 8 Live Tools.")
     # Test memory tool
-    test_res = brain.think_and_act("Remember that my name is Mohammed Touffeq and I am building AURA.")
+    test_res = brain.think_and_act("Remember that my workspace is initialized and active.")
     print("\n[AURA Response]:", test_res)

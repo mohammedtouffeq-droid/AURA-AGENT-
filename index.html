@@ -3,24 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA Agent - Developer Workspace</title>
+    <title>AURA - Autonomous Intelligence Workspace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* -------------------------------------------------------------------------
+           THEME DEFINITIONS & DYNAMIC CSS VARIABLES
+           ------------------------------------------------------------------------- */
         :root {
+            /* Default: Obsidian Dark */
             --bg-base: #090b10;
             --bg-sidebar: #0d1017;
             --bg-surface: #131722;
-            --bg-card: rgba(22, 27, 39, 0.7);
+            --bg-card: rgba(22, 27, 39, 0.75);
             --bg-hover: rgba(255, 255, 255, 0.05);
             --border-hairline: rgba(255, 255, 255, 0.08);
-            --border-focused: rgba(56, 189, 248, 0.35);
+            --border-focused: rgba(56, 189, 248, 0.4);
             --accent-primary: #38bdf8;
             --accent-primary-hover: #0ea5e9;
             --accent-emerald: #10b981;
             --accent-amber: #f59e0b;
             --accent-rose: #f43f5e;
+            --accent-purple: #a855f7;
             --text-title: #f8fafc;
             --text-body: #cbd5e1;
             --text-muted: #64748b;
@@ -30,6 +35,96 @@
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
+        }
+
+        /* 🤍 Clean Studio Light Theme */
+        body.theme-light {
+            --bg-base: #f8fafc;
+            --bg-sidebar: #f1f5f9;
+            --bg-surface: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --bg-hover: rgba(0, 0, 0, 0.04);
+            --border-hairline: rgba(0, 0, 0, 0.08);
+            --border-focused: rgba(2, 132, 199, 0.5);
+            --accent-primary: #0284c7;
+            --accent-primary-hover: #0369a1;
+            --text-title: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+        }
+
+        /* 🌌 Midnight Deep Blue */
+        body.theme-midnight {
+            --bg-base: #060913;
+            --bg-sidebar: #0a0f24;
+            --bg-surface: #101736;
+            --bg-card: rgba(16, 23, 54, 0.8);
+            --border-hairline: rgba(99, 102, 241, 0.15);
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #4f46e5;
+            --text-title: #ffffff;
+            --text-body: #c7d2fe;
+            --text-muted: #6366f1;
+        }
+
+        /* ⚡ Cyberpunk Neon Cyan */
+        body.theme-cyan {
+            --bg-base: #050b14;
+            --bg-sidebar: #081220;
+            --bg-surface: #0c1c33;
+            --border-hairline: rgba(0, 240, 255, 0.18);
+            --accent-primary: #00f0ff;
+            --accent-primary-hover: #00c8d7;
+            --text-title: #f0fdfa;
+            --text-body: #ccfbf1;
+        }
+
+        /* 💜 Hologram Royal Purple */
+        body.theme-purple {
+            --bg-base: #0c0714;
+            --bg-sidebar: #130b20;
+            --bg-surface: #1d1130;
+            --border-hairline: rgba(168, 85, 247, 0.18);
+            --accent-primary: #a855f7;
+            --accent-primary-hover: #9333ea;
+            --text-title: #faf5ff;
+            --text-body: #e9d5ff;
+        }
+
+        /* 🌿 Matrix Emerald Green */
+        body.theme-emerald {
+            --bg-base: #040e0a;
+            --bg-sidebar: #081710;
+            --bg-surface: #0d2419;
+            --border-hairline: rgba(16, 185, 129, 0.18);
+            --accent-primary: #10b981;
+            --accent-primary-hover: #059669;
+            --text-title: #ecfdf5;
+            --text-body: #a7f3d0;
+        }
+
+        /* 🌅 Solar Amber Gold */
+        body.theme-amber {
+            --bg-base: #0e0b04;
+            --bg-sidebar: #171207;
+            --bg-surface: #241c0b;
+            --border-hairline: rgba(245, 158, 11, 0.18);
+            --accent-primary: #f59e0b;
+            --accent-primary-hover: #d97706;
+            --text-title: #fffbeb;
+            --text-body: #fde68a;
+        }
+
+        /* 🍷 Crimson Rose */
+        body.theme-rose {
+            --bg-base: #110508;
+            --bg-sidebar: #1a080d;
+            --bg-surface: #280d15;
+            --border-hairline: rgba(244, 63, 94, 0.18);
+            --accent-primary: #f43f5e;
+            --accent-primary-hover: #e11d48;
+            --text-title: #fff1f2;
+            --text-body: #fecdd3;
         }
 
         * {
@@ -47,9 +142,9 @@
             display: flex;
             user-select: none;
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
 
-        /* App Container Layout */
         .app-layout {
             display: flex;
             width: 100vw;
@@ -57,19 +152,20 @@
         }
 
         /* ---------------------------------------------------- */
-        /* LEFT SIDEBAR (Linear / Cursor Minimalist Style)      */
+        /* SIDEBAR                                              */
         /* ---------------------------------------------------- */
         .sidebar {
-            width: 270px;
+            width: 275px;
             background: var(--bg-sidebar);
             border-right: 1px solid var(--border-hairline);
             display: flex;
             flex-direction: column;
-            padding: 16px 12px 14px 12px;
+            padding: 14px 12px 14px 12px;
             flex-shrink: 0;
+            transition: all 0.2s ease;
         }
 
-        .workspace-selector {
+        .workspace-brand-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -79,50 +175,49 @@
             transition: background 0.15s ease;
             margin-bottom: 12px;
         }
-        .workspace-selector:hover {
+        .workspace-brand-row:hover {
             background: var(--bg-hover);
         }
 
-        .ws-brand {
+        .brand-cluster {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .ws-icon {
-            width: 26px;
-            height: 26px;
+        .brand-icon-box {
+            width: 28px;
+            height: 28px;
             border-radius: var(--radius-xs);
-            background: #1e293b;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--accent-primary);
             font-weight: 700;
-            font-size: 13px;
+            font-size: 14px;
             font-family: var(--font-code);
         }
 
-        .ws-info h3 {
-            font-size: 13px;
+        .brand-meta h3 {
+            font-size: 13.5px;
             font-weight: 600;
             color: var(--text-title);
             line-height: 1.2;
         }
-        .ws-info p {
+        .brand-meta p {
             font-size: 11px;
             color: var(--text-muted);
             font-family: var(--font-code);
         }
 
-        /* New Thread Button */
         .btn-new-thread {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 9px 12px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-hairline);
             border-radius: var(--radius-sm);
             color: var(--text-title);
@@ -133,8 +228,8 @@
             margin-bottom: 14px;
         }
         .btn-new-thread:hover {
-            background: rgba(56, 189, 248, 0.08);
-            border-color: rgba(56, 189, 248, 0.3);
+            background: var(--bg-hover);
+            border-color: var(--border-focused);
             color: #fff;
         }
         .key-badge {
@@ -147,30 +242,33 @@
             font-family: var(--font-code);
         }
 
-        /* Sessions Nav */
-        .threads-nav {
+        /* Threads List */
+        .threads-nav-list {
             flex: 1;
             overflow-y: auto;
             padding-right: 2px;
         }
-        .threads-nav::-webkit-scrollbar {
+        .threads-nav-list::-webkit-scrollbar {
             width: 4px;
         }
-        .threads-nav::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+        .threads-nav-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
         }
 
-        .section-label {
+        .section-category-title {
             font-size: 10.5px;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             font-weight: 600;
             color: var(--text-muted);
             padding: 10px 10px 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .thread-item {
+        .thread-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -182,17 +280,18 @@
             transition: all 0.15s ease;
             margin-bottom: 2px;
             position: relative;
+            group: hover;
         }
-        .thread-item:hover {
+        .thread-row:hover {
             background: var(--bg-hover);
             color: var(--text-title);
         }
-        .thread-item.active {
+        .thread-row.active {
             background: rgba(56, 189, 248, 0.08);
             color: var(--text-title);
             font-weight: 500;
         }
-        .thread-item.active::before {
+        .thread-row.active::before {
             content: '';
             position: absolute;
             left: 0;
@@ -203,14 +302,41 @@
             border-radius: 2px;
         }
 
-        .thread-title {
+        .thread-title-text {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 190px;
+            max-width: 175px;
         }
 
-        /* Bottom User & Settings */
+        .thread-actions {
+            display: none;
+            align-items: center;
+            gap: 4px;
+        }
+        .thread-row:hover .thread-actions {
+            display: flex;
+        }
+
+        .btn-thread-action {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+            transition: color 0.15s;
+        }
+        .btn-thread-action:hover {
+            color: var(--text-title);
+        }
+        .btn-thread-action.pinned {
+            color: var(--accent-amber);
+            display: inline-block !important;
+        }
+
+        /* Bottom User Footer */
         .sidebar-footer {
             padding-top: 12px;
             border-top: 1px solid var(--border-hairline);
@@ -219,7 +345,7 @@
             justify-content: space-between;
         }
 
-        .user-block {
+        .user-profile-tile {
             display: flex;
             align-items: center;
             gap: 9px;
@@ -227,38 +353,46 @@
             padding: 5px 8px;
             border-radius: var(--radius-sm);
             transition: background 0.15s;
+            max-width: 185px;
         }
-        .user-block:hover {
+        .user-profile-tile:hover {
             background: var(--bg-hover);
         }
 
-        .user-avatar-tag {
+        .user-avatar-initials {
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: #1e293b;
+            background: var(--bg-surface);
             border: 1px solid var(--border-hairline);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 11px;
             font-weight: 600;
-            color: var(--text-title);
+            color: var(--accent-primary);
+            flex-shrink: 0;
         }
 
-        .user-meta h4 {
+        .user-info-text {
+            overflow: hidden;
+        }
+        .user-info-text h4 {
             font-size: 12.5px;
             font-weight: 600;
             color: var(--text-title);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .user-meta p {
+        .user-info-text p {
             font-size: 11px;
             color: var(--accent-emerald);
             display: flex;
             align-items: center;
             gap: 4px;
         }
-        .user-meta p::before {
+        .user-info-text p::before {
             content: '';
             width: 5px;
             height: 5px;
@@ -266,7 +400,7 @@
             background: var(--accent-emerald);
         }
 
-        .btn-icon {
+        .btn-icon-sq {
             background: transparent;
             border: none;
             color: var(--text-muted);
@@ -278,13 +412,13 @@
             align-items: center;
             justify-content: center;
         }
-        .btn-icon:hover {
+        .btn-icon-sq:hover {
             color: var(--text-title);
             background: var(--bg-hover);
         }
 
         /* ---------------------------------------------------- */
-        /* MAIN WORKSPACE                                       */
+        /* MAIN WORKSPACE VIEW                                  */
         /* ---------------------------------------------------- */
         .main-workspace {
             flex: 1;
@@ -295,7 +429,7 @@
             position: relative;
         }
 
-        /* Top Navbar */
+        /* Top Header Navbar */
         .workspace-header {
             height: 52px;
             border-bottom: 1px solid var(--border-hairline);
@@ -308,24 +442,23 @@
             z-index: 10;
         }
 
-        .header-left {
+        .header-left-bar {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
-        /* Permission Tier Selector */
-        .permission-control {
+        .permission-pill-group {
             display: inline-flex;
             align-items: center;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border-hairline);
             border-radius: var(--radius-xs);
-            padding: 3px;
+            padding: 2px;
             gap: 2px;
         }
 
-        .perm-btn {
+        .btn-perm {
             background: transparent;
             border: none;
             font-size: 11.5px;
@@ -339,17 +472,16 @@
             align-items: center;
             gap: 5px;
         }
-        .perm-btn:hover {
+        .btn-perm:hover {
             color: var(--text-title);
         }
-        .perm-btn.active {
-            background: rgba(56, 189, 248, 0.15);
+        .btn-perm.active {
+            background: rgba(56, 189, 248, 0.12);
             color: var(--accent-primary);
             font-weight: 600;
         }
 
-        /* Model Badge Dropdown */
-        .model-selector-pill {
+        .model-core-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -363,18 +495,18 @@
             cursor: pointer;
             transition: border-color 0.15s;
         }
-        .model-selector-pill:hover {
+        .model-core-badge:hover {
             border-color: rgba(255, 255, 255, 0.15);
             color: var(--text-title);
         }
 
-        .header-right {
+        .header-right-bar {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .runtime-status {
+        .status-dot-label {
             font-size: 11px;
             font-family: var(--font-code);
             color: var(--text-muted);
@@ -382,7 +514,7 @@
             align-items: center;
             gap: 6px;
         }
-        .runtime-status::before {
+        .status-dot-label::before {
             content: '';
             width: 6px;
             height: 6px;
@@ -391,7 +523,7 @@
             box-shadow: 0 0 6px var(--accent-emerald);
         }
 
-        .btn-toolbar {
+        .btn-top-util {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -405,13 +537,13 @@
             cursor: pointer;
             transition: all 0.15s;
         }
-        .btn-toolbar:hover {
+        .btn-top-util:hover {
             color: var(--text-title);
             background: var(--bg-hover);
         }
 
-        /* Chat Scroll Feed */
-        .chat-container {
+        /* Message Stream */
+        .chat-scroll-container {
             flex: 1;
             overflow-y: auto;
             padding: 30px 0;
@@ -419,53 +551,54 @@
             flex-direction: column;
             align-items: center;
         }
-        .chat-container::-webkit-scrollbar {
+        .chat-scroll-container::-webkit-scrollbar {
             width: 6px;
         }
-        .chat-container::-webkit-scrollbar-thumb {
+        .chat-scroll-container::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
         }
 
-        .chat-content-width {
+        .chat-stream-width {
             width: 100%;
-            max-width: 800px;
+            max-width: 820px;
             padding: 0 24px;
             display: flex;
             flex-direction: column;
             gap: 24px;
         }
 
-        /* Empty State */
-        .workspace-empty-view {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            margin-top: 40px;
+        /* Personalized Welcome Banner */
+        .welcome-hero-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 10px;
             animation: fadeIn 0.3s ease;
         }
-
-        .empty-greeting h2 {
-            font-size: 22px;
-            font-weight: 600;
+        .welcome-hero-card h2 {
+            font-size: 20px;
+            font-weight: 700;
             color: var(--text-title);
-            letter-spacing: -0.3px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .empty-greeting p {
+        .welcome-hero-card p {
             font-size: 13.5px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
+            color: var(--text-body);
+            line-height: 1.6;
+            margin-bottom: 20px;
         }
 
-        .actions-matrix {
+        .quick-matrix-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            width: 100%;
         }
-
-        .action-card {
+        .matrix-chip {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border-hairline);
             border-radius: var(--radius-sm);
@@ -474,53 +607,51 @@
             transition: all 0.15s ease;
             text-align: left;
         }
-        .action-card:hover {
-            background: rgba(56, 189, 248, 0.04);
-            border-color: rgba(56, 189, 248, 0.3);
+        .matrix-chip:hover {
+            background: rgba(56, 189, 248, 0.05);
+            border-color: var(--border-focused);
             transform: translateY(-1px);
         }
-
-        .action-card h5 {
+        .matrix-chip h5 {
             font-size: 13px;
             font-weight: 600;
             color: var(--text-title);
             margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
-        .action-card p {
+        .matrix-chip p {
             font-size: 12px;
             color: var(--text-muted);
+            margin-bottom: 0;
             line-height: 1.4;
         }
 
-        /* Messages */
-        .msg-turn {
+        /* Message Turn Styles */
+        .msg-turn-box {
             display: flex;
             flex-direction: column;
             gap: 8px;
             animation: fadeIn 0.2s ease-out;
             user-select: text;
         }
-
-        .msg-turn.user {
+        .msg-turn-box.user {
             align-items: flex-end;
         }
 
-        .msg-meta-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .msg-origin-tag {
             font-size: 11px;
             color: var(--text-muted);
             font-family: var(--font-code);
-            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .msg-bubble-user {
-            background: #182030;
-            border: 1px solid rgba(56, 189, 248, 0.2);
+        .user-bubble-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
             border-radius: var(--radius-md);
             padding: 12px 16px;
             font-size: 14px;
@@ -529,31 +660,30 @@
             line-height: 1.6;
         }
 
-        .msg-agent-card {
+        .assistant-response-card {
             width: 100%;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        .agent-text-content {
+        .assistant-body-text {
             font-size: 14px;
             line-height: 1.7;
             color: var(--text-body);
         }
 
-        /* Tool Execution Drawer (Cursor / Linear style) */
-        .tool-drawer {
+        /* Tool Execution Drawer */
+        .terminal-tool-drawer {
             border: 1px solid var(--border-hairline);
-            background: #0d111a;
+            background: #080b12;
             border-radius: var(--radius-sm);
             overflow: hidden;
             font-family: var(--font-code);
             font-size: 12px;
             margin: 6px 0;
         }
-
-        .tool-header-bar {
+        .drawer-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -563,39 +693,39 @@
             border-bottom: 1px solid transparent;
             transition: background 0.15s;
         }
-        .tool-header-bar:hover {
+        .drawer-header:hover {
             background: rgba(255, 255, 255, 0.04);
         }
-        .tool-drawer.expanded .tool-header-bar {
+        .terminal-tool-drawer.expanded .drawer-header {
             border-bottom-color: var(--border-hairline);
         }
 
-        .tool-tag {
+        .tool-title-group {
             display: flex;
             align-items: center;
             gap: 8px;
             color: var(--text-title);
         }
-        .tool-name-badge {
+        .tool-badge-pill {
             color: var(--accent-primary);
-            font-weight: 500;
+            font-weight: 600;
         }
-        .tool-arg-preview {
+        .tool-args-snippet {
             color: var(--text-muted);
-            max-width: 380px;
+            max-width: 400px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .tool-status-pill {
+        .tool-status-emerald {
             display: flex;
             align-items: center;
             gap: 6px;
             font-size: 11px;
             color: var(--accent-emerald);
         }
-        .tool-status-pill::before {
+        .tool-status-emerald::before {
             content: '';
             width: 5px;
             height: 5px;
@@ -603,10 +733,10 @@
             background: var(--accent-emerald);
         }
 
-        .tool-body-pane {
+        .drawer-console-view {
             display: none;
             padding: 12px;
-            background: #07090e;
+            background: #05070c;
             max-height: 240px;
             overflow-y: auto;
             color: #94a3b8;
@@ -614,50 +744,19 @@
             word-break: break-all;
             line-height: 1.5;
         }
-        .tool-drawer.expanded .tool-body-pane {
+        .terminal-tool-drawer.expanded .drawer-console-view {
             display: block;
         }
 
-        /* Markdown formatting inside assistant bubble */
-        .agent-text-content pre {
-            background: #080a10;
-            border: 1px solid var(--border-hairline);
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            margin: 10px 0;
-            overflow-x: auto;
-            font-family: var(--font-code);
-            font-size: 12.5px;
-            color: #38bdf8;
-        }
-
-        .agent-text-content code {
-            font-family: var(--font-code);
-            font-size: 12px;
-            background: rgba(255, 255, 255, 0.06);
-            padding: 2px 5px;
-            border-radius: 4px;
-            color: #e2e8f0;
-        }
-
-        .agent-text-content p {
-            margin-bottom: 10px;
-        }
-
-        .agent-text-content strong {
-            color: var(--text-title);
-            font-weight: 600;
-        }
-
-        /* Action Toolbar below assistant message */
-        .msg-action-strip {
+        /* Message Action Strip */
+        .msg-action-bar {
             display: flex;
             align-items: center;
             gap: 12px;
             padding-top: 4px;
         }
 
-        .btn-action-text {
+        .btn-msg-copy {
             background: transparent;
             border: none;
             color: var(--text-muted);
@@ -670,24 +769,24 @@
             border-radius: 4px;
             transition: color 0.15s;
         }
-        .btn-action-text:hover {
+        .btn-msg-copy:hover {
             color: var(--text-title);
         }
 
         /* ---------------------------------------------------- */
         /* BOTTOM INPUT DOCK                                    */
         /* ---------------------------------------------------- */
-        .input-region {
+        .input-dock-section {
             padding: 0 24px 20px 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .input-box {
+        .input-frame-card {
             width: 100%;
-            max-width: 800px;
-            background: #111420;
+            max-width: 820px;
+            background: var(--bg-surface);
             border: 1px solid var(--border-hairline);
             border-radius: var(--radius-lg);
             padding: 12px 14px 10px 16px;
@@ -697,12 +796,12 @@
             flex-direction: column;
             gap: 10px;
         }
-        .input-box:focus-within {
+        .input-frame-card:focus-within {
             border-color: var(--border-focused);
             box-shadow: 0 8px 32px rgba(56, 189, 248, 0.08);
         }
 
-        .textarea-main {
+        .textarea-input {
             width: 100%;
             background: transparent;
             border: none;
@@ -715,23 +814,23 @@
             min-height: 24px;
             line-height: 1.5;
         }
-        .textarea-main::placeholder {
+        .textarea-input::placeholder {
             color: var(--text-muted);
         }
 
-        .input-controls-row {
+        .dock-controls-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .active-env-tags {
+        .dock-tag-cluster {
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .env-tag {
+        .tag-pill-env {
             font-size: 11px;
             font-family: var(--font-code);
             color: var(--text-muted);
@@ -741,11 +840,11 @@
             border-radius: 4px;
         }
 
-        .btn-dispatch {
+        .btn-send-dispatch {
             width: 32px;
             height: 32px;
             border-radius: var(--radius-xs);
-            background: #2563eb;
+            background: var(--accent-primary);
             border: none;
             color: #fff;
             display: flex;
@@ -754,15 +853,16 @@
             cursor: pointer;
             transition: all 0.15s;
         }
-        .btn-dispatch:hover:not(:disabled) {
-            background: #1d4ed8;
+        .btn-send-dispatch:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: scale(1.02);
         }
-        .btn-dispatch:disabled {
+        .btn-send-dispatch:disabled {
             opacity: 0.35;
             cursor: not-allowed;
         }
 
-        .disclaimer-caption {
+        .dock-caption-text {
             font-size: 11px;
             color: var(--text-muted);
             margin-top: 8px;
@@ -770,7 +870,120 @@
         }
 
         /* ---------------------------------------------------- */
-        /* SETTINGS & MEMORY MODAL                              */
+        /* AUTH MODAL (Sign Up / Sign In)                       */
+        /* ---------------------------------------------------- */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-overlay.open {
+            display: flex;
+        }
+
+        .auth-card {
+            width: 400px;
+            max-width: 92vw;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .auth-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-title);
+            margin-bottom: 4px;
+        }
+        .auth-header p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-xs);
+            padding: 2px;
+            gap: 2px;
+        }
+        .auth-tab-btn {
+            flex: 1;
+            padding: 7px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .auth-tab-btn.active {
+            background: var(--accent-primary);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .auth-input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-title);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .auth-field {
+            width: 100%;
+            background: var(--bg-base);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-xs);
+            padding: 9px 12px;
+            color: var(--text-title);
+            font-size: 13.5px;
+            outline: none;
+        }
+        .auth-field:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .btn-auth-submit {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: var(--radius-xs);
+            font-size: 13.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            margin-top: 6px;
+        }
+        .btn-auth-submit:hover {
+            opacity: 0.9;
+        }
+
+        .auth-error-msg {
+            color: var(--accent-rose);
+            font-size: 12px;
+            min-height: 16px;
+        }
+
+        /* ---------------------------------------------------- */
+        /* MASSIVE 15-MODEL EXTENDED SETTINGS MODAL             */
         /* ---------------------------------------------------- */
         .modal-shade {
             position: fixed;
@@ -784,17 +997,16 @@
             display: none;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.15s ease;
         }
         .modal-shade.open {
             display: flex;
         }
 
         .settings-dialog {
-            width: 760px;
-            max-width: 90vw;
-            height: 520px;
-            background: #0f131d;
+            width: 820px;
+            max-width: 92vw;
+            height: 560px;
+            background: var(--bg-surface);
             border: 1px solid var(--border-hairline);
             border-radius: var(--radius-md);
             box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
@@ -811,7 +1023,7 @@
             justify-content: space-between;
         }
         .dialog-header h3 {
-            font-size: 14px;
+            font-size: 14.5px;
             font-weight: 600;
             color: var(--text-title);
         }
@@ -823,8 +1035,8 @@
         }
 
         .dialog-sidebar {
-            width: 180px;
-            background: #0a0d14;
+            width: 190px;
+            background: var(--bg-sidebar);
             border-right: 1px solid var(--border-hairline);
             padding: 12px 8px;
             display: flex;
@@ -855,7 +1067,7 @@
 
         .dialog-pane {
             flex: 1;
-            padding: 20px;
+            padding: 20px 24px;
             overflow-y: auto;
             display: none;
         }
@@ -882,7 +1094,7 @@
 
         .select-dark, .input-dark {
             width: 100%;
-            background: #080a10;
+            background: var(--bg-base);
             border: 1px solid var(--border-hairline);
             border-radius: var(--radius-xs);
             padding: 8px 12px;
@@ -894,6 +1106,37 @@
             border-color: var(--accent-primary);
         }
 
+        /* Color theme preview chips */
+        .theme-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .theme-swatch {
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-xs);
+            padding: 8px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-title);
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.15s;
+        }
+        .theme-swatch:hover, .theme-swatch.active {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .swatch-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
         .dialog-footer {
             padding: 12px 20px;
             border-top: 1px solid var(--border-hairline);
@@ -901,11 +1144,11 @@
             align-items: center;
             justify-content: flex-end;
             gap: 10px;
-            background: #0a0d14;
+            background: var(--bg-sidebar);
         }
 
         .btn-confirm-save {
-            background: #2563eb;
+            background: var(--accent-primary);
             color: #fff;
             border: none;
             padding: 7px 16px;
@@ -913,13 +1156,13 @@
             font-size: 12.5px;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: opacity 0.15s;
         }
         .btn-confirm-save:hover {
-            background: #1d4ed8;
+            opacity: 0.9;
         }
 
-        /* Memory table in modal */
+        /* Memory table */
         .fact-table {
             width: 100%;
             border-collapse: collapse;
@@ -929,7 +1172,7 @@
         .fact-table th {
             text-align: left;
             padding: 8px;
-            background: #080a10;
+            background: var(--bg-base);
             color: var(--text-muted);
             font-family: var(--font-code);
             border-bottom: 1px solid var(--border-hairline);
@@ -944,7 +1187,7 @@
             color: var(--accent-primary);
         }
 
-        /* Pulse / Typing */
+        /* Working indicator */
         .working-indicator {
             display: flex;
             align-items: center;
@@ -952,7 +1195,7 @@
             font-size: 12px;
             color: var(--text-muted);
             font-family: var(--font-code);
-            padding: 10px 0;
+            padding: 8px 0;
         }
         .working-dot {
             width: 5px;
@@ -978,12 +1221,12 @@
         <!-- SIDEBAR                                          -->
         <!-- ------------------------------------------------ -->
         <aside class="sidebar">
-            <div class="workspace-selector">
-                <div class="ws-brand">
-                    <div class="ws-icon">A</div>
-                    <div class="ws-info">
+            <div class="workspace-brand-row">
+                <div class="brand-cluster">
+                    <div class="brand-icon-box">A</div>
+                    <div class="brand-meta">
                         <h3>AURA Core</h3>
-                        <p>local runtime</p>
+                        <p id="labelWsUser">Enterprise Workspace</p>
                     </div>
                 </div>
             </div>
@@ -996,22 +1239,28 @@
                 <span class="key-badge">Ctrl+K</span>
             </button>
 
-            <div class="threads-nav" id="threadsList">
-                <div class="section-label">Active Workspace</div>
-                <div class="thread-item active" data-id="default">
-                    <span class="thread-title" id="activeThreadName">Main Execution Thread</span>
+            <div class="threads-nav-list" id="threadsNavList">
+                <div class="section-category-title">
+                    <span>Pinned Sessions</span>
+                    <span id="pinnedCount">0</span>
                 </div>
+                <div id="pinnedThreadsContainer"></div>
+
+                <div class="section-category-title" style="margin-top:10px;">
+                    <span>Recent History</span>
+                </div>
+                <div id="recentThreadsContainer"></div>
             </div>
 
             <div class="sidebar-footer">
-                <div class="user-block" id="userBlock">
-                    <div class="user-avatar-tag">MT</div>
-                    <div class="user-meta">
-                        <h4>Mohammed Touffeq</h4>
-                        <p>Core Admin</p>
+                <div class="user-profile-tile" id="userProfileTile" title="Click to view Account Settings">
+                    <div class="user-avatar-initials" id="userAvatarText">U</div>
+                    <div class="user-info-text">
+                        <h4 id="userDisplayName">User</h4>
+                        <p>Workspace Online</p>
                     </div>
                 </div>
-                <button class="btn-icon" id="btnSettingsTrigger" title="Settings">
+                <button class="btn-icon-sq" id="btnOpenSettings" title="Settings">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
             </div>
@@ -1022,74 +1271,63 @@
         <!-- ------------------------------------------------ -->
         <main class="main-workspace">
             <header class="workspace-header">
-                <div class="header-left">
-                    <!-- Permission Policy Control Bar -->
-                    <div class="permission-control" id="permControl">
-                        <button class="perm-btn active" data-mode="auto_pilot" title="Autonomous tool execution in workspace">
+                <div class="header-left-bar">
+                    <!-- Permission Policy Group -->
+                    <div class="permission-pill-group" id="permPillGroup">
+                        <button class="btn-perm active" data-mode="auto_pilot" title="Autonomous tool execution">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                             Auto-Pilot
                         </button>
-                        <button class="perm-btn" data-mode="request_review" title="Ask before running shell or browser">
+                        <button class="btn-perm" data-mode="request_review" title="Ask confirmation before executing shell/browser">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                             Request Review
                         </button>
                     </div>
 
-                    <!-- Model Selector -->
-                    <div class="model-selector-pill" id="btnModelPill" title="Active Model Core">
-                        <span>gemini-3.1-flash-lite</span>
+                    <!-- Model Selector Pill -->
+                    <div class="model-core-badge" id="btnModelBadge" title="Click to change Primary AI Core">
+                        <span id="activeModelLabel">gemini-3.1-flash-lite</span>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
                     </div>
                 </div>
 
-                <div class="header-right">
-                    <div class="runtime-status">127.0.0.1:5050</div>
-                    <button class="btn-toolbar" id="btnOpenVault">
+                <div class="header-right-bar">
+                    <div class="status-dot-label" id="hostPortLabel">0.0.0.0:5050</div>
+                    <button class="btn-top-util" id="btnMemoryVaultTop">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                         Memory Vault
                     </button>
-                    <button class="btn-toolbar" id="btnClearThread">
-                        Clear
+                    <button class="btn-top-util" id="btnLogoutTop" title="Switch Account">
+                        Sign Out
                     </button>
                 </div>
             </header>
 
             <!-- Scrollable Chat Stream -->
-            <div class="chat-container" id="chatContainer">
-                <div class="chat-content-width" id="chatFeed">
-                    <!-- Default Initial Greeting -->
-                    <div class="workspace-empty-view" id="emptyView">
-                        <div class="empty-greeting">
-                            <h2>What shall AURA execute today?</h2>
-                            <p>Direct ReAct engine wired to PowerShell, web browser, file operations, and permanent SQLite memory.</p>
-                        </div>
-                        <div class="actions-matrix">
-                            <div class="action-card" onclick="dispatchDirect('Run powershell to get my computer hostname and operating system info.')">
-                                <h5>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                                    System Inspection
-                                </h5>
+            <div class="chat-scroll-container" id="chatScrollContainer">
+                <div class="chat-stream-width" id="chatStreamWidth">
+                    <!-- Welcome Hero Card with Personalized Name Detection -->
+                    <div class="welcome-hero-card" id="welcomeHero">
+                        <h2 id="heroGreetingTitle">Welcome to your Autonomous Workspace</h2>
+                        <p id="heroGreetingBody">
+                            Congratulations! Your private AURA neural workspace has been successfully provisioned.
+                            Your workspace is encrypted, fully sandboxed, and synchronized with your personal SQLite cloud-ready vault. Every task you run, memory you save, and terminal command you execute is exclusively isolated to your account. Feel free to instruct AURA to browse the web, write code, run system diagnostics, or store project memories. How can AURA empower you today?
+                        </p>
+                        <div class="quick-matrix-grid">
+                            <div class="matrix-chip" onclick="quickDispatch('Run powershell to get my computer hostname and operating system info.')">
+                                <h5>💻 System Inspection</h5>
                                 <p>Inspect hostname, processor, and architecture via PowerShell.</p>
                             </div>
-                            <div class="action-card" onclick="dispatchDirect('Search Telangana current weather on Google and summarize the conditions.')">
-                                <h5>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                                    Web Search & Browse
-                                </h5>
+                            <div class="matrix-chip" onclick="quickDispatch('Search current weather in Telangana on Google and summarize the forecast.')">
+                                <h5>🌐 Web Search & Browse</h5>
                                 <p>Query current weather in Telangana and extract the live forecast.</p>
                             </div>
-                            <div class="action-card" onclick="dispatchDirect('Remember that Mohammed Touffeq is building AURA as an autonomous developer workspace.')">
-                                <h5>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                    Store Fact to SQLite
-                                </h5>
-                                <p>Permanently save identity and project directives into aura_memory.db.</p>
+                            <div class="matrix-chip" onclick="quickDispatch('Remember that my preferred programming stack is Python and React.')">
+                                <h5>🧠 Store Memory Fact</h5>
+                                <p>Permanently save stack preferences into your private SQLite vault.</p>
                             </div>
-                            <div class="action-card" onclick="dispatchDirect('Recall all saved facts and memories stored in SQLite database.')">
-                                <h5>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                    Recall Stored Memory
-                                </h5>
+                            <div class="matrix-chip" onclick="quickDispatch('Recall all saved facts and memories stored in SQLite database.')">
+                                <h5>🔍 Recall Memory Facts</h5>
                                 <p>List all remembered facts and configurations across sessions.</p>
                             </div>
                         </div>
@@ -1097,295 +1335,691 @@
                 </div>
             </div>
 
-            <!-- Bottom Floating Input Area -->
-            <div class="input-region">
-                <div class="input-box">
-                    <textarea class="textarea-main" id="userTextarea" rows="1" placeholder="Instruct AURA (e.g. 'Execute powershell to list files...', 'Open browser and check...')"></textarea>
-                    <div class="input-controls-row">
-                        <div class="active-env-tags">
-                            <span class="env-tag" id="tagActiveMode">Mode: Auto-Pilot</span>
-                            <span class="env-tag">Tools: Shell • Browser • Memory</span>
+            <!-- Bottom Floating Input Dock -->
+            <div class="input-dock-section">
+                <div class="input-frame-card">
+                    <textarea class="textarea-input" id="userPromptInput" rows="1" placeholder="Instruct AURA (e.g. 'Run powershell to list files...', 'Open browser and check...')"></textarea>
+                    <div class="dock-controls-row">
+                        <div class="dock-tag-cluster">
+                            <span class="tag-pill-env" id="envModePill">Mode: Auto-Pilot</span>
+                            <span class="tag-pill-env">Tools: Shell • Browser • Memory</span>
                         </div>
-                        <button class="btn-dispatch" id="btnDispatch" title="Send (Enter)">
+                        <button class="btn-send-dispatch" id="btnSendDispatch" title="Send (Enter)">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
                     </div>
                 </div>
-                <div class="disclaimer-caption">
-                    AURA Runtime Engine • Mohammed Touffeq Workspace • Zero Pip Overhead
+                <div class="dock-caption-text">
+                    AURA Autonomous Workspace • Cloud & Local Sandboxed • AURA Technologies Inc.
                 </div>
             </div>
         </main>
     </div>
 
     <!-- ------------------------------------------------ -->
-    <!-- SETTINGS & VAULT MODAL                           -->
+    <!-- AUTH MODAL (Register & Login)                    -->
     <!-- ------------------------------------------------ -->
-    <div class="modal-shade" id="modalShade">
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2 id="authModalTitle">Welcome to AURA</h2>
+                <p>Sign in or create a private account to access your workspace.</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="tabAuthLogin">Sign In</button>
+                <button class="auth-tab-btn" id="tabAuthRegister">Create Account</button>
+            </div>
+
+            <div class="auth-input-group">
+                <label>Username</label>
+                <input type="text" class="auth-field" id="authUsernameInput" placeholder="Enter username..." autocomplete="off">
+            </div>
+
+            <div class="auth-input-group">
+                <label>Password</label>
+                <input type="password" class="auth-field" id="authPasswordInput" placeholder="Enter password...">
+            </div>
+
+            <div class="auth-error-msg" id="authErrorMsg"></div>
+
+            <button class="btn-auth-submit" id="btnAuthSubmit">Sign In</button>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------ -->
+    <!-- 15-MODEL EXTENDED SETTINGS MODAL                 -->
+    <!-- ------------------------------------------------ -->
+    <div class="modal-shade" id="settingsModalShade">
         <div class="settings-dialog">
             <div class="dialog-header">
-                <h3>Settings & Runtime Configuration</h3>
-                <button class="btn-icon" id="btnCloseDialog">&times;</button>
+                <h3>AURA Control Center & Configuration</h3>
+                <button class="btn-icon-sq" id="btnCloseSettingsDialog">&times;</button>
             </div>
             <div class="dialog-body">
                 <div class="dialog-sidebar">
-                    <button class="dialog-tab-item active" data-pane="pane-brain">Model & Runtime</button>
-                    <button class="dialog-tab-item" data-pane="pane-security">Permissions Policy</button>
-                    <button class="dialog-tab-item" data-pane="pane-memory">Memory Vault</button>
+                    <button class="dialog-tab-item active" data-pane="pane-profile">Account & Profile</button>
+                    <button class="dialog-tab-item" data-pane="pane-intelligence">AI Intelligence Core</button>
+                    <button class="dialog-tab-item" data-pane="pane-themes">Themes & Visuals</button>
+                    <button class="dialog-tab-item" data-pane="pane-permissions">Security & Sandbox</button>
+                    <button class="dialog-tab-item" data-pane="pane-vault">Memory Vault</button>
+                    <button class="dialog-tab-item" data-pane="pane-hosting">Hosting & Network</button>
                 </div>
-                <div class="dialog-pane active" id="pane-brain">
+
+                <!-- Pane: Account & Profile -->
+                <div class="dialog-pane active" id="pane-profile">
                     <div class="form-row">
-                        <label class="form-label">Active AI Core</label>
-                        <p class="form-helper">The model used for reasoning, tool orchestration, and response generation.</p>
-                        <select class="select-dark" id="selectModelCore">
-                            <option value="gemini-3.1-flash-lite">Google Gemini 3.1 Flash-Lite (Recommended · Latency: 1.6s)</option>
-                            <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (High Capacity)</option>
-                            <option value="gpt-4o">OpenAI GPT-4o</option>
-                            <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
-                            <option value="ollama-llama3">Local Ollama Llama 3 (Offline)</option>
+                        <label class="form-label">Username</label>
+                        <input type="text" class="input-dark" id="profUsername" disabled>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Display Name</label>
+                        <p class="form-helper">The name AURA addresses you by in your workspace.</p>
+                        <input type="text" class="input-dark" id="profDisplayName" placeholder="Enter your display name...">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Preferred Language</label>
+                        <select class="select-dark" id="profLanguage">
+                            <option value="en">English (Default)</option>
+                            <option value="hi">Hindi (हिन्दी)</option>
+                            <option value="hinglish">Hinglish (Conversational)</option>
+                            <option value="es">Spanish (Español)</option>
+                            <option value="fr">French (Français)</option>
+                            <option value="de">German (Deutsch)</option>
+                            <option value="ar">Arabic (العربية)</option>
                         </select>
                     </div>
                     <div class="form-row">
-                        <label class="form-label">Tool Reasoning Depth</label>
-                        <p class="form-helper">Maximum autonomous tool loops before producing the final synthesized response.</p>
-                        <select class="select-dark" id="selectMaxTurns">
-                            <option value="10">Standard (Up to 10 operations)</option>
+                        <label class="form-label">Custom System Persona & Instructions</label>
+                        <p class="form-helper">Provide permanent behavior instructions to AURA across all sessions.</p>
+                        <textarea class="input-dark" id="profCustomInstruction" rows="3" placeholder="e.g. Always write clean Python code with type annotations..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Pane: AI Intelligence (15 Top Benchmark Models) -->
+                <div class="dialog-pane" id="pane-intelligence">
+                    <div class="form-row">
+                        <label class="form-label">Primary AI Intelligence Core (15 Benchmark Models)</label>
+                        <p class="form-helper">Select the neural engine powering function-calling and autonomous execution.</p>
+                        <select class="select-dark" id="selectModelEngine">
+                            <optgroup label="Google Suite">
+                                <option value="gemini-3.1-flash-lite" selected>Google Gemini 3.1 Flash-Lite (Recommended Ultra-Fast · Latency: 1.6s)</option>
+                                <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (High Capacity 1M Context)</option>
+                            </optgroup>
+                            <optgroup label="OpenAI Suite">
+                                <option value="gpt-4o">OpenAI GPT-4o Omni</option>
+                                <option value="gpt-4o-mini">OpenAI GPT-4o Mini (Cost-Optimized)</option>
+                                <option value="o1-preview">OpenAI o1-preview (Deep Multi-Step Reasoning)</option>
+                                <option value="o3-mini">OpenAI o3-mini (High-Speed Reasoning)</option>
+                            </optgroup>
+                            <optgroup label="Anthropic Suite">
+                                <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+                                <option value="claude-3-opus">Anthropic Claude 3 Opus (Complex Writing)</option>
+                                <option value="claude-3-5-haiku">Anthropic Claude 3.5 Haiku (Instant Speed)</option>
+                            </optgroup>
+                            <optgroup label="Open-Source & Local Engines">
+                                <option value="llama-3.3-70b">Meta Llama 3.3 70B (Groq Lightning Engine)</option>
+                                <option value="deepseek-r1">DeepSeek R1 (Open Mathematical Reasoning)</option>
+                                <option value="mistral-large-2">Mistral Large 2 (European Flagship)</option>
+                                <option value="qwen-2.5-coder">Qwen 2.5 Coder 32B (Programming Specialist)</option>
+                                <option value="ollama-llama3">Local Ollama Llama 3 (Offline Free)</option>
+                                <option value="command-r-plus">Cohere Command R+ (Enterprise Search & RAG)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Reasoning Effort / Max Autonomous Steps</label>
+                        <p class="form-helper">Limits autonomous tool loops before producing the final synthesized response.</p>
+                        <select class="select-dark" id="selectStepDepth">
+                            <option value="10">Fast Execution (Up to 10 operations)</option>
                             <option value="15" selected>Deep Execution (Up to 15 operations)</option>
                             <option value="25">Extended Autonomous (Up to 25 operations)</option>
+                            <option value="50">Unlimited Mission Mode (Up to 50 operations)</option>
                         </select>
                     </div>
                     <div class="form-row">
-                        <label class="form-label">Temperature: <span id="tempIndicator">0.2</span></label>
-                        <p class="form-helper">Lower temperature ensures deterministic code and shell arguments.</p>
-                        <input type="range" min="0" max="1" step="0.05" value="0.2" class="input-dark" id="sliderTemp" oninput="document.getElementById('tempIndicator').innerText=this.value">
+                        <label class="form-label">Reasoning Temperature: <span id="tempSliderVal">0.2</span></label>
+                        <p class="form-helper">Lower values make code and shell execution strictly deterministic and safe.</p>
+                        <input type="range" min="0" max="1" step="0.05" value="0.2" class="input-dark" id="sliderTemperature" oninput="document.getElementById('tempSliderVal').innerText=this.value">
                     </div>
                 </div>
 
-                <div class="dialog-pane" id="pane-security">
+                <!-- Pane: Themes (8 Rich Color Themes) -->
+                <div class="dialog-pane" id="pane-themes">
                     <div class="form-row">
-                        <label class="form-label">Execution Mode</label>
-                        <p class="form-helper">Control how tools are triggered on your machine.</p>
-                        <select class="select-dark" id="selectExecMode">
+                        <label class="form-label">Workspace Color Theme</label>
+                        <p class="form-helper">Select any theme below to immediately transform your workspace environment.</p>
+                        <div class="theme-selector-grid" id="themeGrid">
+                            <div class="theme-swatch active" onclick="applyTheme('default', this)">
+                                <span class="swatch-dot" style="background:#38bdf8;"></span>
+                                <span>Obsidian</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('light', this)">
+                                <span class="swatch-dot" style="background:#0284c7;"></span>
+                                <span>Studio Light</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('midnight', this)">
+                                <span class="swatch-dot" style="background:#6366f1;"></span>
+                                <span>Midnight</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('cyan', this)">
+                                <span class="swatch-dot" style="background:#00f0ff;"></span>
+                                <span>Cyberpunk</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('purple', this)">
+                                <span class="swatch-dot" style="background:#a855f7;"></span>
+                                <span>Hologram</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('emerald', this)">
+                                <span class="swatch-dot" style="background:#10b981;"></span>
+                                <span>Emerald</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('amber', this)">
+                                <span class="swatch-dot" style="background:#f59e0b;"></span>
+                                <span>Solar Gold</span>
+                            </div>
+                            <div class="theme-swatch" onclick="applyTheme('rose', this)">
+                                <span class="swatch-dot" style="background:#f43f5e;"></span>
+                                <span>Crimson Rose</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pane: Permissions & Security -->
+                <div class="dialog-pane" id="pane-permissions">
+                    <div class="form-row">
+                        <label class="form-label">Autonomous Tool Execution Policy</label>
+                        <p class="form-helper">Choose whether AURA runs verified tools directly or asks your permission first.</p>
+                        <select class="select-dark" id="selectExecutionPolicy">
                             <option value="auto_pilot">Auto-Pilot: Execute safe commands automatically</option>
-                            <option value="request_review">Request Review: Ask confirmation before executing shell/browser</option>
+                            <option value="request_review">Request Review: Require approval before running shell/browser</option>
                         </select>
                     </div>
                     <div class="form-row">
-                        <label class="form-label">Browser Display</label>
-                        <p class="form-helper">Whether to launch visible browser windows or run silently.</p>
-                        <select class="select-dark" id="selectBrowserVisibility">
+                        <label class="form-label">Web Browser Display</label>
+                        <p class="form-helper">Whether browser opens visibly on screen or runs silently in background.</p>
+                        <select class="select-dark" id="selectBrowserMode">
                             <option value="visible">Visible: Open browser window on screen</option>
-                            <option value="headless">Headless: Background scraping only</option>
+                            <option value="headless">Headless: Background web scraping only</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="dialog-pane" id="pane-memory">
+                <!-- Pane: Memory Vault -->
+                <div class="dialog-pane" id="pane-vault">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div>
-                            <h4 style="font-size:13px; font-weight:600;">Stored SQLite Facts</h4>
-                            <p class="form-helper" style="margin-bottom:0">Directly inspection of aura_memory.db facts.</p>
+                            <h4 style="font-size:13px; font-weight:600;">Personal SQLite Memory Vault</h4>
+                            <p class="form-helper" style="margin-bottom:0">All facts stored persistently across devices for your account.</p>
                         </div>
-                        <button class="btn-toolbar" onclick="fetchMemories()">Refresh</button>
+                        <button class="btn-top-util" onclick="loadUserMemories()">Refresh</button>
                     </div>
                     <table class="fact-table">
                         <thead>
                             <tr>
                                 <th>Key</th>
-                                <th>Stored Value</th>
+                                <th>Saved Value</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody id="factsBody">
+                        <tbody id="memoriesTbody">
                             <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Loading memory facts...</td></tr>
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pane: Hosting & Network -->
+                <div class="dialog-pane" id="pane-hosting">
+                    <div class="form-row">
+                        <label class="form-label">Cloud & Local Hosting</label>
+                        <p class="form-helper">Your AURA instance is bound to <code>0.0.0.0:5050</code>. You can access it on this device or over your local network / VPS domain.</p>
+                        <input type="text" class="input-dark" value="http://localhost:5050" readonly>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Multi-User Database</label>
+                        <p class="form-helper">SQLite persistent store: <code>aura_workspace.db</code> with hashed authentication & isolated thread storage.</p>
+                        <input type="text" class="input-dark" value="SQLite Encrypted • Multi-Tenant Ready" readonly>
+                    </div>
+                </div>
             </div>
+
             <div class="dialog-footer">
-                <button class="btn-toolbar" id="btnCancelDialog">Cancel</button>
-                <button class="btn-confirm-save" id="btnSaveConfig">Save Settings</button>
+                <button class="btn-top-util" id="btnCancelSettingsDialog">Cancel</button>
+                <button class="btn-confirm-save" id="btnSaveAllSettings">Save Settings</button>
             </div>
         </div>
     </div>
 
     <!-- ------------------------------------------------ -->
-    <!-- LOGIC SCRIPT                                     -->
+    <!-- SCRIPT LOGIC                                     -->
     <!-- ------------------------------------------------ -->
     <script>
-        const userTextarea = document.getElementById('userTextarea');
-        const btnDispatch = document.getElementById('btnDispatch');
-        const chatContainer = document.getElementById('chatContainer');
-        const chatFeed = document.getElementById('chatFeed');
-        const emptyView = document.getElementById('emptyView');
-        const btnNewThread = document.getElementById('btnNewThread');
-        const btnClearThread = document.getElementById('btnClearThread');
-        const btnSettingsTrigger = document.getElementById('btnSettingsTrigger');
-        const btnOpenVault = document.getElementById('btnOpenVault');
-        const modalShade = document.getElementById('modalShade');
-        const btnCloseDialog = document.getElementById('btnCloseDialog');
-        const btnCancelDialog = document.getElementById('btnCancelDialog');
-        const btnSaveConfig = document.getElementById('btnSaveConfig');
-        const permControl = document.getElementById('permControl');
-        const tagActiveMode = document.getElementById('tagActiveMode');
+        // State
+        let currentUser = null;
+        let currentAuthToken = localStorage.getItem('aura_auth_token') || '';
+        let currentThreadId = localStorage.getItem('aura_active_thread_id') || 'default';
+        let currentExecutionMode = 'auto_pilot';
+        let threadsList = [];
 
-        let activeExecutionMode = 'auto_pilot';
+        // DOM elements
+        const authOverlay = document.getElementById('authOverlay');
+        const tabAuthLogin = document.getElementById('tabAuthLogin');
+        const tabAuthRegister = document.getElementById('tabAuthRegister');
+        const authUsernameInput = document.getElementById('authUsernameInput');
+        const authPasswordInput = document.getElementById('authPasswordInput');
+        const btnAuthSubmit = document.getElementById('btnAuthSubmit');
+        const authErrorMsg = document.getElementById('authErrorMsg');
+        const authModalTitle = document.getElementById('authModalTitle');
+
+        const userPromptInput = document.getElementById('userPromptInput');
+        const btnSendDispatch = document.getElementById('btnSendDispatch');
+        const chatScrollContainer = document.getElementById('chatScrollContainer');
+        const chatStreamWidth = document.getElementById('chatStreamWidth');
+        const welcomeHero = document.getElementById('welcomeHero');
+        const heroGreetingTitle = document.getElementById('heroGreetingTitle');
+        const heroGreetingBody = document.getElementById('heroGreetingBody');
+
+        const btnNewThread = document.getElementById('btnNewThread');
+        const pinnedThreadsContainer = document.getElementById('pinnedThreadsContainer');
+        const recentThreadsContainer = document.getElementById('recentThreadsContainer');
+        const pinnedCount = document.getElementById('pinnedCount');
+
+        const userDisplayName = document.getElementById('userDisplayName');
+        const userAvatarText = document.getElementById('userAvatarText');
+        const labelWsUser = document.getElementById('labelWsUser');
+        const userProfileTile = document.getElementById('userProfileTile');
+        const btnOpenSettings = document.getElementById('btnOpenSettings');
+        const btnLogoutTop = document.getElementById('btnLogoutTop');
+        const btnMemoryVaultTop = document.getElementById('btnMemoryVaultTop');
+
+        const settingsModalShade = document.getElementById('settingsModalShade');
+        const btnCloseSettingsDialog = document.getElementById('btnCloseSettingsDialog');
+        const btnCancelSettingsDialog = document.getElementById('btnCancelSettingsDialog');
+        const btnSaveAllSettings = document.getElementById('btnSaveAllSettings');
+
+        let isRegisterMode = false;
 
         // Auto-expand textarea
-        userTextarea.addEventListener('input', function() {
+        userPromptInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
 
-        // Key handler
-        userTextarea.addEventListener('keydown', function(e) {
+        // Key bindings
+        userPromptInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                dispatchPrompt();
+                submitUserPrompt();
             }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
-                resetThread();
+                createNewSession();
             }
         });
 
-        btnDispatch.addEventListener('click', dispatchPrompt);
-        btnNewThread.addEventListener('click', resetThread);
-        btnClearThread.addEventListener('click', resetThread);
+        btnSendDispatch.addEventListener('click', submitUserPrompt);
+        btnNewThread.addEventListener('click', createNewSession);
 
-        // Permission buttons toggle
-        permControl.querySelectorAll('.perm-btn').forEach(btn => {
+        // Permission toggle
+        document.querySelectorAll('.btn-perm').forEach(btn => {
             btn.addEventListener('click', () => {
-                permControl.querySelectorAll('.perm-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.btn-perm').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                activeExecutionMode = btn.getAttribute('data-mode');
-                tagActiveMode.innerText = 'Mode: ' + (activeExecutionMode === 'auto_pilot' ? 'Auto-Pilot' : 'Request Review');
+                currentExecutionMode = btn.getAttribute('data-mode');
+                document.getElementById('envModePill').innerText = 'Mode: ' + (currentExecutionMode === 'auto_pilot' ? 'Auto-Pilot' : 'Request Review');
             });
         });
 
-        // Modal triggers
-        btnSettingsTrigger.addEventListener('click', () => openModal('pane-brain'));
-        btnOpenVault.addEventListener('click', () => openModal('pane-memory'));
-        btnCloseDialog.addEventListener('click', closeModal);
-        btnCancelDialog.addEventListener('click', closeModal);
+        // Auth Tabs
+        tabAuthLogin.addEventListener('click', () => setAuthMode(false));
+        tabAuthRegister.addEventListener('click', () => setAuthMode(true));
 
-        document.querySelectorAll('.dialog-tab-item').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.dialog-tab-item').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.dialog-pane').forEach(p => p.classList.remove('active'));
-                tab.classList.add('active');
-                const target = document.getElementById(tab.getAttribute('data-pane'));
-                if (target) target.classList.add('active');
-                if (tab.getAttribute('data-pane') === 'pane-memory') fetchMemories();
-            });
+        function setAuthMode(register) {
+            isRegisterMode = register;
+            tabAuthLogin.classList.toggle('active', !register);
+            tabAuthRegister.classList.toggle('active', register);
+            authModalTitle.innerText = register ? 'Create Private AURA Account' : 'Sign in to AURA';
+            btnAuthSubmit.innerText = register ? 'Create Account' : 'Sign In';
+            authErrorMsg.innerText = '';
+        }
+
+        btnAuthSubmit.addEventListener('click', executeAuth);
+        authPasswordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') executeAuth();
         });
 
-        function openModal(paneId = 'pane-brain') {
-            modalShade.classList.add('open');
-            document.querySelectorAll('.dialog-tab-item').forEach(t => {
-                t.classList.toggle('active', t.getAttribute('data-pane') === paneId);
+        async function executeAuth() {
+            const username = authUsernameInput.value.trim();
+            const password = authPasswordInput.value.trim();
+            if (!username || !password) {
+                authErrorMsg.innerText = 'Username and password are required.';
+                return;
+            }
+
+            const endpoint = isRegisterMode ? '/api/auth/register' : '/api/auth/login';
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    currentAuthToken = data.token;
+                    localStorage.setItem('aura_auth_token', data.token);
+                    currentUser = data.user;
+                    authOverlay.classList.remove('open');
+                    initAppSession();
+                } else {
+                    authErrorMsg.innerText = data.error || 'Authentication failed.';
+                }
+            } catch (err) {
+                authErrorMsg.innerText = 'Connection error: ' + err.message;
+            }
+        }
+
+        btnLogoutTop.addEventListener('click', () => {
+            if (!confirm('Sign out of your workspace?')) return;
+            localStorage.removeItem('aura_auth_token');
+            currentAuthToken = '';
+            currentUser = null;
+            authOverlay.classList.add('open');
+        });
+
+        // Initialize user session
+        async function initAppSession() {
+            if (!currentAuthToken) {
+                authOverlay.classList.add('open');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.authenticated && data.user) {
+                    currentUser = data.user;
+                    authOverlay.classList.remove('open');
+                    updateUserUI();
+                    await loadThreads();
+                    loadThreadMessages(currentThreadId);
+                } else {
+                    authOverlay.classList.add('open');
+                }
+            } catch (e) {
+                authOverlay.classList.add('open');
+            }
+        }
+
+        function updateUserUI() {
+            if (!currentUser) return;
+            const name = currentUser.display_name || currentUser.username;
+            userDisplayName.innerText = name;
+            userAvatarText.innerText = name.charAt(0).toUpperCase();
+            labelWsUser.innerText = name + "'s Workspace";
+
+            // Update welcome hero card with personalized user name
+            heroGreetingTitle.innerText = `Welcome to your Autonomous Workspace, ${name}!`;
+            heroGreetingBody.innerHTML = `
+                Congratulations, <strong>${name}</strong>! Your private AURA neural workspace has been successfully provisioned.
+                Your workspace is encrypted, fully sandboxed, and synchronized with your personal SQLite cloud-ready vault. Every task you run, memory you save, and terminal command you execute is exclusively isolated to your account. Feel free to instruct AURA to browse the web, write code, run system diagnostics, or store project memories. How can AURA empower you today?
+            `;
+
+            // Populate settings modal fields
+            document.getElementById('profUsername').value = currentUser.username;
+            document.getElementById('profDisplayName').value = name;
+        }
+
+        // Threads API
+        async function loadThreads() {
+            try {
+                const res = await fetch('/api/threads', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.threads) {
+                    threadsList = data.threads;
+                    renderThreads();
+                }
+            } catch (e) {
+                console.error("Load threads error:", e);
+            }
+        }
+
+        function renderThreads() {
+            pinnedThreadsContainer.innerHTML = '';
+            recentThreadsContainer.innerHTML = '';
+            let pinned = 0;
+
+            threadsList.forEach(t => {
+                const row = document.createElement('div');
+                row.className = 'thread-row' + (t.id === currentThreadId ? ' active' : '');
+                row.setAttribute('data-id', t.id);
+
+                const isPin = Boolean(t.is_pinned);
+                if (isPin) pinned++;
+
+                row.innerHTML = `
+                    <span class="thread-title-text" onclick="switchThread('${t.id}')">${escapeHtml(t.title)}</span>
+                    <div class="thread-actions">
+                        <button class="btn-thread-action ${isPin ? 'pinned' : ''}" onclick="togglePinThread('${t.id}', ${!isPin})" title="${isPin ? 'Unpin' : 'Pin to top'}">📌</button>
+                        <button class="btn-thread-action" onclick="renameThreadPrompt('${t.id}', '${escapeQuotes(t.title)}')" title="Rename">✏️</button>
+                        <button class="btn-thread-action" onclick="deleteThreadPrompt('${t.id}')" title="Delete">🗑️</button>
+                    </div>
+                `;
+
+                if (isPin) {
+                    pinnedThreadsContainer.appendChild(row);
+                } else {
+                    recentThreadsContainer.appendChild(row);
+                }
             });
-            document.querySelectorAll('.dialog-pane').forEach(p => {
-                p.classList.toggle('active', p.id === paneId);
-            });
-            loadSettings();
-            if (paneId === 'pane-memory') fetchMemories();
+
+            pinnedCount.innerText = pinned;
         }
 
-        function closeModal() {
-            modalShade.classList.remove('open');
+        async function createNewSession() {
+            const title = prompt("Enter session title:", "Autonomous Task " + (threadsList.length + 1));
+            if (!title) return;
+
+            try {
+                const res = await fetch('/api/threads/new', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ title })
+                });
+                const data = await res.json();
+                if (data.success && data.thread) {
+                    currentThreadId = data.thread.id;
+                    localStorage.setItem('aura_active_thread_id', currentThreadId);
+                    await loadThreads();
+                    loadThreadMessages(currentThreadId);
+                }
+            } catch (e) {
+                alert("Could not create thread: " + e.message);
+            }
         }
 
-        function dispatchDirect(text) {
-            userTextarea.value = text;
-            userTextarea.style.height = 'auto';
-            userTextarea.focus();
-            dispatchPrompt();
+        async function switchThread(threadId) {
+            currentThreadId = threadId;
+            localStorage.setItem('aura_active_thread_id', threadId);
+            renderThreads();
+            loadThreadMessages(threadId);
         }
 
-        async function dispatchPrompt() {
-            const prompt = userTextarea.value.trim();
+        async function renameThreadPrompt(threadId, oldTitle) {
+            const newTitle = prompt("Rename session:", oldTitle);
+            if (!newTitle || newTitle === oldTitle) return;
+
+            try {
+                await fetch('/api/threads/rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ thread_id: threadId, title: newTitle })
+                });
+                await loadThreads();
+            } catch (e) {
+                alert("Rename failed: " + e.message);
+            }
+        }
+
+        async function togglePinThread(threadId, isPinned) {
+            try {
+                await fetch('/api/threads/pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ thread_id: threadId, is_pinned: isPinned })
+                });
+                await loadThreads();
+            } catch (e) {
+                alert("Pin toggle failed: " + e.message);
+            }
+        }
+
+        async function deleteThreadPrompt(threadId) {
+            if (!confirm("Permanently delete this session and all its messages?")) return;
+            try {
+                await fetch('/api/threads/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ thread_id: threadId })
+                });
+                await loadThreads();
+                if (currentThreadId === threadId && threadsList.length > 0) {
+                    switchThread(threadsList[0].id);
+                }
+            } catch (e) {
+                alert("Delete failed: " + e.message);
+            }
+        }
+
+        async function loadThreadMessages(threadId) {
+            chatStreamWidth.innerHTML = '';
+            chatStreamWidth.appendChild(welcomeHero);
+
+            try {
+                const res = await fetch(`/api/threads/messages?thread_id=${threadId}`, {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.messages && data.messages.length > 0) {
+                    welcomeHero.style.display = 'none';
+                    data.messages.forEach(m => {
+                        if (m.role === 'user') {
+                            appendUserTurn(m.content);
+                        } else {
+                            appendAgentTurn(m.content, m.tools || []);
+                        }
+                    });
+                } else {
+                    welcomeHero.style.display = 'block';
+                }
+                scrollChat();
+            } catch (e) {
+                console.error("Load messages error:", e);
+            }
+        }
+
+        function quickDispatch(text) {
+            userPromptInput.value = text;
+            userPromptInput.style.height = 'auto';
+            userPromptInput.focus();
+            submitUserPrompt();
+        }
+
+        async function submitUserPrompt() {
+            const prompt = userPromptInput.value.trim();
             if (!prompt) return;
 
-            if (emptyView) emptyView.style.display = 'none';
-
-            // User turn
+            welcomeHero.style.display = 'none';
             appendUserTurn(prompt);
-            userTextarea.value = '';
-            userTextarea.style.height = 'auto';
-            btnDispatch.disabled = true;
+            userPromptInput.value = '';
+            userPromptInput.style.height = 'auto';
+            btnSendDispatch.disabled = true;
 
-            const workingId = appendWorkingIndicator();
+            const workId = appendWorkingIndicator();
             scrollChat();
 
             try {
                 const res = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ prompt: prompt, thread_id: currentThreadId })
                 });
 
                 const data = await res.json();
-                removeWorkingIndicator(workingId);
+                removeWorkingIndicator(workId);
 
                 if (res.ok) {
                     appendAgentTurn(data.reply, data.tools || []);
                 } else {
-                    appendAgentTurn("Runtime Error: " + (data.reply || "Unable to complete prompt."));
+                    appendAgentTurn("Execution Error: " + (data.reply || "Unable to complete request."));
                 }
             } catch (err) {
-                removeWorkingIndicator(workingId);
+                removeWorkingIndicator(workId);
                 appendAgentTurn("Connection Error: " + err.message);
             } finally {
-                btnDispatch.disabled = false;
-                userTextarea.focus();
+                btnSendDispatch.disabled = false;
+                userPromptInput.focus();
                 scrollChat();
             }
         }
 
         function appendUserTurn(text) {
             const turn = document.createElement('div');
-            turn.className = 'msg-turn user';
+            turn.className = 'msg-turn-box user';
+            const name = currentUser ? (currentUser.display_name || currentUser.username) : 'You';
             turn.innerHTML = `
-                <div class="msg-meta-header">
-                    <span>You</span>
-                </div>
-                <div class="msg-bubble-user">${escapeHtml(text)}</div>
+                <div class="msg-origin-tag"><span>${escapeHtml(name)}</span></div>
+                <div class="user-bubble-card">${escapeHtml(text)}</div>
             `;
-            chatFeed.appendChild(turn);
+            chatStreamWidth.appendChild(turn);
         }
 
         function appendAgentTurn(replyText, tools = []) {
             const turn = document.createElement('div');
-            turn.className = 'msg-turn';
+            turn.className = 'msg-turn-box';
 
             let toolsHtml = '';
             if (tools && tools.length > 0) {
                 tools.forEach((t, i) => {
-                    const tName = t.name || 'tool_executed';
+                    const tName = t.name || 'tool_call';
                     const argsStr = JSON.stringify(t.args || {});
                     let outputStr = '';
                     if (t.output) {
-                        if (typeof t.output === 'object') {
-                            outputStr = JSON.stringify(t.output, null, 2);
-                        } else {
-                            outputStr = String(t.output);
-                        }
+                        outputStr = (typeof t.output === 'object') ? JSON.stringify(t.output, null, 2) : String(t.output);
                     }
 
                     toolsHtml += `
-                        <div class="tool-drawer" id="td_${i}_${Date.now()}">
-                            <div class="tool-header-bar" onclick="toggleToolDrawer(this.parentElement)">
-                                <div class="tool-tag">
-                                    <span class="tool-name-badge">${escapeHtml(tName)}</span>
-                                    <span class="tool-arg-preview">${escapeHtml(argsStr)}</span>
+                        <div class="terminal-tool-drawer" onclick="this.classList.toggle('expanded')">
+                            <div class="drawer-header">
+                                <div class="tool-title-group">
+                                    <span class="tool-badge-pill">${escapeHtml(tName)}</span>
+                                    <span class="tool-args-snippet">${escapeHtml(argsStr)}</span>
                                 </div>
-                                <div class="tool-status-pill">
+                                <div class="tool-status-emerald">
                                     <span>completed</span>
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                                 </div>
                             </div>
-                            <div class="tool-body-pane">${escapeHtml(outputStr || 'Success')}</div>
+                            <div class="drawer-console-view">${escapeHtml(outputStr || 'Success')}</div>
                         </div>
                     `;
                 });
@@ -1395,31 +2029,25 @@
             const copyPayload = escapeQuotes(replyText);
 
             turn.innerHTML = `
-                <div class="msg-meta-header">
-                    <span>AURA</span>
-                </div>
-                <div class="msg-agent-card">
+                <div class="msg-origin-tag"><span>AURA Core</span></div>
+                <div class="assistant-response-card">
                     ${toolsHtml}
-                    <div class="agent-text-content">${cleanFormatted}</div>
-                    <div class="msg-action-strip">
-                        <button class="btn-action-text" onclick="copyResponse('${copyPayload}', this)">
+                    <div class="assistant-body-text">${cleanFormatted}</div>
+                    <div class="msg-action-bar">
+                        <button class="btn-msg-copy" onclick="copyResponse('${copyPayload}', this)">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            Copy
+                            Copy Response
                         </button>
                     </div>
                 </div>
             `;
-            chatFeed.appendChild(turn);
-        }
-
-        function toggleToolDrawer(el) {
-            el.classList.toggle('expanded');
+            chatStreamWidth.appendChild(turn);
         }
 
         function appendWorkingIndicator() {
-            const id = 'working_' + Date.now();
+            const id = 'work_' + Date.now();
             const turn = document.createElement('div');
-            turn.className = 'msg-turn';
+            turn.className = 'msg-turn-box';
             turn.id = id;
             turn.innerHTML = `
                 <div class="working-indicator">
@@ -1427,7 +2055,7 @@
                     <span>Reasoning and executing tool operations...</span>
                 </div>
             `;
-            chatFeed.appendChild(turn);
+            chatStreamWidth.appendChild(turn);
             return id;
         }
 
@@ -1437,86 +2065,76 @@
         }
 
         function scrollChat() {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        async function resetThread() {
-            try {
-                await fetch('/api/chat/new', { method: 'POST' });
-            } catch (e) {}
-            chatFeed.innerHTML = '';
-            if (emptyView) {
-                emptyView.style.display = 'flex';
-                chatFeed.appendChild(emptyView);
-            }
-            userTextarea.focus();
+            chatScrollContainer.scrollTop = chatScrollContainer.scrollHeight;
         }
 
         function copyResponse(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
-                const oldText = btn.innerHTML;
+                const old = btn.innerHTML;
                 btn.innerHTML = '✓ Copied';
                 btn.style.color = '#38bdf8';
                 setTimeout(() => {
-                    btn.innerHTML = oldText;
+                    btn.innerHTML = old;
                     btn.style.color = '';
                 }, 1500);
             });
         }
 
-        // Settings API
-        async function loadSettings() {
-            try {
-                const res = await fetch('/api/settings');
-                const conf = await res.json();
-                if (conf.brain_settings) {
-                    document.getElementById('selectModelCore').value = conf.brain_settings.active_model || 'gemini-3.1-flash-lite';
-                    document.getElementById('sliderTemp').value = conf.brain_settings.temperature || 0.2;
-                    document.getElementById('tempIndicator').innerText = conf.brain_settings.temperature || 0.2;
-                }
-                if (conf.security_and_permissions) {
-                    document.getElementById('selectExecMode').value = conf.security_and_permissions.execution_mode || 'auto_pilot';
-                    document.getElementById('selectBrowserVisibility').value = conf.security_and_permissions.browser_headless_mode ? 'headless' : 'visible';
-                }
-            } catch (e) {
-                console.error("Settings load error:", e);
-            }
-        }
+        // Settings Modal triggers
+        btnOpenSettings.addEventListener('click', () => openSettingsModal('pane-profile'));
+        userProfileTile.addEventListener('click', () => openSettingsModal('pane-profile'));
+        btnMemoryVaultTop.addEventListener('click', () => openSettingsModal('pane-vault'));
+        document.getElementById('btnModelBadge').addEventListener('click', () => openSettingsModal('pane-intelligence'));
 
-        btnSaveConfig.addEventListener('click', async () => {
-            const payload = {
-                brain_settings: {
-                    active_model: document.getElementById('selectModelCore').value,
-                    temperature: parseFloat(document.getElementById('sliderTemp').value)
-                },
-                security_and_permissions: {
-                    execution_mode: document.getElementById('selectExecMode').value,
-                    browser_headless_mode: document.getElementById('selectBrowserVisibility').value === 'headless'
-                }
-            };
+        btnCloseSettingsDialog.addEventListener('click', () => settingsModalShade.classList.remove('open'));
+        btnCancelSettingsDialog.addEventListener('click', () => settingsModalShade.classList.remove('open'));
 
-            try {
-                await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                closeModal();
-            } catch (e) {
-                alert("Failed to save: " + e.message);
-            }
+        document.querySelectorAll('.dialog-tab-item').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.dialog-tab-item').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.dialog-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                const target = document.getElementById(tab.getAttribute('data-pane'));
+                if (target) target.classList.add('active');
+                if (tab.getAttribute('data-pane') === 'pane-vault') loadUserMemories();
+            });
         });
 
-        // Memories API
-        async function fetchMemories() {
-            const tbody = document.getElementById('factsBody');
+        function openSettingsModal(paneId = 'pane-profile') {
+            settingsModalShade.classList.add('open');
+            document.querySelectorAll('.dialog-tab-item').forEach(t => {
+                t.classList.toggle('active', t.getAttribute('data-pane') === paneId);
+            });
+            document.querySelectorAll('.dialog-pane').forEach(p => {
+                p.classList.toggle('active', p.id === paneId);
+            });
+            if (paneId === 'pane-vault') loadUserMemories();
+        }
+
+        // Themes engine
+        function applyTheme(themeName, el) {
+            document.body.className = themeName === 'default' ? '' : 'theme-' + themeName;
+            document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
+            if (el) el.classList.add('active');
+            localStorage.setItem('aura_theme', themeName);
+        }
+
+        // Restore saved theme on startup
+        const savedTheme = localStorage.getItem('aura_theme') || 'default';
+        if (savedTheme !== 'default') applyTheme(savedTheme);
+
+        // Memory Vault API
+        async function loadUserMemories() {
+            const tbody = document.getElementById('memoriesTbody');
             tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Fetching from SQLite...</td></tr>';
             try {
-                const res = await fetch('/api/memory');
+                const res = await fetch('/api/memory', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
                 const data = await res.json();
                 if (data.success && data.memories) {
                     if (data.memories.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No facts remembered in database.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No facts remembered in your database yet.</td></tr>';
                         return;
                     }
                     tbody.innerHTML = '';
@@ -1526,7 +2144,7 @@
                             <td class="fact-key">${escapeHtml(m.key)}</td>
                             <td>${escapeHtml(m.value)}</td>
                             <td>
-                                <button class="btn-action-text" onclick="deleteFact('${escapeQuotes(m.key)}')">Delete</button>
+                                <button class="btn-top-util" onclick="deleteUserFact('${escapeQuotes(m.key)}')">Delete</button>
                             </td>
                         `;
                         tbody.appendChild(tr);
@@ -1537,56 +2155,63 @@
             }
         }
 
-        async function deleteFact(key) {
+        async function deleteUserFact(key) {
             if (!confirm(`Delete memory fact "${key}"?`)) return;
             try {
                 await fetch('/api/memory/delete', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key: key })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ key })
                 });
-                fetchMemories();
+                loadUserMemories();
             } catch (e) {
-                alert("Failed to delete: " + e.message);
+                alert("Delete error: " + e.message);
             }
         }
+
+        // Save All Settings
+        btnSaveAllSettings.addEventListener('click', async () => {
+            const newDispName = document.getElementById('profDisplayName').value.trim();
+            if (currentUser && newDispName) {
+                currentUser.display_name = newDispName;
+                updateUserUI();
+            }
+
+            const model = document.getElementById('selectModelEngine').value;
+            document.getElementById('activeModelLabel').innerText = model;
+
+            settingsModalShade.classList.remove('open');
+            alert("Settings saved successfully!");
+        });
 
         // Markdown Formatter
         function formatMarkdown(md) {
             if (!md) return '';
             let s = md;
-
-            // Code blocks
             s = s.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
+                return `<pre style="background:#07090f; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; margin:8px 0; overflow-x:auto; font-family:var(--font-code); color:#38bdf8;"><code>${escapeHtml(code.trim())}</code></pre>`;
             });
-
-            // Inline code
-            s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-            // Bold
-            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-            // Line breaks
+            s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.06); padding:2px 5px; border-radius:4px; font-family:var(--font-code);">$1</code>');
+            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text-title);">$1</strong>');
             s = s.replace(/\n/g, '<br>');
-
             return s;
         }
 
         function escapeHtml(str) {
             if (!str) return '';
-            return str
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
         function escapeQuotes(str) {
             if (!str) return '';
             return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
         }
+
+        // Start App
+        initAppSession();
     </script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 {
   "system": {
     "agent_name": "AURA",
-    "creator": "Mohammed Touffeq",
-    "version": "4.0.0",
+    "creator": "AURA Technologies Inc.",
+    "version": "4.2.0",
     "environment": "production"
   },
   "brain_settings": {
@@ -13,7 +13,7 @@
     "top_p": 0.95,
     "max_output_tokens": 4096,
     "thinking_budget_level": "medium",
-    "custom_system_instruction": "You are AURA, an elite autonomous AI created by Mohammed Touffeq. Solve problems directly by taking real action."
+    "custom_system_instruction": "You are AURA, an elite autonomous AI developer and automation workspace. Solve problems directly by taking real hardware action, managing files, and maintaining persistent memory for the user."
   },
   "security_and_permissions": {
     "execution_mode": "auto_pilot",
