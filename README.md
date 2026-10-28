@@ -1,80 +1,68 @@
-# AURA AGENT (Autonomous Universal Robotics & Automation)
+# AURA AGENT
 
-> **The Definitive Autonomous Super-Agent Architecture**  
-> Unified orchestration combining 32 world-class open-source AI engines (nearly 300,000 live source files) into a single master control system.
+AURA is an early-stage project exploring a local, human-supervised AI automation system. The repository currently contains a Gemini-backed Python CLI prototype, a kinetic static UI preview, and 32 upstream Git submodule pointers. It is not a trained language model, a fully integrated agent platform, or a verified production system.
 
----
+## What is in the repository
 
-## 🌟 The 32 Mounted Super-Engines (298,165 Live Source Files)
+- `.gitmodules` declares 32 upstream repositories under `engines/`. Each submodule entry is a pinned Git pointer; it does not mean that the source is downloaded, imported, or integrated.
+- `aura_brain.py` sends requests to the configured Gemini API and declares eight Python tools for shell execution, browser launch, webpage reading, file read/write, SQLite memory, and screenshots.
+- `aura_chat.py` is a local terminal loop around `AuraBrain`. It now reports whether a key is configured, but the network connection is only tested when the first request runs.
+- `aura_memory.db` is created locally by the Python brain and is ignored by Git.
+- `index.html` is a self-contained kinetic interface preview. It does not call Gemini, connect to the CLI, read the SQLite database, or execute the prompts it displays.
+- `engine_auditor.py` reports declared submodule metadata and local checkout status. It does not test compatibility, safety, or runtime integration.
+- `setup_engines.py` lists registry entries by default. Source downloads require an explicit `--init` selection or `--all`.
 
-### 1. OS & Desktop Automation
-* **Open-Interpreter** (`openinterpreter/open-interpreter`): Native PowerShell, mouse, keyboard & screen automation.
+## Important tool-safety limitation
 
-### 2. Autonomous Web & Browser
-* **Browser-Use** (`browser-use/browser-use`): Vision & LLM-driven browser navigation.
-* **Playwright** (`microsoft/playwright-python`): Deterministic high-speed browser engine.
-* **Skyvern** (`Skyvern-AI/skyvern`): Computer-vision browser automation for complex dynamic sites.
-* **Stagehand** (`browserbase/stagehand`): AI-assisted web actions and resilient extraction.
+The current Python CLI is not safe for unattended automation. When Gemini requests a registered function, `aura_brain.py` executes it immediately. In particular, the shell tool accepts arbitrary PowerShell commands, file writes are not restricted to a workspace, and webpage fetching has no URL allow-list. `aura_settings.py` and `aura_config.json` do not currently enforce approval gates in the brain. Do not expose this CLI as a web service or run it with sensitive access until a permission system, isolation, and user approvals are implemented and tested.
 
-### 3. Autonomous Software Engineering
-* **Aider** (`Aider-AI/aider`): Real-time code patching & terminal pair programming.
-* **OpenHands** (`All-Hands-AI/OpenHands`): End-to-end software development agent.
+The browser UI is disconnected and makes no network calls. Its controls only affect the local preview, while prompt examples and the composer are demonstrations. A real web client needs an authenticated local API, scoped tool permissions, explicit approvals, request cancellation, and protection against browser prompt injection before it should connect to the CLI.
 
-### 4. Multi-Agent Swarms & Orchestration
-* **CrewAI** (`crewAIInc/crewAI`): Multi-agent role swarm orchestration.
-* **LangGraph** (`langchain-ai/langgraph`): Cyclic state graphs & human-in-the-loop workflows.
-* **Microsoft Agent Framework** (`microsoft/agent-framework`): Enterprise async agent service bus.
-* **OpenAI Agents SDK** (`openai/openai-agents-python`): Tool safety guardrails and agent delegation.
-* **Semantic Kernel** (`microsoft/semantic-kernel`): Enterprise AI orchestration kernel.
+## Getting started
 
-### 5. Reasoning, Typed Logic & Prompts
-* **LiteLLM** (`BerriAI/litellm`): Universal router supporting 100+ model backends.
-* **PydanticAI** (`pydantic/pydantic-ai`): Type-safe structured output validation.
-* **DSPy** (`stanfordnlp/dspy`): Self-optimizing prompt compilation.
+Requirements: Python 3.10 or newer. The core client uses Python's standard library. The Gemini API requires a key in a local `.env` file next to `aura_brain.py`:
 
-### 6. Long-Term Memory, RAG & Vector Storage
-* **Haystack** (`deepset-ai/haystack`): Production-grade neural search pipelines.
-* **LlamaIndex** (`run-llama/llama_index`): Business document intelligence and retrieval.
-* **Qdrant** (`qdrant/qdrant`): Ultra-fast vector similarity search engine.
-* **pgvector** (`pgvector/pgvector`): PostgreSQL-native vector search.
+    GEMINI_API_KEY=your_key_here
 
-### 7. SaaS Integrations & Connected Tools
-* **Dify** (`langgenius/dify`): Visual workflow application hub.
-* **n8n** (`n8n-io/n8n`): 400+ connected SaaS integrations.
-* **Activepieces** (`activepieces/activepieces`): Open-source enterprise business automations.
-* **Composio** (`ComposioHQ/composio`): Production tool integration platform (GitHub, Slack, Google).
-* **Model Context Protocol (MCP)** (`modelcontextprotocol/python-sdk`): Standardized AI tools protocol.
+Keep `.env` private; it is ignored by Git. Starting the CLI creates/opens `aura_memory.db` and may send prompts to Google's Gemini API. The model and connection have not been verified by this documentation.
 
-### 8. Fault-Tolerant Task Reliability
-* **Temporal** (`temporalio/temporal`): Crash-proof state recovery for long-running workflows.
-* **Prefect** (`PrefectHQ/prefect`): Resilient pipeline scheduling and monitoring.
+From the repository root:
 
-### 9. Offline & High-Throughput Inference
-* **llama.cpp** (`ggml-org/llama.cpp`): Quantized C/C++ local model execution.
-* **Ollama** (`ollama/ollama`): Local model lifecycle management.
-* **Transformers** (`huggingface/transformers`): World-standard model hub & fine-tuning.
-* **vLLM** (`vllm-project/vllm`): High-throughput GPU inference serving.
+    python aura_chat.py
+    python aura_agent.py --json
+    python setup_engines.py --list
+    python -B -m unittest discover -v
 
-### 10. Observability & Telemetry
-* **Langfuse** (`langfuse/langfuse`): Production LLM observability, cost & latency analytics.
-* **Arize Phoenix** (`Arize-ai/phoenix`): Evaluation, tracing & debugging.
+The UI preview can be opened directly as `index.html`. It is intentionally not wired to the CLI.
 
----
+To download only selected upstream source:
 
-## 🚀 Live Verification
+    python setup_engines.py --init open-interpreter
 
-```bash
-python aura_agent.py
-```
-Output:
-```text
-[*] AURA Master Super-Agent v4.0.0 (Universe Edition) - ALL 32 ENGINES VERIFIED:
-[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: 298,165
-[*] Pipeline Status: ALL_32_ENGINES_ACTIVE_AND_SYNCHRONIZED (Exit Code 0)
-```
+To download all 32 repositories (which may use substantial time, bandwidth, and disk):
 
----
+    python setup_engines.py --all
 
-## 🛡️ Attribution & License
-All integrated engines are open-source and governed by their respective licenses (MIT / Apache 2.0).  
-Architecture designed by **Mohammed Touffeq** with Antigravity.
+Downloaded upstream code is not executed or verified by Aura. Review the pinned commit, dependencies, maintenance, security posture, license, and redistribution obligations before using or shipping any upstream project.
+
+## Registry inventory
+
+The declared repositories span desktop automation, browser automation, coding assistance, orchestration, model interfaces, retrieval and storage, integrations, durable workflows, inference, and observability. Exact URLs and pinned commits are in `.gitmodules` and the parent Git tree. `REPOSITORIES_PROOF.md` documents the limits of this inventory.
+
+## Engineering direction
+
+Build one narrow, reviewable vertical slice at a time:
+
+1. Define supported tasks, trust boundaries, and prohibited actions.
+2. Add durable task state with cancellation, retries, and audit events.
+3. Use a typed model adapter and keep provider credentials out of the browser.
+4. Add low-risk integrations with least privilege, dry-run previews, idempotency, and approvals for external changes.
+5. Isolate browser workflows and evaluate prompt injection, secrets, downloads, and destructive actions.
+6. Add evaluations for task completion, correctness, safe refusal, latency, and cost.
+7. Add privacy controls, redaction, retention limits, and opt-out before telemetry.
+
+Combining repositories does not train a model or automatically combine capabilities. Model quality requires a suitable base model, data rights, curated data, compute, evaluation, and iteration. This project makes no claim of guaranteed expertise, 95% automation, reliability, or superiority over other assistants.
+
+## Upstream identity and licensing
+
+Aura branding applies only to Aura-authored material. Upstream project names, ownership, notices, trademarks, and license terms remain with their respective maintainers. This repository does not claim to own or relicense submodules. Review each pinned revision's license and notices before packaging, modifying, or redistributing upstream source.
