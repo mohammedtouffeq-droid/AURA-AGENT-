@@ -127,3 +127,30 @@
 [submodule "engines/screenpipe"]
 	path = engines/screenpipe
 	url = https://github.com/screenpipe/screenpipe.git
+[submodule "engines/ShowUI"]
+	path = engines/ShowUI
+	url = https://github.com/showlab/ShowUI.git
+[submodule "engines/midscene"]
+	path = engines/midscene
+	url = https://github.com/web-infra-dev/midscene.git
+[submodule "engines/owl"]
+	path = engines/owl
+	url = https://github.com/camel-ai/owl.git
+[submodule "engines/OSWorld-G"]
+	path = engines/OSWorld-G
+	url = https://github.com/xlang-ai/OSWorld-G.git
+[submodule "engines/self-operating-computer"]
+	path = engines/self-operating-computer
+	url = https://github.com/OthersideAI/self-operating-computer.git
+[submodule "engines/pywinauto"]
+	path = engines/pywinauto
+	url = https://github.com/pywinauto/pywinauto.git
+[submodule "engines/pyautogui"]
+	path = engines/pyautogui
+	url = https://github.com/asweigart/pyautogui.git
+[submodule "engines/mem0"]
+	path = engines/mem0
+	url = https://github.com/mem0ai/mem0.git
+[submodule "engines/Qwen-Agent"]
+	path = engines/Qwen-Agent
+	url = https://github.com/QwenLM/Qwen-Agent.git

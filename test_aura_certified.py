@@ -40,6 +40,9 @@ from aura_brain import (
     tool_gui_click_and_type,
     tool_windows_app_control,
     tool_parse_screen_ui,
+    tool_browser_action,
+    tool_screen_grounding_coordinates,
+    tool_mem0_persistent_memory,
     AuraBrain,
     SAFE_WORKSPACE_ROOTS,
     STRICTLY_FORBIDDEN_PATHS
@@ -261,12 +264,41 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertGreater(res.get("screen_width", 0), 0)
         self.assertGreater(res.get("screen_height", 0), 0)
 
-    def test_25_engine_mesh_catalog_43(self):
+    def test_25_engine_mesh_catalog_52(self):
         engines = aura_agent.AURA_AGENT.get_engine_list()
-        self.assertEqual(len(engines), 43)
+        self.assertEqual(len(engines), 52)
         engine_keys = [e["key"] for e in engines]
-        for expected in ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "terminator", "OS-Copilot", "Cradle", "screenpipe"]:
+        expected_all = [
+            "ShowUI", "midscene", "owl", "OSWorld-G", "self-operating-computer",
+            "pywinauto", "pyautogui", "mem0", "Qwen-Agent", "llama.cpp",
+            "Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "terminator"
+        ]
+        for expected in expected_all:
             self.assertIn(expected, engine_keys)
+
+    def test_26_tool_browser_action(self):
+        res = tool_browser_action(action="verify", url="https://example.com", expected_text="Example")
+        self.assertTrue(res.get("success"))
+        self.assertIn("verified", res)
+
+    def test_27_tool_screen_grounding_coordinates(self):
+        res = tool_screen_grounding_coordinates("center")
+        self.assertTrue(res.get("success"))
+        self.assertIn("grounded_x", res)
+        self.assertIn("grounded_y", res)
+        self.assertGreater(res.get("grounded_x"), 0)
+        self.assertGreater(res.get("grounded_y"), 0)
+
+    def test_28_tool_mem0_persistent_memory(self):
+        # Store memory
+        res_store = tool_mem0_persistent_memory(action="store", key="test_code_pref", value="TypeScript + Python", category="coding")
+        self.assertTrue(res_store.get("success"))
+        self.assertEqual(res_store.get("action"), "stored")
+
+        # Recall memory
+        res_recall = tool_mem0_persistent_memory(action="recall", key="test_code_pref")
+        self.assertTrue(res_recall.get("success"))
+        self.assertGreater(res_recall.get("total_facts", 0), 0)
 
 
 if __name__ == "__main__":

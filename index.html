@@ -1643,7 +1643,7 @@
                 <div class="dialog-sidebar">
                     <button class="dialog-tab-item active" data-pane="pane-profile">Account & Profile</button>
                     <button class="dialog-tab-item" data-pane="pane-intelligence">AI Intelligence Core</button>
-                    <button class="dialog-tab-item" data-pane="pane-engines">43-Engine Mesh</button>
+                    <button class="dialog-tab-item" data-pane="pane-engines">52-Engine Mesh</button>
                     <button class="dialog-tab-item" data-pane="pane-themes">Themes & Visuals</button>
                     <button class="dialog-tab-item" data-pane="pane-permissions">Security & Sandbox</button>
                     <button class="dialog-tab-item" data-pane="pane-vault">Memory Vault</button>
@@ -1728,11 +1728,11 @@
                     </div>
                 </div>
 
-                <!-- Pane: 43-Engine Mesh -->
+                <!-- Pane: 52-Engine Mesh -->
                 <div class="dialog-pane" id="pane-engines">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                         <div>
-                            <h4 style="font-size:13.5px; font-weight:600; color:var(--text-title);">43 Cloned Upstream Repositories</h4>
+                            <h4 style="font-size:13.5px; font-weight:600; color:var(--text-title);">52 Cloned Upstream Repositories</h4>
                             <p class="form-helper" style="margin-bottom:0">350,000+ active open-source files mounted in <code>c:\Users\hp\AURA-Agent\engines</code>.</p>
                         </div>
                         <button class="btn-top-util" onclick="loadEngineMesh()">Refresh Mesh</button>
@@ -1743,7 +1743,7 @@
                     </div>
 
                     <div id="enginesMeshGrid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px;">
-                        <div style="color:var(--text-muted); font-size:12px; grid-column:span 2; text-align:center; padding:20px;">Loading 43 engines...</div>
+                        <div style="color:var(--text-muted); font-size:12px; grid-column:span 2; text-align:center; padding:20px;">Loading 52 engines...</div>
                     </div>
                 </div>
 
@@ -3012,11 +3012,11 @@ ${p.description ? `**Scope & Requirements:**\n> ${p.description}\n\n` : ''}Ready
         const savedTheme = localStorage.getItem('aura_theme') || 'default';
         if (savedTheme !== 'default') applyTheme(savedTheme);
 
-        // 43 Engine Mesh API
+        // 52 Engine Mesh API
         let cachedEngines = [];
         async function loadEngineMesh() {
             const grid = document.getElementById('enginesMeshGrid');
-            grid.innerHTML = '<div style="color:var(--text-muted); font-size:12px; grid-column:span 2; text-align:center; padding:20px;">Auditing 43 local engine repositories...</div>';
+            grid.innerHTML = '<div style="color:var(--text-muted); font-size:12px; grid-column:span 2; text-align:center; padding:20px;">Auditing 52 local engine repositories...</div>';
             try {
                 const res = await fetch('/api/engines');
                 const data = await res.json();
