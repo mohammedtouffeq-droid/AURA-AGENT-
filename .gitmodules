@@ -169,3 +169,21 @@
 [submodule "engines/undetected-chromedriver"]
 	path = engines/undetected-chromedriver
 	url = https://github.com/ultrafunkamsterdam/undetected-chromedriver.git
+[submodule "engines/markitdown"]
+	path = engines/markitdown
+	url = https://github.com/microsoft/markitdown.git
+[submodule "engines/yt-dlp"]
+	path = engines/yt-dlp
+	url = https://github.com/yt-dlp/yt-dlp.git
+[submodule "engines/scrcpy"]
+	path = engines/scrcpy
+	url = https://github.com/Genymobile/scrcpy.git
+[submodule "engines/AutoGPT"]
+	path = engines/AutoGPT
+	url = https://github.com/Significant-Gravitas/AutoGPT.git
+[submodule "engines/hermes-agent"]
+	path = engines/hermes-agent
+	url = https://github.com/NousResearch/hermes-agent.git
+[submodule "engines/PowerToys"]
+	path = engines/PowerToys
+	url = https://github.com/microsoft/PowerToys.git

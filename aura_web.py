@@ -358,7 +358,7 @@ def run():
     print(f"[*] Local Access URL         : {url}")
     print("[*] Multi-User Auth SQLite   : ACTIVE (aura_workspace.db)")
     print("[*] Security Sandbox Guard   : ACTIVE (PathGuard & CommandGuard)")
-    print("[*] ReAct Gemini Brain       : READY (Multimodal & 57 Engines)")
+    print("[*] ReAct Gemini Brain       : READY (Multimodal & 63 Engines)")
     print("-" * 65)
 
     try:

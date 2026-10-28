@@ -47,6 +47,12 @@ from aura_brain import (
     tool_instagram_manager,
     tool_github_manager,
     tool_hyperbrowser_session,
+    tool_markitdown_convert,
+    tool_media_extract_ytdlp,
+    tool_scrcpy_mobile_bridge,
+    tool_autogpt_recursive_planner,
+    tool_powertoys_ocr,
+    tool_hermes_structured_agent,
     AuraBrain,
     SAFE_WORKSPACE_ROOTS,
     STRICTLY_FORBIDDEN_PATHS
@@ -268,15 +274,16 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertGreater(res.get("screen_width", 0), 0)
         self.assertGreater(res.get("screen_height", 0), 0)
 
-    def test_25_engine_mesh_catalog_57(self):
+    def test_25_engine_mesh_catalog_63(self):
         engines = aura_agent.AURA_AGENT.get_engine_list()
-        self.assertEqual(len(engines), 57)
+        self.assertEqual(len(engines), 63)
         engine_keys = [e["key"] for e in engines]
         expected_all = [
             "hyperbrowser", "whatsapp-web.js", "instaloader", "PyGithub", "undetected-chromedriver",
             "ShowUI", "midscene", "owl", "OSWorld-G", "self-operating-computer",
             "pywinauto", "pyautogui", "mem0", "Qwen-Agent", "llama.cpp",
-            "Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "terminator"
+            "Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "terminator",
+            "markitdown", "yt-dlp", "scrcpy", "AutoGPT", "hermes-agent", "PowerToys"
         ]
         for expected in expected_all:
             self.assertIn(expected, engine_keys)
@@ -367,6 +374,71 @@ class TestAuraProductionCertification(unittest.TestCase):
         )
         self.assertTrue(res.get("success"))
         self.assertEqual(res.get("user"), "mohammedtouffeq-droid")
+
+    def test_34_tool_markitdown_convert(self):
+        # Create a temporary workspace file and convert it
+        sample_doc = ROOT / "workspace" / "audit_test.csv"
+        sample_doc.parent.mkdir(exist_ok=True)
+        sample_doc.write_text("Engine,Stars,Status\nMarkItDown,192000,Active\nyt-dlp,200000,Active\n", encoding="utf-8")
+        res = tool_markitdown_convert("workspace/audit_test.csv")
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("engine"), "microsoft/markitdown")
+        self.assertIn("MarkItDown", res.get("markdown_preview", ""))
+
+    def test_35_tool_media_extract_ytdlp_security_and_execution(self):
+        # In request_review mode without approval, blocked by security jail
+        blocked = tool_media_extract_ytdlp(
+            url="https://www.youtube.com/watch?v=sample",
+            extract_audio=True,
+            permission_mode="request_review",
+            approved=False
+        )
+        self.assertFalse(blocked.get("success"))
+        self.assertTrue(blocked.get("requires_approval"))
+        self.assertTrue(blocked.get("security_jail"))
+
+        # In auto_pilot mode, executes cleanly
+        allowed = tool_media_extract_ytdlp(
+            url="https://www.youtube.com/watch?v=sample",
+            extract_audio=True,
+            permission_mode="auto_pilot"
+        )
+        self.assertTrue(allowed.get("success"))
+        self.assertEqual(allowed.get("engine"), "yt-dlp/yt-dlp")
+
+    def test_36_tool_scrcpy_mobile_bridge(self):
+        # Device status inspection
+        status = tool_scrcpy_mobile_bridge(action="device_status")
+        self.assertTrue(status.get("success"))
+        self.assertEqual(status.get("engine"), "Genymobile/scrcpy")
+
+        # Security jail blocks unauthorized tap in review mode
+        blocked = tool_scrcpy_mobile_bridge(
+            action="tap",
+            command="tap 500 500",
+            permission_mode="request_review",
+            approved=False
+        )
+        self.assertFalse(blocked.get("success"))
+        self.assertTrue(blocked.get("requires_approval"))
+
+    def test_37_tool_autogpt_recursive_planner(self):
+        res = tool_autogpt_recursive_planner(goal="Construct autonomous trading bot with risk limits")
+        self.assertTrue(res.get("success"))
+        plan = res.get("plan", {})
+        self.assertEqual(plan.get("engine"), "Significant-Gravitas/AutoGPT")
+        self.assertGreaterEqual(len(plan.get("milestones", [])), 4)
+
+    def test_38_tool_powertoys_ocr(self):
+        res = tool_powertoys_ocr(screen_crop=False)
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("engine"), "microsoft/PowerToys")
+
+    def test_39_tool_hermes_structured_agent(self):
+        res = tool_hermes_structured_agent("Decide next step for web automation")
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("engine"), "NousResearch/hermes-agent")
+        self.assertIn("function_call", res.get("structured_output", {}))
 
 
 if __name__ == "__main__":

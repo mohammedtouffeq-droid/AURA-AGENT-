@@ -114,15 +114,24 @@ ALL_32_ENGINES = [
     ("whatsapp-web.js", "WhatsApp Web Automation Engine", "Social & Session Automation", 186, "Local WhatsApp Web client for reading chats, status, and sending verified messages."),
     ("instaloader", "Instaloader Profile & Story Scraper", "Social & Session Automation", 78, "Reads Instagram public profiles, stories, comments, and direct message activity."),
     ("PyGithub", "PyGithub Enterprise GitHub API", "Social & Session Automation", 1504, "Full GitHub API client inspecting user repositories, commits, issues, and pull requests."),
-    ("undetected-chromedriver", "Undetected ChromeDriver Anti-Bot", "Social & Session Automation", 15, "Stealth browser automation driver bypassing anti-bot screens for personal profile sessions.")
+    ("undetected-chromedriver", "Undetected ChromeDriver Anti-Bot", "Social & Session Automation", 15, "Stealth browser automation driver bypassing anti-bot screens for personal profile sessions."),
+
+    # 6 Elite Viral Powerhouse Engines (63-Engine Master Universe)
+    ("markitdown", "Microsoft MarkItDown Document Converter", "Document & Knowledge Intelligence", 197, "Converts Word, Excel, PowerPoint, and PDF files into clean Markdown for AI reading."),
+    ("yt-dlp", "yt-dlp Multimedia & Audio Extractor", "Multimedia & Audio Processing", 1235, "Extracts audio, video streams, subtitles and transcripts from YouTube, reels, and web media."),
+    ("scrcpy", "Genymobile scrcpy Android Screen Bridge", "Mobile & Hardware Control", 387, "High-performance low-latency Android device screen mirror and touch controller via USB/ADB."),
+    ("AutoGPT", "AutoGPT Recursive Goal Orchestrator", "Multi-Agent Swarm", 10246, "Goal-driven hierarchical task decomposition and long-running autonomous execution loop."),
+    ("hermes-agent", "Nous Hermes Open-Agent Tool Executor", "Local AI Inference", 21777, "World-class open-source function calling, tool use, and structured agent execution."),
+    ("PowerToys", "Microsoft PowerToys Windows Utilities", "Windows OS Automation", 9675, "Native Windows productivity utilities, offline OCR text extraction, and window management.")
 ]
 
-ALL_57_ENGINES = ALL_32_ENGINES
-ALL_52_ENGINES = ALL_57_ENGINES
-ALL_43_ENGINES = ALL_57_ENGINES
+ALL_63_ENGINES = ALL_32_ENGINES
+ALL_57_ENGINES = ALL_63_ENGINES
+ALL_52_ENGINES = ALL_63_ENGINES
+ALL_43_ENGINES = ALL_63_ENGINES
 
 # Add engine folders to sys.path
-for item in ALL_57_ENGINES:
+for item in ALL_63_ENGINES:
     key = item[0]
     p = ENGINES_DIR / key
     if p.exists():
@@ -189,16 +198,16 @@ class UniversalEngineBridge:
 
 
 # ===================================================================================
-# MASTER AURA SUPER-CONTROLLER (57-ENGINE UNIFIED CORE)
+# MASTER AURA SUPER-CONTROLLER (63-ENGINE UNIFIED CORE)
 # ===================================================================================
 class AuraAgent:
     """
-    Unified Super-Agent orchestrating all 57 Mounted Repositories.
+    Unified Super-Agent orchestrating all 63 Mounted Repositories.
     """
     def __init__(self):
         self.name = "AURA Master Super-Agent"
-        self.version = "5.5.0 (57-Engine Universe Edition)"
-        self.engines = {item[0]: UniversalEngineBridge(*item) for item in ALL_57_ENGINES}
+        self.version = "6.0.0 (63-Engine Super Universe Edition)"
+        self.engines = {item[0]: UniversalEngineBridge(*item) for item in ALL_63_ENGINES}
 
     def audit_all_engines(self) -> Dict[str, Any]:
         return {k: bridge.get_status() for k, bridge in self.engines.items()}
@@ -207,7 +216,7 @@ class AuraAgent:
         return [bridge.get_status() for bridge in self.engines.values()]
 
     def search_mesh_code(self, keyword: str, target_engine: Optional[str] = None, max_results: int = 6) -> List[Dict[str, Any]]:
-        """Searches across all 57 engines or a specific target engine."""
+        """Searches across all 63 engines or a specific target engine."""
         results = []
         if target_engine and target_engine in self.engines:
             return self.engines[target_engine].search_code(keyword, max_results=max_results)
@@ -229,18 +238,19 @@ class AuraAgent:
             "total_source_files": sum(e.file_count for e in self.engines.values() if e.is_mounted),
             "execution_mesh": [
                 {"phase": "1. Safety & Guardrails", "engines": ["OpenAI Agents SDK", "PydanticAI"]},
-                {"phase": "2. Graph Orchestration", "engines": ["LangGraph", "Semantic Kernel", "CrewAI", "Agent Framework", "OWL"]},
+                {"phase": "2. Graph Orchestration & Autonomous Loops", "engines": ["LangGraph", "Semantic Kernel", "CrewAI", "Agent Framework", "OWL", "AutoGPT"]},
                 {"phase": "3. Context, Long-Term Memory & RAG", "engines": ["LlamaIndex", "Haystack", "Qdrant", "pgvector", "Mem0"]},
-                {"phase": "4. Local & Cloud AI Runtimes", "engines": ["LiteLLM", "Ollama", "llama.cpp", "Transformers", "vLLM", "DSPy", "Qwen-Agent"]},
-                {"phase": "5. Autonomous Coding", "engines": ["OpenCode", "OpenHands", "Cline", "Aider", "Continue"]},
-                {"phase": "6. Web & Screen Vision Automation", "engines": ["Browser-Use", "Playwright", "Skyvern", "Stagehand", "ShowUI", "Midscene", "OSWorld-G", "Self-Operating-Computer"]},
-                {"phase": "7. Desktop & Native Windows Automation", "engines": ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "Terminator", "OS-Copilot", "Cradle", "Screenpipe", "pywinauto", "pyautogui"]},
-                {"phase": "8. Social & Session Automation", "engines": ["Hyperbrowser", "WhatsApp-Web.js", "Instaloader", "PyGithub", "Undetected-Chromedriver"]},
-                {"phase": "9. Connected Tools, SaaS & MCP", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
-                {"phase": "10. Fault-Tolerant Reliability", "engines": ["Temporal", "Prefect"]},
-                {"phase": "11. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
+                {"phase": "4. Local & Cloud AI Runtimes", "engines": ["LiteLLM", "Ollama", "llama.cpp", "Transformers", "vLLM", "DSPy", "Qwen-Agent", "Hermes-Agent"]},
+                {"phase": "5. Document & Multimedia Intelligence", "engines": ["MarkItDown", "yt-dlp"]},
+                {"phase": "6. Autonomous Coding", "engines": ["OpenCode", "OpenHands", "Cline", "Aider", "Continue"]},
+                {"phase": "7. Web & Screen Vision Automation", "engines": ["Browser-Use", "Playwright", "Skyvern", "Stagehand", "ShowUI", "Midscene", "OSWorld-G", "Self-Operating-Computer"]},
+                {"phase": "8. Desktop, Native Windows & Mobile Control", "engines": ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "Terminator", "OS-Copilot", "Cradle", "Screenpipe", "pywinauto", "pyautogui", "PowerToys", "scrcpy"]},
+                {"phase": "9. Social & Session Automation", "engines": ["Hyperbrowser", "WhatsApp-Web.js", "Instaloader", "PyGithub", "Undetected-Chromedriver"]},
+                {"phase": "10. Connected Tools, SaaS & MCP", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
+                {"phase": "11. Fault-Tolerant Reliability", "engines": ["Temporal", "Prefect"]},
+                {"phase": "12. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
             ],
-            "status": "ALL_57_ENGINES_ACTIVE_AND_SYNCHRONIZED"
+            "status": "ALL_63_ENGINES_ACTIVE_AND_SYNCHRONIZED"
         }
 
 
@@ -251,8 +261,8 @@ AURA_AGENT = AuraAgent()
 if __name__ == "__main__":
     aura = AURA_AGENT
     status = aura.audit_all_engines()
-    print(f"\n[*] {aura.name} v{aura.version} - ALL 57 ENGINES VERIFIED:")
+    print(f"\n[*] {aura.name} v{aura.version} - ALL 63 ENGINES VERIFIED:")
     total_files = sum(d["files_available"] for d in status.values())
     print(f"[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: {total_files}")
-    test_run = aura.execute_goal("Orchestrate complete 57-engine universe automation pipeline")
+    test_run = aura.execute_goal("Orchestrate complete 63-engine universe automation pipeline")
     print(f"[*] Pipeline Status: {test_run['status']}")
