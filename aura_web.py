@@ -1,112 +1,116 @@
-"""
-===================================================================================
-                     AURA AGENT - KINETIC WEB DESKTOP SERVER
-===================================================================================
-Lightweight server bridging the holographic kinetic UI directly to AURA's Brain.
-Runs out-of-the-box on standard Python with zero external pip dependencies.
-Author: Mohammed Touffeq & Antigravity
-===================================================================================
-"""
+"""Serve AURA's self-contained kinetic UI as a loopback-only static preview.
 
-import os
-import sys
-import json
+The chat/settings API routes from the initial prototype are intentionally disabled.
+Use aura_chat.py for Gemini CLI requests; the browser page cannot run local tools.
+"""
+from __future__ import annotations
+
 import webbrowser
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from urllib.parse import urlsplit
 
-# Add current folder to sys.path so aura_brain can be imported
+
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT))
-
-from aura_brain import AuraBrain
-from aura_settings import AuraSettingsManager
-
-BRAIN = AuraBrain()
-SETTINGS = AuraSettingsManager()
 PORT = 5050
+ALLOWED_HOST_NAMES = {"localhost", "127.0.0.1"}
 
 
 class AuraWebHandler(BaseHTTPRequestHandler):
-    def _send_json(self, data: Dict[str, Any], status: int = 200):
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode("utf-8"))
+    server_version = "AURA-Preview"
+    sys_version = ""
 
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
+    def log_message(self, format: str, *args: object) -> None:
+        # Keep preview logs concise and avoid echoing prompt-like request bodies.
+        print(f"[AURA preview] {self.address_string()} {format % args}")
 
-    def do_GET(self):
-        if self.path == "/" or self.path.startswith("/index.html"):
-            html_file = ROOT / "index.html"
-            if html_file.exists():
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.end_headers()
-                self.wfile.write(html_file.read_bytes())
-            else:
-                self.send_error(404, "index.html not found")
-        elif self.path == "/api/settings":
-            self._send_json(SETTINGS.config)
-        else:
-            self.send_error(404, "Not Found")
-
-    def do_POST(self):
-        content_length = int(self.headers.get("Content-Length", 0))
-        post_data = self.rfile.read(content_length).decode("utf-8")
+    def _host_is_local(self) -> bool:
+        host = self.headers.get("Host", "").casefold()
         try:
-            body = json.loads(post_data) if post_data else {}
-        except Exception:
-            body = {}
+            name, port_text = host.rsplit(":", 1)
+            port = int(port_text)
+        except (ValueError, TypeError):
+            return False
+        return (
+            name in ALLOWED_HOST_NAMES
+            and port == self.server.server_port
+            and self.client_address[0] in {"127.0.0.1", "::1"}
+        )
 
-        if self.path == "/api/chat":
-            prompt = body.get("prompt", "").strip()
-            if not prompt:
-                self._send_json({"reply": "Please enter an instruction."}, status=400)
-                return
+    def _send_page(self, page: bytes) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(page)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; "
+            "img-src 'self' data:; font-src 'self'; connect-src 'none'; "
+            "frame-ancestors 'none'; form-action 'none'; base-uri 'none'",
+        )
+        self.end_headers()
+        self.wfile.write(page)
 
-            print(f"\n[*] User Instruction via Web UI: '{prompt}'")
-            reply = BRAIN.think_and_act(prompt)
-            self._send_json({"reply": reply, "status": "completed"})
+    def _reject_nonlocal_host(self) -> bool:
+        if self._host_is_local():
+            return False
+        self.send_error(403, "Only localhost preview requests are accepted")
+        return True
 
-        elif self.path == "/api/settings":
-            # Update settings
-            for cat, opts in body.items():
-                if cat in SETTINGS.config and isinstance(opts, dict):
-                    SETTINGS.config[cat].update(opts)
-            SETTINGS.save_settings()
-            self._send_json({"success": True, "config": SETTINGS.config})
-        else:
+    def do_GET(self) -> None:
+        if self._reject_nonlocal_host():
+            return
+        route = urlsplit(self.path).path
+        if route not in {"/", "/index.html"}:
             self.send_error(404, "Not Found")
+            return
+        try:
+            page = (ROOT / "index.html").read_bytes()
+        except OSError:
+            self.send_error(404, "index.html not found")
+            return
+        self._send_page(page)
+
+    def do_POST(self) -> None:
+        if self._reject_nonlocal_host():
+            return
+        self.send_error(405, "This preview server has no chat or settings API")
+        self.send_header("Allow", "GET")
+
+    def do_OPTIONS(self) -> None:
+        if self._reject_nonlocal_host():
+            return
+        self.send_error(405, "Cross-origin/API requests are disabled")
+        self.send_header("Allow", "GET")
 
 
-def run():
-    server_address = ("127.0.0.1", PORT)
-    httpd = HTTPServer(server_address, AuraWebHandler)
-    url = f"http://localhost:{PORT}"
+def make_server(port: int = PORT) -> HTTPServer:
+    """Create a loopback-only static preview server."""
+    return HTTPServer(("127.0.0.1", port), AuraWebHandler)
+
+
+def run() -> None:
+    httpd = make_server()
+    url = f"http://127.0.0.1:{PORT}/"
     print("=" * 65)
-    print("        AURA AGENT - KINETIC HOLOGRAPHIC DESKTOP SERVER")
-    print("                 Created by Mohammed Touffeq")
+    print("        AURA AGENT - KINETIC UI PREVIEW")
     print("=" * 65)
-    print(f"[*] AURA Web UI Server Running at : {url}")
-    print("[*] Gemini 3.1 Next-Gen Brain    : ONLINE")
-    print("[*] Real Hardware Tool Execution : ACTIVE")
+    print(f"[*] Static preview : {url}")
+    print("[*] Chat/settings  : disabled in browser; use python aura_chat.py")
+    print("[*] Host binding   : loopback only")
+    print("[*] Stop server    : Ctrl+C")
     print("-" * 65)
-    
-    # Launch default browser automatically
+
     webbrowser.open(url)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n[*] Server stopped.")
+        print("\n[*] Preview server stopped.")
+    finally:
+        httpd.server_close()
 
 
 if __name__ == "__main__":
