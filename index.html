@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA — Autonomous Universal Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(18, 24, 38, 0.65);
+      --card-border: rgba(0, 255, 204, 0.2);
+      --accent: #00FFCC;
+      --accent-glow: rgba(0, 255, 204, 0.4);
+      --plasma: #9D00FF;
+      --plasma-glow: rgba(157, 0, 255, 0.4);
+      --gold: #FFD700;
+      --text: #F0F4F8;
+      --text-muted: #8E9FB5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Kinetic Background */
+    canvas#kineticCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.18;
+      z-index: 0;
+      pointer-events: none;
+      animation: drift 20s infinite alternate ease-in-out;
+    }
+    .glow-1 { top: -100px; left: -100px; background: var(--accent); }
+    .glow-2 { bottom: -100px; right: -100px; background: var(--plasma); }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(120px, 80px) scale(1.15); }
+    }
+
+    /* Top Bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      background: rgba(7, 9, 14, 0.75);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--plasma));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #000;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, #fff, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      background: rgba(0, 255, 204, 0.08);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+    .btn-icon:hover {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: #000;
+      transform: translateY(-2px);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1050px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Holographic AI Core */
+    .core-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 0 20px 0;
+      text-align: center;
+    }
+    .hologram-orb {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--accent) 40%, var(--plasma) 85%);
+      box-shadow: 0 0 50px var(--accent-glow), 0 0 90px var(--plasma-glow), inset 0 0 25px #fff;
+      animation: orbBreathe 4s infinite ease-in-out;
+      margin-bottom: 18px;
+      transition: all 0.5s ease;
+    }
+    .hologram-orb::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      border: 2px dashed rgba(0, 255, 204, 0.5);
+      animation: rotateRing 15s linear infinite;
+    }
+    .hologram-orb::after {
+      content: '';
+      position: absolute;
+      inset: -22px;
+      border-radius: 50%;
+      border: 1px solid rgba(157, 0, 255, 0.3);
+      animation: rotateRing 25s linear infinite reverse;
+    }
+
+    .hologram-orb.thinking {
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--plasma) 50%, #4A00E0 90%);
+      box-shadow: 0 0 70px var(--plasma-glow), 0 0 110px rgba(74, 0, 224, 0.6);
+      transform: scale(1.1);
+    }
+    .hologram-orb.executing {
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--gold) 45%, #FF8C00 85%);
+      box-shadow: 0 0 70px rgba(255, 215, 0, 0.5), 0 0 120px rgba(255, 140, 0, 0.5);
+      transform: scale(1.15);
+    }
+
+    @keyframes orbBreathe {
+      0%, 100% { transform: scale(1); filter: brightness(1); }
+      50% { transform: scale(1.05); filter: brightness(1.2); }
+    }
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .core-caption {
+      font-size: 14px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* Chat Messages Stream */
+    .chat-stream {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 24px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .chat-stream::-webkit-scrollbar { width: 6px; }
+    .chat-stream::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+    .msg {
+      max-width: 82%;
+      padding: 14px 20px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.6;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg-user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 255, 204, 0.05));
+      border: 1px solid var(--accent);
+      border-bottom-right-radius: 4px;
+      color: #fff;
+    }
+    .msg-aura {
+      align-self: flex-start;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      border-bottom-left-radius: 4px;
+      color: var(--text);
+    }
+
+    .tool-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
+    }
+
+    /* Floating Input Bar */
+    .input-bar-container {
+      position: relative;
+      background: rgba(18, 24, 38, 0.8);
+      border: 1px solid rgba(0, 255, 204, 0.3);
+      border-radius: 20px;
+      backdrop-filter: blur(24px);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      transition: all 0.3s;
+    }
+    .input-bar-container:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 10px 40px var(--accent-glow);
+    }
+    .input-bar-container input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 16px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .input-bar-container input::placeholder {
+      color: var(--text-muted);
+    }
+    .btn-send {
+      background: var(--accent);
+      border: none;
+      color: #000;
+      padding: 10px 22px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-send:hover {
+      background: #fff;
+      box-shadow: 0 0 20px #fff;
+      transform: translateY(-2px);
+    }
+
+    /* Settings Drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .drawer-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .settings-drawer {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 420px;
+      height: 100vh;
+      background: rgba(14, 18, 28, 0.95);
+      border-left: 1px solid rgba(0, 255, 204, 0.25);
+      backdrop-filter: blur(28px);
+      z-index: 210;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .settings-drawer.active {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 16px;
+    }
+    .drawer-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .setting-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .setting-group select, .setting-group input[type="text"] {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-family: inherit;
+      outline: none;
+    }
+    .setting-group select:focus, .setting-group input:focus {
+      border-color: var(--accent);
+    }
+
+    .swatches {
+      display: flex;
+      gap: 12px;
+    }
+    .swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s;
+    }
+    .swatch:hover { transform: scale(1.15); }
+    .swatch.active { border-color: #fff; transform: scale(1.1); }
+  </style>
+</head>
+<body>
+  <!-- Ambient Kinetic Lights & Canvas -->
+  <canvas id="kineticCanvas"></canvas>
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Top Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">A</div>
+      <div class="brand-title">AURA AGENT</div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span id="activeModelLabel">GEMINI 3.1 ACTIVE</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="btnSettings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main>
+    <!-- Central Hologram AI Orb -->
+    <div class="core-container">
+      <div class="hologram-orb" id="auraOrb"></div>
+      <div class="core-caption" id="auraStatus">AURA Intelligent Core Online</div>
+    </div>
+
+    <!-- Chat Messages Stream -->
+    <div class="chat-stream" id="chatStream">
+      <div class="msg msg-aura">
+        Hello Mohammed! I am <b>AURA</b>. My autonomous brain is connected directly to your Windows laptop. I can browse the web, write code, run PowerShell commands, or recall your memories. What shall we achieve today?
+      </div>
+    </div>
+
+    <!-- Floating Input Bar -->
+    <form class="input-bar-container" id="chatForm">
+      <input type="text" id="userInput" placeholder="Ask AURA to open websites, write code, or execute commands..." autocomplete="off">
+      <button type="submit" class="btn-send">Execute ➔</button>
+    </form>
+  </main>
+
+  <!-- Settings Drawer Overlay -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <!-- Settings Drawer -->
+  <div class="settings-drawer" id="settingsDrawer">
+    <div class="drawer-header">
+      <h2>AURA SYSTEM SETTINGS</h2>
+      <button class="btn-icon" id="btnCloseSettings">✕</button>
+    </div>
+
+    <div class="setting-group">
+      <label>Active Intelligence Model</label>
+      <select id="modelSelect">
+        <option value="gemini-3.1-flash-lite">Google Gemini 3.1 Flash (Fast & Real-time)</option>
+        <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Deep Reasoning)</option>
+        <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+        <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+        <option value="ollama/llama3">Local Ollama Llama 3 (Offline ₹0)</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label>Autonomous Execution Mode</label>
+      <select id="modeSelect">
+        <option value="auto_pilot">Auto-Pilot (Execute Tools Autonomously)</option>
+        <option value="ask_first">Ask First (Confirm Actions Before Execution)</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label>Browser Visibility</label>
+      <select id="browserModeSelect">
+        <option value="visible">Visible Chrome/Edge Browser</option>
+        <option value="headless">Silent Background Headless Mode</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label>Theme Kinetic Glow Accent</label>
+      <div class="swatches">
+        <div class="swatch active" style="background: #00FFCC;" data-color="#00FFCC"></div>
+        <div class="swatch" style="background: #9D00FF;" data-color="#9D00FF"></div>
+        <div class="swatch" style="background: #FFD700;" data-color="#FFD700"></div>
+        <div class="swatch" style="background: #00E676;" data-color="#00E676"></div>
+      </div>
+    </div>
+
+    <div class="setting-group" style="margin-top: auto;">
+      <button class="btn-send" style="width: 100%; justify-content: center;" id="btnSaveSettings">Save Preferences</button>
+    </div>
+  </div>
+
+  <script>
+    // Particle Fluid Kinetic Animation
+    const canvas = document.getElementById('kineticCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      particles = Array.from({ length: 65 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
+        radius: Math.random() * 2 + 0.5,
+        alpha: Math.random() * 0.5 + 0.2
+      }));
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function renderParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = accent;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+      });
+      requestAnimationFrame(renderParticles);
+    }
+    renderParticles();
+
+    // DOM Elements
+    const chatStream = document.getElementById('chatStream');
+    const chatForm = document.getElementById('chatForm');
+    const userInput = document.getElementById('userInput');
+    const auraOrb = document.getElementById('auraOrb');
+    const auraStatus = document.getElementById('auraStatus');
+
+    // Settings Drawer Controls
+    const btnSettings = document.getElementById('btnSettings');
+    const btnCloseSettings = document.getElementById('btnCloseSettings');
+    const settingsDrawer = document.getElementById('settingsDrawer');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+
+    function toggleDrawer(open) {
+      settingsDrawer.classList.toggle('active', open);
+      drawerOverlay.classList.toggle('active', open);
+    }
+    btnSettings.addEventListener('click', () => toggleDrawer(true));
+    btnCloseSettings.addEventListener('click', () => toggleDrawer(false));
+    drawerOverlay.addEventListener('click', () => toggleDrawer(false));
+
+    // Theme Swatches
+    document.querySelectorAll('.swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+        sw.classList.add('active');
+        const color = sw.dataset.color;
+        document.documentElement.style.setProperty('--accent', color);
+        document.documentElement.style.setProperty('--accent-glow', color + '66');
+      });
+    });
+
+    // Chat Submission to AURA Local Backend
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      // Append User message
+      appendMsg(text, 'user');
+      userInput.value = '';
+
+      // Update Orb state to Thinking
+      auraOrb.className = 'hologram-orb thinking';
+      auraStatus.innerText = 'AURA is thinking & formulating execution plan...';
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: text })
+        });
+        const data = await response.json();
+
+        // Update Orb state to Executing or Normal
+        auraOrb.className = 'hologram-orb';
+        auraStatus.innerText = 'AURA Intelligent Core Online';
+
+        appendMsg(data.reply || 'Execution complete.', 'aura', data.tools_used);
+      } catch (err) {
+        auraOrb.className = 'hologram-orb';
+        auraStatus.innerText = 'AURA Core Ready';
+        appendMsg('Could not connect to AURA local server: ' + err.message, 'aura');
+      }
+    });
+
+    function appendMsg(text, sender, tools) {
+      const div = document.createElement('div');
+      div.className = `msg msg-${sender}`;
+      if (tools && tools.length) {
+        tools.forEach(t => {
+          const badge = document.createElement('div');
+          badge.className = 'tool-badge';
+          badge.innerText = `⚡ Tool Executed: ${t}`;
+          div.appendChild(badge);
+        });
+      }
+      const p = document.createElement('div');
+      p.innerHTML = text.replace(/\n/g, '<br>');
+      div.appendChild(p);
+      chatStream.appendChild(div);
+      chatStream.scrollTop = chatStream.scrollHeight;
+    }
+  </script>
+</body>
+</html>
