@@ -40,7 +40,7 @@ def load_env() -> Dict[str, str]:
 ENV = load_env()
 API_KEY = ENV.get("GEMINI_API_KEY", "")
 MODEL_NAME = "gemini-3.1-flash-lite"
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent?key={API_KEY}"
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
 DB_PATH = Path(__file__).resolve().parent / "aura_memory.db"
 
 
@@ -294,7 +294,7 @@ class AuraBrain:
         req = urllib.request.Request(
             API_URL,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json", "Connection": "close"},
+            headers={"Content-Type": "application/json", "Connection": "close", "x-goog-api-key": self.api_key},
             method="POST"
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
