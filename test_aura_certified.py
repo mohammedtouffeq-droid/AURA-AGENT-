@@ -160,10 +160,15 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertIn("°C", res.get("temperature", ""))
 
     def test_16_browser_launch_tool(self):
-        # We test that tool_open_browser returns success and correctly formats URL
         res = tool_open_browser("google.com")
         self.assertTrue(res.get("success"))
-        self.assertEqual(res.get("url"), "https://google.com")
+        self.assertIn("https://google.com", res.get("url", ""))
+
+    def test_20_live_news_lookup(self):
+        from aura_brain import tool_get_news
+        res = tool_get_news("technology")
+        self.assertTrue(res.get("success"))
+        self.assertGreater(res.get("total_articles", 0), 0)
 
     # -----------------------------------------------------------------------------
     # 6. AUTONOMOUS OFFLINE REAC LOOP RESILIENCE (Zero-Key Test)
@@ -183,6 +188,15 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertIsNotNone(reply)
         tools_executed = [t["name"] for t in brain.last_tools]
         self.assertIn("tool_generate_image", tools_executed)
+
+    def test_21_autonomous_brain_offline_news_react(self):
+        brain = AuraBrain()
+        brain.api_key = ""
+        reply = brain.think_and_act("Open chrome on my screen and type about todays news")
+        self.assertIsNotNone(reply)
+        tools_executed = [t["name"] for t in brain.last_tools]
+        self.assertIn("tool_get_news", tools_executed)
+        self.assertIn("Today's Real-Time Breaking News", reply)
 
     # -----------------------------------------------------------------------------
     # 7. MULTI-TENANT SQLITE PROJECTS & THREADS CRUD

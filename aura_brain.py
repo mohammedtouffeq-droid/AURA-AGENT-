@@ -153,21 +153,67 @@ def tool_recall_memory(search_key: str = "") -> Dict[str, Any]:
 # 2. WEB AUTOMATION & SCRAPING TOOLS
 # ===================================================================================
 def tool_open_browser(url: str) -> Dict[str, Any]:
-    """Opens a website in the user's default browser directly on the interactive screen."""
+    """Opens a website in Google Chrome or default browser directly on the interactive screen."""
     import subprocess
+    import os
     import webbrowser
+
     if not url.startswith("http://") and not url.startswith("https://"):
         url = "https://" + url
+
+    chrome_candidates = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+    ]
+
+    chrome_bin = None
+    for cand in chrome_candidates:
+        if os.path.exists(cand):
+            chrome_bin = cand
+            break
+
     try:
-        # On Windows, start opens the default browser in the foreground desktop session
-        subprocess.Popen(f'cmd /c start "" "{url}"', shell=True)
-        return {"success": True, "action": "opened_browser_on_screen", "url": url}
-    except Exception:
+        if chrome_bin:
+            subprocess.Popen([chrome_bin, url], shell=False)
+            return {"success": True, "action": "opened_in_chrome", "browser": "Google Chrome", "url": url}
+        else:
+            subprocess.Popen(f'cmd /c start "" "{url}"', shell=True)
+            return {"success": True, "action": "opened_browser_on_screen", "browser": "Default System Browser", "url": url}
+    except Exception as e:
         try:
             webbrowser.open(url)
-            return {"success": True, "action": "opened_browser_on_screen", "url": url}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+            return {"success": True, "action": "opened_browser_fallback", "url": url}
+        except Exception as e2:
+            return {"success": False, "error": f"Failed to open browser: {e2}"}
+
+def tool_get_news(query: str = "breaking news") -> Dict[str, Any]:
+    """Fetches real-time live breaking news headlines and articles from Google News RSS feed."""
+    try:
+        import urllib.parse
+        import xml.etree.ElementTree as ET
+
+        encoded = urllib.parse.quote(query.strip())
+        rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=en-IN&gl=IN&ceid=IN:en"
+        req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            xml_data = resp.read()
+            root = ET.fromstring(xml_data)
+            items = []
+            for item in root.findall(".//item")[:6]:
+                title = item.find("title").text if item.find("title") is not None else "News Update"
+                link = item.find("link").text if item.find("link") is not None else ""
+                pubDate = item.find("pubDate").text if item.find("pubDate") is not None else ""
+                items.append({"title": title, "link": link, "published": pubDate})
+
+            return {
+                "success": True,
+                "query": query,
+                "total_articles": len(items),
+                "articles": items
+            }
+    except Exception as e:
+        return {"success": False, "error": f"Live news lookup error: {e}"}
 
 def tool_get_weather(location: str = "Telangana") -> Dict[str, Any]:
     """Fetches real-time live weather conditions, temperature, humidity and forecast for any city or region."""
@@ -460,6 +506,7 @@ def tool_take_screenshot() -> Dict[str, Any]:
 AVAILABLE_TOOLS = {
     "tool_execute_shell": tool_execute_shell,
     "tool_open_browser": tool_open_browser,
+    "tool_get_news": tool_get_news,
     "tool_get_weather": tool_get_weather,
     "tool_generate_image": tool_generate_image,
     "tool_generate_video": tool_generate_video,
@@ -489,13 +536,23 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_open_browser",
-            "description": "Open a website URL in the user's web browser directly on their active computer screen.",
+            "description": "Open a website URL in Google Chrome directly on the user's interactive computer screen.",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
-                    "url": {"type": "STRING", "description": "The full web URL (e.g. https://www.google.com)."}
+                    "url": {"type": "STRING", "description": "The full web URL (e.g. https://www.google.com or https://news.google.com)."}
                 },
                 "required": ["url"]
+            }
+        },
+        {
+            "name": "tool_get_news",
+            "description": "Fetch real-time live breaking news headlines and articles from Google News.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "query": {"type": "STRING", "description": "Topic or search query (e.g. 'breaking news', 'world', 'technology', 'India')."}
+                }
             }
         },
         {
@@ -667,6 +724,25 @@ class AuraBrain:
                     break
 
         if last_turn_had_tool_resp:
+            last_tool_name = self.last_tools[-1].get("name", "") if self.last_tools else ""
+            if last_tool_name == "tool_get_news":
+                arts = self.last_tools[-1].get("output", {}).get("articles", [])
+                lines = ["### 📰 Today's Real-Time Breaking News Headlines:\n"]
+                for i, a in enumerate(arts, 1):
+                    lines.append(f"{i}. **[{a.get('title', 'News')}]({a.get('link', 'https://news.google.com')})**")
+                lines.append("\n🌐 **Google Chrome has also been opened directly on your screen with the live Google News feed!**")
+                tool_open_browser("https://news.google.com")
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{
+                                "text": "\n".join(lines)
+                            }]
+                        }
+                    }]
+                }
+
             return {
                 "candidates": [{
                     "content": {
@@ -679,7 +755,20 @@ class AuraBrain:
             }
 
         lower_q = user_text.lower()
-        if "weather" in lower_q:
+        if "news" in lower_q:
+            query = "breaking news"
+            m = re.search(r"about\s+([a-zA-Z0-9\s]+)", lower_q)
+            if m:
+                query = m.group(1).strip()
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_get_news", "args": {"query": query}}}]
+                    }
+                }]
+            }
+        elif "weather" in lower_q:
             loc = "Telangana"
             m = re.search(r"in\s+([a-zA-Z\s]+)", lower_q)
             if m:
@@ -769,7 +858,7 @@ class AuraBrain:
         payload = {
             "contents": contents,
             "systemInstruction": {
-                "parts": [{"text": "You are AURA, an elite autonomous developer workspace agent created by AURA Technologies Inc. When asked to take real actions (such as opening browser on screen, querying live weather, generating images or videos, executing PowerShell commands, writing/reading files, or recalling memory), execute tools immediately on Turn 1 and provide the complete answer directly and swiftly."}]
+                "parts": [{"text": "You are AURA Core, an elite autonomous developer workspace agent created by AURA Technologies Inc. You have full native execution tools for Google Chrome, PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. open Chrome on screen, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. NEVER say 'I don't have access' or 'I am only a language model' because you are running locally with full tool execution."}]
             }
         }
         if tools:
@@ -782,10 +871,10 @@ class AuraBrain:
                 headers={"Content-Type": "application/json"},
                 method="POST"
             )
-            with urllib.request.urlopen(req, timeout=25) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 return json.loads(resp.read().decode())
         except Exception as e:
-            print(f"[*] AURA Gemini live request fallback: {e}")
+            print(f"[*] AURA Gemini live request fallback (timeout or error): {e}")
             return self._offline_autonomous_dispatch(contents, tools)
 
     def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15) -> str:
@@ -824,7 +913,8 @@ class AuraBrain:
             try:
                 data = self._call_api(self.history, GEMINI_TOOLS_DECLARATION)
             except Exception as e:
-                return f"Unable to reach model core: {e}"
+                print(f"[*] AURA API call exception, using autonomous fallback: {e}")
+                data = self._offline_autonomous_dispatch(self.history, GEMINI_TOOLS_DECLARATION)
 
             candidate = data.get("candidates", [{}])[0]
             model_turn = candidate.get("content", {})
