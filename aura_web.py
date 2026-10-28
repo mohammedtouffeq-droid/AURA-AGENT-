@@ -74,17 +74,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             return
         self._send_page(page)
 
+    def _method_not_allowed(self) -> None:
+        self.send_response(405)
+        self.send_header("Allow", "GET")
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
     def do_POST(self) -> None:
         if self._reject_nonlocal_host():
             return
-        self.send_error(405, "This preview server has no chat or settings API")
-        self.send_header("Allow", "GET")
+        self._method_not_allowed()
 
     def do_OPTIONS(self) -> None:
         if self._reject_nonlocal_host():
             return
-        self.send_error(405, "Cross-origin/API requests are disabled")
-        self.send_header("Allow", "GET")
+        self._method_not_allowed()
 
 
 def make_server(port: int = PORT) -> HTTPServer:
