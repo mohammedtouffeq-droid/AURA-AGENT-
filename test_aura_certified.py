@@ -53,6 +53,7 @@ from aura_brain import (
     tool_autogpt_recursive_planner,
     tool_powertoys_ocr,
     tool_hermes_structured_agent,
+    tool_autonomous_code_loop,
     AuraBrain,
     SAFE_WORKSPACE_ROOTS,
     STRICTLY_FORBIDDEN_PATHS
@@ -450,6 +451,16 @@ class TestAuraProductionCertification(unittest.TestCase):
         res = AURA_ENGINE_MESH.invoke("aider", "map_repo")
         self.assertTrue(res.get("success"))
         self.assertTrue(res.get("ast_repo_map_active"))
+
+    def test_41_tool_autonomous_code_loop(self):
+        res = tool_autonomous_code_loop(
+            goal="Build certified autonomous testing script",
+            target_filename="auto_cert_test.py",
+            max_iterations=3
+        )
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("status"), "COMPLETED_WITHOUT_ERRORS")
+        self.assertGreaterEqual(res.get("iterations_taken", 0), 1)
 
 
 if __name__ == "__main__":
