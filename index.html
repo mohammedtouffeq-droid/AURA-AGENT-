@@ -1523,6 +1523,18 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Export
                     </button>
+                                        <button class="btn-top-util" id="btnTerminalTop" onclick="toggleTerminalDrawer()" title="Open Interactive PowerShell Terminal">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                        Terminal
+                    </button>
+                    <button class="btn-top-util" id="btnStudioTop" onclick="toggleStudioDrawer()" title="Open IDE File Explorer & Code Editor">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        IDE Studio
+                    </button>
+                    <button class="btn-top-util" id="btnCyberLabTop" onclick="toggleCyberLabModal()" title="Open CyberHeist Defensive Lab & IR-04 Terminal">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        CyberHeist Lab
+                    </button>
                     <button class="btn-top-util" id="btnMemoryVaultTop">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                         Memory Vault
@@ -3198,5 +3210,109 @@ ${p.description ? `**Scope & Requirements:**\n> ${p.description}\n\n` : ''}Ready
         // Start App
         initAppSession();
     </script>
+
+    <!-- ========================================== -->
+    <!-- 1. SLIDE-UP POWERSHELL TERMINAL DRAWER     -->
+    <!-- ========================================== -->
+    <div id="terminalDrawer" style="display:none; position:fixed; bottom:0; left:260px; right:0; height:320px; background:#080b12; border-top:1px solid #1e293b; z-index:100; flex-direction:column; box-shadow:0 -8px 24px rgba(0,0,0,0.6);">
+        <div style="height:36px; background:#0d121f; border-bottom:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; padding:0 16px;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#38bdf8;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <span>AURA PowerShell Terminal • <span style="color:#64748b; font-weight:normal;">workspace\</span></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button onclick="clearTerminalOutput()" style="background:transparent; border:none; color:#64748b; font-size:11px; cursor:pointer;" hover="color:#f8fafc">Clear</button>
+                <button onclick="toggleTerminalDrawer()" style="background:transparent; border:none; color:#64748b; font-size:14px; cursor:pointer;">&times;</button>
+            </div>
+        </div>
+        <div id="terminalBody" style="flex:1; overflow-y:auto; padding:12px 16px; font-family:Consolas, Monaco, monospace; font-size:12px; color:#f1f5f9; line-height:1.5;">
+            <div style="color:#64748b; margin-bottom:8px;">Windows PowerShell [Version 10.0] • AURA Autonomous Runtime Attached<br>Type any command (e.g. <code>Get-ChildItem</code>, <code>python --version</code>, <code>pytest</code>) and press Enter.</div>
+        </div>
+        <div style="height:40px; background:#0a0e1a; border-top:1px solid #1e293b; display:flex; align-items:center; padding:0 12px; gap:8px;">
+            <span style="color:#38bdf8; font-family:monospace; font-size:12px; font-weight:bold;">PS AURA&gt;</span>
+            <input type="text" id="terminalCmdInput" placeholder="Enter PowerShell command..." style="flex:1; background:transparent; border:none; outline:none; color:#f8fafc; font-family:monospace; font-size:12px;" onkeydown="if(event.key==='Enter') executeTerminalCommand()">
+            <button onclick="executeTerminalCommand()" style="background:#0284c7; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">Run</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. IDE FILE EXPLORER & CODE EDITOR DRAWER -->
+    <!-- ========================================== -->
+    <div id="ideDrawer" style="display:none; position:fixed; top:52px; bottom:0; left:260px; right:0; background:#0b0f19; z-index:90; flex-direction:row; box-shadow:0 8px 30px rgba(0,0,0,0.7);">
+        <!-- File Tree Sidebar -->
+        <div style="width:260px; background:#080c14; border-right:1px solid #1e293b; display:flex; flex-direction:column;">
+            <div style="height:40px; border-bottom:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; padding:0 14px;">
+                <span style="font-size:12px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Workspace Explorer</span>
+                <button onclick="refreshWorkspaceTree()" style="background:transparent; border:none; color:#38bdf8; font-size:12px; cursor:pointer;">Refresh</button>
+            </div>
+            <div id="ideFileTreeList" style="flex:1; overflow-y:auto; padding:8px 0;">
+                <div style="padding:10px 14px; color:#64748b; font-size:12px;">Loading workspace files...</div>
+            </div>
+        </div>
+
+        <!-- Editor Main Pane -->
+        <div style="flex:1; display:flex; flex-direction:column; background:#0d111a;">
+            <div style="height:40px; background:#0a0e17; border-bottom:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; padding:0 16px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span id="ideActiveFileName" style="font-size:12.5px; font-weight:600; color:#f8fafc; font-family:monospace;">Select a file to edit</span>
+                    <span id="ideSaveStatus" style="font-size:11px; color:#10b981; display:none;">Saved</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button onclick="saveCurrentIdeFile()" id="btnSaveIdeFile" style="background:#0284c7; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;" disabled>Save File</button>
+                    <button onclick="runCurrentIdeFile()" id="btnRunIdeFile" style="background:#10b981; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;" disabled>Run in Terminal</button>
+                    <button onclick="toggleStudioDrawer()" style="background:transparent; border:none; color:#64748b; font-size:16px; cursor:pointer;">&times;</button>
+                </div>
+            </div>
+            <textarea id="ideCodeEditor" style="flex:1; background:#070a10; border:none; outline:none; color:#e2e8f0; font-family:Consolas, Monaco, 'Courier New', monospace; font-size:13px; line-height:1.6; padding:16px; resize:none;" placeholder="// Code and scripts will appear here..." spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. CYBERHEIST DEFENSIVE LAB MODAL         -->
+    <!-- ========================================== -->
+    <div id="cyberLabModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:150; align-items:center; justify-content:center;">
+        <div style="width:720px; max-width:92vw; background:#090d16; border:1px solid #00f3ff; border-radius:12px; box-shadow:0 0 35px rgba(0,243,255,0.2); display:flex; flex-direction:column; max-height:85vh; overflow:hidden;">
+            <div style="padding:16px 20px; background:#0d1322; border-bottom:1px solid rgba(0,243,255,0.3); display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00f3ff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; color:#f8fafc; font-weight:600;">CyberHeist Defensive Operations Lab</h3>
+                        <p style="margin:0; font-size:11.5px; color:#94a3b8;">Offline-First Defensive Learning Platform • c:\Users\hp\cyberheist</p>
+                    </div>
+                </div>
+                <button onclick="toggleCyberLabModal()" style="background:transparent; border:none; color:#64748b; font-size:18px; cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:20px; overflow-y:auto; flex:1;">
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px;">
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chMissionsCount" style="font-size:22px; font-weight:700; color:#38bdf8;">60</div>
+                        <div style="font-size:11px; color:#64748b;">Missions</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chLabsCount" style="font-size:22px; font-weight:700; color:#10b981;">28</div>
+                        <div style="font-size:11px; color:#64748b;">Interactive Drills</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chTabletopsCount" style="font-size:22px; font-weight:700; color:#f59e0b;">2</div>
+                        <div style="font-size:11px; color:#64748b;">Tabletops</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chGlossaryCount" style="font-size:22px; font-weight:700; color:#ec4899;">26</div>
+                        <div style="font-size:11px; color:#64748b;">Glossary Terms</div>
+                    </div>
+                </div>
+
+                <h4 style="font-size:13px; color:#f8fafc; margin-bottom:8px;">IR-04 Defensive Log Terminal Query</h4>
+                <div style="background:#06080f; border:1px solid #1e293b; border-radius:8px; padding:12px; margin-bottom:16px;">
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <input type="text" id="ir04QueryInput" value="grep EventID 4625" style="flex:1; background:#0f172a; border:1px solid #334155; color:#f8fafc; padding:6px 10px; border-radius:4px; font-family:monospace; font-size:12px;">
+                        <button onclick="runIr04Query()" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;">Run Query</button>
+                    </div>
+                    <pre id="ir04QueryOutput" style="background:#030509; border:1px solid #1e293b; padding:10px; border-radius:4px; color:#38bdf8; font-family:monospace; font-size:11.5px; margin:0; max-height:160px; overflow-y:auto;">Click 'Run Query' to inspect synthetic firewall, auth, and incident logs.</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

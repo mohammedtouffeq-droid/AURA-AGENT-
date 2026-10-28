@@ -172,6 +172,52 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 
+        elif path == "/api/workspace/tree":
+            ws = ROOT / "workspace"
+            ws.mkdir(parents=True, exist_ok=True)
+            files = []
+            for f in ws.rglob("*"):
+                if f.is_file() and not f.name.startswith("."):
+                    files.append({
+                        "name": f.name,
+                        "rel_path": str(f.relative_to(ws)),
+                        "size_kb": round(f.stat().st_size / 1024, 2),
+                        "ext": f.suffix.lower()
+                    })
+            self._send_json({"success": True, "workspace": str(ws), "total_files": len(files), "files": files})
+
+        elif path == "/api/workspace/file":
+            query = parsed.query
+            params = urllib.parse.parse_qs(query)
+            file_rel = params.get("path", [""])[0]
+            ws = ROOT / "workspace"
+            target_p = (ws / file_rel).resolve()
+            if ws in target_p.parents or target_p == ws or str(target_p).startswith(str(ws)):
+                if target_p.exists() and target_p.is_file():
+                    try:
+                        content = target_p.read_text(encoding="utf-8", errors="ignore")
+                        self._send_json({"success": True, "path": file_rel, "content": content})
+                    except Exception as e:
+                        self._send_json({"success": False, "error": str(e)}, status=500)
+                else:
+                    self._send_json({"success": False, "error": "File not found"}, status=404)
+            else:
+                self._send_json({"success": False, "error": "Path traversal restricted"}, status=403)
+
+        elif path == "/api/cyberheist/status":
+            ch_dir = Path(r"C:\Users\hp\cyberheist")
+            status = {"success": True, "mounted": ch_dir.exists(), "path": str(ch_dir)}
+            if ch_dir.exists():
+                try:
+                    sims = json.loads((ch_dir / "simulations.json").read_text(encoding="utf-8"))
+                    missions = json.loads((ch_dir / "missions.json").read_text(encoding="utf-8"))
+                    status["missions_count"] = len(missions.get("missions", []))
+                    status["labs_count"] = len(sims.get("labs", []))
+                    status["tabletops_count"] = len(sims.get("tabletops", []))
+                    status["glossary_count"] = len(sims.get("glossary", []))
+                except Exception as e:
+                    status["error"] = str(e)
+            self._send_json(status)
         else:
             self.send_error(404, "Not Found")
 
@@ -342,6 +388,54 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 
+        elif path == "/api/workspace/save":
+            file_rel = body.get("path", "")
+            file_content = body.get("content", "")
+            ws = ROOT / "workspace"
+            target_p = (ws / file_rel).resolve()
+            if str(target_p).startswith(str(ws)):
+                target_p.parent.mkdir(parents=True, exist_ok=True)
+                target_p.write_text(file_content, encoding="utf-8")
+                self._send_json({"success": True, "saved_path": str(target_p), "bytes": len(file_content)})
+            else:
+                self._send_json({"success": False, "error": "Save path outside workspace is forbidden"}, status=403)
+
+        elif path == "/api/terminal/exec":
+            cmd = body.get("command", "")
+            ws = ROOT / "workspace"
+            ws.mkdir(parents=True, exist_ok=True)
+            if not cmd:
+                self._send_json({"success": False, "error": "Command is required"}, status=400)
+            else:
+                import subprocess
+                try:
+                    proc = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+                                          cwd=str(ws), capture_output=True, text=True, timeout=30)
+                    self._send_json({
+                        "success": True,
+                        "command": cmd,
+                        "exit_code": proc.returncode,
+                        "stdout": proc.stdout,
+                        "stderr": proc.stderr
+                    })
+                except Exception as e:
+                    self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
+
+        elif path == "/api/autonomous/mission":
+            goal = body.get("goal", "")
+            filename = body.get("filename", "mission_script.py")
+            from aura_autonomous_loop import AURA_LOOP
+            from aura_brain import tool_autonomous_code_loop
+            res = tool_autonomous_code_loop(goal=goal, target_filename=filename)
+            self._send_json(res)
+
+        elif path == "/api/engines/invoke":
+            engine_key = body.get("engine", "")
+            action = body.get("action", "run")
+            params = body.get("params", {})
+            from aura_engine_mesh import AURA_ENGINE_MESH
+            res = AURA_ENGINE_MESH.invoke(engine_key, action=action, **params)
+            self._send_json(res)
         else:
             self.send_error(404, "Not Found")
 

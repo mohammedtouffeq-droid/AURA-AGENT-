@@ -462,6 +462,35 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertEqual(res.get("status"), "COMPLETED_WITHOUT_ERRORS")
         self.assertGreaterEqual(res.get("iterations_taken", 0), 1)
 
+    def test_42_api_workspace_tree(self):
+        url = f"http://127.0.0.1:{self.test_port}/api/workspace/tree"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertTrue(data.get("success"))
+            self.assertIn("files", data)
+
+    def test_43_api_terminal_exec(self):
+        url = f"http://127.0.0.1:{self.test_port}/api/terminal/exec"
+        payload = json.dumps({"command": "echo 'IDE Terminal Live'"}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertTrue(data.get("success"))
+            self.assertEqual(data.get("exit_code"), 0)
+            self.assertIn("IDE Terminal Live", data.get("stdout", ""))
+
+    def test_44_api_cyberheist_status(self):
+        url = f"http://127.0.0.1:{self.test_port}/api/cyberheist/status"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertTrue(data.get("success"))
+            self.assertTrue(data.get("mounted"))
+
 
 if __name__ == "__main__":
     unittest.main()
