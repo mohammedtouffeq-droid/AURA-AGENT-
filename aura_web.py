@@ -12,7 +12,6 @@ from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parent
-PORT = 5050
 ALLOWED_HOST_NAMES = {"localhost", "127.0.0.1"}
 
 
@@ -92,14 +91,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         self._method_not_allowed()
 
 
-def make_server(port: int = PORT) -> HTTPServer:
+def make_server(port: int = 0) -> HTTPServer:
     """Create a loopback-only static preview server."""
     return HTTPServer(("127.0.0.1", port), AuraWebHandler)
 
 
 def run() -> None:
     httpd = make_server()
-    url = f"http://127.0.0.1:{PORT}/"
+    port = httpd.server_address[1]
+    url = f"http://127.0.0.1:{port}/"
     print("=" * 65)
     print("        AURA AGENT - KINETIC UI PREVIEW")
     print("=" * 65)
@@ -109,7 +109,10 @@ def run() -> None:
     print("[*] Stop server    : Ctrl+C")
     print("-" * 65)
 
-    webbrowser.open(url)
+    try:
+        webbrowser.open(url)
+    except Exception as error:
+        print(f"[!] Could not open a browser automatically ({type(error).__name__}); open the URL above.")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
