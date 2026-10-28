@@ -440,6 +440,17 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertEqual(res.get("engine"), "NousResearch/hermes-agent")
         self.assertIn("function_call", res.get("structured_output", {}))
 
+    def test_40_all_63_engines_awakened_live(self):
+        from aura_engine_mesh import AURA_ENGINE_MESH
+        status = AURA_ENGINE_MESH.get_mesh_status()
+        self.assertEqual(status["total_engines"], 63)
+        self.assertEqual(status["awakened_engines"], 63)
+        self.assertEqual(status["status"], "ALL_63_ENGINES_AWAKENED")
+        self.assertTrue(status["supervisor_alive"])
+        res = AURA_ENGINE_MESH.invoke("aider", "map_repo")
+        self.assertTrue(res.get("success"))
+        self.assertTrue(res.get("ast_repo_map_active"))
+
 
 if __name__ == "__main__":
     unittest.main()

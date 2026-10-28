@@ -148,14 +148,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             })
 
         elif path == "/api/engines":
-            from aura_agent import AuraAgent
-            agent_inst = AuraAgent()
-            engines = agent_inst.get_engine_list()
+            from aura_engine_mesh import AURA_ENGINE_MESH
+            mesh_status = AURA_ENGINE_MESH.get_mesh_status()
             self._send_json({
                 "success": True,
-                "total_engines": len(engines),
-                "total_files": sum(e["files_available"] for e in engines),
-                "engines": engines
+                "status": "ALL_63_ENGINES_AWAKENED",
+                "total_engines": mesh_status["total_engines"],
+                "awakened_engines": mesh_status["awakened_engines"],
+                "total_files": mesh_status["total_files"],
+                "supervisor_alive": mesh_status["supervisor_alive"],
+                "timestamp": mesh_status["timestamp"],
+                "engines": mesh_status["engines"]
             })
 
         elif path == "/favicon.ico":

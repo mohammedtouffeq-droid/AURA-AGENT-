@@ -154,10 +154,21 @@ class UniversalEngineBridge:
             "name": self.display_name,
             "category": self.category,
             "mounted": self.is_mounted,
+            "awakened": True,
+            "status": "AWAKENED_AND_LIVE",
+            "alive": True,
             "path": str(self.repo_path),
             "files_available": self.file_count if self.is_mounted else 0,
             "description": self.description
         }
+
+    def invoke(self, action: str = "run", **kwargs) -> Dict[str, Any]:
+        """Dispatches an action directly to this engine via the live engine mesh."""
+        try:
+            from aura_engine_mesh import AURA_ENGINE_MESH
+            return AURA_ENGINE_MESH.invoke(self.key, action=action, **kwargs)
+        except Exception as e:
+            return {"success": False, "error": f"Invocation error on {self.key}: {e}"}
 
     def search_code(self, keyword: str, max_results: int = 5) -> List[Dict[str, Any]]:
         """Searches source code in this engine repository for a keyword."""
