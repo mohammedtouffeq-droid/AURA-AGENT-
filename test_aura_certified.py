@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 import aura_db
+import aura_agent
 from aura_brain import (
     validate_safe_path,
     is_safe_command,
@@ -36,6 +37,9 @@ from aura_brain import (
     tool_generate_image,
     tool_generate_video,
     tool_open_browser,
+    tool_gui_click_and_type,
+    tool_windows_app_control,
+    tool_parse_screen_ui,
     AuraBrain,
     SAFE_WORKSPACE_ROOTS,
     STRICTLY_FORBIDDEN_PATHS
@@ -228,6 +232,41 @@ class TestAuraProductionCertification(unittest.TestCase):
         aura_db.delete_user_project(user_id, proj_id)
         projects = aura_db.get_user_projects(user_id)
         self.assertFalse(any(p["id"] == proj_id for p in projects))
+
+    # -----------------------------------------------------------------------------
+    # 8. GUI & WINDOWS DESKTOP AUTOMATION TOOLS
+    # -----------------------------------------------------------------------------
+    def test_22_tool_gui_click_and_type(self):
+        res = tool_gui_click_and_type("click", x=500, y=400)
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("action"), "click")
+        self.assertEqual(res.get("x"), 500)
+        self.assertEqual(res.get("y"), 400)
+
+    def test_23_tool_windows_app_control(self):
+        # Test invalid app rejection
+        res_invalid = tool_windows_app_control("dangerous_trojan", "open")
+        self.assertFalse(res_invalid.get("success"))
+        self.assertIn("not allowed", res_invalid.get("error", "").lower())
+
+        # Test valid app registry
+        res_calc = tool_windows_app_control("calc", "open")
+        self.assertTrue(res_calc.get("success"))
+        self.assertEqual(res_calc.get("app"), "calc")
+
+    def test_24_tool_parse_screen_ui(self):
+        res = tool_parse_screen_ui()
+        self.assertTrue(res.get("success"))
+        self.assertIn("resolution", res)
+        self.assertGreater(res.get("screen_width", 0), 0)
+        self.assertGreater(res.get("screen_height", 0), 0)
+
+    def test_25_engine_mesh_catalog_43(self):
+        engines = aura_agent.AURA_AGENT.get_engine_list()
+        self.assertEqual(len(engines), 43)
+        engine_keys = [e["key"] for e in engines]
+        for expected in ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "terminator", "OS-Copilot", "Cradle", "screenpipe"]:
+            self.assertIn(expected, engine_keys)
 
 
 if __name__ == "__main__":

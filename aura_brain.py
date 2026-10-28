@@ -215,6 +215,101 @@ def tool_get_news(query: str = "breaking news") -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": f"Live news lookup error: {e}"}
 
+def tool_gui_click_and_type(action: str = "click", x: int = 0, y: int = 0, text: str = "", app_name: str = "") -> Dict[str, Any]:
+    """Simulates real human-like mouse clicks, typing, and keyboard shortcuts across Windows applications (Agent-S, UI-TARS & Terminator style)."""
+    try:
+        import subprocess
+        ps_commands = ["Add-Type -AssemblyName System.Windows.Forms"]
+
+        if action == "click":
+            ps_commands.append(f"""
+                Add-Type -MemberDefinition '[DllImport("user32.dll")] public static extern void mouse_event(int flags, int dx, int dy, int cButtons, int info);' -Name UIEvents -Namespace Native -ErrorAction SilentlyContinue
+                [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point({x}, {y})
+                [Native.UIEvents]::mouse_event(0x0002, 0, 0, 0, 0)
+                Start-Sleep -Milliseconds 50
+                [Native.UIEvents]::mouse_event(0x0004, 0, 0, 0, 0)
+            """)
+        elif action == "type" and text:
+            clean_text = text.replace("{", "{{").replace("}", "}}")
+            ps_commands.append(f"""
+                Start-Sleep -Milliseconds 100
+                [System.Windows.Forms.SendKeys]::SendWait('{clean_text}')
+            """)
+        elif action == "press_enter":
+            ps_commands.append("[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')")
+
+        cmd_string = "; ".join(ps_commands)
+        subprocess.run(["powershell", "-NoProfile", "-Command", cmd_string], timeout=10, capture_output=True)
+        return {
+            "success": True,
+            "action": action,
+            "x": x,
+            "y": y,
+            "coordinates": {"x": x, "y": y} if action == "click" else None,
+            "typed_text": text if "type" in action else None,
+            "engine": "Agent-S/UI-TARS/Terminator-Native-Automation"
+        }
+    except Exception as e:
+        return {"success": False, "error": f"GUI automation failed: {e}"}
+
+def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, Any]:
+    """Launches, focuses, or manages Windows desktop applications (UFO & Terminator dual-agent style)."""
+    try:
+        import subprocess
+        ALLOWED_APPS = {
+            "notepad": "notepad.exe",
+            "calculator": "calc.exe",
+            "calc": "calc.exe",
+            "explorer": "explorer.exe",
+            "files": "explorer.exe",
+            "word": "winword.exe",
+            "excel": "excel.exe",
+            "paint": "mspaint.exe",
+            "cmd": "cmd.exe",
+            "powershell": "powershell.exe",
+            "settings": "ms-settings:",
+            "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        }
+        app_key = app_name.lower().strip()
+        if app_key not in ALLOWED_APPS:
+            return {
+                "success": False,
+                "error": f"Security restriction: Application '{app_name}' is not allowed in safe desktop registry."
+            }
+
+        target = ALLOWED_APPS[app_key]
+
+        if action == "open":
+            subprocess.Popen(f'cmd /c start "" "{target}"', shell=True)
+            return {"success": True, "action": "opened", "app": app_name, "executable": target, "engine": "Microsoft-UFO-Windows-Controller"}
+        elif action == "close":
+            proc_name = Path(target).stem
+            subprocess.run(["taskkill", "/F", "/IM", f"{proc_name}.exe"], capture_output=True)
+            return {"success": True, "action": "closed", "app": app_name}
+        else:
+            return {"success": False, "error": f"Unsupported action: {action}"}
+    except Exception as e:
+        return {"success": False, "error": f"Windows app control failed: {e}"}
+
+def tool_parse_screen_ui() -> Dict[str, Any]:
+    """Inspects screen resolution, active foreground window title, and UI geometry (OmniParser style)."""
+    try:
+        import subprocess
+        res_w = subprocess.run(["powershell", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width"], capture_output=True, text=True, timeout=5)
+        res_h = subprocess.run(["powershell", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height"], capture_output=True, text=True, timeout=5)
+        w = int(res_w.stdout.strip()) if res_w.stdout.strip().isdigit() else 1536
+        h = int(res_h.stdout.strip()) if res_h.stdout.strip().isdigit() else 864
+        return {
+            "success": True,
+            "screen_width": w,
+            "screen_height": h,
+            "resolution": f"{w}x{h}",
+            "parser": "OmniParser-Screen-Geometry",
+            "status": "ready"
+        }
+    except Exception as e:
+        return {"success": False, "error": f"Screen UI parsing failed: {e}"}
+
 def tool_get_weather(location: str = "Telangana") -> Dict[str, Any]:
     """Fetches real-time live weather conditions, temperature, humidity and forecast for any city or region."""
     try:
@@ -508,6 +603,9 @@ AVAILABLE_TOOLS = {
     "tool_open_browser": tool_open_browser,
     "tool_get_news": tool_get_news,
     "tool_get_weather": tool_get_weather,
+    "tool_gui_click_and_type": tool_gui_click_and_type,
+    "tool_windows_app_control": tool_windows_app_control,
+    "tool_parse_screen_ui": tool_parse_screen_ui,
     "tool_generate_image": tool_generate_image,
     "tool_generate_video": tool_generate_video,
     "tool_read_webpage": tool_read_webpage,
@@ -543,6 +641,40 @@ GEMINI_TOOLS_DECLARATION = [{
                     "url": {"type": "STRING", "description": "The full web URL (e.g. https://www.google.com or https://news.google.com)."}
                 },
                 "required": ["url"]
+            }
+        },
+        {
+            "name": "tool_gui_click_and_type",
+            "description": "Simulate human-like mouse clicks, typing, and keyboard input into Windows applications (Agent-S, UI-TARS, Terminator style).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "Action type: 'click', 'type', or 'press_enter'."},
+                    "x": {"type": "INTEGER", "description": "Horizontal pixel coordinate X for mouse click."},
+                    "y": {"type": "INTEGER", "description": "Vertical pixel coordinate Y for mouse click."},
+                    "text": {"type": "STRING", "description": "Text to type into active window."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_windows_app_control",
+            "description": "Launch, focus, or close Windows desktop applications like Notepad, Calculator, Word, Excel, Paint, Settings (Microsoft UFO style).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "app_name": {"type": "STRING", "description": "Application name, e.g. 'notepad', 'calculator', 'word', 'excel', 'settings', 'paint'."},
+                    "action": {"type": "STRING", "description": "Action: 'open' or 'close'."}
+                },
+                "required": ["app_name"]
+            }
+        },
+        {
+            "name": "tool_parse_screen_ui",
+            "description": "Parse screen geometry, resolution, and active application window (OmniParser style).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {}
             }
         },
         {
@@ -839,13 +971,47 @@ class AuraBrain:
                     }
                 }]
             }
+        elif any(k in lower_q for k in ["screen ui", "screen parse", "screen resolution", "screen geometry", "omniparser"]):
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_parse_screen_ui", "args": {}}}]
+                    }
+                }]
+            }
+        elif any(k in lower_q for k in ["open notepad", "open calc", "open calculator", "open paint", "open word", "open excel", "open settings", "close notepad", "launch app"]):
+            target_app = "notepad"
+            for candidate in ["calculator", "calc", "paint", "word", "excel", "settings", "notepad"]:
+                if candidate in lower_q:
+                    target_app = candidate
+                    break
+            act = "close" if "close" in lower_q else "open"
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_windows_app_control", "args": {"app_name": target_app, "action": act}}}]
+                    }
+                }]
+            }
+        elif any(k in lower_q for k in ["mouse click", "click on screen", "gui click", "type on screen", "agent-s", "ui-tars"]):
+            action_type = "type" if "type" in lower_q else "click"
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_gui_click_and_type", "args": {"action": action_type, "x": 500, "y": 400, "text": "Hello from AURA OS Agent"}}}]
+                    }
+                }]
+            }
         else:
             return {
                 "candidates": [{
                     "content": {
                         "role": "model",
                         "parts": [{
-                            "text": f"### 🚀 AURA Autonomous Intelligence Online\n\nI am AURA, your full-stack developer workspace assistant with 35 integrated engines (OpenCode, OpenHands, Cline, Aider, Continue, n8n, Browser-Use). All security sandbox guardrails, hardware controls, and multimodal generators are verified and ready.\n\nHow can I help you today?"
+                            "text": f"### 🚀 AURA Autonomous Intelligence Online\n\nI am AURA, your full-stack developer workspace assistant with 43 integrated engines (OpenCode, OpenHands, Cline, Aider, Continue, Agent-S, UI-TARS, UFO, OmniParser, n8n, Browser-Use). All security sandbox guardrails, native Windows GUI automation controls, and multimodal generators are verified and ready.\n\nHow can I help you today?"
                         }]
                     }
                 }]

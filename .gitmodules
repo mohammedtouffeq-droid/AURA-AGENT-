@@ -103,3 +103,27 @@
 [submodule "engines/continue"]
 	path = engines/continue
 	url = https://github.com/continuedev/continue.git
+[submodule "engines/Agent-S"]
+	path = engines/Agent-S
+	url = https://github.com/simular-ai/Agent-S.git
+[submodule "engines/UI-TARS-desktop"]
+	path = engines/UI-TARS-desktop
+	url = https://github.com/bytedance/UI-TARS-desktop.git
+[submodule "engines/OmniParser"]
+	path = engines/OmniParser
+	url = https://github.com/microsoft/OmniParser.git
+[submodule "engines/UFO"]
+	path = engines/UFO
+	url = https://github.com/microsoft/UFO.git
+[submodule "engines/terminator"]
+	path = engines/terminator
+	url = https://github.com/mediar-ai/terminator.git
+[submodule "engines/OS-Copilot"]
+	path = engines/OS-Copilot
+	url = https://github.com/OS-Copilot/OS-Copilot.git
+[submodule "engines/Cradle"]
+	path = engines/Cradle
+	url = https://github.com/baai-agents/Cradle.git
+[submodule "engines/screenpipe"]
+	path = engines/screenpipe
+	url = https://github.com/screenpipe/screenpipe.git
