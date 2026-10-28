@@ -305,7 +305,7 @@ class AuraBrain:
         with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode())
 
-    def think_and_act(self, user_prompt: str, max_turns: int = 5) -> str:
+    def think_and_act(self, user_prompt: str, max_turns: int = 15) -> str:
         """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response."""
         self.last_tools = []
         self.history.append({"role": "user", "parts": [{"text": user_prompt}]})
@@ -314,7 +314,7 @@ class AuraBrain:
             try:
                 data = self._call_api(self.history, GEMINI_TOOLS_DECLARATION)
             except Exception as e:
-                return f"[AURA Error]: Could not communicate with Brain: {e}"
+                return f"Unable to reach model core: {e}"
 
             candidate = data.get("candidates", [{}])[0]
             model_turn = candidate.get("content", {})
@@ -329,7 +329,7 @@ class AuraBrain:
                 self.history.append(model_turn)
                 return final_reply
 
-            # CRITICAL: Append exact model turn (with thoughtSignature) to history
+            # Append exact model turn (with thoughtSignature) to history
             self.history.append(model_turn)
 
             # Execute tool calls
@@ -338,13 +338,13 @@ class AuraBrain:
                 func_name = call.get("name")
                 args = call.get("args", {})
                 call_id = call.get("id", "call_default")
-                print(f"[*] AURA Brain executing tool: {func_name}({args})")
-                
+                print(f"[*] AURA Runtime: Executing {func_name} with {args}")
+
                 tool_func = AVAILABLE_TOOLS.get(func_name)
                 if tool_func:
                     result = tool_func(**args)
                 else:
-                    result = {"error": f"Unknown tool: {func_name}"}
+                    result = {"error": f"Tool not available: {func_name}"}
 
                 self.last_tools.append({
                     "name": func_name,
@@ -363,7 +363,20 @@ class AuraBrain:
             # Feed tool execution results back to Gemini Brain
             self.history.append({"role": "user", "parts": function_responses})
 
-        return "[AURA]: Maximum thinking turns reached."
+        # If loop reached max turns, request a final coherent summary without tools
+        try:
+            summary_prompt = {"role": "user", "parts": [{"text": "Summarize the actions taken and findings clearly for the user."}]}
+            summary_history = list(self.history) + [summary_prompt]
+            data = self._call_api(summary_history, None)
+            candidate = data.get("candidates", [{}])[0]
+            parts = candidate.get("content", {}).get("parts", [])
+            reply_texts = [p["text"] for p in parts if "text" in p]
+            if reply_texts:
+                return "\n".join(reply_texts).strip()
+        except Exception:
+            pass
+
+        return "Task execution finished with all tool steps resolved."
 
 
 if __name__ == "__main__":

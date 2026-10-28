@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA Agent - Autonomous Intelligence Workspace</title>
+    <title>AURA Agent - Developer Workspace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #07090e;
-            --bg-surface: #0e131f;
-            --bg-card: rgba(18, 24, 38, 0.7);
+            --bg-base: #090b10;
+            --bg-sidebar: #0d1017;
+            --bg-surface: #131722;
+            --bg-card: rgba(22, 27, 39, 0.7);
             --bg-hover: rgba(255, 255, 255, 0.05);
-            --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-bright: rgba(0, 240, 255, 0.25);
-            --accent-cyan: #00f0ff;
-            --accent-purple: #8a2be2;
+            --border-hairline: rgba(255, 255, 255, 0.08);
+            --border-focused: rgba(56, 189, 248, 0.35);
+            --accent-primary: #38bdf8;
+            --accent-primary-hover: #0ea5e9;
             --accent-emerald: #10b981;
             --accent-amber: #f59e0b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
+            --accent-rose: #f43f5e;
+            --text-title: #f8fafc;
+            --text-body: #cbd5e1;
             --text-muted: #64748b;
-            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            --radius-xs: 6px;
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --radius-xl: 22px;
-            --glow-cyan: 0 0 25px rgba(0, 240, 255, 0.2);
-            --glow-purple: 0 0 25px rgba(138, 43, 226, 0.25);
         }
 
         * {
@@ -40,8 +40,8 @@
 
         body {
             background-color: var(--bg-base);
-            color: var(--text-primary);
-            font-family: var(--font-sans);
+            color: var(--text-body);
+            font-family: var(--font-ui);
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -49,265 +49,341 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Ambient Dynamic Kinetic Background */
-        .ambient-mesh {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.18;
-            animation: orbFloat 22s ease-in-out infinite alternate;
-        }
-        .orb-1 {
-            width: 550px;
-            height: 550px;
-            background: radial-gradient(circle, #00f0ff 0%, #0077ff 70%);
-            top: -100px;
-            right: -100px;
-        }
-        .orb-2 {
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, #8a2be2 0%, #4b0082 70%);
-            bottom: -150px;
-            left: -100px;
-            animation-duration: 28s;
-            animation-delay: -5s;
-        }
-        @keyframes orbFloat {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(60px, 40px) scale(1.08); }
-            100% { transform: translate(-40px, 80px) scale(0.95); }
-        }
-
-        /* Main App Grid */
-        .app-container {
-            position: relative;
-            z-index: 1;
+        /* App Container Layout */
+        .app-layout {
             display: flex;
             width: 100vw;
             height: 100vh;
-            backdrop-filter: blur(40px);
         }
 
         /* ---------------------------------------------------- */
-        /* LEFT SIDEBAR                                         */
+        /* LEFT SIDEBAR (Linear / Cursor Minimalist Style)      */
         /* ---------------------------------------------------- */
         .sidebar {
-            width: 280px;
-            background: rgba(11, 15, 25, 0.85);
-            border-right: 1px solid var(--border-subtle);
+            width: 270px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-hairline);
             display: flex;
             flex-direction: column;
-            padding: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 16px 12px 14px 12px;
             flex-shrink: 0;
         }
 
-        .brand-header {
+        .workspace-selector {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-subtle);
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background 0.15s ease;
+            margin-bottom: 12px;
+        }
+        .workspace-selector:hover {
+            background: var(--bg-hover);
         }
 
-        .brand-logo {
+        .ws-brand {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .brand-icon-box {
-            width: 34px;
-            height: 34px;
-            border-radius: var(--radius-sm);
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+        .ws-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius-xs);
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--glow-cyan);
-            color: #fff;
-            font-weight: 800;
-            font-size: 15px;
-        }
-
-        .brand-text h1 {
-            font-size: 16px;
+            color: var(--accent-primary);
             font-weight: 700;
-            letter-spacing: 0.5px;
-            background: linear-gradient(90deg, #ffffff, #a5f3fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 13px;
+            font-family: var(--font-code);
         }
 
-        .brand-text p {
-            font-size: 11px;
-            color: var(--accent-cyan);
-            font-weight: 500;
-            letter-spacing: 0.3px;
-        }
-
-        .btn-new-chat {
-            margin-top: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 11px 14px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
+        .ws-info h3 {
             font-size: 13px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            color: var(--text-title);
+            line-height: 1.2;
         }
-
-        .btn-new-chat:hover {
-            background: rgba(0, 240, 255, 0.08);
-            border-color: var(--border-bright);
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
-            transform: translateY(-1px);
-        }
-
-        .btn-new-chat span.shortcut {
+        .ws-info p {
             font-size: 11px;
-            padding: 2px 6px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 4px;
             color: var(--text-muted);
-            font-family: var(--font-mono);
+            font-family: var(--font-code);
         }
 
-        .history-nav {
-            flex: 1;
-            overflow-y: auto;
-            margin-top: 20px;
-            padding-right: 4px;
-        }
-
-        .history-nav::-webkit-scrollbar {
-            width: 4px;
-        }
-        .history-nav::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
-
-        .history-group-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: var(--text-muted);
-            letter-spacing: 0.8px;
-            margin: 16px 8px 8px 8px;
-        }
-
-        .history-item {
+        /* New Thread Button */
+        .btn-new-thread {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 9px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-hairline);
             border-radius: var(--radius-sm);
-            color: var(--text-secondary);
+            color: var(--text-title);
             font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 14px;
+        }
+        .btn-new-thread:hover {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.3);
+            color: #fff;
+        }
+        .key-badge {
+            font-size: 10px;
+            padding: 2px 5px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-hairline);
+            border-radius: 4px;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+        }
+
+        /* Sessions Nav */
+        .threads-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .threads-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .threads-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .section-label {
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 10px 10px 6px 10px;
+        }
+
+        .thread-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 12.5px;
+            color: var(--text-body);
             cursor: pointer;
             transition: all 0.15s ease;
             margin-bottom: 2px;
+            position: relative;
         }
-
-        .history-item:hover, .history-item.active {
+        .thread-item:hover {
             background: var(--bg-hover);
-            color: var(--text-primary);
+            color: var(--text-title);
+        }
+        .thread-item.active {
+            background: rgba(56, 189, 248, 0.08);
+            color: var(--text-title);
+            font-weight: 500;
+        }
+        .thread-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            bottom: 6px;
+            width: 3px;
+            background: var(--accent-primary);
+            border-radius: 2px;
         }
 
-        .history-item.active {
-            background: rgba(0, 240, 255, 0.07);
-            border-left: 2px solid var(--accent-cyan);
-            color: #fff;
-        }
-
-        .history-item-title {
+        .thread-title {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 190px;
         }
 
-        .history-item-del {
-            opacity: 0;
-            color: var(--text-muted);
-            transition: opacity 0.2s ease;
-        }
-
-        .history-item:hover .history-item-del {
-            opacity: 1;
-        }
-        .history-item-del:hover {
-            color: #ef4444;
-        }
-
-        /* Profile & Settings Bar at Bottom of Sidebar */
-        .sidebar-bottom {
-            padding-top: 14px;
-            border-top: 1px solid var(--border-subtle);
+        /* Bottom User & Settings */
+        .sidebar-footer {
+            padding-top: 12px;
+            border-top: 1px solid var(--border-hairline);
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .user-profile {
+        .user-block {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 9px;
             cursor: pointer;
-            padding: 6px 8px;
+            padding: 5px 8px;
             border-radius: var(--radius-sm);
-            transition: background 0.2s;
+            transition: background 0.15s;
         }
-        .user-profile:hover {
+        .user-block:hover {
             background: var(--bg-hover);
         }
 
-        .user-avatar {
-            width: 32px;
-            height: 32px;
+        .user-avatar-tag {
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #0077ff, #00f0ff);
+            background: #1e293b;
+            border: 1px solid var(--border-hairline);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 12px;
-            color: #fff;
-            box-shadow: 0 0 10px rgba(0, 119, 255, 0.3);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-title);
         }
 
-        .user-info h4 {
-            font-size: 13px;
+        .user-meta h4 {
+            font-size: 12.5px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--text-title);
         }
-        .user-info p {
+        .user-meta p {
             font-size: 11px;
             color: var(--accent-emerald);
             display: flex;
             align-items: center;
             gap: 4px;
         }
-        .user-info p::before {
+        .user-meta p::before {
             content: '';
-            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 7px;
+            border-radius: var(--radius-xs);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-icon:hover {
+            color: var(--text-title);
+            background: var(--bg-hover);
+        }
+
+        /* ---------------------------------------------------- */
+        /* MAIN WORKSPACE                                       */
+        /* ---------------------------------------------------- */
+        .main-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-base);
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Top Navbar */
+        .workspace-header {
+            height: 52px;
+            border-bottom: 1px solid var(--border-hairline);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background: rgba(13, 16, 23, 0.6);
+            backdrop-filter: blur(16px);
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* Permission Tier Selector */
+        .permission-control {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-xs);
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .perm-btn {
+            background: transparent;
+            border: none;
+            font-size: 11.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .perm-btn:hover {
+            color: var(--text-title);
+        }
+        .perm-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        /* Model Badge Dropdown */
+        .model-selector-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-family: var(--font-code);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: var(--radius-xs);
+            border: 1px solid var(--border-hairline);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .model-selector-pill:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            color: var(--text-title);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .runtime-status {
+            font-size: 11px;
+            font-family: var(--font-code);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .runtime-status::before {
+            content: '';
             width: 6px;
             height: 6px;
             border-radius: 50%;
@@ -315,1303 +391,1107 @@
             box-shadow: 0 0 6px var(--accent-emerald);
         }
 
-        .btn-settings-trigger {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: var(--radius-sm);
+        .btn-toolbar {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        .btn-settings-trigger:hover {
-            color: var(--accent-cyan);
-            background: var(--bg-hover);
-            transform: rotate(45deg);
-        }
-
-        /* ---------------------------------------------------- */
-        /* MAIN CHAT WORKSPACE                                  */
-        /* ---------------------------------------------------- */
-        .workspace {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            position: relative;
-            background: radial-gradient(circle at 50% 0%, rgba(14, 23, 42, 0.4) 0%, transparent 60%);
-        }
-
-        /* Top Header Bar */
-        .top-navbar {
-            height: 56px;
-            border-bottom: 1px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            background: rgba(11, 15, 25, 0.4);
-            backdrop-filter: blur(20px);
-        }
-
-        .nav-status {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .pill-badge {
-            display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-        }
-
-        .pill-badge.active {
-            border-color: rgba(0, 240, 255, 0.3);
-            background: rgba(0, 240, 255, 0.08);
-            color: var(--accent-cyan);
-        }
-
-        .pill-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--accent-cyan);
-            box-shadow: 0 0 8px var(--accent-cyan);
-        }
-
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-btn {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
             font-size: 12px;
             font-weight: 500;
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-hairline);
+            padding: 5px 10px;
+            border-radius: var(--radius-xs);
             cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            transition: all 0.15s;
         }
-
-        .nav-btn:hover {
-            color: var(--text-primary);
+        .btn-toolbar:hover {
+            color: var(--text-title);
             background: var(--bg-hover);
-            border-color: rgba(255, 255, 255, 0.15);
         }
 
-        /* Message Feed */
-        .chat-feed-container {
+        /* Chat Scroll Feed */
+        .chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 0;
+            padding: 30px 0;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-
-        .chat-feed-container::-webkit-scrollbar {
+        .chat-container::-webkit-scrollbar {
             width: 6px;
         }
-        .chat-feed-container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
         }
 
-        .messages-inner {
+        .chat-content-width {
             width: 100%;
-            max-width: 820px;
+            max-width: 800px;
             padding: 0 24px;
             display: flex;
             flex-direction: column;
-            gap: 22px;
+            gap: 24px;
         }
 
-        /* Empty State Screen */
-        .empty-hero {
+        /* Empty State */
+        .workspace-empty-view {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-top: 60px;
-            text-align: center;
-            animation: fadeIn 0.4s ease-out;
+            align-items: flex-start;
+            margin-top: 40px;
+            animation: fadeIn 0.3s ease;
         }
 
-        .hero-emblem {
-            width: 72px;
-            height: 72px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-
-        .empty-hero h2 {
-            font-size: 24px;
-            font-weight: 700;
+        .empty-greeting h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-title);
             letter-spacing: -0.3px;
-            margin-bottom: 8px;
-            background: linear-gradient(90deg, #ffffff, #cbd5e1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+        .empty-greeting p {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
         }
 
-        .empty-hero p {
-            color: var(--text-secondary);
-            font-size: 14px;
-            max-width: 480px;
-            line-height: 1.5;
-            margin-bottom: 30px;
-        }
-
-        .prompt-grid {
+        .actions-matrix {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            max-width: 680px;
         }
 
-        .prompt-chip {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            padding: 14px;
-            text-align: left;
+        .action-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+        .action-card:hover {
+            background: rgba(56, 189, 248, 0.04);
+            border-color: rgba(56, 189, 248, 0.3);
+            transform: translateY(-1px);
         }
 
-        .prompt-chip:hover {
-            background: rgba(0, 240, 255, 0.05);
-            border-color: var(--border-bright);
-            transform: translateY(-2px);
-        }
-
-        .prompt-chip h5 {
+        .action-card h5 {
             font-size: 13px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--text-title);
             margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .prompt-chip p {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 0;
-            line-height: 1.4;
-        }
-
-        /* Message Bubbles */
-        .message-row {
-            display: flex;
-            gap: 14px;
-            animation: messageSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            user-select: text;
-        }
-
-        @keyframes messageSlideIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message-row.user {
-            flex-direction: row-reverse;
-        }
-
-        .msg-avatar {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 13px;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .msg-avatar.aura {
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-            color: #fff;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-        }
-
-        .msg-avatar.user-av {
-            background: #2563eb;
-            color: #fff;
-        }
-
-        .msg-content-box {
-            display: flex;
-            flex-direction: column;
-            max-width: 82%;
-        }
-
-        .message-row.user .msg-content-box {
-            align-items: flex-end;
-        }
-
-        .msg-bubble {
-            padding: 14px 18px;
-            border-radius: var(--radius-lg);
-            font-size: 14px;
-            line-height: 1.65;
-            color: var(--text-primary);
-            word-break: break-word;
-            position: relative;
-        }
-
-        .message-row.user .msg-bubble {
-            background: #1e293b;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-bottom-right-radius: 4px;
-        }
-
-        .message-row.aura .msg-bubble {
-            background: rgba(15, 23, 42, 0.75);
-            border: 1px solid var(--border-subtle);
-            border-bottom-left-radius: 4px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Tool Badges Executed */
-        .tool-banner {
-            margin-bottom: 10px;
-            background: rgba(0, 240, 255, 0.05);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            border-radius: var(--radius-sm);
-            padding: 8px 12px;
-            font-family: var(--font-mono);
-            font-size: 12px;
-            color: #67e8f9;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
-        .tool-banner svg {
-            color: var(--accent-cyan);
-            flex-shrink: 0;
+        .action-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
         }
 
-        /* Markdown and Code styling */
-        .msg-bubble pre {
-            background: #030712;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Messages */
+        .msg-turn {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            animation: fadeIn 0.2s ease-out;
+            user-select: text;
+        }
+
+        .msg-turn.user {
+            align-items: flex-end;
+        }
+
+        .msg-meta-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            margin-bottom: 2px;
+        }
+
+        .msg-bubble-user {
+            background: #182030;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            font-size: 14px;
+            color: var(--text-title);
+            max-width: 85%;
+            line-height: 1.6;
+        }
+
+        .msg-agent-card {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .agent-text-content {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-body);
+        }
+
+        /* Tool Execution Drawer (Cursor / Linear style) */
+        .tool-drawer {
+            border: 1px solid var(--border-hairline);
+            background: #0d111a;
             border-radius: var(--radius-sm);
-            padding: 12px 14px;
+            overflow: hidden;
+            font-family: var(--font-code);
+            font-size: 12px;
+            margin: 6px 0;
+        }
+
+        .tool-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+            transition: background 0.15s;
+        }
+        .tool-header-bar:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .tool-drawer.expanded .tool-header-bar {
+            border-bottom-color: var(--border-hairline);
+        }
+
+        .tool-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-title);
+        }
+        .tool-name-badge {
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+        .tool-arg-preview {
+            color: var(--text-muted);
+            max-width: 380px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tool-status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--accent-emerald);
+        }
+        .tool-status-pill::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+        }
+
+        .tool-body-pane {
+            display: none;
+            padding: 12px;
+            background: #07090e;
+            max-height: 240px;
+            overflow-y: auto;
+            color: #94a3b8;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .tool-drawer.expanded .tool-body-pane {
+            display: block;
+        }
+
+        /* Markdown formatting inside assistant bubble */
+        .agent-text-content pre {
+            background: #080a10;
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-sm);
+            padding: 12px;
             margin: 10px 0;
             overflow-x: auto;
-            position: relative;
-        }
-
-        .msg-bubble code {
-            font-family: var(--font-mono);
+            font-family: var(--font-code);
             font-size: 12.5px;
             color: #38bdf8;
         }
 
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #0b101b;
-            padding: 6px 12px;
-            border-top-left-radius: var(--radius-sm);
-            border-top-right-radius: var(--radius-sm);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-            font-size: 11px;
-            color: var(--text-muted);
-            font-family: var(--font-mono);
-        }
-
-        .btn-copy-code {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 11px;
-            cursor: pointer;
-            padding: 2px 6px;
+        .agent-text-content code {
+            font-family: var(--font-code);
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 5px;
             border-radius: 4px;
-            transition: all 0.15s;
-        }
-        .btn-copy-code:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
         }
 
-        .msg-footer-bar {
+        .agent-text-content p {
+            margin-bottom: 10px;
+        }
+
+        .agent-text-content strong {
+            color: var(--text-title);
+            font-weight: 600;
+        }
+
+        /* Action Toolbar below assistant message */
+        .msg-action-strip {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-top: 6px;
-            padding: 0 4px;
-            font-size: 11px;
-            color: var(--text-muted);
+            padding-top: 4px;
         }
 
-        .btn-msg-action {
+        .btn-action-text {
             background: transparent;
             border: none;
             color: var(--text-muted);
+            font-size: 11.5px;
             cursor: pointer;
-            padding: 2px 5px;
-            border-radius: 4px;
-            transition: all 0.15s;
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 4px;
-            font-size: 11px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: color 0.15s;
         }
-        .btn-msg-action:hover {
-            color: var(--text-primary);
-            background: var(--bg-hover);
+        .btn-action-text:hover {
+            color: var(--text-title);
         }
 
         /* ---------------------------------------------------- */
         /* BOTTOM INPUT DOCK                                    */
         /* ---------------------------------------------------- */
-        .input-dock {
+        .input-region {
             padding: 0 24px 20px 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            position: relative;
         }
 
-        .input-card {
+        .input-box {
             width: 100%;
-            max-width: 820px;
-            background: rgba(14, 20, 32, 0.85);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xl);
-            padding: 10px 14px 10px 18px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            max-width: 800px;
+            background: #111420;
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-lg);
+            padding: 12px 14px 10px 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            transition: border-color 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+        }
+        .input-box:focus-within {
+            border-color: var(--border-focused);
+            box-shadow: 0 8px 32px rgba(56, 189, 248, 0.08);
         }
 
-        .input-card:focus-within {
-            border-color: rgba(0, 240, 255, 0.4);
-            box-shadow: 0 10px 35px rgba(0, 240, 255, 0.12);
-        }
-
-        .input-textarea {
+        .textarea-main {
             width: 100%;
             background: transparent;
             border: none;
             outline: none;
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            font-size: 14.5px;
+            color: var(--text-title);
+            font-family: var(--font-ui);
+            font-size: 14px;
             resize: none;
             max-height: 180px;
             min-height: 24px;
             line-height: 1.5;
         }
-
-        .input-textarea::placeholder {
+        .textarea-main::placeholder {
             color: var(--text-muted);
         }
 
-        .input-bottom-row {
+        .input-controls-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .tool-toggles {
+        .active-env-tags {
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .tool-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-subtle);
-            padding: 4px 9px;
-            border-radius: 14px;
+        .env-tag {
             font-size: 11px;
-            font-weight: 500;
+            font-family: var(--font-code);
             color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .tool-pill:hover, .tool-pill.active {
-            color: var(--accent-cyan);
-            border-color: rgba(0, 240, 255, 0.3);
-            background: rgba(0, 240, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-hairline);
+            padding: 3px 8px;
+            border-radius: 4px;
         }
 
-        .btn-send {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-cyan), #0077ff);
+        .btn-dispatch {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-xs);
+            background: #2563eb;
             border: none;
             color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            transition: all 0.15s;
         }
-
-        .btn-send:hover:not(:disabled) {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+        .btn-dispatch:hover:not(:disabled) {
+            background: #1d4ed8;
         }
-
-        .btn-send:disabled {
-            opacity: 0.4;
+        .btn-dispatch:disabled {
+            opacity: 0.35;
             cursor: not-allowed;
-            transform: none;
         }
 
-        .dock-footer-text {
+        .disclaimer-caption {
             font-size: 11px;
             color: var(--text-muted);
             margin-top: 8px;
-            text-align: center;
+            font-family: var(--font-code);
         }
 
         /* ---------------------------------------------------- */
         /* SETTINGS & MEMORY MODAL                              */
         /* ---------------------------------------------------- */
-        .modal-overlay {
+        .modal-shade {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
             z-index: 100;
             display: none;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.2s ease;
+            animation: fadeIn 0.15s ease;
+        }
+        .modal-shade.open {
+            display: flex;
         }
 
-        .modal-overlay.open {
+        .settings-dialog {
+            width: 760px;
+            max-width: 90vw;
+            height: 520px;
+            background: #0f131d;
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-md);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
             display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .dialog-header {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border-hairline);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .dialog-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-title);
+        }
+
+        .dialog-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .dialog-sidebar {
+            width: 180px;
+            background: #0a0d14;
+            border-right: 1px solid var(--border-hairline);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .dialog-tab-item {
+            padding: 8px 12px;
+            border-radius: var(--radius-xs);
+            font-size: 12.5px;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            text-align: left;
+            transition: all 0.15s;
+        }
+        .dialog-tab-item:hover {
+            color: var(--text-title);
+            background: var(--bg-hover);
+        }
+        .dialog-tab-item.active {
+            color: var(--accent-primary);
+            background: rgba(56, 189, 248, 0.08);
+            font-weight: 500;
+        }
+
+        .dialog-pane {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+        }
+        .dialog-pane.active {
+            display: block;
+        }
+
+        .form-row {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-title);
+            margin-bottom: 4px;
+            display: block;
+        }
+        .form-helper {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .select-dark, .input-dark {
+            width: 100%;
+            background: #080a10;
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-xs);
+            padding: 8px 12px;
+            color: var(--text-title);
+            font-size: 13px;
+            outline: none;
+        }
+        .select-dark:focus, .input-dark:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .dialog-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-hairline);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            background: #0a0d14;
+        }
+
+        .btn-confirm-save {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 7px 16px;
+            border-radius: var(--radius-xs);
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-confirm-save:hover {
+            background: #1d4ed8;
+        }
+
+        /* Memory table in modal */
+        .fact-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .fact-table th {
+            text-align: left;
+            padding: 8px;
+            background: #080a10;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            border-bottom: 1px solid var(--border-hairline);
+        }
+        .fact-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-hairline);
+            color: var(--text-body);
+        }
+        .fact-key {
+            font-family: var(--font-code);
+            color: var(--accent-primary);
+        }
+
+        /* Pulse / Typing */
+        .working-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            padding: 10px 0;
+        }
+        .working-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
         }
 
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
-
-        .modal-card {
-            width: 820px;
-            max-width: 90vw;
-            height: 560px;
-            background: #0e1422;
-            border: 1px solid var(--border-bright);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), var(--glow-cyan);
-            border-radius: var(--radius-lg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .modal-header h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-close-modal {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 18px;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-        }
-        .btn-close-modal:hover {
-            color: #fff;
-        }
-
-        .modal-body {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .modal-tabs {
-            width: 200px;
-            border-right: 1px solid var(--border-subtle);
-            padding: 14px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .tab-btn {
-            padding: 9px 12px;
-            border-radius: var(--radius-sm);
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 600;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.15s;
-        }
-        .tab-btn:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-        }
-        .tab-btn.active {
-            background: rgba(0, 240, 255, 0.1);
-            color: var(--accent-cyan);
-        }
-
-        .tab-content-area {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        .setting-group {
-            margin-bottom: 22px;
-        }
-
-        .setting-label {
-            font-size: 13.5px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-            display: block;
-        }
-
-        .setting-desc {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .setting-input, .setting-select {
-            width: 100%;
-            background: #07090e;
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-sm);
-            padding: 9px 12px;
-            color: var(--text-primary);
-            font-size: 13px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .setting-input:focus, .setting-select:focus {
-            border-color: var(--accent-cyan);
-        }
-
-        .toggle-switch {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-subtle);
-            padding: 12px 14px;
-            border-radius: var(--radius-sm);
-        }
-
-        .toggle-switch input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: var(--accent-cyan);
-        }
-
-        /* Memory Fact Table */
-        .memory-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12.5px;
-            margin-top: 10px;
-        }
-        .memory-table th {
-            text-align: left;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text-muted);
-            font-weight: 600;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .memory-table td {
-            padding: 8px;
-            border-bottom: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-        }
-        .memory-table td.key-col {
-            font-family: var(--font-mono);
-            color: var(--accent-cyan);
-            font-weight: 500;
-        }
-        .btn-del-mem {
-            background: transparent;
-            border: none;
-            color: #ef4444;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-        }
-
-        .modal-footer {
-            padding: 12px 20px;
-            border-top: 1px solid var(--border-subtle);
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-modal-save {
-            background: linear-gradient(135deg, var(--accent-cyan), #0077ff);
-            border: none;
-            color: #fff;
-            padding: 8px 18px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-modal-save:hover {
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-        }
-
-        /* Typing indicator */
-        .typing-bubble {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 14px 18px;
-        }
-        .typing-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--accent-cyan);
-            animation: typingBounce 1.2s infinite ease-in-out;
-        }
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typingBounce {
-            0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-            40% { transform: translateY(-6px); opacity: 1; }
-        }
     </style>
 </head>
 <body>
-    <div class="ambient-mesh">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-    </div>
-
-    <div class="app-container">
+    <div class="app-layout">
         <!-- ------------------------------------------------ -->
         <!-- SIDEBAR                                          -->
         <!-- ------------------------------------------------ -->
         <aside class="sidebar">
-            <div class="brand-header">
-                <div class="brand-logo">
-                    <div class="brand-icon-box">A</div>
-                    <div class="brand-text">
-                        <h1>AURA AGENT</h1>
-                        <p>Autonomous v4.0</p>
+            <div class="workspace-selector">
+                <div class="ws-brand">
+                    <div class="ws-icon">A</div>
+                    <div class="ws-info">
+                        <h3>AURA Core</h3>
+                        <p>local runtime</p>
                     </div>
                 </div>
             </div>
 
-            <button class="btn-new-chat" id="btnNewChat">
+            <button class="btn-new-thread" id="btnNewThread">
                 <span style="display:flex; align-items:center; gap:8px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                     New Session
                 </span>
-                <span class="shortcut">Ctrl+K</span>
+                <span class="key-badge">Ctrl+K</span>
             </button>
 
-            <div class="history-nav" id="historyList">
-                <div class="history-group-title">Active History</div>
-                <div class="history-item active" data-id="default">
-                    <span class="history-item-title" id="activeChatTitle">System Orchestration</span>
+            <div class="threads-nav" id="threadsList">
+                <div class="section-label">Active Workspace</div>
+                <div class="thread-item active" data-id="default">
+                    <span class="thread-title" id="activeThreadName">Main Execution Thread</span>
                 </div>
             </div>
 
-            <div class="sidebar-bottom">
-                <div class="user-profile" id="userProfileBtn">
-                    <div class="user-avatar">MT</div>
-                    <div class="user-info">
-                        <h4>Mohammed T.</h4>
-                        <p>System Ready</p>
+            <div class="sidebar-footer">
+                <div class="user-block" id="userBlock">
+                    <div class="user-avatar-tag">MT</div>
+                    <div class="user-meta">
+                        <h4>Mohammed Touffeq</h4>
+                        <p>Core Admin</p>
                     </div>
                 </div>
-                <button class="btn-settings-trigger" id="btnOpenSettings" title="Settings">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <button class="btn-icon" id="btnSettingsTrigger" title="Settings">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
             </div>
         </aside>
 
         <!-- ------------------------------------------------ -->
-        <!-- WORKSPACE                                        -->
+        <!-- MAIN WORKSPACE                                   -->
         <!-- ------------------------------------------------ -->
-        <main class="workspace">
-            <!-- Top Navbar -->
-            <header class="top-navbar">
-                <div class="nav-status">
-                    <div class="pill-badge active">
-                        <span class="pill-dot"></span>
-                        <span id="badgeModelName">AURA 4.0 Omni</span>
+        <main class="main-workspace">
+            <header class="workspace-header">
+                <div class="header-left">
+                    <!-- Permission Policy Control Bar -->
+                    <div class="permission-control" id="permControl">
+                        <button class="perm-btn active" data-mode="auto_pilot" title="Autonomous tool execution in workspace">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            Auto-Pilot
+                        </button>
+                        <button class="perm-btn" data-mode="request_review" title="Ask before running shell or browser">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Request Review
+                        </button>
                     </div>
-                    <div class="pill-badge" id="badgeExecutionMode">Autopilot: Enabled</div>
+
+                    <!-- Model Selector -->
+                    <div class="model-selector-pill" id="btnModelPill" title="Active Model Core">
+                        <span>gemini-3.1-flash-lite</span>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
                 </div>
-                <div class="nav-actions">
-                    <button class="nav-btn" id="btnNavMemory">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+
+                <div class="header-right">
+                    <div class="runtime-status">127.0.0.1:5050</div>
+                    <button class="btn-toolbar" id="btnOpenVault">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                         Memory Vault
                     </button>
-                    <button class="nav-btn" id="btnClearFeed">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                        Clear Screen
+                    <button class="btn-toolbar" id="btnClearThread">
+                        Clear
                     </button>
                 </div>
             </header>
 
-            <!-- Chat Scroll Area -->
-            <div class="chat-feed-container" id="chatFeed">
-                <div class="messages-inner" id="messagesList">
-                    <!-- Empty Hero Initial State -->
-                    <div class="empty-hero" id="emptyHero">
-                        <div class="hero-emblem">⚡</div>
-                        <h2>What task shall AURA automate today?</h2>
-                        <p>Powered by Next-Gen ReAct Engine with direct PowerShell, Web Scraping, Desktop Control, and Persistent Memory.</p>
-                        <div class="prompt-grid">
-                            <div class="prompt-chip" onclick="sendQuickPrompt('Search Telangana current weather on Google and tell me the summary.')">
-                                <h5>🌐 Live Web Search</h5>
-                                <p>Search Telangana current weather and summarize.</p>
+            <!-- Scrollable Chat Stream -->
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-content-width" id="chatFeed">
+                    <!-- Default Initial Greeting -->
+                    <div class="workspace-empty-view" id="emptyView">
+                        <div class="empty-greeting">
+                            <h2>What shall AURA execute today?</h2>
+                            <p>Direct ReAct engine wired to PowerShell, web browser, file operations, and permanent SQLite memory.</p>
+                        </div>
+                        <div class="actions-matrix">
+                            <div class="action-card" onclick="dispatchDirect('Run powershell to get my computer hostname and operating system info.')">
+                                <h5>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                                    System Inspection
+                                </h5>
+                                <p>Inspect hostname, processor, and architecture via PowerShell.</p>
                             </div>
-                            <div class="prompt-chip" onclick="sendQuickPrompt('Run powershell to get my current computer hostname and system info.')">
-                                <h5>💻 PowerShell System Info</h5>
-                                <p>Inspect hostname, processor and memory directly.</p>
+                            <div class="action-card" onclick="dispatchDirect('Search Telangana current weather on Google and summarize the conditions.')">
+                                <h5>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                    Web Search & Browse
+                                </h5>
+                                <p>Query current weather in Telangana and extract the live forecast.</p>
                             </div>
-                            <div class="prompt-chip" onclick="sendQuickPrompt('Remember that Mohammed Touffeq is building AURA to compete with top global AI models.')">
-                                <h5>🧠 Permanent Memory</h5>
-                                <p>Store facts into permanent SQLite memory database.</p>
+                            <div class="action-card" onclick="dispatchDirect('Remember that Mohammed Touffeq is building AURA as an autonomous developer workspace.')">
+                                <h5>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                    Store Fact to SQLite
+                                </h5>
+                                <p>Permanently save identity and project directives into aura_memory.db.</p>
                             </div>
-                            <div class="prompt-chip" onclick="sendQuickPrompt('Recall all memories and facts stored about Mohammed Touffeq.')">
-                                <h5>🔍 Fact Recall</h5>
-                                <p>Query long-term database for saved preferences.</p>
+                            <div class="action-card" onclick="dispatchDirect('Recall all saved facts and memories stored in SQLite database.')">
+                                <h5>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                    Recall Stored Memory
+                                </h5>
+                                <p>List all remembered facts and configurations across sessions.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Floating Input Dock -->
-            <div class="input-dock">
-                <div class="input-card">
-                    <textarea class="input-textarea" id="promptInput" rows="1" placeholder="Instruct AURA (e.g. 'Open browser and search...', 'Execute powershell...')"></textarea>
-                    <div class="input-bottom-row">
-                        <div class="tool-toggles">
-                            <span class="tool-pill active" title="Hardware Tools Enabled">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                                Tools: Active
-                            </span>
-                            <span class="tool-pill" id="pillMemoryStatus">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                SQLite Memory
-                            </span>
+            <!-- Bottom Floating Input Area -->
+            <div class="input-region">
+                <div class="input-box">
+                    <textarea class="textarea-main" id="userTextarea" rows="1" placeholder="Instruct AURA (e.g. 'Execute powershell to list files...', 'Open browser and check...')"></textarea>
+                    <div class="input-controls-row">
+                        <div class="active-env-tags">
+                            <span class="env-tag" id="tagActiveMode">Mode: Auto-Pilot</span>
+                            <span class="env-tag">Tools: Shell • Browser • Memory</span>
                         </div>
-                        <button class="btn-send" id="btnSend" title="Send (Enter)">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        <button class="btn-dispatch" id="btnDispatch" title="Send (Enter)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
                     </div>
                 </div>
-                <div class="dock-footer-text">
-                    AURA Agent v4.0 · Mohammed Touffeq Autonomous Workspace · Real Hardware Execution Sandboxed
+                <div class="disclaimer-caption">
+                    AURA Runtime Engine • Mohammed Touffeq Workspace • Zero Pip Overhead
                 </div>
             </div>
         </main>
     </div>
 
     <!-- ------------------------------------------------ -->
-    <!-- SETTINGS & MEMORY MODAL                          -->
+    <!-- SETTINGS & VAULT MODAL                           -->
     <!-- ------------------------------------------------ -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    AURA Control Center & Settings
-                </h3>
-                <button class="btn-close-modal" id="btnCloseModal">&times;</button>
+    <div class="modal-shade" id="modalShade">
+        <div class="settings-dialog">
+            <div class="dialog-header">
+                <h3>Settings & Runtime Configuration</h3>
+                <button class="btn-icon" id="btnCloseDialog">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="modal-tabs">
-                    <button class="tab-btn active" data-tab="tab-model">🧠 Brain & Model</button>
-                    <button class="tab-btn" data-tab="tab-security">🛡️ Autopilot & Security</button>
-                    <button class="tab-btn" data-tab="tab-memory">💾 Memory Vault</button>
-                    <button class="tab-btn" data-tab="tab-appearance">🎨 Theme & Motion</button>
+            <div class="dialog-body">
+                <div class="dialog-sidebar">
+                    <button class="dialog-tab-item active" data-pane="pane-brain">Model & Runtime</button>
+                    <button class="dialog-tab-item" data-pane="pane-security">Permissions Policy</button>
+                    <button class="dialog-tab-item" data-pane="pane-memory">Memory Vault</button>
                 </div>
-                <div class="tab-content-area">
-                    <!-- Tab: Model -->
-                    <div class="tab-content active" id="tab-model">
-                        <div class="setting-group">
-                            <label class="setting-label">Primary AI Intelligence Core</label>
-                            <p class="setting-desc">Select the neural engine powering AURA's function-calling and reasoning loops.</p>
-                            <select class="setting-select" id="selectModel">
-                                <option value="gemini-3.1-flash-lite">Google Gemini 3.1 Flash-Lite (Recommended · Latency: 1.6s)</option>
-                                <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (High Capacity)</option>
-                                <option value="gpt-4o">OpenAI GPT-4o (Omni)</option>
-                                <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
-                                <option value="ollama-llama3">Local Ollama Llama 3 (Offline Free)</option>
-                            </select>
-                        </div>
-                        <div class="setting-group">
-                            <label class="setting-label">Reasoning Temperature: <span id="tempVal">0.2</span></label>
-                            <p class="setting-desc">Lower values make code and shell execution strictly deterministic and safe.</p>
-                            <input type="range" min="0" max="1" step="0.05" value="0.2" class="setting-input" id="inputTemp" oninput="document.getElementById('tempVal').innerText=this.value">
-                        </div>
-                        <div class="setting-group">
-                            <label class="setting-label">Max Tool Turns Per Prompt</label>
-                            <p class="setting-desc">Limits recursive tool calling loops to avoid runaway API consumption.</p>
-                            <input type="number" min="1" max="15" value="5" class="setting-input" id="inputMaxTurns">
-                        </div>
+                <div class="dialog-pane active" id="pane-brain">
+                    <div class="form-row">
+                        <label class="form-label">Active AI Core</label>
+                        <p class="form-helper">The model used for reasoning, tool orchestration, and response generation.</p>
+                        <select class="select-dark" id="selectModelCore">
+                            <option value="gemini-3.1-flash-lite">Google Gemini 3.1 Flash-Lite (Recommended · Latency: 1.6s)</option>
+                            <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (High Capacity)</option>
+                            <option value="gpt-4o">OpenAI GPT-4o</option>
+                            <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet</option>
+                            <option value="ollama-llama3">Local Ollama Llama 3 (Offline)</option>
+                        </select>
                     </div>
-
-                    <!-- Tab: Security & Autopilot -->
-                    <div class="tab-content" id="tab-security">
-                        <div class="setting-group">
-                            <div class="toggle-switch">
-                                <div>
-                                    <div class="setting-label">Full Autopilot Execution</div>
-                                    <div class="setting-desc" style="margin-bottom:0">Automatically execute safe PowerShell and Browser actions without manual prompts.</div>
-                                </div>
-                                <input type="checkbox" id="checkAutopilot" checked>
-                            </div>
-                        </div>
-                        <div class="setting-group">
-                            <div class="toggle-switch">
-                                <div>
-                                    <div class="setting-label">Visible Browser Window</div>
-                                    <div class="setting-desc" style="margin-bottom:0">Display the browser on screen when opening pages or searching the web.</div>
-                                </div>
-                                <input type="checkbox" id="checkVisibleBrowser" checked>
-                            </div>
-                        </div>
-                        <div class="setting-group">
-                            <div class="toggle-switch">
-                                <div>
-                                    <div class="setting-label">Sandboxed File System</div>
-                                    <div class="setting-desc" style="margin-bottom:0">Restrict file reading/writing to the project workspace directory.</div>
-                                </div>
-                                <input type="checkbox" id="checkSandbox" checked>
-                            </div>
-                        </div>
+                    <div class="form-row">
+                        <label class="form-label">Tool Reasoning Depth</label>
+                        <p class="form-helper">Maximum autonomous tool loops before producing the final synthesized response.</p>
+                        <select class="select-dark" id="selectMaxTurns">
+                            <option value="10">Standard (Up to 10 operations)</option>
+                            <option value="15" selected>Deep Execution (Up to 15 operations)</option>
+                            <option value="25">Extended Autonomous (Up to 25 operations)</option>
+                        </select>
                     </div>
-
-                    <!-- Tab: Memory Vault -->
-                    <div class="tab-content" id="tab-memory">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <div>
-                                <h4 style="font-size:14px; font-weight:700;">Permanent SQLite Facts</h4>
-                                <p class="setting-desc" style="margin-bottom:0">Facts stored persistently across sessions in aura_memory.db.</p>
-                            </div>
-                            <button class="nav-btn" onclick="loadMemories()" style="font-size:11px;">Refresh Facts</button>
-                        </div>
-                        <div id="memoryContainer">
-                            <table class="memory-table">
-                                <thead>
-                                    <tr>
-                                        <th>Key</th>
-                                        <th>Value</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="memoryTbody">
-                                    <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Loading memories...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Tab: Appearance -->
-                    <div class="tab-content" id="tab-appearance">
-                        <div class="setting-group">
-                            <label class="setting-label">Kinetic Theme Accent</label>
-                            <p class="setting-desc">Choose the primary glowing holographic accent color.</p>
-                            <select class="setting-select" id="selectTheme">
-                                <option value="cyan">Cyberpunk Cyan (#00f0ff)</option>
-                                <option value="purple">Hologram Purple (#8a2be2)</option>
-                                <option value="emerald">Matrix Emerald (#10b981)</option>
-                                <option value="amber">Solar Amber (#f59e0b)</option>
-                            </select>
-                        </div>
-                        <div class="setting-group">
-                            <div class="toggle-switch">
-                                <div>
-                                    <div class="setting-label">Dynamic Mesh Motion</div>
-                                    <div class="setting-desc" style="margin-bottom:0">Enable fluid kinetic motion orbs in the ambient workspace background.</div>
-                                </div>
-                                <input type="checkbox" id="checkMeshMotion" checked>
-                            </div>
-                        </div>
+                    <div class="form-row">
+                        <label class="form-label">Temperature: <span id="tempIndicator">0.2</span></label>
+                        <p class="form-helper">Lower temperature ensures deterministic code and shell arguments.</p>
+                        <input type="range" min="0" max="1" step="0.05" value="0.2" class="input-dark" id="sliderTemp" oninput="document.getElementById('tempIndicator').innerText=this.value">
                     </div>
                 </div>
+
+                <div class="dialog-pane" id="pane-security">
+                    <div class="form-row">
+                        <label class="form-label">Execution Mode</label>
+                        <p class="form-helper">Control how tools are triggered on your machine.</p>
+                        <select class="select-dark" id="selectExecMode">
+                            <option value="auto_pilot">Auto-Pilot: Execute safe commands automatically</option>
+                            <option value="request_review">Request Review: Ask confirmation before executing shell/browser</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Browser Display</label>
+                        <p class="form-helper">Whether to launch visible browser windows or run silently.</p>
+                        <select class="select-dark" id="selectBrowserVisibility">
+                            <option value="visible">Visible: Open browser window on screen</option>
+                            <option value="headless">Headless: Background scraping only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="dialog-pane" id="pane-memory">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <div>
+                            <h4 style="font-size:13px; font-weight:600;">Stored SQLite Facts</h4>
+                            <p class="form-helper" style="margin-bottom:0">Directly inspection of aura_memory.db facts.</p>
+                        </div>
+                        <button class="btn-toolbar" onclick="fetchMemories()">Refresh</button>
+                    </div>
+                    <table class="fact-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Stored Value</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="factsBody">
+                            <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Loading memory facts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button class="nav-btn" id="btnCancelSettings">Cancel</button>
-                <button class="btn-modal-save" id="btnSaveSettings">Save Preferences</button>
+            <div class="dialog-footer">
+                <button class="btn-toolbar" id="btnCancelDialog">Cancel</button>
+                <button class="btn-confirm-save" id="btnSaveConfig">Save Settings</button>
             </div>
         </div>
     </div>
 
     <!-- ------------------------------------------------ -->
-    <!-- JAVASCRIPT LOGIC                                 -->
+    <!-- LOGIC SCRIPT                                     -->
     <!-- ------------------------------------------------ -->
     <script>
-        // DOM Elements
-        const promptInput = document.getElementById('promptInput');
-        const btnSend = document.getElementById('btnSend');
+        const userTextarea = document.getElementById('userTextarea');
+        const btnDispatch = document.getElementById('btnDispatch');
+        const chatContainer = document.getElementById('chatContainer');
         const chatFeed = document.getElementById('chatFeed');
-        const messagesList = document.getElementById('messagesList');
-        const emptyHero = document.getElementById('emptyHero');
-        const btnNewChat = document.getElementById('btnNewChat');
-        const btnClearFeed = document.getElementById('btnClearFeed');
-        const btnOpenSettings = document.getElementById('btnOpenSettings');
-        const btnCloseModal = document.getElementById('btnCloseModal');
-        const btnCancelSettings = document.getElementById('btnCancelSettings');
-        const btnSaveSettings = document.getElementById('btnSaveSettings');
-        const settingsModal = document.getElementById('settingsModal');
-        const btnNavMemory = document.getElementById('btnNavMemory');
-        const historyList = document.getElementById('historyList');
+        const emptyView = document.getElementById('emptyView');
+        const btnNewThread = document.getElementById('btnNewThread');
+        const btnClearThread = document.getElementById('btnClearThread');
+        const btnSettingsTrigger = document.getElementById('btnSettingsTrigger');
+        const btnOpenVault = document.getElementById('btnOpenVault');
+        const modalShade = document.getElementById('modalShade');
+        const btnCloseDialog = document.getElementById('btnCloseDialog');
+        const btnCancelDialog = document.getElementById('btnCancelDialog');
+        const btnSaveConfig = document.getElementById('btnSaveConfig');
+        const permControl = document.getElementById('permControl');
+        const tagActiveMode = document.getElementById('tagActiveMode');
 
-        // Sessions state (localStorage synced)
-        let sessions = JSON.parse(localStorage.getItem('aura_sessions') || '[]');
-        let currentSessionId = localStorage.getItem('aura_current_session') || 'default';
+        let activeExecutionMode = 'auto_pilot';
 
-        // Auto-resize textarea
-        promptInput.addEventListener('input', function() {
+        // Auto-expand textarea
+        userTextarea.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
 
-        // Keydown handler: Enter sends, Shift+Enter new line
-        promptInput.addEventListener('keydown', function(e) {
+        // Key handler
+        userTextarea.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                submitPrompt();
+                dispatchPrompt();
             }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
-                startNewSession();
+                resetThread();
             }
         });
 
-        btnSend.addEventListener('click', submitPrompt);
-        btnNewChat.addEventListener('click', startNewSession);
-        btnClearFeed.addEventListener('click', clearScreen);
+        btnDispatch.addEventListener('click', dispatchPrompt);
+        btnNewThread.addEventListener('click', resetThread);
+        btnClearThread.addEventListener('click', resetThread);
+
+        // Permission buttons toggle
+        permControl.querySelectorAll('.perm-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                permControl.querySelectorAll('.perm-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeExecutionMode = btn.getAttribute('data-mode');
+                tagActiveMode.innerText = 'Mode: ' + (activeExecutionMode === 'auto_pilot' ? 'Auto-Pilot' : 'Request Review');
+            });
+        });
 
         // Modal triggers
-        btnOpenSettings.addEventListener('click', () => { openSettingsModal('tab-model'); });
-        btnCloseModal.addEventListener('click', closeSettingsModal);
-        btnCancelSettings.addEventListener('click', closeSettingsModal);
-        btnNavMemory.addEventListener('click', () => { openSettingsModal('tab-memory'); });
+        btnSettingsTrigger.addEventListener('click', () => openModal('pane-brain'));
+        btnOpenVault.addEventListener('click', () => openModal('pane-memory'));
+        btnCloseDialog.addEventListener('click', closeModal);
+        btnCancelDialog.addEventListener('click', closeModal);
 
-        // Tab switching in modal
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                const targetTab = document.getElementById(btn.getAttribute('data-tab'));
-                if (targetTab) targetTab.classList.add('active');
-                if (btn.getAttribute('data-tab') === 'tab-memory') loadMemories();
+        document.querySelectorAll('.dialog-tab-item').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.dialog-tab-item').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.dialog-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                const target = document.getElementById(tab.getAttribute('data-pane'));
+                if (target) target.classList.add('active');
+                if (tab.getAttribute('data-pane') === 'pane-memory') fetchMemories();
             });
         });
 
-        function openSettingsModal(defaultTabId = 'tab-model') {
-            settingsModal.classList.add('open');
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.toggle('active', b.getAttribute('data-tab') === defaultTabId);
+        function openModal(paneId = 'pane-brain') {
+            modalShade.classList.add('open');
+            document.querySelectorAll('.dialog-tab-item').forEach(t => {
+                t.classList.toggle('active', t.getAttribute('data-pane') === paneId);
             });
-            document.querySelectorAll('.tab-content').forEach(c => {
-                c.classList.toggle('active', c.id === defaultTabId);
+            document.querySelectorAll('.dialog-pane').forEach(p => {
+                p.classList.toggle('active', p.id === paneId);
             });
             loadSettings();
-            if (defaultTabId === 'tab-memory') loadMemories();
+            if (paneId === 'pane-memory') fetchMemories();
         }
 
-        function closeSettingsModal() {
-            settingsModal.classList.remove('open');
+        function closeModal() {
+            modalShade.classList.remove('open');
         }
 
-        // Send a quick prompt from the hero cards
-        function sendQuickPrompt(text) {
-            promptInput.value = text;
-            promptInput.style.height = 'auto';
-            promptInput.focus();
-            submitPrompt();
+        function dispatchDirect(text) {
+            userTextarea.value = text;
+            userTextarea.style.height = 'auto';
+            userTextarea.focus();
+            dispatchPrompt();
         }
 
-        // Core Send function
-        async function submitPrompt() {
-            const text = promptInput.value.trim();
-            if (!text) return;
+        async function dispatchPrompt() {
+            const prompt = userTextarea.value.trim();
+            if (!prompt) return;
 
-            // Hide hero if visible
-            if (emptyHero) emptyHero.style.display = 'none';
+            if (emptyView) emptyView.style.display = 'none';
 
-            // Add user message to UI
-            appendUserMessage(text);
-            promptInput.value = '';
-            promptInput.style.height = 'auto';
-            btnSend.disabled = true;
+            // User turn
+            appendUserTurn(prompt);
+            userTextarea.value = '';
+            userTextarea.style.height = 'auto';
+            btnDispatch.disabled = true;
 
-            // Show typing indicator
-            const typingId = showTypingIndicator();
-            scrollToBottom();
+            const workingId = appendWorkingIndicator();
+            scrollChat();
 
             try {
-                const response = await fetch('/api/chat', {
+                const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: text })
+                    body: JSON.stringify({ prompt: prompt })
                 });
 
-                const data = await response.json();
-                removeTypingIndicator(typingId);
+                const data = await res.json();
+                removeWorkingIndicator(workingId);
 
-                if (response.ok) {
-                    appendAuraMessage(data.reply, data.tools || []);
+                if (res.ok) {
+                    appendAgentTurn(data.reply, data.tools || []);
                 } else {
-                    appendAuraMessage("Error from AURA: " + (data.reply || "Could not process instruction."));
+                    appendAgentTurn("Runtime Error: " + (data.reply || "Unable to complete prompt."));
                 }
             } catch (err) {
-                removeTypingIndicator(typingId);
-                appendAuraMessage("Network / Execution Error: " + err.message);
+                removeWorkingIndicator(workingId);
+                appendAgentTurn("Connection Error: " + err.message);
             } finally {
-                btnSend.disabled = false;
-                promptInput.focus();
-                scrollToBottom();
+                btnDispatch.disabled = false;
+                userTextarea.focus();
+                scrollChat();
             }
         }
 
-        function appendUserMessage(text) {
-            const row = document.createElement('div');
-            row.className = 'message-row user';
-            row.innerHTML = `
-                <div class="msg-avatar user-av">MT</div>
-                <div class="msg-content-box">
-                    <div class="msg-bubble">${escapeHtml(text)}</div>
-                    <div class="msg-footer-bar">
-                        <span>Just now</span>
-                        <button class="btn-msg-action" onclick="copyText('${escapeQuotes(text)}', this)">Copy</button>
-                    </div>
+        function appendUserTurn(text) {
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn user';
+            turn.innerHTML = `
+                <div class="msg-meta-header">
+                    <span>You</span>
                 </div>
+                <div class="msg-bubble-user">${escapeHtml(text)}</div>
             `;
-            messagesList.appendChild(row);
+            chatFeed.appendChild(turn);
         }
 
-        function appendAuraMessage(text, tools = []) {
-            const row = document.createElement('div');
-            row.className = 'message-row aura';
-            
-            // Build tool badges if tools were executed
-            let toolHtml = '';
-            if (tools && tools.length > 0) {
-                tools.forEach(t => {
-                    let toolName = t.name || 'tool_executed';
-                    let toolArg = JSON.stringify(t.args || {});
-                    let icon = '⚡';
-                    if (toolName.includes('browser') || toolName.includes('web')) icon = '🌐';
-                    if (toolName.includes('memory')) icon = '🧠';
-                    if (toolName.includes('screen')) icon = '👁️';
+        function appendAgentTurn(replyText, tools = []) {
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn';
 
-                    toolHtml += `
-                        <div class="tool-banner">
-                            <span>${icon}</span>
-                            <strong>${escapeHtml(toolName)}</strong>
-                            <span style="opacity:0.75; font-size:11px;">(${escapeHtml(toolArg)})</span>
+            let toolsHtml = '';
+            if (tools && tools.length > 0) {
+                tools.forEach((t, i) => {
+                    const tName = t.name || 'tool_executed';
+                    const argsStr = JSON.stringify(t.args || {});
+                    let outputStr = '';
+                    if (t.output) {
+                        if (typeof t.output === 'object') {
+                            outputStr = JSON.stringify(t.output, null, 2);
+                        } else {
+                            outputStr = String(t.output);
+                        }
+                    }
+
+                    toolsHtml += `
+                        <div class="tool-drawer" id="td_${i}_${Date.now()}">
+                            <div class="tool-header-bar" onclick="toggleToolDrawer(this.parentElement)">
+                                <div class="tool-tag">
+                                    <span class="tool-name-badge">${escapeHtml(tName)}</span>
+                                    <span class="tool-arg-preview">${escapeHtml(argsStr)}</span>
+                                </div>
+                                <div class="tool-status-pill">
+                                    <span>completed</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                            <div class="tool-body-pane">${escapeHtml(outputStr || 'Success')}</div>
                         </div>
                     `;
                 });
             }
 
-            const formattedText = renderMarkdown(text);
-            const rawTextToCopy = escapeQuotes(text);
+            const cleanFormatted = formatMarkdown(replyText);
+            const copyPayload = escapeQuotes(replyText);
 
-            row.innerHTML = `
-                <div class="msg-avatar aura">A</div>
-                <div class="msg-content-box">
-                    ${toolHtml}
-                    <div class="msg-bubble">${formattedText}</div>
-                    <div class="msg-footer-bar">
-                        <span>AURA Omni</span>
-                        <button class="btn-msg-action" onclick="copyText('${rawTextToCopy}', this)">
+            turn.innerHTML = `
+                <div class="msg-meta-header">
+                    <span>AURA</span>
+                </div>
+                <div class="msg-agent-card">
+                    ${toolsHtml}
+                    <div class="agent-text-content">${cleanFormatted}</div>
+                    <div class="msg-action-strip">
+                        <button class="btn-action-text" onclick="copyResponse('${copyPayload}', this)">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            Copy Response
+                            Copy
                         </button>
                     </div>
                 </div>
             `;
-            messagesList.appendChild(row);
+            chatFeed.appendChild(turn);
         }
 
-        function showTypingIndicator() {
-            const id = 'typing_' + Date.now();
-            const row = document.createElement('div');
-            row.className = 'message-row aura';
-            row.id = id;
-            row.innerHTML = `
-                <div class="msg-avatar aura">A</div>
-                <div class="msg-content-box">
-                    <div class="msg-bubble typing-bubble">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
+        function toggleToolDrawer(el) {
+            el.classList.toggle('expanded');
+        }
+
+        function appendWorkingIndicator() {
+            const id = 'working_' + Date.now();
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn';
+            turn.id = id;
+            turn.innerHTML = `
+                <div class="working-indicator">
+                    <span class="working-dot"></span>
+                    <span>Reasoning and executing tool operations...</span>
                 </div>
             `;
-            messagesList.appendChild(row);
+            chatFeed.appendChild(turn);
             return id;
         }
 
-        function removeTypingIndicator(id) {
+        function removeWorkingIndicator(id) {
             const el = document.getElementById(id);
             if (el) el.remove();
         }
 
-        function scrollToBottom() {
-            chatFeed.scrollTop = chatFeed.scrollHeight;
+        function scrollChat() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        async function startNewSession() {
+        async function resetThread() {
             try {
                 await fetch('/api/chat/new', { method: 'POST' });
             } catch (e) {}
-            messagesList.innerHTML = '';
-            if (emptyHero) {
-                emptyHero.style.display = 'flex';
-                messagesList.appendChild(emptyHero);
+            chatFeed.innerHTML = '';
+            if (emptyView) {
+                emptyView.style.display = 'flex';
+                chatFeed.appendChild(emptyView);
             }
-            promptInput.focus();
+            userTextarea.focus();
         }
 
-        function clearScreen() {
-            messagesList.innerHTML = '';
-            if (emptyHero) {
-                emptyHero.style.display = 'flex';
-                messagesList.appendChild(emptyHero);
-            }
-        }
-
-        // Copy utility
-        function copyText(str, btn) {
-            navigator.clipboard.writeText(str).then(() => {
-                const oldHtml = btn.innerHTML;
-                btn.innerHTML = '✓ Copied!';
-                btn.style.color = '#10b981';
+        function copyResponse(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '✓ Copied';
+                btn.style.color = '#38bdf8';
                 setTimeout(() => {
-                    btn.innerHTML = oldHtml;
+                    btn.innerHTML = oldText;
                     btn.style.color = '';
                 }, 1500);
             });
         }
 
-        // Settings API Load & Save
+        // Settings API
         async function loadSettings() {
             try {
                 const res = await fetch('/api/settings');
                 const conf = await res.json();
-                if (conf.model) {
-                    document.getElementById('selectModel').value = conf.model.primary_model || 'gemini-3.1-flash-lite';
-                    document.getElementById('inputTemp').value = conf.model.temperature || 0.2;
-                    document.getElementById('tempVal').innerText = conf.model.temperature || 0.2;
-                    document.getElementById('inputMaxTurns').value = conf.model.max_thinking_turns || 5;
+                if (conf.brain_settings) {
+                    document.getElementById('selectModelCore').value = conf.brain_settings.active_model || 'gemini-3.1-flash-lite';
+                    document.getElementById('sliderTemp').value = conf.brain_settings.temperature || 0.2;
+                    document.getElementById('tempIndicator').innerText = conf.brain_settings.temperature || 0.2;
                 }
-                if (conf.security) {
-                    document.getElementById('checkAutopilot').checked = conf.security.execution_mode === 'auto-pilot';
-                    document.getElementById('checkVisibleBrowser').checked = conf.security.browser_mode === 'visible';
-                    document.getElementById('checkSandbox').checked = conf.security.file_system_sandbox !== false;
+                if (conf.security_and_permissions) {
+                    document.getElementById('selectExecMode').value = conf.security_and_permissions.execution_mode || 'auto_pilot';
+                    document.getElementById('selectBrowserVisibility').value = conf.security_and_permissions.browser_headless_mode ? 'headless' : 'visible';
                 }
             } catch (e) {
-                console.error("Could not load settings:", e);
+                console.error("Settings load error:", e);
             }
         }
 
-        btnSaveSettings.addEventListener('click', async () => {
-            const updatePayload = {
-                model: {
-                    primary_model: document.getElementById('selectModel').value,
-                    temperature: parseFloat(document.getElementById('inputTemp').value),
-                    max_thinking_turns: parseInt(document.getElementById('inputMaxTurns').value)
+        btnSaveConfig.addEventListener('click', async () => {
+            const payload = {
+                brain_settings: {
+                    active_model: document.getElementById('selectModelCore').value,
+                    temperature: parseFloat(document.getElementById('sliderTemp').value)
                 },
-                security: {
-                    execution_mode: document.getElementById('checkAutopilot').checked ? 'auto-pilot' : 'ask-first',
-                    browser_mode: document.getElementById('checkVisibleBrowser').checked ? 'visible' : 'headless',
-                    file_system_sandbox: document.getElementById('checkSandbox').checked
+                security_and_permissions: {
+                    execution_mode: document.getElementById('selectExecMode').value,
+                    browser_headless_mode: document.getElementById('selectBrowserVisibility').value === 'headless'
                 }
             };
 
@@ -1619,46 +1499,45 @@
                 await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatePayload)
+                    body: JSON.stringify(payload)
                 });
-                closeSettingsModal();
-                alert('AURA Settings saved successfully!');
+                closeModal();
             } catch (e) {
-                alert('Failed to save settings: ' + e.message);
+                alert("Failed to save: " + e.message);
             }
         });
 
-        // Memory Vault API Load & Delete
-        async function loadMemories() {
-            const tbody = document.getElementById('memoryTbody');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Fetching facts from SQLite...</td></tr>';
+        // Memories API
+        async function fetchMemories() {
+            const tbody = document.getElementById('factsBody');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Fetching from SQLite...</td></tr>';
             try {
                 const res = await fetch('/api/memory');
                 const data = await res.json();
                 if (data.success && data.memories) {
                     if (data.memories.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No facts remembered yet. Ask AURA: "Remember that..."</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No facts remembered in database.</td></tr>';
                         return;
                     }
                     tbody.innerHTML = '';
                     data.memories.forEach(m => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td class="key-col">${escapeHtml(m.key)}</td>
+                            <td class="fact-key">${escapeHtml(m.key)}</td>
                             <td>${escapeHtml(m.value)}</td>
                             <td>
-                                <button class="btn-del-mem" onclick="deleteMemoryFact('${escapeQuotes(m.key)}')">Delete</button>
+                                <button class="btn-action-text" onclick="deleteFact('${escapeQuotes(m.key)}')">Delete</button>
                             </td>
                         `;
                         tbody.appendChild(tr);
                     });
                 }
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="3" style="color:#ef4444;">Error loading memories: ${e.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="color:var(--accent-rose);">Error: ${e.message}</td></tr>`;
             }
         }
 
-        async function deleteMemoryFact(key) {
+        async function deleteFact(key) {
             if (!confirm(`Delete memory fact "${key}"?`)) return;
             try {
                 await fetch('/api/memory/delete', {
@@ -1666,45 +1545,32 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ key: key })
                 });
-                loadMemories();
+                fetchMemories();
             } catch (e) {
-                alert('Failed to delete fact: ' + e.message);
+                alert("Failed to delete: " + e.message);
             }
         }
 
-        // Markdown Formatter (Headers, Code blocks, Bold, Lists)
-        function renderMarkdown(md) {
+        // Markdown Formatter
+        function formatMarkdown(md) {
             if (!md) return '';
-            let html = md;
-            
-            // Fenced code blocks ```lang ... ```
-            html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                const langTitle = lang || 'code';
-                const codeEsc = escapeHtml(code.trim());
-                return `
-                    <div style="margin: 10px 0;">
-                        <div class="code-header">
-                            <span>${langTitle}</span>
-                            <button class="btn-copy-code" onclick="copyText('${escapeQuotes(code.trim())}', this)">Copy Code</button>
-                        </div>
-                        <pre><code>${codeEsc}</code></pre>
-                    </div>
-                `;
+            let s = md;
+
+            // Code blocks
+            s = s.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
             });
 
-            // Inline code `...`
-            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            // Inline code
+            s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-            // Bold **...**
-            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            // Bold
+            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
-            // Italic *...*
-            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            // Line breaks
+            s = s.replace(/\n/g, '<br>');
 
-            // Line breaks to <br>
-            html = html.replace(/\n/g, '<br>');
-
-            return html;
+            return s;
         }
 
         function escapeHtml(str) {
