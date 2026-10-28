@@ -1,0 +1,52 @@
+{
+  "system": {
+    "agent_name": "AURA",
+    "creator": "Mohammed Touffeq",
+    "version": "4.0.0",
+    "environment": "production"
+  },
+  "brain_settings": {
+    "active_provider": "gemini",
+    "active_model": "gemini-3.1-flash-lite",
+    "fallback_model": "gemini-2.5-flash",
+    "temperature": 0.3,
+    "top_p": 0.95,
+    "max_output_tokens": 4096,
+    "thinking_budget_level": "medium",
+    "custom_system_instruction": "You are AURA, an elite autonomous AI created by Mohammed Touffeq. Solve problems directly by taking real action."
+  },
+  "security_and_permissions": {
+    "execution_mode": "auto_pilot",
+    "require_confirmation_for_destructive_commands": true,
+    "browser_headless_mode": false,
+    "shell_timeout_seconds": 30,
+    "allowed_tool_categories": [
+      "shell",
+      "browser",
+      "filesystem",
+      "memory",
+      "vision"
+    ]
+  },
+  "memory_and_privacy": {
+    "persistent_sqlite_enabled": true,
+    "auto_recall_user_facts": true,
+    "max_memory_search_results": 10,
+    "telemetry_logging": false
+  },
+  "hardware_and_performance": {
+    "max_consecutive_tool_turns": 8,
+    "connection_keep_alive": false,
+    "offline_local_model_endpoint": "http://localhost:11434"
+  },
+  "ui_kinetic_theme": {
+    "theme_mode": "kinetic_cyberpunk",
+    "particle_flow_speed": "smooth_fast",
+    "ambient_gradient_wave": true,
+    "pulsating_orb_reaction": true,
+    "neon_accent_color": "#00FFCC",
+    "secondary_plasma_color": "#9D00FF",
+    "glass_blur_intensity_px": 16,
+    "sound_effects_enabled": true
+  }
+}
