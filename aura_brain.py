@@ -285,6 +285,11 @@ class AuraBrain:
         self.api_key = API_KEY
         self.model = MODEL_NAME
         self.history: List[Dict[str, Any]] = []
+        self.last_tools: List[Dict[str, Any]] = []
+
+    def clear_history(self):
+        self.history = []
+        self.last_tools = []
 
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         payload = {"contents": contents}
@@ -302,6 +307,7 @@ class AuraBrain:
 
     def think_and_act(self, user_prompt: str, max_turns: int = 5) -> str:
         """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response."""
+        self.last_tools = []
         self.history.append({"role": "user", "parts": [{"text": user_prompt}]})
 
         for turn in range(max_turns):
@@ -339,6 +345,12 @@ class AuraBrain:
                     result = tool_func(**args)
                 else:
                     result = {"error": f"Unknown tool: {func_name}"}
+
+                self.last_tools.append({
+                    "name": func_name,
+                    "args": args,
+                    "output": result
+                })
 
                 function_responses.append({
                     "functionResponse": {
