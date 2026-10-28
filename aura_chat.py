@@ -2,32 +2,33 @@
 ===================================================================================
                      AURA AGENT - INTERACTIVE TERMINAL CONSOLE
 ===================================================================================
-Interactive live console to chat and give autonomous commands to AURA.
-Author: Mohammed Touffeq & Antigravity
+Interactive terminal client for Aura's Gemini-backed tool loop.
 ===================================================================================
 """
 
-import sys
 from aura_brain import AuraBrain
 
-def main():
-    print("=" * 65)
-    print("        AURA AGENT - NEXT-GEN AUTONOMOUS INTERFACE")
-    print("                 Created by Mohammed Touffeq")
-    print("=" * 65)
-    print("[*] Engine Status : ACTIVE (Gemini 3.1 Next-Gen Brain Online)")
-    print("[*] Hardware Tools: PowerShell, Browser, Code Editor, File I/O")
-    print("[*] Type 'exit' or 'quit' to close console.")
-    print("-" * 65)
 
+def main() -> None:
     brain = AuraBrain()
+    configured = bool(brain.api_key.strip())
+
+    print("=" * 65)
+    print("        AURA AGENT - LOCAL TERMINAL CONSOLE")
+    print("=" * 65)
+    print(f"[*] Model          : {brain.model}")
+    print(f"[*] API key        : {'configured' if configured else 'missing'}")
+    print("[*] Connection     : not verified until the first request")
+    print("[!] Tool approval  : not implemented; model-requested tools run immediately")
+    print("[*] Type 'exit' or 'quit' to close the console.")
+    print("-" * 65)
 
     while True:
         try:
             user_input = input("\nYou > ").strip()
             if not user_input:
                 continue
-            if user_input.lower() in ["exit", "quit", "q"]:
+            if user_input.lower() in {"exit", "quit", "q"}:
                 print("\n[*] Shutting down AURA Console. Goodbye!")
                 break
 
@@ -38,8 +39,10 @@ def main():
         except KeyboardInterrupt:
             print("\n\n[*] Interrupted. Exiting AURA Console.")
             break
-        except Exception as e:
-            print(f"\n[Error]: {e}")
+        except EOFError:
+            print("\n[*] Input closed. Exiting AURA Console.")
+            break
+
 
 if __name__ == "__main__":
     main()
