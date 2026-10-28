@@ -1,5 +1,6 @@
 .env
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
-*.db
+aura_memory.db*
+current_screen.png
