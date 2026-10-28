@@ -20,7 +20,7 @@ From an Aura checkout:
 
     python setup_engines.py --list
     python aura_agent.py
-    python -m unittest -v test_aura_agent.py
+    python -B -m unittest discover -v
 
 The default setup command only lists the registry. To initialize selected source:
 
@@ -36,7 +36,7 @@ That operation downloads 32 repositories and can use substantial time, bandwidth
 
 The upstream entries cover desktop automation (Open Interpreter); browser automation (Browser Use, Playwright Python, Skyvern, Stagehand); coding assistance (Aider, OpenHands); orchestration (CrewAI, LangGraph, Microsoft Agent Framework, OpenAI Agents SDK, Semantic Kernel); model interfaces (LiteLLM, PydanticAI, DSPy); retrieval/storage (Haystack, LlamaIndex, Qdrant, pgvector); integrations (Dify, n8n, Activepieces, Composio, MCP Python SDK); durable workflows (Temporal, Prefect); inference (llama.cpp, Ollama, Transformers, vLLM); and observability/evaluation (Langfuse, Arize Phoenix).
 
-See .gitmodules and REPOSITORIES_PROOF.md for exact URLs and what the registry does and does not prove.
+See .gitmodules, REPOSITORIES_PROOF.md, and CAPABILITY_ROADMAP.md for exact URLs, limits, and the proposed product plan.
 
 ## Engineering direction
 
