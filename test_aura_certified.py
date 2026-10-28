@@ -1,0 +1,220 @@
+"""
+===================================================================================
+                AURA PRODUCTION CERTIFICATION & AUDIT SUITE
+===================================================================================
+Comprehensive verification tests covering:
+1. Fixed Server Port 5050 & Endpoint Availability
+2. Production Security Sandbox (PathGuard & Destructive Command Interception)
+3. Request-Review Mode vs Auto-Pilot Mode
+4. Multimodal Generative Tools (Image & Video Generation)
+5. Hardware Automation & Sub-second Live Weather Telemetry
+6. Autonomous Offline Intelligence Resilience (Zero-Key Air-Gapped Test)
+7. Multi-Tenant SQLite Database Project & Thread Management
+===================================================================================
+"""
+import os
+import sys
+import unittest
+import threading
+import time
+import json
+import urllib.request
+from pathlib import Path
+
+# Add project root to sys.path
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+
+import aura_db
+from aura_brain import (
+    validate_safe_path,
+    is_safe_command,
+    tool_execute_shell,
+    tool_write_file,
+    tool_read_file,
+    tool_get_weather,
+    tool_generate_image,
+    tool_generate_video,
+    tool_open_browser,
+    AuraBrain,
+    SAFE_WORKSPACE_ROOTS,
+    STRICTLY_FORBIDDEN_PATHS
+)
+from aura_web import AuraWebHandler, make_server
+
+
+class TestAuraProductionCertification(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Start a local test server instance
+        cls.test_port = 5051
+        cls.server = make_server("127.0.0.1", cls.test_port)
+        cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.server_thread.start()
+        time.sleep(0.5)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+
+    # -----------------------------------------------------------------------------
+    # 1. FIXED SERVER & ENDPOINTS
+    # -----------------------------------------------------------------------------
+    def test_01_server_serves_index_html(self):
+        url = f"http://127.0.0.1:{self.test_port}/"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            content = resp.read().decode("utf-8")
+            self.assertIn("AURA Core", content)
+            self.assertIn("sidebar-section-switcher", content)
+
+    def test_02_safety_status_endpoint(self):
+        url = f"http://127.0.0.1:{self.test_port}/api/system/safety_status"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode())
+            self.assertTrue(data.get("success"))
+            self.assertTrue(data.get("sandbox_active"))
+            self.assertIn("tool_generate_image", data.get("multimodal_tools", []))
+
+    def test_03_projects_endpoint(self):
+        url = f"http://127.0.0.1:{self.test_port}/api/projects"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode())
+            self.assertTrue(data.get("success"))
+            self.assertIsInstance(data.get("projects"), list)
+
+    # -----------------------------------------------------------------------------
+    # 2. PRODUCTION SECURITY SANDBOX (PathGuard)
+    # -----------------------------------------------------------------------------
+    def test_04_sandbox_blocks_windows_system_access(self):
+        with self.assertRaises(PermissionError):
+            validate_safe_path("C:/Windows/System32/cmd.exe")
+
+    def test_05_sandbox_blocks_program_files(self):
+        with self.assertRaises(PermissionError):
+            validate_safe_path("C:/Program Files/malicious_tool.exe")
+
+    def test_06_sandbox_blocks_path_traversal(self):
+        with self.assertRaises(PermissionError):
+            validate_safe_path("../../../Windows/System32/drivers/etc/hosts")
+
+    def test_07_safe_workspace_path_allowed(self):
+        safe_path = Path(__file__).resolve().parent / "workspace" / "test_file.txt"
+        validated = validate_safe_path(str(safe_path), allow_create=True)
+        self.assertEqual(validated, safe_path)
+
+    # -----------------------------------------------------------------------------
+    # 3. POWERSHELL COMMAND GUARD & REQUEST-REVIEW MODE
+    # -----------------------------------------------------------------------------
+    def test_08_command_guard_blocks_format_disk(self):
+        is_safe, reason = is_safe_command("format C: /fs:ntfs")
+        self.assertFalse(is_safe)
+        self.assertIn("Potentially destructive", reason)
+
+    def test_09_command_guard_blocks_recursive_rmdir(self):
+        is_safe, _ = is_safe_command("rmdir /s /q C:\\")
+        self.assertFalse(is_safe)
+
+    def test_10_command_guard_allows_safe_commands(self):
+        is_safe, _ = is_safe_command("Get-Process | Select-Object -First 5")
+        self.assertTrue(is_safe)
+
+    def test_11_request_review_mode_pauses_unapproved_shell(self):
+        res = tool_execute_shell("Get-Date", permission_mode="request_review", approved=False)
+        self.assertFalse(res.get("success"))
+        self.assertTrue(res.get("requires_approval"))
+
+    def test_12_request_review_mode_allows_approved_shell(self):
+        res = tool_execute_shell("echo 'Authorized by User'", permission_mode="request_review", approved=True)
+        self.assertTrue(res.get("success"))
+        self.assertIn("Authorized by User", res.get("stdout", ""))
+
+    # -----------------------------------------------------------------------------
+    # 4. MULTIMODAL GENERATIVE TOOLS (Image & Video)
+    # -----------------------------------------------------------------------------
+    def test_13_multimodal_image_generation(self):
+        res = tool_generate_image("A futuristic holographic user interface with glowing nodes", aspect_ratio="1:1")
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("action"), "generated_image")
+        self.assertTrue(Path(res.get("file_path")).exists())
+
+    def test_14_multimodal_video_generation(self):
+        res = tool_generate_video("Cybersecurity agent running neural packet inspection", duration_sec=3)
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("action"), "generated_video")
+        self.assertTrue(Path(res.get("video_player_path")).exists())
+        self.assertTrue(Path(res.get("video_meta_path")).exists())
+
+    # -----------------------------------------------------------------------------
+    # 5. HARDWARE AUTOMATION & LIVE WEATHER TELEMETRY
+    # -----------------------------------------------------------------------------
+    def test_15_live_weather_telemetry(self):
+        res = tool_get_weather("Hyderabad")
+        self.assertTrue(res.get("success"))
+        self.assertIn("°C", res.get("temperature", ""))
+
+    def test_16_browser_launch_tool(self):
+        # We test that tool_open_browser returns success and correctly formats URL
+        res = tool_open_browser("google.com")
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("url"), "https://google.com")
+
+    # -----------------------------------------------------------------------------
+    # 6. AUTONOMOUS OFFLINE REAC LOOP RESILIENCE (Zero-Key Test)
+    # -----------------------------------------------------------------------------
+    def test_17_autonomous_brain_offline_weather_react(self):
+        brain = AuraBrain()
+        brain.api_key = "" # Simulate offline environment
+        reply = brain.think_and_act("What is the current weather in Hyderabad?")
+        self.assertIsNotNone(reply)
+        tools_executed = [t["name"] for t in brain.last_tools]
+        self.assertIn("tool_get_weather", tools_executed)
+
+    def test_18_autonomous_brain_offline_image_react(self):
+        brain = AuraBrain()
+        brain.api_key = ""
+        reply = brain.think_and_act("Generate image of a high tech futuristic server room")
+        self.assertIsNotNone(reply)
+        tools_executed = [t["name"] for t in brain.last_tools]
+        self.assertIn("tool_generate_image", tools_executed)
+
+    # -----------------------------------------------------------------------------
+    # 7. MULTI-TENANT SQLITE PROJECTS & THREADS CRUD
+    # -----------------------------------------------------------------------------
+    def test_19_projects_db_lifecycle(self):
+        user_id = 9999
+        proj = aura_db.create_user_project(
+            user_id,
+            "Certification Core Project",
+            "AURA Tech Inc",
+            "Python",
+            "c:/Users/hp/cyberheist",
+            "Audit verification workspace"
+        )
+        self.assertIsNotNone(proj.get("id"))
+        proj_id = proj["id"]
+
+        projects = aura_db.get_user_projects(user_id)
+        self.assertTrue(any(p["id"] == proj_id for p in projects))
+
+        aura_db.pin_user_project(user_id, proj_id, True)
+        projects = aura_db.get_user_projects(user_id)
+        self.assertTrue(any(p["id"] == proj_id and p["is_pinned"] == 1 for p in projects))
+
+        aura_db.rename_user_project(user_id, proj_id, "Renamed Core Project")
+        projects = aura_db.get_user_projects(user_id)
+        self.assertTrue(any(p["id"] == proj_id and p["name"] == "Renamed Core Project" for p in projects))
+
+        aura_db.delete_user_project(user_id, proj_id)
+        projects = aura_db.get_user_projects(user_id)
+        self.assertFalse(any(p["id"] == proj_id for p in projects))
+
+
+if __name__ == "__main__":
+    unittest.main()

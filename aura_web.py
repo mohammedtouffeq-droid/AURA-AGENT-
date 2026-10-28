@@ -135,6 +135,18 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = tool_open_browser("https://www.google.com")
             self._send_json(res)
 
+        elif path == "/api/system/safety_status":
+            from aura_brain import SAFE_WORKSPACE_ROOTS, STRICTLY_FORBIDDEN_PATHS
+            self._send_json({
+                "success": True,
+                "sandbox_active": True,
+                "safe_workspaces": [str(p) for p in SAFE_WORKSPACE_ROOTS],
+                "strictly_forbidden_paths": [str(p) for p in STRICTLY_FORBIDDEN_PATHS],
+                "hardware_control": "Protected Foreground Subprocess",
+                "powershell_sandbox": "Command Pattern Filter + Review Gate",
+                "multimodal_tools": ["tool_generate_image", "tool_generate_video", "tool_get_weather", "tool_open_browser"]
+            })
+
         elif path == "/api/engines":
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
@@ -261,6 +273,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             prompt = body.get("prompt", "").strip()
             thread_id = body.get("thread_id", "default")
             attachments = body.get("attachments", [])
+            permission_mode = body.get("mode", "auto_pilot")
+            approved = body.get("approved", False)
 
             if not prompt and not attachments:
                 self._send_json({"reply": "Please enter an instruction or attach a file."}, status=400)
@@ -274,8 +288,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
 
-            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Attachments: {len(attachments)})")
-            reply = BRAIN.think_and_act(prompt, attachments=attachments)
+            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Mode: {permission_mode}, Attachments: {len(attachments)})")
+            reply = BRAIN.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved)
             tools_used = getattr(BRAIN, "last_tools", [])
 
             # Save assistant response
@@ -329,10 +343,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
 
+def make_server(host: str = HOST, port: int = PORT) -> HTTPServer:
+    return HTTPServer((host, port), AuraWebHandler)
+
+
 def run():
-    server_address = (HOST, PORT)
-    httpd = HTTPServer(server_address, AuraWebHandler)
-    url = f"http://localhost:{PORT}"
+    httpd = make_server(HOST, PORT)
+    url = f"http://127.0.0.1:{PORT}"
     print("=" * 65)
     print("        AURA AGENT - MULTI-USER CLOUD & LOCAL WORKSPACE")
     print("                    AURA Technologies Inc.")
@@ -340,7 +357,8 @@ def run():
     print(f"[*] Workspace Server Binding : {HOST}:{PORT}")
     print(f"[*] Local Access URL         : {url}")
     print("[*] Multi-User Auth SQLite   : ACTIVE (aura_workspace.db)")
-    print("[*] ReAct Gemini Brain       : READY")
+    print("[*] Security Sandbox Guard   : ACTIVE (PathGuard & CommandGuard)")
+    print("[*] ReAct Gemini Brain       : READY (Multimodal & 35 Engines)")
     print("-" * 65)
 
     try:

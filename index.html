@@ -2825,7 +2825,8 @@ ${p.description ? `**Scope & Requirements:**\n> ${p.description}\n\n` : ''}Ready
                     body: JSON.stringify({
                         prompt: prompt,
                         thread_id: currentThreadId,
-                        attachments: sentAttachments
+                        attachments: sentAttachments,
+                        mode: currentExecutionMode
                     })
                 });
 
