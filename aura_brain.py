@@ -124,6 +124,36 @@ def tool_read_webpage(url: str) -> Dict[str, Any]:
 # ===================================================================================
 # 3. OS HARDWARE, SHELL & FILE TOOLS
 # ===================================================================================
+from aura_agent import AuraAgent
+
+GLOBAL_AGENT_MESH = AuraAgent()
+
+def tool_query_engine_mesh(category: str = "") -> Dict[str, Any]:
+    """Inspects all 32 mounted GitHub open-source repositories and engines."""
+    engines = GLOBAL_AGENT_MESH.get_engine_list()
+    if category:
+        engines = [e for e in engines if category.lower() in e["category"].lower()]
+    return {
+        "success": True,
+        "total_mounted": len(engines),
+        "engines": engines[:12]
+    }
+
+def tool_search_engine_code(engine_name: str, keyword: str) -> Dict[str, Any]:
+    """Searches real source code inside any of the 32 cloned engines."""
+    matches = GLOBAL_AGENT_MESH.search_mesh_code(keyword, target_engine=engine_name, max_results=5)
+    return {
+        "success": True,
+        "engine": engine_name,
+        "keyword": keyword,
+        "matches_found": len(matches),
+        "results": matches
+    }
+
+def tool_execute_engine_pipeline(goal: str) -> Dict[str, Any]:
+    """Orchestrates an end-to-end task through the 32-engine multi-stage pipeline."""
+    res = GLOBAL_AGENT_MESH.execute_goal(goal)
+    return {"success": True, "pipeline": res}
 def tool_execute_shell(command: str) -> Dict[str, Any]:
     """Executes native PowerShell command on Windows."""
     try:
@@ -182,7 +212,10 @@ AVAILABLE_TOOLS = {
     "tool_read_file": tool_read_file,
     "tool_remember_fact": tool_remember_fact,
     "tool_recall_memory": tool_recall_memory,
-    "tool_take_screenshot": tool_take_screenshot
+    "tool_take_screenshot": tool_take_screenshot,
+    "tool_query_engine_mesh": tool_query_engine_mesh,
+    "tool_search_engine_code": tool_search_engine_code,
+    "tool_execute_engine_pipeline": tool_execute_engine_pipeline
 }
 
 GEMINI_TOOLS_DECLARATION = [{
@@ -271,6 +304,39 @@ GEMINI_TOOLS_DECLARATION = [{
             "parameters": {
                 "type": "OBJECT",
                 "properties": {}
+            }
+        },
+        {
+            "name": "tool_query_engine_mesh",
+            "description": "Inspect the 32 cloned open-source engines in AURA's universe mesh (e.g. Aider, LangGraph, CrewAI, LiteLLM, Qdrant, Temporal, etc.).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "category": {"type": "STRING", "description": "Optional category filter like 'Web Automation', 'Autonomous Coding', 'Multi-Agent Swarm', 'Search & Memory'."}
+                }
+            }
+        },
+        {
+            "name": "tool_search_engine_code",
+            "description": "Search actual source code, examples, or tools inside any of the 32 mounted engine repositories (e.g. browser-use, aider, crewAI, langgraph, open-interpreter).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "engine_name": {"type": "STRING", "description": "The exact engine repository name, e.g. 'browser-use', 'aider', 'langgraph', 'crewAI', 'litellm'."},
+                    "keyword": {"type": "STRING", "description": "The code symbol, function name, class, or keyword to find."}
+                },
+                "required": ["engine_name", "keyword"]
+            }
+        },
+        {
+            "name": "tool_execute_engine_pipeline",
+            "description": "Orchestrates an end-to-end task through the 32-engine multi-stage universe pipeline.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "goal": {"type": "STRING", "description": "The high-level goal to execute through the engine mesh."}
+                },
+                "required": ["goal"]
             }
         }
     ]

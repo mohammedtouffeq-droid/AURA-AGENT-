@@ -124,9 +124,28 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 config["user_custom"] = user["settings"]
             self._send_json(config)
 
+        elif path == "/api/engines":
+            from aura_agent import AuraAgent
+            agent_inst = AuraAgent()
+            engines = agent_inst.get_engine_list()
+            self._send_json({
+                "success": True,
+                "total_engines": len(engines),
+                "total_files": sum(e["files_available"] for e in engines),
+                "engines": engines
+            })
+
         elif path == "/favicon.ico":
             self.send_response(204)
             self.end_headers()
+        elif path == "/api/engines/search":
+            from aura_agent import AuraAgent
+            agent_inst = AuraAgent()
+            keyword = body.get("keyword", "")
+            target_engine = body.get("engine", None)
+            res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
+            self._send_json({"success": True, "results": res})
+
         else:
             self.send_error(404, "Not Found")
 
@@ -245,6 +264,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     SETTINGS.config[cat].update(opts)
             SETTINGS.save_settings()
             self._send_json({"success": True, "config": SETTINGS.config})
+
+        elif path == "/api/engines/search":
+            from aura_agent import AuraAgent
+            agent_inst = AuraAgent()
+            keyword = body.get("keyword", "")
+            target_engine = body.get("engine", None)
+            res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
+            self._send_json({"success": True, "results": res})
 
         else:
             self.send_error(404, "Not Found")
