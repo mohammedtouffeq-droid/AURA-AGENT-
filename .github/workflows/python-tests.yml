@@ -1,0 +1,22 @@
+name: Python quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile Python modules
+        run: python -m compileall -q aura_agent.py engine_auditor.py setup_engines.py aura_brain.py aura_chat.py aura_settings.py
+      - name: Run offline tests
+        run: python -B -m unittest discover -v
