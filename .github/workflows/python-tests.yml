@@ -1,0 +1,27 @@
+name: Python quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compile Python modules
+        run: python -m compileall -q aura_agent.py engine_auditor.py setup_engines.py aura_brain.py aura_chat.py aura_settings.py aura_web.py
+      - name: Run offline tests
+        run: python -B -m unittest discover -v
+      - name: Check embedded UI JavaScript
+        run: node scripts/check_frontend.js
