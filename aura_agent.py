@@ -42,9 +42,12 @@ ALL_32_ENGINES = [
     ("skyvern", "Skyvern Computer-Vision Browser", "Web Automation", 5986, "Computer vision workflows for complex browser workflows."),
     ("stagehand", "Stagehand AI Browser Automation", "Web Automation", 2121, "Playwright-based agentic browser automation primitives."),
     
-    # Coding
-    ("aider", "Aider Terminal Pair Programmer", "Autonomous Coding", 825, "AI pair programming in terminal with git repository editing."),
+    # Coding Powerhouses (Cursor-Grade Autonomous Coding Suite)
+    ("opencode", "OpenCode Terminal Coding Agent", "Autonomous Coding", 9053, "Terminal pair programming agent with multi-model intelligence."),
     ("OpenHands", "OpenHands Software Engineer", "Autonomous Coding", 3120, "Full software engineering agent for complex codebases."),
+    ("cline", "Cline Autonomous Coding Agent", "Autonomous Coding", 4402, "Autonomous IDE/CLI coding agent with file editing and testing."),
+    ("aider", "Aider Terminal Pair Programmer", "Autonomous Coding", 825, "AI pair programming in terminal with git repository editing."),
+    ("continue", "Continue IDE & CLI Coding Assistant", "Autonomous Coding", 5210, "Modular coding workflows, refactoring and completions."),
     
     # Orchestration & Swarms
     ("crewAI", "CrewAI Multi-Agent Swarm", "Multi-Agent Swarm", 42943, "Multi-agent role-playing frameworks and task pipelines."),

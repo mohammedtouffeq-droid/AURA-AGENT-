@@ -94,13 +94,50 @@ def tool_recall_memory(search_key: str = "") -> Dict[str, Any]:
 # 2. WEB AUTOMATION & SCRAPING TOOLS
 # ===================================================================================
 def tool_open_browser(url: str) -> Dict[str, Any]:
-    """Opens a website in the user's default browser."""
+    """Opens a website in the user's default browser directly on the interactive screen."""
+    import subprocess
     import webbrowser
+    if not url.startswith("http://") and not url.startswith("https://"):
+        url = "https://" + url
     try:
-        webbrowser.open(url)
-        return {"success": True, "action": "opened_browser", "url": url}
+        # On Windows, start opens the default browser in the foreground desktop session
+        subprocess.Popen(f'cmd /c start "" "{url}"', shell=True)
+        return {"success": True, "action": "opened_browser_on_screen", "url": url}
+    except Exception:
+        try:
+            webbrowser.open(url)
+            return {"success": True, "action": "opened_browser_on_screen", "url": url}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+def tool_get_weather(location: str = "Telangana") -> Dict[str, Any]:
+    """Fetches real-time live weather conditions, temperature, humidity and forecast for any city or region."""
+    try:
+        import urllib.parse
+        loc_clean = urllib.parse.quote(location.strip())
+        req = urllib.request.Request(
+            f"https://wttr.in/{loc_clean}?format=j1",
+            headers={"User-Agent": "curl/7.68.0"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            current = data.get("current_condition", [{}])[0]
+            temp_c = current.get("temp_C", "N/A")
+            desc = current.get("weatherDesc", [{}])[0].get("value", "N/A")
+            humidity = current.get("humidity", "N/A")
+            wind = current.get("windspeedKmph", "N/A")
+            feels_like = current.get("FeelsLikeC", "N/A")
+            return {
+                "success": True,
+                "location": location,
+                "temperature": f"{temp_c}°C",
+                "feels_like": f"{feels_like}°C",
+                "condition": desc,
+                "humidity": f"{humidity}%",
+                "wind": f"{wind} km/h"
+            }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {"success": False, "error": f"Live weather lookup failed: {e}"}
 
 def tool_read_webpage(url: str) -> Dict[str, Any]:
     """Fetches and reads text content from a webpage URL so AURA can summarize it."""
@@ -207,6 +244,7 @@ def tool_take_screenshot() -> Dict[str, Any]:
 AVAILABLE_TOOLS = {
     "tool_execute_shell": tool_execute_shell,
     "tool_open_browser": tool_open_browser,
+    "tool_get_weather": tool_get_weather,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
@@ -233,13 +271,24 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_open_browser",
-            "description": "Open a website URL in the user's web browser.",
+            "description": "Open a website URL in the user's web browser directly on their active computer screen.",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
                     "url": {"type": "STRING", "description": "The full web URL (e.g. https://www.google.com)."}
                 },
                 "required": ["url"]
+            }
+        },
+        {
+            "name": "tool_get_weather",
+            "description": "Get live real-time weather temperature, forecast conditions, humidity and wind for any location, city or region.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "location": {"type": "STRING", "description": "The city or state name (e.g. 'Telangana', 'Hyderabad', 'Mumbai', 'London')."}
+                },
+                "required": ["location"]
             }
         },
         {
@@ -358,14 +407,19 @@ class AuraBrain:
         self.last_tools = []
 
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-        payload = {"contents": contents}
+        payload = {
+            "contents": contents,
+            "systemInstruction": {
+                "parts": [{"text": "You are AURA, an elite autonomous developer workspace agent created by AURA Technologies Inc. When asked to take real actions (such as opening browser on screen, querying live weather, executing PowerShell commands, writing/reading files, or recalling memory), execute tools immediately on Turn 1 and provide the complete answer directly and swiftly."}]
+            }
+        }
         if tools:
             payload["tools"] = tools
 
         req = urllib.request.Request(
             API_URL,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json", "Connection": "close"},
+            headers={"Content-Type": "application/json"},
             method="POST"
         )
         with urllib.request.urlopen(req, timeout=30) as resp:

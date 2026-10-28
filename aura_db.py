@@ -103,6 +103,23 @@ def init_database():
         )
     """)
 
+    # Dedicated Coding Workspaces / Projects Table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS projects (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            company TEXT,
+            stack TEXT,
+            path TEXT,
+            description TEXT,
+            is_pinned INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -371,3 +388,85 @@ def save_user_settings(user_id: int, settings: Dict[str, Any]) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+# ===================================================================================
+# DEDICATED CODING WORKSPACES / PROJECTS API
+# ===================================================================================
+
+def create_user_project(user_id: int, name: str, company: str = "", stack: str = "Python", path: str = "", description: str = "") -> Dict[str, Any]:
+    project_id = f"proj_{secrets.token_hex(8)}"
+    if not path:
+        # Default project directory
+        path = str(Path(r"c:\Users\hp\cyberheist") / name.replace(" ", "_").lower())
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO projects (id, user_id, name, company, stack, path, description, is_pinned)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+    """, (project_id, user_id, name.strip(), company.strip(), stack.strip(), path.strip(), description.strip()))
+    
+    # Also create initial project thread
+    thread_id = f"th_p_{project_id}"
+    c.execute("""
+        INSERT INTO threads (id, user_id, title, is_pinned)
+        VALUES (?, ?, ?, 1)
+    """, (thread_id, user_id, f"💻 {name} (Coding)"))
+
+    conn.commit()
+    conn.close()
+    return {
+        "id": project_id,
+        "name": name,
+        "company": company,
+        "stack": stack,
+        "path": path,
+        "description": description,
+        "thread_id": thread_id
+    }
+
+
+def get_user_projects(user_id: int) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, name, company, stack, path, description, is_pinned, created_at, updated_at
+        FROM projects
+        WHERE user_id = ?
+        ORDER BY is_pinned DESC, updated_at DESC
+    """, (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def pin_user_project(user_id: int, project_id: str, is_pinned: bool) -> bool:
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE projects SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+              (1 if is_pinned else 0, project_id, user_id))
+    affected = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return affected
+
+
+def rename_user_project(user_id: int, project_id: str, new_name: str) -> bool:
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE projects SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+              (new_name.strip(), project_id, user_id))
+    affected = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return affected
+
+
+def delete_user_project(user_id: int, project_id: str) -> bool:
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM projects WHERE id = ? AND user_id = ?", (project_id, user_id))
+    affected = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return affected

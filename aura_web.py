@@ -124,6 +124,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 config["user_custom"] = user["settings"]
             self._send_json(config)
 
+        elif path == "/api/projects":
+            user = self._get_auth_user()
+            user_id = user["id"] if user else 1
+            projects = aura_db.get_user_projects(user_id)
+            self._send_json({"success": True, "projects": projects})
+
+        elif path == "/api/system/test_browser":
+            from aura_brain import tool_open_browser
+            res = tool_open_browser("https://www.google.com")
+            self._send_json(res)
+
         elif path == "/api/engines":
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
@@ -206,6 +217,41 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             user_id = user["id"] if user else 1
             thread_id = body.get("thread_id", "")
             ok = aura_db.delete_user_thread(user_id, thread_id)
+            self._send_json({"success": ok})
+
+        # 2B. CODING PROJECTS ROUTES
+        elif path == "/api/projects/new":
+            user = self._get_auth_user()
+            user_id = user["id"] if user else 1
+            name = body.get("name", "New Project")
+            company = body.get("company", "")
+            stack = body.get("stack", "Python")
+            proj_path = body.get("path", "")
+            description = body.get("description", "")
+            proj = aura_db.create_user_project(user_id, name, company, stack, proj_path, description)
+            self._send_json({"success": True, "project": proj})
+
+        elif path == "/api/projects/pin":
+            user = self._get_auth_user()
+            user_id = user["id"] if user else 1
+            proj_id = body.get("project_id", "")
+            is_pinned = body.get("is_pinned", False)
+            ok = aura_db.pin_user_project(user_id, proj_id, is_pinned)
+            self._send_json({"success": ok})
+
+        elif path == "/api/projects/rename":
+            user = self._get_auth_user()
+            user_id = user["id"] if user else 1
+            proj_id = body.get("project_id", "")
+            new_name = body.get("name", "").strip()
+            ok = aura_db.rename_user_project(user_id, proj_id, new_name)
+            self._send_json({"success": ok})
+
+        elif path == "/api/projects/delete":
+            user = self._get_auth_user()
+            user_id = user["id"] if user else 1
+            proj_id = body.get("project_id", "")
+            ok = aura_db.delete_user_project(user_id, proj_id)
             self._send_json({"success": ok})
 
         # 3. CHAT DISPATCH
