@@ -371,10 +371,37 @@ class AuraBrain:
         with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode())
 
-    def think_and_act(self, user_prompt: str, max_turns: int = 15) -> str:
-        """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response."""
+    def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, max_turns: int = 15) -> str:
+        """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response with full Multimodal support."""
         self.last_tools = []
-        self.history.append({"role": "user", "parts": [{"text": user_prompt}]})
+        user_parts = [{"text": user_prompt}] if user_prompt else []
+
+        if attachments:
+            for att in attachments:
+                mime = att.get("mime_type", "")
+                data = att.get("data", "")
+                text = att.get("text", "")
+                name = att.get("name", "attachment")
+
+                if data and mime:
+                    # Strip data URI prefix if present (e.g. "data:image/png;base64,...")
+                    if "," in data:
+                        data = data.split(",", 1)[1]
+                    user_parts.append({
+                        "inlineData": {
+                            "mimeType": mime,
+                            "data": data
+                        }
+                    })
+                elif text:
+                    user_parts.append({
+                        "text": f"\n[Attached Document: {name}]\n{text}\n[End of Document]\n"
+                    })
+
+        if not user_parts:
+            user_parts = [{"text": "Analyze the attached input."}]
+
+        self.history.append({"role": "user", "parts": user_parts})
 
         for turn in range(max_turns):
             try:

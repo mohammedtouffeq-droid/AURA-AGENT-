@@ -214,16 +214,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             user_id = user["id"] if user else 1
             prompt = body.get("prompt", "").strip()
             thread_id = body.get("thread_id", "default")
+            attachments = body.get("attachments", [])
 
-            if not prompt:
-                self._send_json({"reply": "Please enter an instruction."}, status=400)
+            if not prompt and not attachments:
+                self._send_json({"reply": "Please enter an instruction or attach a file."}, status=400)
                 return
 
-            # Save user turn
-            aura_db.save_message(user_id, thread_id, "user", prompt)
+            # Save user turn with attachment summary
+            display_prompt = prompt
+            if attachments:
+                att_names = [a.get("name", "attachment") for a in attachments]
+                display_prompt += f"\n[📎 {len(attachments)} Attachment(s): {', '.join(att_names)}]"
 
-            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}'")
-            reply = BRAIN.think_and_act(prompt)
+            aura_db.save_message(user_id, thread_id, "user", display_prompt)
+
+            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Attachments: {len(attachments)})")
+            reply = BRAIN.think_and_act(prompt, attachments=attachments)
             tools_used = getattr(BRAIN, "last_tools", [])
 
             # Save assistant response

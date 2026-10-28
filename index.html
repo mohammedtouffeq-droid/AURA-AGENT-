@@ -818,6 +818,81 @@
             color: var(--text-muted);
         }
 
+        /* Attachment Tray */
+        .attachment-tray {
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-hairline);
+        }
+        .attachment-tray.has-files {
+            display: flex;
+        }
+        .att-chip {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-hairline);
+            border-radius: var(--radius-xs);
+            padding: 4px 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            color: var(--text-title);
+            max-width: 200px;
+        }
+        .att-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        .att-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-family: var(--font-code);
+            font-size: 11px;
+        }
+        .att-del {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0 2px;
+            font-size: 12px;
+        }
+        .att-del:hover {
+            color: var(--accent-rose);
+        }
+
+        .btn-dock-tool {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-xs);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+        .btn-dock-tool:hover {
+            color: var(--text-title);
+            background: var(--bg-hover);
+        }
+        .btn-dock-tool.recording {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+            animation: recordPulse 1s infinite alternate;
+        }
+        @keyframes recordPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+
         .dock-controls-row {
             display: flex;
             align-items: center;
@@ -1293,6 +1368,10 @@
 
                 <div class="header-right-bar">
                     <div class="status-dot-label" id="hostPortLabel">0.0.0.0:5050</div>
+                    <button class="btn-top-util" id="btnExportChatTop" title="Export Chat Session to Markdown">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export
+                    </button>
                     <button class="btn-top-util" id="btnMemoryVaultTop">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                         Memory Vault
@@ -1337,20 +1416,33 @@
 
             <!-- Bottom Floating Input Dock -->
             <div class="input-dock-section">
-                <div class="input-frame-card">
-                    <textarea class="textarea-input" id="userPromptInput" rows="1" placeholder="Instruct AURA (e.g. 'Run powershell to list files...', 'Open browser and check...')"></textarea>
+                <div class="input-frame-card" id="dropZoneArea">
+                    <div class="attachment-tray" id="attachmentTray"></div>
+                    <textarea class="textarea-input" id="userPromptInput" rows="1" placeholder="Instruct AURA or attach documents, images, audio, video..."></textarea>
+                    <input type="file" id="filePickerInput" style="display:none;" multiple accept="*/*">
                     <div class="dock-controls-row">
                         <div class="dock-tag-cluster">
+                            <button class="btn-dock-tool" id="btnAttachFile" title="Attach documents, images, code, or videos">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                <span>Attach</span>
+                            </button>
+                            <button class="btn-dock-tool" id="btnVoiceMic" title="Click to speak (Speech-to-Text)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                                <span id="voiceMicLabel">Voice</span>
+                            </button>
+                            <button class="btn-dock-tool" id="btnWebToggle" title="Toggle Live Web Browsing capability">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                <span id="webToggleLabel">Web: Active</span>
+                            </button>
                             <span class="tag-pill-env" id="envModePill">Mode: Auto-Pilot</span>
-                            <span class="tag-pill-env">Tools: Shell • Browser • Memory</span>
                         </div>
                         <button class="btn-send-dispatch" id="btnSendDispatch" title="Send (Enter)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="sendBtnIcon"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
                     </div>
                 </div>
                 <div class="dock-caption-text">
-                    AURA Autonomous Workspace • Cloud & Local Sandboxed • AURA Technologies Inc.
+                    AURA Autonomous Workspace • Multimodal Vision & Audio • AURA Technologies Inc.
                 </div>
             </div>
         </main>
@@ -1652,6 +1744,20 @@
         const btnOpenSettings = document.getElementById('btnOpenSettings');
         const btnLogoutTop = document.getElementById('btnLogoutTop');
         const btnMemoryVaultTop = document.getElementById('btnMemoryVaultTop');
+        const btnExportChatTop = document.getElementById('btnExportChatTop');
+        const btnAttachFile = document.getElementById('btnAttachFile');
+        const filePickerInput = document.getElementById('filePickerInput');
+        const attachmentTray = document.getElementById('attachmentTray');
+        const btnVoiceMic = document.getElementById('btnVoiceMic');
+        const voiceMicLabel = document.getElementById('voiceMicLabel');
+        const btnWebToggle = document.getElementById('btnWebToggle');
+        const webToggleLabel = document.getElementById('webToggleLabel');
+        const dropZoneArea = document.getElementById('dropZoneArea');
+
+        let currentAttachments = [];
+        let isListening = false;
+        let speechRecognizer = null;
+        let isWebBrowsingEnabled = true;
 
         const settingsModalShade = document.getElementById('settingsModalShade');
         const btnCloseSettingsDialog = document.getElementById('btnCloseSettingsDialog');
@@ -1772,6 +1878,267 @@
                 authOverlay.classList.add('open');
             }
         }
+
+        // =========================================================================
+        // MULTIMODAL ATTACHMENTS (Images, Documents, Video, Audio, Code)
+        // =========================================================================
+        btnAttachFile.addEventListener('click', () => filePickerInput.click());
+        filePickerInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+            filePickerInput.value = '';
+        });
+
+        // Drag & Drop
+        if (dropZoneArea) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZoneArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZoneArea.style.borderColor = 'var(--accent-primary)';
+                }, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZoneArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZoneArea.style.borderColor = 'var(--border-hairline)';
+                }, false);
+            });
+            dropZoneArea.addEventListener('drop', (e) => {
+                if (e.dataTransfer && e.dataTransfer.files) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+        }
+
+        function handleFiles(files) {
+            if (!files || files.length === 0) return;
+            Array.from(files).forEach(file => {
+                const isText = file.type.startsWith('text/') || /\.(txt|py|js|ts|json|csv|md|cpp|c|h|html|css|sql|sh|ps1)$/i.test(file.name);
+                const reader = new FileReader();
+
+                if (isText) {
+                    reader.onload = (e) => {
+                        currentAttachments.push({
+                            name: file.name,
+                            size: file.size,
+                            mime_type: file.type || 'text/plain',
+                            text: e.target.result
+                        });
+                        renderAttachmentChips();
+                    };
+                    reader.readAsText(file);
+                } else {
+                    reader.onload = (e) => {
+                        currentAttachments.push({
+                            name: file.name,
+                            size: file.size,
+                            mime_type: file.type || 'application/octet-stream',
+                            data: e.target.result
+                        });
+                        renderAttachmentChips();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function renderAttachmentChips() {
+            attachmentTray.innerHTML = '';
+            if (currentAttachments.length === 0) {
+                attachmentTray.classList.remove('has-files');
+                return;
+            }
+            attachmentTray.classList.add('has-files');
+            currentAttachments.forEach((att, idx) => {
+                const chip = document.createElement('div');
+                chip.className = 'att-chip';
+                let iconHtml = '📄';
+                if (att.mime_type && att.mime_type.startsWith('image/')) {
+                    iconHtml = `<img src="${att.data}" class="att-thumb">`;
+                } else if (att.mime_type && att.mime_type.startsWith('video/')) {
+                    iconHtml = '🎥';
+                } else if (att.mime_type && att.mime_type.startsWith('audio/')) {
+                    iconHtml = '🎵';
+                }
+                chip.innerHTML = `
+                    ${iconHtml}
+                    <span class="att-name">${escapeHtml(att.name)}</span>
+                    <button class="att-del" onclick="removeAttachment(${idx})">&times;</button>
+                `;
+                attachmentTray.appendChild(chip);
+            });
+        }
+
+        function removeAttachment(idx) {
+            currentAttachments.splice(idx, 1);
+            renderAttachmentChips();
+        }
+
+        function clearAttachments() {
+            currentAttachments = [];
+            renderAttachmentChips();
+        }
+
+        // =========================================================================
+        // VOICE INPUT (Speech-to-Text via Web Speech API)
+        // =========================================================================
+        btnVoiceMic.addEventListener('click', toggleVoiceRecognition);
+
+        function toggleVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+                return;
+            }
+
+            if (isListening) {
+                if (speechRecognizer) speechRecognizer.stop();
+                isListening = false;
+                btnVoiceMic.classList.remove('recording');
+                voiceMicLabel.innerText = 'Voice';
+                return;
+            }
+
+            speechRecognizer = new SpeechRecognition();
+            speechRecognizer.continuous = true;
+            speechRecognizer.interimResults = true;
+            speechRecognizer.lang = 'hi-IN'; // Multi-lingual Hindi/Indian English support
+
+            speechRecognizer.onstart = () => {
+                isListening = true;
+                btnVoiceMic.classList.add('recording');
+                voiceMicLabel.innerText = 'Listening...';
+            };
+
+            speechRecognizer.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                userPromptInput.value = (userPromptInput.value ? userPromptInput.value + ' ' : '') + transcript;
+                userPromptInput.style.height = 'auto';
+                userPromptInput.style.height = (userPromptInput.scrollHeight) + 'px';
+            };
+
+            speechRecognizer.onerror = () => {
+                isListening = false;
+                btnVoiceMic.classList.remove('recording');
+                voiceMicLabel.innerText = 'Voice';
+            };
+
+            speechRecognizer.onend = () => {
+                isListening = false;
+                btnVoiceMic.classList.remove('recording');
+                voiceMicLabel.innerText = 'Voice';
+            };
+
+            speechRecognizer.start();
+        }
+
+        // =========================================================================
+        // VOICE OUTPUT (Text-to-Speech Read Aloud)
+        // =========================================================================
+        let currentSpeakingBtn = null;
+
+        function readAloudText(text, btn) {
+            if (!window.speechSynthesis) {
+                alert("Speech synthesis is not supported on this device.");
+                return;
+            }
+
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (currentSpeakingBtn) {
+                    currentSpeakingBtn.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                        <span>Listen</span>
+                    `;
+                }
+                if (currentSpeakingBtn === btn) {
+                    currentSpeakingBtn = null;
+                    return;
+                }
+            }
+
+            const cleanText = text
+                .replace(/```[\s\S]*?```/g, 'Code block omitted.')
+                .replace(/`([^`]+)`/g, '$1')
+                .replace(/\*\*([^*]+)\*\*/g, '$1')
+                .replace(/#[^\n]+/g, '')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            btn.innerHTML = '⏹️ Stop';
+            currentSpeakingBtn = btn;
+
+            utterance.onend = () => {
+                btn.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    <span>Listen</span>
+                `;
+                currentSpeakingBtn = null;
+            };
+
+            utterance.onerror = () => {
+                btn.innerHTML = '<span>Listen</span>';
+                currentSpeakingBtn = null;
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // =========================================================================
+        // EXPORT CONVERSATION (Markdown Download)
+        // =========================================================================
+        btnExportChatTop.addEventListener('click', exportChatSession);
+
+        async function exportChatSession() {
+            try {
+                const res = await fetch(`/api/threads/messages?thread_id=${currentThreadId}`, {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (!data.messages || data.messages.length === 0) {
+                    alert("No messages to export in this session.");
+                    return;
+                }
+
+                let md = `# AURA Workspace Session Export\n`;
+                md += `*Session ID: ${currentThreadId} | Exported: ${new Date().toLocaleString()}*\n\n---\n\n`;
+
+                data.messages.forEach(m => {
+                    const roleName = m.role === 'user' ? (currentUser.display_name || 'User') : 'AURA Agent';
+                    md += `### ${roleName}\n${m.content}\n\n`;
+                    if (m.tools && m.tools.length > 0) {
+                        md += `> **Tools Executed:**\n`;
+                        m.tools.forEach(t => {
+                            md += `> - \`${t.name}\`: \`${JSON.stringify(t.args)}\`\n`;
+                        });
+                        md += `\n`;
+                    }
+                    md += `---\n\n`;
+                });
+
+                const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `AURA_Session_${currentThreadId}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert("Export failed: " + e.message);
+            }
+        }
+
+        // Web Browsing Capability Toggle
+        btnWebToggle.addEventListener('click', () => {
+            isWebBrowsingEnabled = !isWebBrowsingEnabled;
+            webToggleLabel.innerText = isWebBrowsingEnabled ? 'Web: Active' : 'Web: Off';
+            btnWebToggle.style.opacity = isWebBrowsingEnabled ? '1' : '0.5';
+        });
 
         function updateUserUI() {
             if (!currentUser) return;
@@ -1963,12 +2330,15 @@
 
         async function submitUserPrompt() {
             const prompt = userPromptInput.value.trim();
-            if (!prompt) return;
+            if (!prompt && currentAttachments.length === 0) return;
 
             welcomeHero.style.display = 'none';
-            appendUserTurn(prompt);
+            const sentAttachments = [...currentAttachments];
+            appendUserTurn(prompt, sentAttachments);
+
             userPromptInput.value = '';
             userPromptInput.style.height = 'auto';
+            clearAttachments();
             btnSendDispatch.disabled = true;
 
             const workId = appendWorkingIndicator();
@@ -1981,7 +2351,11 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${currentAuthToken}`
                     },
-                    body: JSON.stringify({ prompt: prompt, thread_id: currentThreadId })
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        thread_id: currentThreadId,
+                        attachments: sentAttachments
+                    })
                 });
 
                 const data = await res.json();
@@ -2002,13 +2376,30 @@
             }
         }
 
-        function appendUserTurn(text) {
+        function appendUserTurn(text, attachments = []) {
             const turn = document.createElement('div');
             turn.className = 'msg-turn-box user';
             const name = currentUser ? (currentUser.display_name || currentUser.username) : 'You';
+
+            let attachmentsHtml = '';
+            if (attachments && attachments.length > 0) {
+                attachmentsHtml = '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">';
+                attachments.forEach(att => {
+                    if (att.mime_type && att.mime_type.startsWith('image/')) {
+                        attachmentsHtml += `<img src="${att.data.startsWith('data:') ? att.data : 'data:' + att.mime_type + ';base64,' + att.data}" style="max-width:180px; max-height:140px; border-radius:6px; border:1px solid var(--border-hairline);" alt="${escapeHtml(att.name)}">`;
+                    } else {
+                        attachmentsHtml += `<div class="att-chip"><span>📄</span><span class="att-name">${escapeHtml(att.name)}</span></div>`;
+                    }
+                });
+                attachmentsHtml += '</div>';
+            }
+
             turn.innerHTML = `
                 <div class="msg-origin-tag"><span>${escapeHtml(name)}</span></div>
-                <div class="user-bubble-card">${escapeHtml(text)}</div>
+                <div class="user-bubble-card">
+                    ${attachmentsHtml}
+                    ${text ? `<div>${escapeHtml(text)}</div>` : ''}
+                </div>
             `;
             chatStreamWidth.appendChild(turn);
         }
@@ -2057,6 +2448,10 @@
                         <button class="btn-msg-copy" onclick="copyResponse('${copyPayload}', this)">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                             Copy Response
+                        </button>
+                        <button class="btn-msg-copy" onclick="readAloudText('${copyPayload}', this)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            <span>Listen</span>
                         </button>
                     </div>
                 </div>
