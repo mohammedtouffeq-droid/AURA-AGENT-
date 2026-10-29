@@ -5,3 +5,4 @@ __pycache__/
 *.db
 workspace/
 current_screen.png
+engines/

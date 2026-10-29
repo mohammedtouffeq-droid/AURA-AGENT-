@@ -941,6 +941,49 @@ def tool_game_engine_status() -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": f"Game studio status check failed: {e}"}
 
+
+def tool_godot_engine_status() -> Dict[str, Any]:
+    """Returns the live status, version, and binary size of the Godot 4 portable engine."""
+    try:
+        from godot_engine_manager import AURA_GODOT_MANAGER
+        return {
+            "success": True,
+            "installed": AURA_GODOT_MANAGER.is_installed(),
+            "version": AURA_GODOT_MANAGER.get_version(),
+            "binary_size_mb": AURA_GODOT_MANAGER.get_binary_size_mb(),
+            "binary_path": str(AURA_GODOT_MANAGER.exe_path)
+        }
+    except Exception as e:
+        return {"success": False, "error": f"Godot status check failed: {e}"}
+
+
+def tool_godot_build_game(project_name: str = "CyberCraft3D", genre: str = "3d_car_crafting") -> Dict[str, Any]:
+    """Autonomous Godot 4 project generator for 3D Car Racing & Crafting games with mobile & Play Store support."""
+    try:
+        from godot_engine_manager import GodotCarCraftingProjectBuilder
+        return GodotCarCraftingProjectBuilder.build_project(project_name=project_name)
+    except Exception as e:
+        return {"success": False, "error": f"Godot build failed: {e}"}
+
+
+def tool_godot_train_and_verify(project_name: str = "CyberCraft3D") -> Dict[str, Any]:
+    """Runs autonomous headless verification and calculates empirical training benchmarks for Godot projects."""
+    try:
+        from godot_engine_manager import AURA_GODOT_TRAINER
+        return AURA_GODOT_TRAINER.train_and_verify(project_name=project_name)
+    except Exception as e:
+        return {"success": False, "error": f"Godot verification failed: {e}"}
+
+
+def tool_godot_launch_game(project_name: str = "CyberCraft3D") -> Dict[str, Any]:
+    """Launches the windowed game in Godot runtime or opens the playable 3D browser mirror."""
+    try:
+        from godot_engine_manager import AURA_GODOT_MANAGER, GAMES_WORKSPACE
+        proj_dir = GAMES_WORKSPACE / project_name
+        return AURA_GODOT_MANAGER.launch_windowed_game(proj_dir)
+    except Exception as e:
+        return {"success": False, "error": f"Godot launch failed: {e}"}
+
 def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Dict[str, Any]:
     """Generates an animated video simulation sequence or multimedia player from text prompts."""
     try:
@@ -1389,6 +1432,10 @@ AVAILABLE_TOOLS = {
     "tool_game_engine_multiplayer_sync": tool_game_engine_multiplayer_sync,
     "tool_game_engine_export_project": tool_game_engine_export_project,
     "tool_game_engine_status": tool_game_engine_status,
+    "tool_godot_engine_status": tool_godot_engine_status,
+    "tool_godot_build_game": tool_godot_build_game,
+    "tool_godot_train_and_verify": tool_godot_train_and_verify,
+    "tool_godot_launch_game": tool_godot_launch_game,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,

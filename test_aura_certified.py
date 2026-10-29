@@ -546,6 +546,20 @@ class TestAuraProductionCertification(unittest.TestCase):
             self.assertTrue(data.get("success"))
             self.assertIn("pending", data)
 
+    def test_51_godot_engine_manager_installed(self):
+        from godot_engine_manager import AURA_GODOT_MANAGER
+        self.assertTrue(AURA_GODOT_MANAGER.is_installed())
+        self.assertGreater(AURA_GODOT_MANAGER.get_binary_size_mb(), 100.0)
+        self.assertIn("4.3", AURA_GODOT_MANAGER.get_version())
+
+    def test_52_godot_autonomous_training_pipeline(self):
+        from godot_engine_manager import AURA_GODOT_TRAINER
+        report = AURA_GODOT_TRAINER.train_and_verify("CyberCraft3D")
+        self.assertTrue(report.get("success"))
+        metrics = report.get("training_metrics", {})
+        self.assertGreaterEqual(metrics.get("overall_training_score", 0), 9.0)
+        self.assertEqual(report.get("headless_verification", {}).get("error_count"), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -243,6 +243,28 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_game_engine import AURA_GAME_STUDIO
             self._send_json({"success": True, "status": AURA_GAME_STUDIO.get_status()})
 
+        elif path == "/api/godot/status":
+            from godot_engine_manager import AURA_GODOT_MANAGER
+            self._send_json({
+                "success": True,
+                "installed": AURA_GODOT_MANAGER.is_installed(),
+                "version": AURA_GODOT_MANAGER.get_version(),
+                "binary_size_mb": AURA_GODOT_MANAGER.get_binary_size_mb(),
+                "binary_path": str(AURA_GODOT_MANAGER.exe_path)
+            })
+
+        elif path == "/api/godot/projects":
+            from godot_engine_manager import GAMES_WORKSPACE
+            projects = []
+            for item in GAMES_WORKSPACE.iterdir():
+                if item.is_dir() and (item / "project.godot").exists():
+                    projects.append({
+                        "name": item.name,
+                        "path": str(item),
+                        "has_web_mirror": (item / "play_crafting_car.html").exists()
+                    })
+            self._send_json({"success": True, "projects": projects})
+
         elif path == "/api/media/status":
             from aura_media_engine import AURA_CINEMA
             self._send_json({"success": True, "status": AURA_CINEMA.get_status()})
@@ -508,6 +530,25 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             proj = body.get("project_name", "open_world_demo")
             from aura_game_engine import EngineProjectExporter
             res = EngineProjectExporter.export_project(project_name=proj)
+            self._send_json(res)
+
+        elif path == "/api/godot/build":
+            proj = body.get("project_name", "CyberCraft3D")
+            from godot_engine_manager import GodotCarCraftingProjectBuilder
+            res = GodotCarCraftingProjectBuilder.build_project(project_name=proj)
+            self._send_json(res)
+
+        elif path == "/api/godot/verify":
+            proj = body.get("project_name", "CyberCraft3D")
+            from godot_engine_manager import AURA_GODOT_TRAINER
+            res = AURA_GODOT_TRAINER.train_and_verify(project_name=proj)
+            self._send_json(res)
+
+        elif path == "/api/godot/launch":
+            proj = body.get("project_name", "CyberCraft3D")
+            from godot_engine_manager import AURA_GODOT_MANAGER, GAMES_WORKSPACE
+            proj_dir = GAMES_WORKSPACE / proj
+            res = AURA_GODOT_MANAGER.launch_windowed_game(proj_dir)
             self._send_json(res)
 
         elif path == "/api/media/image/generate":
