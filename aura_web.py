@@ -16,7 +16,7 @@ import os
 import sys
 import json
 import urllib.parse
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -36,13 +36,16 @@ PORT = int(os.environ.get("AURA_PORT", 5050))
 
 class AuraWebHandler(BaseHTTPRequestHandler):
     def _send_json(self, data: Dict[str, Any], status: int = 200):
+        encoded = json.dumps(data).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Connection", "close")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode("utf-8"))
+        self.wfile.write(encoded)
 
     def do_HEAD(self):
         self.send_response(200)
@@ -51,6 +54,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self.send_header("Connection", "close")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
@@ -81,10 +86,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         if path == "/" or path == "/index.html" or path == "":
             html_file = ROOT / "index.html"
             if html_file.exists():
+                data = html_file.read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Connection", "close")
                 self.end_headers()
-                self.wfile.write(html_file.read_bytes())
+                self.wfile.write(data)
             else:
                 self.send_error(404, "index.html not found")
 
@@ -489,8 +497,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
 
-def make_server(host: str = HOST, port: int = PORT) -> HTTPServer:
-    return HTTPServer((host, port), AuraWebHandler)
+def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
+    return ThreadingHTTPServer((host, port), AuraWebHandler)
 
 
 def run():
