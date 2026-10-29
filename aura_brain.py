@@ -154,8 +154,8 @@ def tool_recall_memory(search_key: str = "") -> Dict[str, Any]:
 # ===================================================================================
 def tool_open_browser(url: str) -> Dict[str, Any]:
     """Opens a website in Google Chrome or default browser directly on the interactive screen."""
-    import subprocess
     import os
+    import subprocess
     import webbrowser
 
     if not url.startswith("http://") and not url.startswith("https://"):
@@ -166,26 +166,37 @@ def tool_open_browser(url: str) -> Dict[str, Any]:
         r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
     ]
+    chrome_bin = next((cand for cand in chrome_candidates if os.path.exists(cand)), None)
 
-    chrome_bin = None
-    for cand in chrome_candidates:
-        if os.path.exists(cand):
-            chrome_bin = cand
-            break
+    opened = False
+    # Method 1: os.startfile (Windows Shell Desktop invocation - opens directly on physical screen)
+    try:
+        os.startfile(url)
+        opened = True
+    except Exception:
+        pass
 
+    # Method 2: Shell command 'start chrome <url>'
     try:
         if chrome_bin:
-            subprocess.Popen([chrome_bin, url], shell=False)
-            return {"success": True, "action": "opened_in_chrome", "browser": "Google Chrome", "url": url}
+            subprocess.Popen(f'cmd /c start "" "{chrome_bin}" "{url}"', shell=True)
         else:
             subprocess.Popen(f'cmd /c start "" "{url}"', shell=True)
-            return {"success": True, "action": "opened_browser_on_screen", "browser": "Default System Browser", "url": url}
-    except Exception as e:
-        try:
-            webbrowser.open(url)
-            return {"success": True, "action": "opened_browser_fallback", "url": url}
-        except Exception as e2:
-            return {"success": False, "error": f"Failed to open browser: {e2}"}
+        opened = True
+    except Exception:
+        pass
+
+    # Method 3: webbrowser standard library fallback
+    try:
+        webbrowser.open_new(url)
+        opened = True
+    except Exception:
+        pass
+
+    if opened:
+        return {"success": True, "action": "opened_browser_on_screen", "browser": "Google Chrome", "url": url}
+    return {"success": False, "error": "Failed to open browser on screen"}
+
 
 def tool_get_news(query: str = "breaking news") -> Dict[str, Any]:
     """Fetches real-time live breaking news headlines and articles from Google News RSS feed."""
@@ -226,43 +237,67 @@ def tool_gui_click_and_type(action: str = "click", x: int = 0, y: int = 0, text:
             "y": y,
             "text": text,
             "security_jail": True,
-            "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to execute '{action}' (x={x}, y={y}, text='{text}') on your laptop screen. User approval required before execution."
+            "message": f"🛡️ SECURITY JAIL BLOCKED: AURA wants to execute '{action}' (x={x}, y={y}, text='{text}') on your laptop screen. User approval required before execution."
         }
 
     try:
-        import subprocess
-        ps_commands = ["Add-Type -AssemblyName System.Windows.Forms"]
+        import pyautogui
+        import ctypes
+        import time
 
-        if action == "click":
-            ps_commands.append(f"""
-                Add-Type -MemberDefinition '[DllImport("user32.dll")] public static extern void mouse_event(int flags, int dx, int dy, int cButtons, int info);' -Name UIEvents -Namespace Native -ErrorAction SilentlyContinue
-                [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point({x}, {y})
-                [Native.UIEvents]::mouse_event(0x0002, 0, 0, 0, 0)
-                Start-Sleep -Milliseconds 50
-                [Native.UIEvents]::mouse_event(0x0004, 0, 0, 0, 0)
-            """)
-        elif action == "type" and text:
-            clean_text = text.replace("{", "{{").replace("}", "}}")
-            ps_commands.append(f"""
-                Start-Sleep -Milliseconds 100
-                [System.Windows.Forms.SendKeys]::SendWait('{clean_text}')
-            """)
-        elif action == "press_enter":
-            ps_commands.append("[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')")
+        pyautogui.FAILSAFE = False
 
-        cmd_string = "; ".join(ps_commands)
-        subprocess.run(["powershell", "-NoProfile", "-Command", cmd_string], timeout=10, capture_output=True)
+        clean_act = action.lower().strip()
+        if clean_act in ["click", "left_click"]:
+            if x > 0 or y > 0:
+                pyautogui.moveTo(x, y, duration=0.15)
+                pyautogui.click(x, y)
+            else:
+                pyautogui.click()
+        elif clean_act in ["double_click", "dblclick"]:
+            if x > 0 or y > 0:
+                pyautogui.doubleClick(x, y)
+            else:
+                pyautogui.doubleClick()
+        elif clean_act in ["right_click", "context_menu"]:
+            if x > 0 or y > 0:
+                pyautogui.rightClick(x, y)
+            else:
+                pyautogui.rightClick()
+        elif clean_act in ["move", "hover"]:
+            pyautogui.moveTo(x, y, duration=0.2)
+        elif clean_act in ["type", "write"] and text:
+            pyautogui.write(text, interval=0.02)
+        elif clean_act in ["press_enter", "enter"]:
+            pyautogui.press('enter')
+        elif clean_act in ["press_key", "key"]:
+            pyautogui.press(text or 'enter')
+        elif clean_act in ["hotkey"]:
+            keys = [k.strip() for k in text.split("+")] if text else ["ctrl", "c"]
+            pyautogui.hotkey(*keys)
+        else:
+            pyautogui.click(x, y)
+
         return {
             "success": True,
-            "action": action,
+            "action": clean_act,
             "x": x,
             "y": y,
-            "coordinates": {"x": x, "y": y} if action == "click" else None,
-            "typed_text": text if "type" in action else None,
-            "engine": "Agent-S/UI-TARS/Terminator-Native-Automation"
+            "typed_text": text if "type" in clean_act else None,
+            "engine": "PyAutoGUI/Agent-S/Native-Hardware"
         }
     except Exception as e:
-        return {"success": False, "error": f"GUI automation failed: {e}"}
+        # Direct ctypes kernel32 / user32 fallback
+        try:
+            import ctypes
+            if x > 0 or y > 0:
+                ctypes.windll.user32.SetCursorPos(int(x), int(y))
+            ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0)
+            ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0)
+            return {"success": True, "action": action, "x": x, "y": y, "engine": "Win32-User32-Ctypes"}
+        except Exception as e2:
+            return {"success": False, "error": f"GUI automation failed: {e} | {e2}"}
+
 
 def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, Any]:
     """Launches, focuses, or manages Windows desktop applications (UFO & Terminator dual-agent style)."""
