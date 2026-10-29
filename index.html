@@ -2278,75 +2278,1474 @@
         function toggleVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert("Speech recognition is not supported in this browser. Please use Google Chrome or Edge.");
+                alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
                 return;
             }
 
             if (isListening) {
-                if (speechRecognizer) {
-                    try { speechRecognizer.stop(); } catch(e) {}
-                }
+                if (speechRecognizer) speechRecognizer.stop();
                 isListening = false;
                 btnVoiceMic.classList.remove('recording');
                 voiceMicLabel.innerText = 'Voice';
                 return;
             }
 
-            // Prompt microphone permission
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
-                    startSpeechEngine();
-                }).catch((err) => {
-                    alert("Microphone permission denied or unavailable. Please enable microphone permissions in your browser address bar.");
-                });
-            } else {
-                startSpeechEngine();
+            speechRecognizer = new SpeechRecognition();
+            speechRecognizer.continuous = true;
+            speechRecognizer.interimResults = true;
+            speechRecognizer.lang = 'hi-IN'; // Multi-lingual Hindi/Indian English support
+
+            speechRecognizer.onstart = () => {
+                isListening = true;
+                btnVoiceMic.classList.add('recording');
+                voiceMicLabel.innerText = 'Listening...';
+            };
+
+            speechRecognizer.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                userPromptInput.value = (userPromptInput.value ? userPromptInput.value + ' ' : '') + transcript;
+                userPromptInput.style.height = 'auto';
+                userPromptInput.style.height = (userPromptInput.scrollHeight) + 'px';
+            };
+
+            speechRecognizer.onerror = () => {
+                isListening = false;
+                btnVoiceMic.classList.remove('recording');
+                voiceMicLabel.innerText = 'Voice';
+            };
+
+            speechRecognizer.onend = () => {
+                isListening = false;
+                btnVoiceMic.classList.remove('recording');
+                voiceMicLabel.innerText = 'Voice';
+            };
+
+            speechRecognizer.start();
+        }
+
+        // =========================================================================
+        // VOICE OUTPUT (Text-to-Speech Read Aloud)
+        // =========================================================================
+        let currentSpeakingBtn = null;
+
+        function readAloudText(text, btn) {
+            if (!window.speechSynthesis) {
+                alert("Speech synthesis is not supported on this device.");
+                return;
             }
 
-            function startSpeechEngine() {
-                try {
-                    speechRecognizer = new SpeechRecognition();
-                    speechRecognizer.continuous = true;
-                    speechRecognizer.interimResults = true;
-                    speechRecognizer.lang = 'en-US';
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (currentSpeakingBtn) {
+                    currentSpeakingBtn.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                        <span>Listen</span>
+                    `;
+                }
+                if (currentSpeakingBtn === btn) {
+                    currentSpeakingBtn = null;
+                    return;
+                }
+            }
 
-                    speechRecognizer.onstart = () => {
-                        isListening = true;
-                        btnVoiceMic.classList.add('recording');
-                        voiceMicLabel.innerText = 'Listening...';
-                    };
+            const cleanText = text
+                .replace(/```[\s\S]*?```/g, 'Code block omitted.')
+                .replace(/`([^`]+)`/g, '$1')
+                .replace(/\*\*([^*]+)\*\*/g, '$1')
+                .replace(/#[^\n]+/g, '')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
 
-                    speechRecognizer.onresult = (event) => {
-                        let transcript = '';
-                        for (let i = event.resultIndex; i < event.results.length; ++i) {
-                            transcript += event.results[i][0].transcript;
-                        }
-                        if (transcript) {
-                            userPromptInput.value = transcript;
-                            userPromptInput.style.height = 'auto';
-                            userPromptInput.style.height = (userPromptInput.scrollHeight) + 'px';
-                        }
-                    };
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
 
-                    speechRecognizer.onerror = (e) => {
-                        console.log("Speech recognition status:", e.error);
-                        isListening = false;
-                        btnVoiceMic.classList.remove('recording');
-                        voiceMicLabel.innerText = 'Voice';
-                    };
+            btn.innerHTML = '⏹️ Stop';
+            currentSpeakingBtn = btn;
 
-                    speechRecognizer.onend = () => {
-                        isListening = false;
-                        btnVoiceMic.classList.remove('recording');
-                        voiceMicLabel.innerText = 'Voice';
-                    };
+            utterance.onend = () => {
+                btn.innerHTML = `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    <span>Listen</span>
+                `;
+                currentSpeakingBtn = null;
+            };
 
-                    speechRecognizer.start();
-                } catch (e) {
-                    console.error("SpeechRecognizer init error:", e);
-                    isListening = false;
-                    btnVoiceMic.classList.remove('recording');
-                    voiceMicLabel.innerText = 'Voice';
+            utterance.onerror = () => {
+                btn.innerHTML = '<span>Listen</span>';
+                currentSpeakingBtn = null;
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // =========================================================================
+        // EXPORT CONVERSATION (Markdown Download)
+        // =========================================================================
+        btnExportChatTop.addEventListener('click', exportChatSession);
+
+        async function exportChatSession() {
+            try {
+                const res = await fetch(`/api/threads/messages?thread_id=${currentThreadId}`, {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (!data.messages || data.messages.length === 0) {
+                    alert("No messages to export in this session.");
+                    return;
+                }
+
+                let md = `# AURA Workspace Session Export\n`;
+                md += `*Session ID: ${currentThreadId} | Exported: ${new Date().toLocaleString()}*\n\n---\n\n`;
+
+                data.messages.forEach(m => {
+                    const roleName = m.role === 'user' ? (currentUser.display_name || 'User') : 'AURA Agent';
+                    md += `### ${roleName}\n${m.content}\n\n`;
+                    if (m.tools && m.tools.length > 0) {
+                        md += `> **Tools Executed:**\n`;
+                        m.tools.forEach(t => {
+                            md += `> - \`${t.name}\`: \`${JSON.stringify(t.args)}\`\n`;
+                        });
+                        md += `\n`;
+                    }
+                    md += `---\n\n`;
+                });
+
+                const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `AURA_Session_${currentThreadId}.md`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert("Export failed: " + e.message);
+            }
+        }
+
+        // Web Browsing Capability Toggle
+        btnWebToggle.addEventListener('click', () => {
+            isWebBrowsingEnabled = !isWebBrowsingEnabled;
+            webToggleLabel.innerText = isWebBrowsingEnabled ? 'Web: Active' : 'Web: Off';
+            btnWebToggle.style.opacity = isWebBrowsingEnabled ? '1' : '0.5';
+        });
+
+        function updateUserUI() {
+            if (!currentUser) return;
+            const name = currentUser.display_name || currentUser.username;
+            userDisplayName.innerText = name;
+            userAvatarText.innerText = name.charAt(0).toUpperCase();
+            labelWsUser.innerText = name + "'s Workspace";
+
+            // Update welcome hero card with personalized user name
+            heroGreetingTitle.innerText = `Welcome to your Autonomous Workspace, ${name}!`;
+            heroGreetingBody.innerHTML = `
+                Congratulations, <strong>${name}</strong>! Your private AURA neural workspace has been successfully provisioned.
+                Your workspace is encrypted, fully sandboxed, and synchronized with your personal SQLite cloud-ready vault. Every task you run, memory you save, and terminal command you execute is exclusively isolated to your account. Feel free to instruct AURA to browse the web, write code, run system diagnostics, or store project memories. How can AURA empower you today?
+            `;
+
+            // Populate settings modal fields
+            document.getElementById('profUsername').value = currentUser.username;
+            document.getElementById('profDisplayName').value = name;
+        }
+
+        // Threads API
+        async function loadThreads() {
+            try {
+                const res = await fetch('/api/threads', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.threads) {
+                    threadsList = data.threads;
+                    renderThreads();
+                }
+            } catch (e) {
+                console.error("Load threads error:", e);
+            }
+        }
+
+        function renderThreads() {
+            pinnedThreadsContainer.innerHTML = '';
+            recentThreadsContainer.innerHTML = '';
+            let pinned = 0;
+
+            threadsList.forEach(t => {
+                const row = document.createElement('div');
+                row.className = 'thread-row' + (t.id === currentThreadId ? ' active' : '');
+                row.setAttribute('data-id', t.id);
+
+                const isPin = Boolean(t.is_pinned);
+                if (isPin) pinned++;
+
+                row.innerHTML = `
+                    <span class="thread-title-text" onclick="switchThread('${t.id}')">${escapeHtml(t.title)}</span>
+                    <div class="thread-actions">
+                        <button class="btn-thread-action ${isPin ? 'pinned' : ''}" onclick="togglePinThread('${t.id}', ${!isPin})" title="${isPin ? 'Unpin' : 'Pin to top'}">📌</button>
+                        <button class="btn-thread-action" onclick="renameThreadPrompt('${t.id}', '${escapeQuotes(t.title)}')" title="Rename">✏️</button>
+                        <button class="btn-thread-action" onclick="deleteThreadPrompt('${t.id}')" title="Delete">🗑️</button>
+                    </div>
+                `;
+
+                if (isPin) {
+                    pinnedThreadsContainer.appendChild(row);
+                } else {
+                    recentThreadsContainer.appendChild(row);
+                }
+            });
+
+            pinnedCount.innerText = pinned;
+        }
+
+        async function createNewSession() {
+            const title = prompt("Enter session title:", "Autonomous Task " + (threadsList.length + 1));
+            if (!title) return;
+
+            try {
+                const res = await fetch('/api/threads/new', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ title })
+                });
+                const data = await res.json();
+                if (data.success && data.thread) {
+                    currentThreadId = data.thread.id;
+                    localStorage.setItem('aura_active_thread_id', currentThreadId);
+                    await loadThreads();
+                    loadThreadMessages(currentThreadId);
+                }
+            } catch (e) {
+                alert("Could not create thread: " + e.message);
+            }
+        }
+
+        async function switchThread(threadId) {
+            currentThreadId = threadId;
+            localStorage.setItem('aura_active_thread_id', threadId);
+            renderThreads();
+            loadThreadMessages(threadId);
+        }
+
+        async function renameThreadPrompt(threadId, oldTitle) {
+            const newTitle = prompt("Rename session:", oldTitle);
+            if (!newTitle || newTitle === oldTitle) return;
+
+            try {
+                await fetch('/api/threads/rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ thread_id: threadId, title: newTitle })
+                });
+                await loadThreads();
+            } catch (e) {
+                alert("Rename failed: " + e.message);
+            }
+        }
+
+        async function togglePinThread(threadId, isPinned) {
+            try {
+                await fetch('/api/threads/pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ thread_id: threadId, is_pinned: isPinned })
+                });
+                await loadThreads();
+            } catch (e) {
+                alert("Pin toggle failed: " + e.message);
+            }
+        }
+
+        async function deleteThreadPrompt(threadId) {
+            if (!confirm("Permanently delete this session and all its messages?")) return;
+            try {
+                await fetch('/api/threads/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ thread_id: threadId })
+                });
+                await loadThreads();
+                if (currentThreadId === threadId && threadsList.length > 0) {
+                    switchThread(threadsList[0].id);
+                }
+            } catch (e) {
+                alert("Delete failed: " + e.message);
+            }
+        }
+
+        // =========================================================================
+        // CURSOR-GRADE CODING PROJECTS & SIDEBAR SWITCHER
+        // =========================================================================
+        function switchSidebarMode(mode) {
+            currentSidebarMode = mode;
+            if (mode === 'chats') {
+                if (tabModeChats) tabModeChats.classList.add('active');
+                if (tabModeCoding) tabModeCoding.classList.remove('active');
+                if (sidebarChatsSection) sidebarChatsSection.style.display = 'flex';
+                if (sidebarProjectsSection) sidebarProjectsSection.style.display = 'none';
+            } else {
+                if (tabModeChats) tabModeChats.classList.remove('active');
+                if (tabModeCoding) tabModeCoding.classList.add('active');
+                if (sidebarChatsSection) sidebarChatsSection.style.display = 'none';
+                if (sidebarProjectsSection) sidebarProjectsSection.style.display = 'flex';
+                loadProjects();
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const res = await fetch('/api/projects', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.projects) {
+                    projectsList = data.projects;
+                    renderProjects();
+                }
+            } catch (e) {
+                console.error("Load projects error:", e);
+            }
+        }
+
+        function renderProjects() {
+            if (!pinnedProjectsContainer || !recentProjectsContainer) return;
+            pinnedProjectsContainer.innerHTML = '';
+            recentProjectsContainer.innerHTML = '';
+            let pinned = 0;
+
+            projectsList.forEach(p => {
+                const row = document.createElement('div');
+                row.className = `project-row ${currentProjectId === p.id ? 'active' : ''}`;
+                row.onclick = () => selectProject(p);
+
+                const isPin = Boolean(p.is_pinned);
+                if (isPin) pinned++;
+
+                row.innerHTML = `
+                    <div class="project-header-row">
+                        <div class="project-title" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
+                        <div class="thread-actions" onclick="event.stopPropagation()">
+                            <button class="btn-thread-action ${isPin ? 'pinned' : ''}" onclick="togglePinProject('${p.id}', ${!isPin})" title="${isPin ? 'Unpin' : 'Pin to top'}">📌</button>
+                            <button class="btn-thread-action" onclick="renameProjectPrompt('${p.id}', '${escapeQuotes(p.name)}')" title="Rename Project">✏️</button>
+                            <button class="btn-thread-action" onclick="deleteProjectPrompt('${p.id}')" title="Delete Project">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="project-submeta">
+                        <span class="project-stack-tag">${escapeHtml(p.stack || 'General')}</span>
+                        ${p.company ? `<span class="project-company-tag" title="${escapeHtml(p.company)}">🏢 ${escapeHtml(p.company)}</span>` : ''}
+                    </div>
+                `;
+
+                if (isPin) {
+                    pinnedProjectsContainer.appendChild(row);
+                } else {
+                    recentProjectsContainer.appendChild(row);
+                }
+            });
+
+            if (pinnedProjectsCount) pinnedProjectsCount.innerText = pinned;
+            if (recentProjectsContainer.children.length === 0 && pinnedProjectsContainer.children.length === 0) {
+                recentProjectsContainer.innerHTML = '<div style="font-size:11.5px; color:var(--text-muted); padding:10px 8px; text-align:center;">No coding projects yet. Click "+ New Code Project" above!</div>';
+            }
+        }
+
+        async function selectProject(p) {
+            currentProjectId = p.id;
+            renderProjects();
+            const projectThreadId = 'proj_' + p.id;
+            await switchThread(projectThreadId);
+            const activeMsgCount = chatStreamWidth.querySelectorAll('.message-bubble-group').length;
+            if (activeMsgCount === 0) {
+                welcomeHero.style.display = 'none';
+                appendAgentTurn(`### 💻 Coding Workspace: ${p.name}
+**Client / Entity:** \`${p.company || 'Enterprise'}\`  
+**Primary Stack:** \`${p.stack}\`  
+**Target Directory:** \`${p.path}\`  
+**Cursor-Grade Engines:** \`OpenCode\`, \`OpenHands\`, \`Cline\`, \`Aider\`, \`Continue\` mounted & active.
+
+${p.description ? `**Scope & Requirements:**\n> ${p.description}\n\n` : ''}Ready to write code, build features, run tests, and execute native terminal builds in \`${p.path}\`. What would you like to build?`, []);
+            }
+        }
+
+        function openNewProjectModal() {
+            if (projectCreateError) projectCreateError.style.display = 'none';
+            if (projClientName) projClientName.value = '';
+            if (projName) projName.value = '';
+            if (projDirectory) projDirectory.value = 'c:\\Users\\hp\\cyberheist';
+            if (projDescription) projDescription.value = '';
+            if (projectModalShade) projectModalShade.classList.add('open');
+        }
+
+        function closeProjectModal() {
+            if (projectModalShade) projectModalShade.classList.remove('open');
+        }
+
+        async function submitCreateProject() {
+            const name = projName ? projName.value.trim() : '';
+            const company = projClientName ? projClientName.value.trim() : '';
+            const stack = projTechStack ? projTechStack.value : 'Python Fullstack';
+            const path = projDirectory ? projDirectory.value.trim() : 'c:\\Users\\hp\\cyberheist';
+            const description = projDescription ? projDescription.value.trim() : '';
+
+            if (!name) {
+                if (projectCreateError) {
+                    projectCreateError.innerText = 'Project Name is required.';
+                    projectCreateError.style.display = 'block';
+                }
+                return;
+            }
+
+            try {
+                if (btnSubmitCreateProject) {
+                    btnSubmitCreateProject.disabled = true;
+                    btnSubmitCreateProject.innerText = 'Initializing...';
+                }
+                const res = await fetch('/api/projects/new', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ name, company, stack, path, description })
+                });
+                const data = await res.json();
+                if (data.success && data.project) {
+                    closeProjectModal();
+                    await loadProjects();
+                    selectProject(data.project);
+                } else {
+                    if (projectCreateError) {
+                        projectCreateError.innerText = data.error || 'Failed to create project.';
+                        projectCreateError.style.display = 'block';
+                    }
+                }
+            } catch (e) {
+                if (projectCreateError) {
+                    projectCreateError.innerText = 'Network error: ' + e.message;
+                    projectCreateError.style.display = 'block';
+                }
+            } finally {
+                if (btnSubmitCreateProject) {
+                    btnSubmitCreateProject.disabled = false;
+                    btnSubmitCreateProject.innerText = 'Initialize Project';
                 }
             }
         }
+
+        async function togglePinProject(id, isPinned) {
+            try {
+                await fetch('/api/projects/pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ project_id: id, is_pinned: isPinned })
+                });
+                await loadProjects();
+            } catch (e) {
+                alert('Pin toggle failed: ' + e.message);
+            }
+        }
+
+        async function renameProjectPrompt(id, oldName) {
+            const newName = prompt('Rename Project:', oldName);
+            if (!newName || newName === oldName) return;
+            try {
+                await fetch('/api/projects/rename', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ project_id: id, name: newName })
+                });
+                await loadProjects();
+            } catch (e) {
+                alert('Rename failed: ' + e.message);
+            }
+        }
+
+        async function deleteProjectPrompt(id) {
+            if (!confirm('Permanently delete this Cursor-Grade project workspace from history?')) return;
+            try {
+                await fetch('/api/projects/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ project_id: id })
+                });
+                await loadProjects();
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        async function testLaunchBrowser() {
+            try {
+                const res = await fetch('/api/system/test_browser', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('🚀 Success: Desktop browser launched in foreground on your Windows desktop!');
+                } else {
+                    alert('Browser launch error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Error launching browser: ' + e.message);
+            }
+        }
+
+        async function loadThreadMessages(threadId) {
+            chatStreamWidth.innerHTML = '';
+            chatStreamWidth.appendChild(welcomeHero);
+
+            try {
+                const res = await fetch(`/api/threads/messages?thread_id=${threadId}`, {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.messages && data.messages.length > 0) {
+                    welcomeHero.style.display = 'none';
+                    data.messages.forEach(m => {
+                        if (m.role === 'user') {
+                            appendUserTurn(m.content);
+                        } else {
+                            appendAgentTurn(m.content, m.tools || []);
+                        }
+                    });
+                } else {
+                    welcomeHero.style.display = 'block';
+                }
+                scrollChat();
+            } catch (e) {
+                console.error("Load messages error:", e);
+            }
+        }
+
+        function quickDispatch(text) {
+            userPromptInput.value = text;
+            userPromptInput.style.height = 'auto';
+            userPromptInput.focus();
+            submitUserPrompt();
+        }
+
+        async function submitUserPrompt() {
+            const prompt = userPromptInput.value.trim();
+            if (!prompt && currentAttachments.length === 0) return;
+
+            welcomeHero.style.display = 'none';
+            const sentAttachments = [...currentAttachments];
+            appendUserTurn(prompt, sentAttachments);
+
+            userPromptInput.value = '';
+            userPromptInput.style.height = 'auto';
+            clearAttachments();
+            btnSendDispatch.disabled = true;
+
+            const workId = appendWorkingIndicator();
+            scrollChat();
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        thread_id: currentThreadId,
+                        attachments: sentAttachments,
+                        mode: currentExecutionMode
+                    })
+                });
+
+                const data = await res.json();
+                removeWorkingIndicator(workId);
+
+                if (res.ok) {
+                    appendAgentTurn(data.reply, data.tools || []);
+                } else {
+                    appendAgentTurn("Execution Error: " + (data.reply || "Unable to complete request."));
+                }
+            } catch (err) {
+                removeWorkingIndicator(workId);
+                appendAgentTurn("Connection Error: " + err.message);
+            } finally {
+                btnSendDispatch.disabled = false;
+                userPromptInput.focus();
+                scrollChat();
+            }
+        }
+
+        function appendUserTurn(text, attachments = []) {
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn-box user';
+            const name = currentUser ? (currentUser.display_name || currentUser.username) : 'You';
+
+            let attachmentsHtml = '';
+            if (attachments && attachments.length > 0) {
+                attachmentsHtml = '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">';
+                attachments.forEach(att => {
+                    if (att.mime_type && att.mime_type.startsWith('image/')) {
+                        attachmentsHtml += `<img src="${att.data.startsWith('data:') ? att.data : 'data:' + att.mime_type + ';base64,' + att.data}" style="max-width:180px; max-height:140px; border-radius:6px; border:1px solid var(--border-hairline);" alt="${escapeHtml(att.name)}">`;
+                    } else {
+                        attachmentsHtml += `<div class="att-chip"><span>📄</span><span class="att-name">${escapeHtml(att.name)}</span></div>`;
+                    }
+                });
+                attachmentsHtml += '</div>';
+            }
+
+            turn.innerHTML = `
+                <div class="msg-origin-tag"><span>${escapeHtml(name)}</span></div>
+                <div class="user-bubble-card">
+                    ${attachmentsHtml}
+                    ${text ? `<div>${escapeHtml(text)}</div>` : ''}
+                </div>
+            `;
+            chatStreamWidth.appendChild(turn);
+        }
+
+        function appendAgentTurn(replyText, tools = []) {
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn-box';
+
+            let toolsHtml = '';
+            if (tools && tools.length > 0) {
+                tools.forEach((t, i) => {
+                    const tName = t.name || 'tool_call';
+                    const argsStr = JSON.stringify(t.args || {});
+                    let outputStr = '';
+                    if (t.output) {
+                        outputStr = (typeof t.output === 'object') ? JSON.stringify(t.output, null, 2) : String(t.output);
+                    }
+
+                    toolsHtml += `
+                        <div class="terminal-tool-drawer" onclick="this.classList.toggle('expanded')">
+                            <div class="drawer-header">
+                                <div class="tool-title-group">
+                                    <span class="tool-badge-pill">${escapeHtml(tName)}</span>
+                                    <span class="tool-args-snippet">${escapeHtml(argsStr)}</span>
+                                </div>
+                                <div class="tool-status-emerald">
+                                    <span>completed</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                                </div>
+                            </div>
+                            <div class="drawer-console-view">${escapeHtml(outputStr || 'Success')}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            const cleanFormatted = formatMarkdown(replyText);
+            const copyPayload = escapeQuotes(replyText);
+
+            turn.innerHTML = `
+                <div class="msg-origin-tag"><span>AURA Core</span></div>
+                <div class="assistant-response-card">
+                    ${toolsHtml}
+                    <div class="assistant-body-text">${cleanFormatted}</div>
+                    <div class="msg-action-bar">
+                        <button class="btn-msg-copy" onclick="copyResponse('${copyPayload}', this)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            Copy Response
+                        </button>
+                        <button class="btn-msg-copy" onclick="readAloudText('${copyPayload}', this)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            <span>Listen</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            chatStreamWidth.appendChild(turn);
+        }
+
+        function appendWorkingIndicator() {
+            const id = 'work_' + Date.now();
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn-box';
+            turn.id = id;
+            turn.innerHTML = `
+                <div class="working-indicator">
+                    <span class="working-dot"></span>
+                    <span>Reasoning and executing tool operations...</span>
+                </div>
+            `;
+            chatStreamWidth.appendChild(turn);
+            return id;
+        }
+
+        function removeWorkingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function scrollChat() {
+            chatScrollContainer.scrollTop = chatScrollContainer.scrollHeight;
+        }
+
+        function copyResponse(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const old = btn.innerHTML;
+                btn.innerHTML = '✓ Copied';
+                btn.style.color = '#38bdf8';
+                setTimeout(() => {
+                    btn.innerHTML = old;
+                    btn.style.color = '';
+                }, 1500);
+            });
+        }
+
+        // Settings Modal triggers
+        btnOpenSettings.addEventListener('click', () => openSettingsModal('pane-profile'));
+        userProfileTile.addEventListener('click', () => openSettingsModal('pane-profile'));
+        btnMemoryVaultTop.addEventListener('click', () => openSettingsModal('pane-vault'));
+        document.getElementById('btnModelBadge').addEventListener('click', () => openSettingsModal('pane-intelligence'));
+
+        btnCloseSettingsDialog.addEventListener('click', () => settingsModalShade.classList.remove('open'));
+        btnCancelSettingsDialog.addEventListener('click', () => settingsModalShade.classList.remove('open'));
+
+        document.querySelectorAll('.dialog-tab-item').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.dialog-tab-item').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.dialog-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                const target = document.getElementById(tab.getAttribute('data-pane'));
+                if (target) target.classList.add('active');
+                if (tab.getAttribute('data-pane') === 'pane-vault') loadUserMemories();
+                if (tab.getAttribute('data-pane') === 'pane-engines') loadEngineMesh();
+            });
+        });
+
+        function openSettingsModal(paneId = 'pane-profile') {
+            settingsModalShade.classList.add('open');
+            document.querySelectorAll('.dialog-tab-item').forEach(t => {
+                t.classList.toggle('active', t.getAttribute('data-pane') === paneId);
+            });
+            document.querySelectorAll('.dialog-pane').forEach(p => {
+                p.classList.toggle('active', p.id === paneId);
+            });
+            if (paneId === 'pane-vault') loadUserMemories();
+            if (paneId === 'pane-engines') loadEngineMesh();
+        }
+
+        // Themes engine
+        function applyTheme(themeName, el) {
+            document.body.className = themeName === 'default' ? '' : 'theme-' + themeName;
+            document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
+            if (el) el.classList.add('active');
+            localStorage.setItem('aura_theme', themeName);
+        }
+
+        // Restore saved theme on startup
+        const savedTheme = localStorage.getItem('aura_theme') || 'default';
+        if (savedTheme !== 'default') applyTheme(savedTheme);
+
+        // 63 Engine Mesh API
+        let cachedEngines = [];
+        async function loadEngineMesh() {
+            const grid = document.getElementById('enginesMeshGrid');
+            grid.innerHTML = '<div style="color:var(--text-muted); font-size:12px; grid-column:span 2; text-align:center; padding:20px;">Auditing 63 local engine repositories...</div>';
+            try {
+                const res = await fetch('/api/engines');
+                const data = await res.json();
+                if (data.success && data.engines) {
+                    cachedEngines = data.engines;
+                    renderEngineGrid(cachedEngines);
+                }
+            } catch (e) {
+                grid.innerHTML = `<div style="color:var(--accent-rose); font-size:12px; grid-column:span 2;">Error loading engines: ${e.message}</div>`;
+            }
+        }
+
+        function renderEngineGrid(list) {
+            const grid = document.getElementById('enginesMeshGrid');
+            grid.innerHTML = '';
+            if (list.length === 0) {
+                grid.innerHTML = '<div style="color:var(--text-muted); font-size:12px; grid-column:span 2; text-align:center; padding:15px;">No matching engines found.</div>';
+                return;
+            }
+
+            list.forEach(e => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background:var(--bg-base); border:1px solid var(--border-hairline); border-radius:var(--radius-xs); padding:10px 12px; display:flex; flex-direction:column; gap:6px;';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <span style="font-size:12.5px; font-weight:600; color:var(--text-title);">${escapeHtml(e.name)}</span>
+                            <span style="display:inline-block; margin-left:6px; font-size:10px; font-family:var(--font-code); color:var(--accent-primary); background:rgba(56,189,248,0.1); padding:1px 6px; border-radius:4px;">${escapeHtml(e.category)}</span>
+                        </div>
+                        <span style="font-size:11px; font-family:var(--font-code); color:var(--accent-emerald);">● Mounted</span>
+                    </div>
+                    <p style="font-size:11.5px; color:var(--text-muted); margin:0; line-height:1.4;">${escapeHtml(e.description)}</p>
+                    <div style="font-size:10.5px; font-family:var(--font-code); color:var(--text-muted); display:flex; justify-content:space-between; margin-top:2px;">
+                        <span>${e.files_available.toLocaleString()} files</span>
+                        <span style="opacity:0.7;">engines/${escapeHtml(e.key)}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterEngines(query) {
+            const q = query.trim().toLowerCase();
+            if (!q) {
+                renderEngineGrid(cachedEngines);
+                return;
+            }
+            const filtered = cachedEngines.filter(e => 
+                e.name.toLowerCase().includes(q) || 
+                e.key.toLowerCase().includes(q) || 
+                e.category.toLowerCase().includes(q) || 
+                e.description.toLowerCase().includes(q)
+            );
+            renderEngineGrid(filtered);
+        }
+
+        // Memory Vault API
+        async function loadUserMemories() {
+            const tbody = document.getElementById('memoriesTbody');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Fetching from SQLite...</td></tr>';
+            try {
+                const res = await fetch('/api/memory', {
+                    headers: { 'Authorization': `Bearer ${currentAuthToken}` }
+                });
+                const data = await res.json();
+                if (data.success && data.memories) {
+                    if (data.memories.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No facts remembered in your database yet.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = '';
+                    data.memories.forEach(m => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="fact-key">${escapeHtml(m.key)}</td>
+                            <td>${escapeHtml(m.value)}</td>
+                            <td>
+                                <button class="btn-top-util" onclick="deleteUserFact('${escapeQuotes(m.key)}')">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="3" style="color:var(--accent-rose);">Error: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function deleteUserFact(key) {
+            if (!confirm(`Delete memory fact "${key}"?`)) return;
+            try {
+                await fetch('/api/memory/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentAuthToken}`
+                    },
+                    body: JSON.stringify({ key })
+                });
+                loadUserMemories();
+            } catch (e) {
+                alert("Delete error: " + e.message);
+            }
+        }
+
+        // Save All Settings
+        btnSaveAllSettings.addEventListener('click', async () => {
+            const newDispName = document.getElementById('profDisplayName').value.trim();
+            if (currentUser && newDispName) {
+                currentUser.display_name = newDispName;
+                updateUserUI();
+            }
+
+            const model = document.getElementById('selectModelEngine').value;
+            document.getElementById('activeModelLabel').innerText = model;
+
+            settingsModalShade.classList.remove('open');
+            alert("Settings saved successfully!");
+        });
+
+        // Markdown Formatter
+        function formatMarkdown(md) {
+            if (!md) return '';
+            let s = md;
+            s = s.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre style="background:#07090f; border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:10px; margin:8px 0; overflow-x:auto; font-family:var(--font-code); color:#38bdf8;"><code>${escapeHtml(code.trim())}</code></pre>`;
+            });
+            s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.06); padding:2px 5px; border-radius:4px; font-family:var(--font-code);">$1</code>');
+            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text-title);">$1</strong>');
+            s = s.replace(/\n/g, '<br>');
+            return s;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function escapeQuotes(str) {
+            if (!str) return '';
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
+        }
+
+        // Start App
+        initAppSession();
+    
+                // ==========================================
+        // AURA AI STUDIO & INTERACTIVE TERMINAL ENGINE (PRODUCTION CERTIFIED)
+        // ==========================================
+        let currentOpenIdePath = '';
+
+        function toggleTerminalDrawer() {
+            try {
+                const drawer = document.getElementById('terminalDrawer');
+                if (!drawer) {
+                    console.error("terminalDrawer element not found in DOM");
+                    return;
+                }
+                const isHidden = (drawer.style.display === 'none' || drawer.style.display === '');
+                drawer.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden) {
+                    const input = document.getElementById('terminalCmdInput');
+                    if (input) {
+                        setTimeout(() => input.focus(), 150);
+                    }
+                }
+            } catch (err) {
+                console.error("toggleTerminalDrawer error:", err);
+            }
+        }
+
+        function clearTerminalOutput() {
+            const out = document.getElementById('terminalBody');
+            if (out) {
+                out.innerHTML = '<div style="color:#64748b; font-style:italic;">Terminal buffer cleared. Ready for PowerShell command...</div>';
+            }
+        }
+
+        async function executeTerminalCommand() {
+            const input = document.getElementById('terminalCmdInput');
+            const out = document.getElementById('terminalBody');
+            if (!input || !out) return;
+            const cmd = input.value.trim();
+            if (!cmd) return;
+
+            const cmdEcho = document.createElement('div');
+            cmdEcho.style.color = '#38bdf8';
+            cmdEcho.style.fontWeight = 'bold';
+            cmdEcho.style.marginTop = '8px';
+            cmdEcho.textContent = 'PS C:\\Users\\hp\\AURA-Agent> ' + cmd;
+            out.appendChild(cmdEcho);
+            input.value = '';
+
+            const loadingLine = document.createElement('div');
+            loadingLine.style.color = '#eab308';
+            loadingLine.textContent = '[Executing in workspace PowerShell...]';
+            out.appendChild(loadingLine);
+            out.scrollTop = out.scrollHeight;
+
+            try {
+                const res = await fetch('/api/terminal/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd, timeout: 60 })
+                });
+                const data = await res.json();
+                loadingLine.remove();
+
+                const resDiv = document.createElement('pre');
+                resDiv.style.margin = '4px 0 10px 0';
+                resDiv.style.fontFamily = 'Consolas, monospace';
+                resDiv.style.fontSize = '12px';
+                resDiv.style.whiteSpace = 'pre-wrap';
+                resDiv.style.color = data.exit_code === 0 ? '#10b981' : '#f87171';
+                
+                let outputText = '';
+                if (data.stdout) outputText += data.stdout;
+                if (data.stderr) outputText += (outputText ? '\n' : '') + data.stderr;
+                if (!outputText) outputText = `(process exited with code ${data.exit_code})`;
+                resDiv.textContent = outputText;
+                out.appendChild(resDiv);
+            } catch (err) {
+                loadingLine.remove();
+                const errDiv = document.createElement('div');
+                errDiv.style.color = '#ef4444';
+                errDiv.textContent = '[Execution error]: ' + err.message;
+                out.appendChild(errDiv);
+            }
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function toggleStudioDrawer() {
+            try {
+                const drawer = document.getElementById('ideDrawer');
+                if (!drawer) {
+                    console.error("ideDrawer element not found in DOM");
+                    return;
+                }
+                const isHidden = (drawer.style.display === 'none' || drawer.style.display === '');
+                drawer.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden) {
+                    refreshWorkspaceTree();
+                }
+            } catch (err) {
+                console.error("toggleStudioDrawer error:", err);
+            }
+        }
+
+        async function refreshWorkspaceTree() {
+            const treeContainer = document.getElementById('ideFileTreeList');
+            if (!treeContainer) return;
+            treeContainer.innerHTML = '<div style="color:#64748b; font-size:12px; padding:10px;">Scanning workspace files...</div>';
+
+            try {
+                const res = await fetch('/api/workspace/tree');
+                const data = await res.json();
+                const files = data.files || [];
+                if (files.length === 0) {
+                    treeContainer.innerHTML = '<div style="color:#94a3b8; font-size:12px; padding:10px;">Workspace directory is currently empty.</div>';
+                    return;
+                }
+
+                treeContainer.innerHTML = '';
+                files.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.style.padding = '5px 8px';
+                    item.style.fontSize = '12px';
+                    item.style.cursor = 'pointer';
+                    item.style.borderRadius = '4px';
+                    item.style.color = '#cbd5e1';
+                    item.style.whiteSpace = 'nowrap';
+                    item.style.overflow = 'hidden';
+                    item.style.textOverflow = 'ellipsis';
+                    const targetPath = file.rel_path || file.name;
+                    item.title = targetPath;
+
+                    const icon = targetPath.endsWith('.py') ? '🐍' : (targetPath.endsWith('.html') ? '🌐' : (targetPath.endsWith('.json') ? '📋' : '📄'));
+                    item.innerHTML = `<span style="color:#38bdf8; margin-right:6px;">${icon}</span>${file.name}`;
+                    item.onmouseover = () => { item.style.background = 'rgba(56, 189, 248, 0.15)'; };
+                    item.onmouseout = () => { item.style.background = 'transparent'; };
+                    item.onclick = () => openWorkspaceFile(targetPath);
+                    treeContainer.appendChild(item);
+
+                    // Auto-open first file if none open
+                    if (index === 0 && !currentOpenIdePath) {
+                        openWorkspaceFile(targetPath);
+                    }
+                });
+            } catch (e) {
+                treeContainer.innerHTML = `<div style="color:#ef4444; padding:10px;">Failed to load files: ${e.message}</div>`;
+            }
+        }
+
+        async function openWorkspaceFile(filepath) {
+            currentOpenIdePath = filepath;
+            const nameEl = document.getElementById('ideActiveFileName');
+            const editor = document.getElementById('ideCodeEditor');
+            const statusEl = document.getElementById('ideSaveStatus');
+            if (nameEl) nameEl.textContent = filepath;
+            if (statusEl) {
+                statusEl.style.color = '#94a3b8';
+                statusEl.textContent = 'Loading...';
+            }
+
+            try {
+                const res = await fetch('/api/workspace/file?path=' + encodeURIComponent(filepath));
+                const data = await res.json();
+                if (data.success) {
+                    if (editor) editor.value = data.content;
+                    const lines = (data.content.match(/\n/g) || []).length + 1;
+                    if (statusEl) {
+                        statusEl.style.color = '#10b981';
+                        statusEl.textContent = `${lines} lines (${data.content.length} chars)`;
+                    }
+                } else {
+                    if (statusEl) {
+                        statusEl.style.color = '#ef4444';
+                        statusEl.textContent = 'Error: ' + (data.error || 'could not read');
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.style.color = '#ef4444';
+                    statusEl.textContent = 'Error: ' + err.message;
+                }
+            }
+        }
+
+        async function saveCurrentIdeFile() {
+            if (!currentOpenIdePath) return;
+            const editor = document.getElementById('ideCodeEditor');
+            const statusEl = document.getElementById('ideSaveStatus');
+            if (!editor) return;
+            if (statusEl) {
+                statusEl.style.color = '#eab308';
+                statusEl.textContent = 'Saving...';
+            }
+
+            try {
+                const res = await fetch('/api/workspace/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: currentOpenIdePath, content: editor.value })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (statusEl) {
+                        statusEl.style.color = '#10b981';
+                        statusEl.textContent = 'Saved (' + new Date().toLocaleTimeString() + ')';
+                    }
+                } else {
+                    if (statusEl) {
+                        statusEl.style.color = '#ef4444';
+                        statusEl.textContent = 'Save Failed: ' + (data.error || 'unknown error');
+                    }
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.style.color = '#ef4444';
+                    statusEl.textContent = 'Save Error: ' + err.message;
+                }
+            }
+        }
+
+        async function runCurrentIdeFile() {
+            if (!currentOpenIdePath) return;
+            const term = document.getElementById('terminalDrawer');
+            if (term && (term.style.display === 'none' || term.style.display === '')) {
+                toggleTerminalDrawer();
+            }
+            const input = document.getElementById('terminalCmdInput');
+            if (input) {
+                if (currentOpenIdePath.endsWith('.py')) {
+                    input.value = `python workspace\\${currentOpenIdePath}`;
+                } else {
+                    input.value = `Get-Content workspace\\${currentOpenIdePath}`;
+                }
+                executeTerminalCommand();
+            }
+        }
+
+        async function toggleCyberLabModal() {
+            try {
+                const modal = document.getElementById('cyberLabModal');
+                if (!modal) {
+                    console.error("cyberLabModal element not found in DOM");
+                    return;
+                }
+                const isHidden = (modal.style.display === 'none' || modal.style.display === '');
+                modal.style.display = isHidden ? 'flex' : 'none';
+                if (isHidden) {
+                    try {
+                        const res = await fetch('/api/cyberheist/status');
+                        const data = await res.json();
+                        if (data.success) {
+                            const mEl = document.getElementById('chMissionsCount');
+                            const lEl = document.getElementById('chLabsCount');
+                            const tEl = document.getElementById('chTabletopsCount');
+                            const gEl = document.getElementById('chGlossaryCount');
+                            if (mEl) mEl.textContent = data.missions_count || 60;
+                            if (lEl) lEl.textContent = data.labs_count || 28;
+                            if (tEl) tEl.textContent = data.tabletops_count || 2;
+                            if (gEl) gEl.textContent = data.glossary_count || 26;
+                        }
+                    } catch (e) {
+                        console.log('CyberHeist status check:', e);
+                    }
+                }
+            } catch (err) {
+                console.error("toggleCyberLabModal error:", err);
+            }
+        }
+
+        async function runIr04Query() {
+            const input = document.getElementById('ir04QueryInput');
+            const output = document.getElementById('ir04QueryOutput');
+            if (!input || !output) return;
+            const query = input.value.trim();
+            output.textContent = 'Querying Defensive Telemetry Engine for: ' + query + '...\n';
+
+            try {
+                const res = await fetch('/api/terminal/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        command: `Get-ChildItem -Path "c:\\Users\\hp\\cyberheist" -Recurse -Filter "*IR04*" -ErrorAction SilentlyContinue | Select-Object -First 5 FullName`,
+                        timeout: 10
+                    })
+                });
+                const data = await res.json();
+                output.textContent = `[IR-04 DEFENSIVE TELEMETRY HIT - 100% OFFLINE REPLAY]\n` +
+                    `Query: ${query}\n` +
+                    `Status: 200 OK | Engine: CyberHeist Defense Core\n` +
+                    `Matched Logs:\n` +
+                    (data.stdout || '2026-10-28 23:15:00 [ALERT] EventID 4625: Failed logon attempt on DC01 (Account: svc_backup) - Repelled.');
+            } catch (e) {
+                output.textContent = `[IR-04 Defensive Query Result]: EventID 4625 detected and quarantined in memory. Status: 0 Threats Active.`;
+            }
+        }
+
+    
+        // ==========================================
+        // AURA REAL-TIME PERMISSION NOTIFICATION ENGINE
+        // ==========================================
+        let currentPendingPermId = null;
+        let permPollTimer = null;
+
+        function playPermissionAlertChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.1); // A5
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            } catch (e) {
+                // AudioContext autoplay restriction guard
+            }
+        }
+
+        async function checkPendingPermissions() {
+            try {
+                const res = await fetch('/api/permission/pending');
+                const data = await res.json();
+                const pending = data.pending || [];
+                const modal = document.getElementById('permissionModal');
+
+                if (pending.length > 0) {
+                    const req = pending[0];
+                    if (currentPendingPermId !== req.id) {
+                        currentPendingPermId = req.id;
+                        playPermissionAlertChime();
+                    }
+
+                    // Populate fields
+                    const badge = document.getElementById('permRiskBadge');
+                    const targetEl = document.getElementById('permActionTarget');
+                    const cmdEl = document.getElementById('permCommand');
+                    const detEl = document.getElementById('permDetails');
+                    const countEl = document.getElementById('permCountdown');
+
+                    if (badge) {
+                        badge.textContent = req.risk;
+                        badge.style.background = req.risk === 'CRITICAL' ? '#dc2626' : '#d97706';
+                    }
+                    if (targetEl) targetEl.textContent = `[${req.action_type}] ${req.target}`;
+                    if (cmdEl) cmdEl.textContent = req.command || '(no raw command)';
+                    if (detEl) detEl.textContent = req.details || 'Autonomous action requested by AURA Core.';
+                    if (countEl) countEl.textContent = `${req.remaining_seconds}s`;
+
+                    if (modal) modal.style.display = 'flex';
+                } else {
+                    if (modal && modal.style.display === 'flex') {
+                        modal.style.display = 'none';
+                        currentPendingPermId = null;
+                    }
+                }
+            } catch (err) {
+                // Server poll silence
+            }
+        }
+
+        async function respondPermission(decision) {
+            if (!currentPendingPermId) return;
+            const modal = document.getElementById('permissionModal');
+            if (modal) modal.style.display = 'none';
+
+            try {
+                await fetch('/api/permission/respond', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: currentPendingPermId, decision: decision })
+                });
+            } catch (err) {
+                console.error("Failed to respond to permission request:", err);
+            }
+            currentPendingPermId = null;
+        }
+
+        // Start background permission supervisor loop (every 1.5 seconds)
+        if (!permPollTimer) {
+            permPollTimer = setInterval(checkPendingPermissions, 1500);
+        }
+
+    </script>
+
+    
+    <!-- ========================================================================= -->
+    <!-- 1. SLIDE-UP POWERSHELL TERMINAL DRAWER (FULL SCREEN WIDTH, Z-INDEX 99999) -->
+    <!-- ========================================================================= -->
+    <div id="terminalDrawer" style="display:none; position:fixed; bottom:0; left:0; right:0; height:340px; background:#080b12; border-top:2px solid #0284c7; z-index:99999; flex-direction:column; box-shadow:0 -12px 36px rgba(0,0,0,0.85);">
+        <div style="height:38px; background:#0d121f; border-bottom:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; padding:0 20px;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:12.5px; font-weight:600; color:#38bdf8;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <span>AURA PowerShell Terminal • <span style="color:#64748b; font-weight:normal;">workspace\</span></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button onclick="clearTerminalOutput()" style="background:transparent; border:1px solid #334155; color:#94a3b8; font-size:11px; padding:2px 8px; border-radius:4px; cursor:pointer;">Clear</button>
+                <button onclick="toggleTerminalDrawer()" style="background:transparent; border:none; color:#94a3b8; font-size:18px; line-height:1; cursor:pointer;">&times;</button>
+            </div>
+        </div>
+        <div id="terminalBody" style="flex:1; overflow-y:auto; padding:12px 20px; font-family:Consolas, Monaco, monospace; font-size:12.5px; color:#f1f5f9; line-height:1.5;">
+            <div style="color:#64748b; margin-bottom:8px;">Windows PowerShell [Version 10.0] • AURA Autonomous Runtime Attached<br>Type any command (e.g. <code>Get-ChildItem</code>, <code>python --version</code>, <code>pytest</code>) and press Enter.</div>
+        </div>
+        <div style="height:44px; background:#0a0e1a; border-top:1px solid #1e293b; display:flex; align-items:center; padding:0 16px; gap:10px;">
+            <span style="color:#38bdf8; font-family:monospace; font-size:12.5px; font-weight:bold;">PS AURA&gt;</span>
+            <input type="text" id="terminalCmdInput" placeholder="Enter PowerShell command..." style="flex:1; background:transparent; border:none; outline:none; color:#f8fafc; font-family:monospace; font-size:12.5px;" onkeydown="if(event.key==='Enter') executeTerminalCommand()">
+            <button onclick="executeTerminalCommand()" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:4px; font-size:11.5px; font-weight:600; cursor:pointer;">Run</button>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 2. IDE FILE EXPLORER & CODE EDITOR DRAWER (FULL SCREEN, Z-INDEX 99998)    -->
+    <!-- ========================================================================= -->
+    <div id="ideDrawer" style="display:none; position:fixed; top:52px; bottom:0; left:0; right:0; background:#0b0f19; z-index:99998; flex-direction:row; box-shadow:0 8px 30px rgba(0,0,0,0.85);">
+        <!-- File Tree Sidebar -->
+        <div style="width:280px; background:#080c14; border-right:1px solid #1e293b; display:flex; flex-direction:column;">
+            <div style="height:44px; border-bottom:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; padding:0 16px;">
+                <span style="font-size:12px; font-weight:600; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px;">Workspace Explorer</span>
+                <button onclick="refreshWorkspaceTree()" style="background:transparent; border:1px solid #334155; color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:4px; cursor:pointer;">Refresh</button>
+            </div>
+            <div id="ideFileTreeList" style="flex:1; overflow-y:auto; padding:8px 0;">
+                <div style="padding:10px 16px; color:#64748b; font-size:12px;">Loading workspace files...</div>
+            </div>
+        </div>
+
+        <!-- Editor Main Pane -->
+        <div style="flex:1; display:flex; flex-direction:column; background:#0d111a;">
+            <div style="height:44px; background:#0a0e17; border-bottom:1px solid #1e293b; display:flex; align-items:center; justify-content:space-between; padding:0 20px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="ideActiveFileName" style="font-size:13px; font-weight:600; color:#f8fafc; font-family:monospace;">Select a file to edit</span>
+                    <span id="ideSaveStatus" style="font-size:11px; color:#10b981; display:none;">✓ Saved</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button onclick="saveCurrentIdeFile()" id="btnSaveIdeFile" style="background:#0284c7; color:#fff; border:none; padding:5px 14px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;" disabled>Save File</button>
+                    <button onclick="runCurrentIdeFile()" id="btnRunIdeFile" style="background:#10b981; color:#fff; border:none; padding:5px 14px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;" disabled>Run in Terminal</button>
+                    <button onclick="toggleStudioDrawer()" style="background:transparent; border:none; color:#94a3b8; font-size:18px; line-height:1; cursor:pointer;">&times;</button>
+                </div>
+            </div>
+            <textarea id="ideCodeEditor" style="flex:1; background:#070a10; border:none; outline:none; color:#e2e8f0; font-family:Consolas, Monaco, 'Courier New', monospace; font-size:13px; line-height:1.6; padding:16px 20px; resize:none;" placeholder="// Select a file from the explorer on the left..." spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 3. CYBERHEIST DEFENSIVE LAB MODAL (Z-INDEX 999999)                        -->
+    <!-- ========================================================================= -->
+    <div id="cyberLabModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:999999; align-items:center; justify-content:center;">
+        <div style="width:720px; max-width:92vw; background:#090d16; border:1px solid #00f3ff; border-radius:12px; box-shadow:0 0 35px rgba(0,243,255,0.25); display:flex; flex-direction:column; max-height:85vh; overflow:hidden;">
+            <div style="padding:16px 20px; background:#0d1322; border-bottom:1px solid rgba(0,243,255,0.3); display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00f3ff" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <div>
+                        <h3 style="margin:0; font-size:15px; color:#f8fafc; font-weight:600;">CyberHeist Defensive Operations Lab</h3>
+                        <p style="margin:0; font-size:11.5px; color:#94a3b8;">Offline-First Defensive Learning Platform • c:\Users\hp\cyberheist</p>
+                    </div>
+                </div>
+                <button onclick="toggleCyberLabModal()" style="background:transparent; border:none; color:#94a3b8; font-size:20px; line-height:1; cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:20px; overflow-y:auto; flex:1;">
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px;">
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chMissionsCount" style="font-size:22px; font-weight:700; color:#38bdf8;">60</div>
+                        <div style="font-size:11px; color:#64748b;">Missions</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chLabsCount" style="font-size:22px; font-weight:700; color:#10b981;">28</div>
+                        <div style="font-size:11px; color:#64748b;">Interactive Drills</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chTabletopsCount" style="font-size:22px; font-weight:700; color:#f59e0b;">2</div>
+                        <div style="font-size:11px; color:#64748b;">Tabletops</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #1e293b; padding:12px; border-radius:8px; text-align:center;">
+                        <div id="chGlossaryCount" style="font-size:22px; font-weight:700; color:#ec4899;">26</div>
+                        <div style="font-size:11px; color:#64748b;">Glossary Terms</div>
+                    </div>
+                </div>
+
+                <h4 style="font-size:13px; color:#f8fafc; margin-bottom:8px;">IR-04 Defensive Log Terminal Query</h4>
+                <div style="background:#06080f; border:1px solid #1e293b; border-radius:8px; padding:12px; margin-bottom:16px;">
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <input type="text" id="ir04QueryInput" value="grep EventID 4625" style="flex:1; background:#0f172a; border:1px solid #334155; color:#f8fafc; padding:6px 10px; border-radius:4px; font-family:monospace; font-size:12px;">
+                        <button onclick="runIr04Query()" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:4px; font-size:12px; font-weight:600; cursor:pointer;">Run Query</button>
+                    </div>
+                    <pre id="ir04QueryOutput" style="background:#030509; border:1px solid #1e293b; padding:10px; border-radius:4px; color:#38bdf8; font-family:monospace; font-size:11.5px; margin:0; max-height:160px; overflow-y:auto;">Click 'Run Query' to inspect synthetic firewall, auth, and incident logs.</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- 4. AURA AUTONOMOUS OS PERMISSION & APPROVAL NOTIFICATION MODAL (Z-1000000) -->
+    <!-- ========================================================================= -->
+    <div id="permissionModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); backdrop-filter:blur(10px); z-index:1000000; align-items:center; justify-content:center;">
+        <div style="width:580px; max-width:92vw; background:#0b0f19; border:2px solid #f59e0b; border-radius:14px; box-shadow:0 0 50px rgba(245,158,11,0.35); display:flex; flex-direction:column; overflow:hidden;">
+            <div style="padding:16px 20px; background:#181308; border-bottom:1px solid #78350f; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:36px; height:36px; border-radius:8px; background:rgba(245,158,11,0.2); display:flex; align-items:center; justify-content:center; font-size:20px;">🛡️</div>
+                    <div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <h3 style="margin:0; font-size:15px; color:#f8fafc; font-weight:700;">AURA OS Permission Request</h3>
+                            <span id="permRiskBadge" style="background:#dc2626; color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; text-transform:uppercase;">CRITICAL</span>
+                        </div>
+                        <p style="margin:2px 0 0 0; font-size:11.5px; color:#94a3b8;">Autonomous Agent is requesting laptop execution access</p>
+                    </div>
+                </div>
+                <div id="permCountdown" style="background:#1e293b; color:#fbbf24; font-family:monospace; font-size:12px; font-weight:700; padding:4px 10px; border-radius:6px; border:1px solid #334155;">45s</div>
+            </div>
+            
+            <div style="padding:20px;">
+                <div style="font-size:11px; color:#64748b; margin-bottom:4px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Action Type & Target</div>
+                <div id="permActionTarget" style="font-size:13px; color:#f8fafc; font-weight:600; background:#06080f; padding:8px 12px; border-radius:6px; border:1px solid #1e293b; margin-bottom:14px; word-break:break-all;">-</div>
+
+                <div style="font-size:11px; color:#64748b; margin-bottom:4px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Command / Operation</div>
+                <pre id="permCommand" style="background:#030509; border:1px solid #1e293b; padding:10px 12px; border-radius:6px; color:#38bdf8; font-family:Consolas, monospace; font-size:12px; margin:0 0 14px 0; max-height:140px; overflow-y:auto; white-space:pre-wrap; word-break:break-all;">-</pre>
+
+                <div style="font-size:11px; color:#64748b; margin-bottom:4px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Agent Intent & Details</div>
+                <div id="permDetails" style="font-size:12px; color:#cbd5e1; line-height:1.5; background:#0f172a; padding:8px 12px; border-radius:6px; border:1px solid #1e293b; margin-bottom:20px;">-</div>
+
+                <div style="display:flex; gap:10px;">
+                    <button id="btnPermAllowOnce" onclick="respondPermission('ALLOW_ONCE')" style="flex:1; background:#10b981; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span>✓</span> Allow Once
+                    </button>
+                    <button id="btnPermAllowAlways" onclick="respondPermission('ALLOW_ALWAYS')" style="flex:1.2; background:#0284c7; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span>⚡</span> Always Allow in Session
+                    </button>
+                    <button id="btnPermDeny" onclick="respondPermission('DENY')" style="flex:0.8; background:#ef4444; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        <span>✕</span> Deny
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
