@@ -239,6 +239,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_os_controller import laptop_controller
             self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
 
+        elif path == "/api/media/status":
+            from aura_media_engine import AURA_CINEMA
+            self._send_json({"success": True, "status": AURA_CINEMA.get_status()})
+
         elif path == "/api/coderx/status":
             from coderx_engine import ROUTER
             self._send_json({
@@ -456,6 +460,39 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     })
                 except Exception as e:
                     self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
+
+        elif path == "/api/media/image/generate":
+            prompt = body.get("prompt", "")
+            style = body.get("style", "auto")
+            aspect_ratio = body.get("aspect_ratio", "1:1")
+            from aura_media_engine import AURA_CINEMA
+            res = AURA_CINEMA.create_cinematic_image(prompt, camera_style=style, aspect_ratio=aspect_ratio)
+            self._send_json(res)
+
+        elif path == "/api/media/image/transform":
+            img_path = body.get("image_path", "")
+            instruction = body.get("instruction", "iPhone portrait")
+            from aura_media_engine import AURA_CINEMA
+            res = AURA_CINEMA.transform_existing_image(img_path, instruction)
+            self._send_json(res)
+
+        elif path == "/api/media/image/remove_bg":
+            img_path = body.get("image_path", "")
+            from aura_media_engine import NativeSegmentationEngine
+            inp = Path(img_path)
+            out = inp.parent / f"{inp.stem}_nobg.png"
+            res = NativeSegmentationEngine.remove_background(inp, out)
+            self._send_json(res)
+
+        elif path == "/api/media/video/generate":
+            prompt = body.get("prompt", "")
+            duration = body.get("duration_sec", 5)
+            fps = body.get("fps", 24)
+            motion = body.get("camera_motion", "dolly_zoom")
+            aspect = body.get("aspect_ratio", "16:9")
+            from aura_media_engine import AURA_CINEMA
+            res = AURA_CINEMA.create_cinematic_video(prompt, duration_sec=duration, fps=fps, camera_motion=motion, aspect_ratio=aspect)
+            self._send_json(res)
 
         elif path == "/api/coderx/execute":
             goal = body.get("goal", "")

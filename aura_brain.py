@@ -808,55 +808,73 @@ def tool_read_file(filepath: str) -> Dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio: str = "1:1") -> Dict[str, Any]:
-    """Generates a high-resolution image from text description using neural diffusion synthesis."""
+    """Generates an ultra-photorealistic image using AURA Cinema Studio with AAA camera physics."""
     try:
-        import urllib.parse
-        import hashlib
-        import time
-
-        clean_prompt = prompt.strip()
-        encoded = urllib.parse.quote(clean_prompt)
-        
-        w, h = 1024, 1024
-        if aspect_ratio == "16:9":
-            w, h = 1280, 720
-        elif aspect_ratio == "9:16":
-            w, h = 720, 1280
-
-        seed = int(time.time() * 1000) % 999999
-        image_url = f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true&enhance=true"
-        
-        output_dir = Path(__file__).resolve().parent / "workspace" / "generated_images"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        img_id = hashlib.md5(f"{clean_prompt}_{seed}".encode()).hexdigest()[:12]
-        file_path = output_dir / f"aura_img_{img_id}.png"
-
+        from aura_media_engine import AURA_CINEMA
+        res = AURA_CINEMA.create_cinematic_image(prompt=prompt, camera_style=style, aspect_ratio=aspect_ratio)
+        res["action"] = "generated_image"
+        res["prompt"] = prompt
+        return res
+    except Exception as e:
+        # Fallback to direct download
         try:
+            import urllib.parse
+            import hashlib
+            import time
+            clean_prompt = prompt.strip()
+            encoded = urllib.parse.quote(clean_prompt)
+            w, h = (1280, 720) if aspect_ratio == "16:9" else ((720, 1280) if aspect_ratio == "9:16" else (1024, 1024))
+            seed = int(time.time() * 1000) % 999999
+            image_url = f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true&enhance=true"
+            output_dir = Path(__file__).resolve().parent / "workspace" / "generated_images"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            img_id = hashlib.md5(f"{clean_prompt}_{seed}".encode()).hexdigest()[:12]
+            file_path = output_dir / f"aura_img_{img_id}.png"
             req = urllib.request.Request(image_url, headers={"User-Agent": "AURA-Agent/2.0"})
             with urllib.request.urlopen(req, timeout=12) as resp:
                 file_path.write_bytes(resp.read())
-        except Exception:
-            svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">
-                <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#05070a"/><stop offset="100%" stop-color="#0284c7"/></linearGradient></defs>
-                <rect width="100%" height="100%" fill="url(#g)"/>
-                <circle cx="{w//2}" cy="{h//2}" r="160" fill="#38bdf8" opacity="0.25"/>
-                <text x="50%" y="45%" text-anchor="middle" fill="#f8fafc" font-size="28" font-family="sans-serif" font-weight="bold">AURA Neural Art Generator</text>
-                <text x="50%" y="54%" text-anchor="middle" fill="#94a3b8" font-size="16" font-family="sans-serif">{clean_prompt[:50]}</text>
-            </svg>"""
-            file_path = output_dir / f"aura_img_{img_id}.svg"
-            file_path.write_text(svg_content, encoding="utf-8")
+            return {
+                "success": True,
+                "action": "generated_image",
+                "prompt": clean_prompt,
+                "file_path": str(file_path),
+                "image_url": image_url,
+                "aspect_ratio": aspect_ratio,
+                "dimensions": f"{w}x{h}"
+            }
+        except Exception as fallback_err:
+            return {"success": False, "error": f"Image generation failed: {e} (Fallback: {fallback_err})"}
 
-        return {
-            "success": True,
-            "action": "generated_image",
-            "prompt": clean_prompt,
-            "file_path": str(file_path),
-            "image_url": image_url,
-            "aspect_ratio": aspect_ratio,
-            "dimensions": f"{w}x{h}"
-        }
+
+def tool_transform_image(image_path: str, instruction: str) -> Dict[str, Any]:
+    """Transforms an uploaded photo into iPhone 16 Pro RAW, 85mm f/1.4 Portrait Bokeh, or 2.39:1 Cinema."""
+    try:
+        from aura_media_engine import AURA_CINEMA
+        return AURA_CINEMA.transform_existing_image(image_path, instruction)
     except Exception as e:
-        return {"success": False, "error": f"Image generation failed: {e}"}
+        return {"success": False, "error": f"Image transformation failed: {e}"}
+
+
+def tool_remove_background(image_path: str) -> Dict[str, Any]:
+    """Removes background from an image creating a transparent PNG (SAM2 / Rembg engine)."""
+    try:
+        from aura_media_engine import NativeSegmentationEngine
+        inp = Path(image_path)
+        out = inp.parent / f"{inp.stem}_nobg.png"
+        return NativeSegmentationEngine.remove_background(inp, out)
+    except Exception as e:
+        return {"success": False, "error": f"Background removal failed: {e}"}
+
+
+def tool_segment_objects(image_path: str) -> Dict[str, Any]:
+    """Segments objects in an image with bounding boxes and contour masks (SAM2 engine)."""
+    try:
+        from aura_media_engine import NativeSegmentationEngine
+        inp = Path(image_path)
+        out = inp.parent / f"{inp.stem}_segmented.png"
+        return NativeSegmentationEngine.segment_objects(inp, out)
+    except Exception as e:
+        return {"success": False, "error": f"Object segmentation failed: {e}"}
 
 def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Dict[str, Any]:
     """Generates an animated video simulation sequence or multimedia player from text prompts."""
@@ -1296,6 +1314,9 @@ AVAILABLE_TOOLS = {
     "tool_parse_screen_ui": tool_parse_screen_ui,
     "tool_generate_image": tool_generate_image,
     "tool_generate_video": tool_generate_video,
+    "tool_transform_image": tool_transform_image,
+    "tool_remove_background": tool_remove_background,
+    "tool_segment_objects": tool_segment_objects,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
