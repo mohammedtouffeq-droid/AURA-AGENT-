@@ -238,6 +238,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/os/telemetry":
             from aura_os_controller import laptop_controller
             self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
+
+        elif path == "/api/coderx/status":
+            from coderx_engine import ROUTER
+            self._send_json({
+                "success": True,
+                "engine": "CoderX Enterprise v2.0",
+                "gemini_active": bool(ROUTER.gemini_key),
+                "ollama_active": ROUTER.is_ollama_available(),
+                "ollama_models": ROUTER.list_ollama_models() if ROUTER.is_ollama_available() else []
+            })
+
+        elif path == "/api/coderx/ast":
+            from coderx_engine import CodebaseAstMapper
+            ws = ROOT / "workspace"
+            repo_map = CodebaseAstMapper.generate_repo_map(ws)
+            self._send_json({"success": True, "repo_map": repo_map})
         else:
             self.send_error(404, "Not Found")
 
@@ -440,6 +456,24 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     })
                 except Exception as e:
                     self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
+
+        elif path == "/api/coderx/execute":
+            goal = body.get("goal", "")
+            filename = body.get("filename", "coderx_script.py")
+            cmd = body.get("test_command", "")
+            max_iter = body.get("max_iterations", 5)
+            from coderx_engine import CODERX
+            res = CODERX.run(goal=goal, target_filename=filename, test_command=cmd, max_iterations=max_iter)
+            self._send_json(res)
+
+        elif path == "/api/coderx/patch":
+            file_rel = body.get("path", "")
+            patch_text = body.get("patch", "")
+            ws = ROOT / "workspace"
+            target_p = (ws / file_rel).resolve()
+            from coderx_engine import AiderDiffPatcher
+            res = AiderDiffPatcher.apply_patch_string(target_p, patch_text)
+            self._send_json(res)
 
         elif path == "/api/autonomous/mission":
             goal = body.get("goal", "")

@@ -1224,54 +1224,55 @@ def tool_hermes_structured_agent(prompt: str, schema_type: str = "json_function_
 def tool_autonomous_code_loop(goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5) -> Dict[str, Any]:
     """Relentless self-healing autonomous coding loop: writes code, runs terminal validation, intercepts errors, and iterates until 0 errors."""
     try:
-        from aura_autonomous_loop import AURA_LOOP
-        
-        def ai_code_generator(mission: str, last_error: Optional[str]) -> str:
-            fix_prompt = f"Goal: {mission}\nFile: {target_filename}\n"
-            if last_error:
-                fix_prompt += f"\nPrevious attempt failed with error:\n{last_error}\n\nFix the code completely so that it runs with 0 errors. Output ONLY the raw executable code, no markdown commentary."
-            else:
-                fix_prompt += f"\nWrite the complete, production-ready code. Output ONLY the raw executable code."
-
-            try:
-                import urllib.request
-                payload = {
-                    "contents": [{"role": "user", "parts": [{"text": fix_prompt}]}]
-                }
-                req = urllib.request.Request(API_URL, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
-                with urllib.request.urlopen(req, timeout=12) as resp:
-                    data = json.loads(resp.read().decode())
-                    raw_code = data["candidates"][0]["content"]["parts"][0]["text"]
-                    if "```" in raw_code:
-                        lines = raw_code.splitlines()
-                        cleaned = []
-                        inside = False
-                        for l in lines:
-                            if l.startswith("```"):
-                                inside = not inside
-                                continue
-                            cleaned.append(l)
-                        return "\n".join(cleaned)
-                    return raw_code
-            except Exception:
-                if target_filename.endswith(".py"):
-                    return f"# Autonomous verified scaffold for {mission}\nimport sys\nprint('Auto-verified {target_filename} for: {mission[:50]}')\n"
-                else:
-                    return f"// Autonomous verified scaffold for {mission}\nconsole.log('Auto-verified {target_filename}');\n"
-
-        return AURA_LOOP.run_relentless_loop(
-            goal=goal,
-            target_filename=target_filename,
-            code_generator_fn=ai_code_generator,
-            test_command=test_command if test_command else None,
-            max_iterations=max_iterations
-        )
+        from coderx_engine import CODERX
+        res = CODERX.run(goal=goal, target_filename=target_filename, test_command=test_command, max_iterations=max_iterations)
+        if "loop_records" not in res and "history" in res:
+            res["loop_records"] = res["history"]
+        return res
     except Exception as e:
         return {"success": False, "error": f"Autonomous loop execution error: {e}"}
 
 
+def tool_coderx_build(goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5) -> Dict[str, Any]:
+    """CoderX Enterprise Autonomous Code Generator and Self-Healing Loop."""
+    from coderx_engine import CODERX
+    return CODERX.run(goal=goal, target_filename=target_filename, test_command=test_command, max_iterations=max_iterations)
+
+
+def tool_coderx_patch(file_path: str, patch_text: str) -> Dict[str, Any]:
+    """Surgically patches code using Aider-style SEARCH / REPLACE blocks."""
+    from coderx_engine import AiderDiffPatcher
+    from pathlib import Path
+    return AiderDiffPatcher.apply_patch_string(Path(file_path), patch_text)
+
+
+def tool_coderx_ast_map(path: str = ".") -> Dict[str, Any]:
+    """Extracts Tree-Sitter style codebase symbol map (classes, methods, functions) from workspace."""
+    from coderx_engine import CodebaseAstMapper
+    from pathlib import Path
+    target_p = Path(path).resolve()
+    repo_map = CodebaseAstMapper.generate_repo_map(target_p)
+    return {"success": True, "path": str(target_p), "repo_map": repo_map}
+
+
+def tool_coderx_status() -> Dict[str, Any]:
+    """Checks CoderX multi-model router status, Ollama availability, and local AI engines."""
+    from coderx_engine import ROUTER
+    return {
+        "success": True,
+        "engine": "CoderX Enterprise v2.0",
+        "gemini_active": bool(ROUTER.gemini_key),
+        "ollama_active": ROUTER.is_ollama_available(),
+        "ollama_models": ROUTER.list_ollama_models() if ROUTER.is_ollama_available() else []
+    }
+
+
 AVAILABLE_TOOLS = {
     "tool_autonomous_code_loop": tool_autonomous_code_loop,
+    "tool_coderx_build": tool_coderx_build,
+    "tool_coderx_patch": tool_coderx_patch,
+    "tool_coderx_ast_map": tool_coderx_ast_map,
+    "tool_coderx_status": tool_coderx_status,
     "tool_markitdown_convert": tool_markitdown_convert,
     "tool_media_extract_ytdlp": tool_media_extract_ytdlp,
     "tool_scrcpy_mobile_bridge": tool_scrcpy_mobile_bridge,
