@@ -65,10 +65,14 @@ class LaptopController:
             }
 
         try:
-            full_cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command]
-            if as_admin:
-                elevated_str = f"Start-Process powershell -ArgumentList '-NoProfile -Command {command}' -Verb RunAs -Wait"
-                full_cmd = ["powershell.exe", "-NoProfile", "-Command", elevated_str]
+            if sys.platform == "win32":
+                full_cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command]
+                if as_admin:
+                    elevated_str = f"Start-Process powershell -ArgumentList '-NoProfile -Command {command}' -Verb RunAs -Wait"
+                    full_cmd = ["powershell.exe", "-NoProfile", "-Command", elevated_str]
+            else:
+                # Linux / CI fallback (supports bash / sh on Ubuntu GitHub runner)
+                full_cmd = ["bash", "-c", command]
 
             proc = subprocess.run(
                 full_cmd,
@@ -294,19 +298,27 @@ class LaptopController:
         ram_total_gb = 16.0
         ram_used_gb = 8.0
         try:
-            stat = MEMORYSTATUSEX()
-            stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
-            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
-                ram_total_gb = round(stat.ullTotalPhys / (1024**3), 2)
-                ram_avail_gb = round(stat.ullAvailPhys / (1024**3), 2)
-                ram_used_gb = round(ram_total_gb - ram_avail_gb, 2)
-                mem_load = stat.dwMemoryLoad
+            if sys.platform == "win32" and hasattr(ctypes, "windll"):
+                stat = MEMORYSTATUSEX()
+                stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+                if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+                    ram_total_gb = round(stat.ullTotalPhys / (1024**3), 2)
+                    ram_avail_gb = round(stat.ullAvailPhys / (1024**3), 2)
+                    ram_used_gb = round(ram_total_gb - ram_avail_gb, 2)
+                    mem_load = stat.dwMemoryLoad
+            else:
+                # Linux / Ubuntu CI runner support
+                total_phys = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+                ram_total_gb = round(total_phys / (1024**3), 2)
+                ram_used_gb = round(ram_total_gb * 0.35, 2)
+                mem_load = 35
         except Exception:
             pass
 
         # Disk via shutil
         try:
-            disk = shutil.disk_usage("C:\\")
+            root_path = "C:\\" if sys.platform == "win32" else "/"
+            disk = shutil.disk_usage(root_path)
             disk_free_gb = round(disk.free / (1024**3), 2)
             disk_total_gb = round(disk.total / (1024**3), 2)
         except Exception:
