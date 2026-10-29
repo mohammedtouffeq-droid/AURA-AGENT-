@@ -876,6 +876,71 @@ def tool_segment_objects(image_path: str) -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": f"Object segmentation failed: {e}"}
 
+
+def tool_game_engine_generate_world(theme: str = "gta_city", chunks: int = 4, seed: int = 42) -> Dict[str, Any]:
+    """Generates procedural open-world city maps with road networks, terrain elevation, and building zones (Cesium/GTA style)."""
+    try:
+        from aura_game_engine import OpenWorldProceduralGenerator
+        return OpenWorldProceduralGenerator.generate_world(theme=theme, chunks=chunks, seed=seed)
+    except Exception as e:
+        return {"success": False, "error": f"World generation failed: {e}"}
+
+
+def tool_game_engine_simulate_physics(steps: int = 60, body_name: str = "vehicle", mass: float = 1200.0, pos_y: float = 3.0) -> Dict[str, Any]:
+    """Simulates 3D rigid body dynamics, gravity, and ground collisions (JoltPhysics/PhysX style)."""
+    try:
+        from aura_game_engine import JoltPhysicsEngine
+        jolt = JoltPhysicsEngine()
+        jolt.add_body(body_name, mass=mass, pos=(0, pos_y, 0), restitution=0.3)
+        return jolt.simulate(steps=steps)
+    except Exception as e:
+        return {"success": False, "error": f"Physics simulation failed: {e}"}
+
+
+def tool_game_engine_npc_pathfind(start_x: int, start_y: int, goal_x: int, goal_y: int, grid_size: int = 30) -> Dict[str, Any]:
+    """Calculates optimal path through dynamic city obstacles using Recast & Detour NavMesh A*."""
+    try:
+        from aura_game_engine import RecastNavMeshRouter
+        return RecastNavMeshRouter.find_path(start=(start_x, start_y), goal=(goal_x, goal_y), grid_size=grid_size)
+    except Exception as e:
+        return {"success": False, "error": f"Pathfinding failed: {e}"}
+
+
+def tool_game_engine_train_agent(episodes: int = 5) -> Dict[str, Any]:
+    """Runs reinforcement learning training simulation for autonomous vehicles/NPCs (Unity ML-Agents / CARLA style)."""
+    try:
+        from aura_game_engine import MLAgentsCarlaTrainer
+        return MLAgentsCarlaTrainer.train_driving_agent(episodes=episodes)
+    except Exception as e:
+        return {"success": False, "error": f"Agent training failed: {e}"}
+
+
+def tool_game_engine_multiplayer_sync(player_count: int = 100) -> Dict[str, Any]:
+    """Simulates 100-player battle-royale network state replication with Quadtree spatial interest management (Agones/Netcode style)."""
+    try:
+        from aura_game_engine import AgonesNetcodeSynchronizer
+        return AgonesNetcodeSynchronizer.simulate_100_player_tick(player_count=player_count)
+    except Exception as e:
+        return {"success": False, "error": f"Multiplayer sync failed: {e}"}
+
+
+def tool_game_engine_export_project(project_name: str = "open_world_demo") -> Dict[str, Any]:
+    """Exports full ready-to-run Godot 4, Unreal Engine 5 Python, and playable 3D WebGL game projects."""
+    try:
+        from aura_game_engine import EngineProjectExporter
+        return EngineProjectExporter.export_project(project_name=project_name)
+    except Exception as e:
+        return {"success": False, "error": f"Project export failed: {e}"}
+
+
+def tool_game_engine_status() -> Dict[str, Any]:
+    """Returns the live status of all integrated game & simulation engines."""
+    try:
+        from aura_game_engine import AURA_GAME_STUDIO
+        return {"success": True, "status": AURA_GAME_STUDIO.get_status()}
+    except Exception as e:
+        return {"success": False, "error": f"Game studio status check failed: {e}"}
+
 def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Dict[str, Any]:
     """Generates an animated video simulation sequence or multimedia player from text prompts."""
     try:
@@ -1317,6 +1382,13 @@ AVAILABLE_TOOLS = {
     "tool_transform_image": tool_transform_image,
     "tool_remove_background": tool_remove_background,
     "tool_segment_objects": tool_segment_objects,
+    "tool_game_engine_generate_world": tool_game_engine_generate_world,
+    "tool_game_engine_simulate_physics": tool_game_engine_simulate_physics,
+    "tool_game_engine_npc_pathfind": tool_game_engine_npc_pathfind,
+    "tool_game_engine_train_agent": tool_game_engine_train_agent,
+    "tool_game_engine_multiplayer_sync": tool_game_engine_multiplayer_sync,
+    "tool_game_engine_export_project": tool_game_engine_export_project,
+    "tool_game_engine_status": tool_game_engine_status,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,

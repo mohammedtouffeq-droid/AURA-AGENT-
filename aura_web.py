@@ -239,6 +239,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_os_controller import laptop_controller
             self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
 
+        elif path == "/api/game/status":
+            from aura_game_engine import AURA_GAME_STUDIO
+            self._send_json({"success": True, "status": AURA_GAME_STUDIO.get_status()})
+
         elif path == "/api/media/status":
             from aura_media_engine import AURA_CINEMA
             self._send_json({"success": True, "status": AURA_CINEMA.get_status()})
@@ -460,6 +464,51 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     })
                 except Exception as e:
                     self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
+
+        elif path == "/api/game/world/generate":
+            theme = body.get("theme", "gta_city")
+            chunks = body.get("chunks", 4)
+            seed = body.get("seed", 42)
+            from aura_game_engine import OpenWorldProceduralGenerator
+            res = OpenWorldProceduralGenerator.generate_world(theme=theme, chunks=chunks, seed=seed)
+            self._send_json(res)
+
+        elif path == "/api/game/physics/simulate":
+            steps = body.get("steps", 60)
+            name = body.get("name", "car")
+            mass = body.get("mass", 1200.0)
+            pos_y = body.get("pos_y", 3.0)
+            from aura_game_engine import JoltPhysicsEngine
+            jolt = JoltPhysicsEngine()
+            jolt.add_body(name, mass=mass, pos=(0, pos_y, 0), restitution=0.3)
+            self._send_json(jolt.simulate(steps=steps))
+
+        elif path == "/api/game/navmesh/pathfind":
+            sx = body.get("start_x", 0)
+            sy = body.get("start_y", 0)
+            gx = body.get("goal_x", 10)
+            gy = body.get("goal_y", 10)
+            from aura_game_engine import RecastNavMeshRouter
+            res = RecastNavMeshRouter.find_path(start=(sx, sy), goal=(gx, gy))
+            self._send_json(res)
+
+        elif path == "/api/game/agent/train":
+            episodes = body.get("episodes", 5)
+            from aura_game_engine import MLAgentsCarlaTrainer
+            res = MLAgentsCarlaTrainer.train_driving_agent(episodes=episodes)
+            self._send_json(res)
+
+        elif path == "/api/game/multiplayer/sync":
+            count = body.get("player_count", 100)
+            from aura_game_engine import AgonesNetcodeSynchronizer
+            res = AgonesNetcodeSynchronizer.simulate_100_player_tick(player_count=count)
+            self._send_json(res)
+
+        elif path == "/api/game/project/export":
+            proj = body.get("project_name", "open_world_demo")
+            from aura_game_engine import EngineProjectExporter
+            res = EngineProjectExporter.export_project(project_name=proj)
+            self._send_json(res)
 
         elif path == "/api/media/image/generate":
             prompt = body.get("prompt", "")
