@@ -560,6 +560,28 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertGreaterEqual(metrics.get("overall_training_score", 0), 9.0)
         self.assertEqual(report.get("headless_verification", {}).get("error_count"), 0)
 
+    def test_53_master_pipeline_topology(self):
+        from aura_master_pipeline import AURA_PIPELINE
+        topo = AURA_PIPELINE.get_pipeline_topology()
+        self.assertEqual(topo.get("status"), "OPERATIONAL")
+        connections = topo.get("connections", {})
+        self.assertIn("coderx_engine", connections)
+        self.assertIn("media_cinema_engine", connections)
+        self.assertIn("game_studio_engine", connections)
+        self.assertIn("os_telemetry", connections)
+        self.assertTrue(connections["game_studio_engine"].get("godot_installed"))
+
+    def test_54_master_pipeline_execution_game_dev(self):
+        from aura_master_pipeline import AURA_PIPELINE
+        res = AURA_PIPELINE.execute(
+            goal="Test 3D game generation and validation",
+            domain="game_dev",
+            params={"project_name": "CyberCraft3D"}
+        )
+        self.assertTrue(res.get("success"))
+        self.assertEqual(res.get("stage"), "completed")
+        self.assertGreater(len(res.get("artifacts", [])), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

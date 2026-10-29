@@ -984,6 +984,31 @@ def tool_godot_launch_game(project_name: str = "CyberCraft3D") -> Dict[str, Any]
     except Exception as e:
         return {"success": False, "error": f"Godot launch failed: {e}"}
 
+
+def tool_master_pipeline_status() -> Dict[str, Any]:
+    """Returns the live connection topology of all piped AURA engines (CoderX, Game, Media, OS)."""
+    try:
+        from aura_master_pipeline import AURA_PIPELINE
+        return {"success": True, "topology": AURA_PIPELINE.get_pipeline_topology()}
+    except Exception as e:
+        return {"success": False, "error": f"Master pipeline status failed: {e}"}
+
+
+def tool_master_pipeline_execute(goal: str, domain: str = "full_stack", project_name: str = "CyberCraft3D") -> Dict[str, Any]:
+    """
+    Executes a complete unified multi-engine pipeline:
+    Synthesizes CoderX logic, builds Godot 4.3 game with headless verification, and renders FLUX/MP4 cinema assets in one continuous pipe.
+    """
+    try:
+        from aura_master_pipeline import AURA_PIPELINE
+        return AURA_PIPELINE.execute(
+            goal=goal,
+            domain=domain,
+            params={"project_name": project_name}
+        )
+    except Exception as e:
+        return {"success": False, "error": f"Pipeline execution failed: {e}"}
+
 def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Dict[str, Any]:
     """Generates an animated video simulation sequence or multimedia player from text prompts."""
     try:
@@ -1436,6 +1461,8 @@ AVAILABLE_TOOLS = {
     "tool_godot_build_game": tool_godot_build_game,
     "tool_godot_train_and_verify": tool_godot_train_and_verify,
     "tool_godot_launch_game": tool_godot_launch_game,
+    "tool_master_pipeline_status": tool_master_pipeline_status,
+    "tool_master_pipeline_execute": tool_master_pipeline_execute,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,

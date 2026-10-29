@@ -284,6 +284,21 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             ws = ROOT / "workspace"
             repo_map = CodebaseAstMapper.generate_repo_map(ws)
             self._send_json({"success": True, "repo_map": repo_map})
+
+        elif path == "/api/pipeline/status":
+            from aura_master_pipeline import AURA_PIPELINE
+            self._send_json({"success": True, "pipeline": AURA_PIPELINE.get_pipeline_topology()})
+
+        elif path == "/api/pipeline/runs":
+            from aura_master_pipeline import PIPELINE_RUNS_DIR
+            runs = []
+            for f in sorted(PIPELINE_RUNS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
+                try:
+                    import json
+                    runs.append(json.loads(f.read_text(encoding="utf-8")))
+                except Exception:
+                    pass
+            self._send_json({"success": True, "runs": runs})
         else:
             self.send_error(404, "Not Found")
 
@@ -549,6 +564,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from godot_engine_manager import AURA_GODOT_MANAGER, GAMES_WORKSPACE
             proj_dir = GAMES_WORKSPACE / proj
             res = AURA_GODOT_MANAGER.launch_windowed_game(proj_dir)
+            self._send_json(res)
+
+        elif path == "/api/pipeline/run":
+            goal = body.get("goal", "Full-Stack multi-engine synthesis")
+            domain = body.get("domain", "full_stack")
+            params = body.get("params", {})
+            from aura_master_pipeline import AURA_PIPELINE
+            res = AURA_PIPELINE.execute(goal=goal, domain=domain, params=params)
             self._send_json(res)
 
         elif path == "/api/media/image/generate":
