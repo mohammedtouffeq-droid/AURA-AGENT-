@@ -492,5 +492,59 @@ class TestAuraProductionCertification(unittest.TestCase):
             self.assertTrue(data.get("mounted"))
 
 
+
+    def test_45_permission_system_classification(self):
+        from aura_permission_system import permission_manager, RiskLevel
+        risk_safe = permission_manager.classify_action("read_file", "test.py")
+        self.assertEqual(risk_safe, RiskLevel.SAFE)
+        risk_crit = permission_manager.classify_action("delete_file", "test.py")
+        self.assertEqual(risk_crit, RiskLevel.CRITICAL)
+        risk_cmd = permission_manager.classify_action("powershell_exec", "PowerShell", command="Remove-Item -Recurse C:\\temp")
+        self.assertEqual(risk_cmd, RiskLevel.CRITICAL)
+
+    def test_46_permission_system_request_safe(self):
+        from aura_permission_system import permission_manager
+        res = permission_manager.request_permission("read_file", "aura_permission_system.py")
+        self.assertTrue(res["granted"])
+        self.assertEqual(res["risk"], "SAFE")
+
+    def test_47_permission_system_interactive_approval(self):
+        from aura_permission_system import permission_manager
+        import threading, time
+
+        def simulate_allow():
+            time.sleep(0.3)
+            pending = permission_manager.get_pending()
+            if pending:
+                permission_manager.respond_request(pending[0]["id"], "ALLOW_ONCE")
+
+        threading.Thread(target=simulate_allow, daemon=True).start()
+        res = permission_manager.request_permission("delete_file", "c:\\temp\\cert_dummy.txt", timeout=4.0)
+        self.assertTrue(res["granted"])
+        self.assertEqual(res["decision"], "ALLOW_ONCE")
+
+    def test_48_os_controller_telemetry(self):
+        from aura_os_controller import laptop_controller
+        telem = laptop_controller.get_system_telemetry()
+        self.assertGreater(telem.get("ram_total_gb", 0), 0)
+        self.assertGreater(telem.get("disk_c_free_gb", 0), 0)
+        self.assertEqual(telem.get("status"), "ONLINE")
+
+    def test_49_os_controller_powershell(self):
+        from aura_os_controller import laptop_controller
+        res = laptop_controller.execute_powershell("Write-Output 'AURA_CERT_PASS'")
+        self.assertTrue(res.get("success"))
+        self.assertIn("AURA_CERT_PASS", res.get("stdout", ""))
+
+    def test_50_api_permission_endpoints(self):
+        url = f"http://127.0.0.1:{self.test_port}/api/permission/pending"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            data = json.loads(resp.read().decode("utf-8"))
+            self.assertTrue(data.get("success"))
+            self.assertIn("pending", data)
+
+
 if __name__ == "__main__":
     unittest.main()

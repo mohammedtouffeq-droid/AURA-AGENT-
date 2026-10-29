@@ -218,6 +218,18 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 except Exception as e:
                     status["error"] = str(e)
             self._send_json(status)
+        elif path == "/api/permission/pending":
+            from aura_permission_system import permission_manager
+            pending = permission_manager.get_pending()
+            self._send_json({"success": True, "pending": pending, "count": len(pending)})
+
+        elif path == "/api/permission/history":
+            from aura_permission_system import permission_manager
+            self._send_json({"success": True, "history": permission_manager.history})
+
+        elif path == "/api/os/telemetry":
+            from aura_os_controller import laptop_controller
+            self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
         else:
             self.send_error(404, "Not Found")
 
@@ -435,6 +447,43 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             params = body.get("params", {})
             from aura_engine_mesh import AURA_ENGINE_MESH
             res = AURA_ENGINE_MESH.invoke(engine_key, action=action, **params)
+            self._send_json(res)
+        elif path == "/api/permission/respond":
+            req_id = body.get("id", "")
+            decision = body.get("decision", "DENY")
+            from aura_permission_system import permission_manager
+            ok = permission_manager.respond_request(req_id, decision)
+            self._send_json({"success": ok, "id": req_id, "decision": decision})
+
+        elif path == "/api/permission/mode":
+            mode = body.get("mode", "PROMPT_HIGH_RISK")
+            from aura_permission_system import permission_manager
+            ok = permission_manager.set_security_mode(mode)
+            self._send_json({"success": ok, "mode": mode})
+
+        elif path == "/api/os/execute":
+            cmd = body.get("command", "")
+            as_admin = body.get("as_admin", False)
+            from aura_os_controller import laptop_controller
+            res = laptop_controller.execute_powershell(cmd, as_admin=as_admin)
+            self._send_json(res)
+
+        elif path == "/api/os/read_file":
+            filepath = body.get("path", "")
+            from aura_os_controller import laptop_controller
+            res = laptop_controller.read_file(filepath)
+            self._send_json(res)
+
+        elif path == "/api/os/write_file":
+            filepath = body.get("path", "")
+            file_content = body.get("content", "")
+            from aura_os_controller import laptop_controller
+            res = laptop_controller.write_file(filepath, file_content)
+            self._send_json(res)
+
+        elif path == "/api/os/screenshot":
+            from aura_os_controller import laptop_controller
+            res = laptop_controller.capture_screenshot()
             self._send_json(res)
         else:
             self.send_error(404, "Not Found")
