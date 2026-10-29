@@ -327,8 +327,29 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
         target = ALLOWED_APPS[app_key]
 
         if action == "open":
-            subprocess.Popen(f'cmd /c start "" "{target}"', shell=True)
-            return {"success": True, "action": "opened", "app": app_name, "executable": target, "engine": "Microsoft-UFO-Windows-Controller"}
+            import os
+            if app_key == "chrome":
+                # Ensure a visible window appears in foreground on physical monitor
+                try:
+                    subprocess.Popen(f'cmd /c start "" "{target}" --new-window "https://www.google.com"', shell=True)
+                except Exception:
+                    pass
+                try:
+                    os.startfile("https://www.google.com")
+                except Exception:
+                    pass
+                try:
+                    subprocess.Popen('powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate(\"Chrome\")"', shell=True)
+                except Exception:
+                    pass
+            elif app_key == "notepad":
+                subprocess.Popen('cmd /c start notepad.exe', shell=True)
+            elif app_key in ["calculator", "calc"]:
+                subprocess.Popen('cmd /c start calc.exe', shell=True)
+            else:
+                subprocess.Popen(f'cmd /c start "" "{target}"', shell=True)
+
+            return {"success": True, "action": "opened_on_screen", "app": app_name, "executable": target, "engine": "Microsoft-UFO-Windows-Controller"}
         elif action == "close":
             proc_name = Path(target).stem
             subprocess.run(["taskkill", "/F", "/IM", f"{proc_name}.exe"], capture_output=True)
