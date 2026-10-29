@@ -1950,7 +1950,7 @@
         // State
         let currentUser = null;
         let currentAuthToken = localStorage.getItem('aura_auth_token') || '';
-        let currentThreadId = localStorage.getItem('aura_active_thread_id') || 'default';
+        let currentThreadId = null; // Start fresh on homepage; past chats stay in sidebar
         let currentExecutionMode = 'auto_pilot';
         let threadsList = [];
         let projectsList = [];
@@ -2044,7 +2044,17 @@
         });
 
         btnSendDispatch.addEventListener('click', submitUserPrompt);
-        btnNewThread.addEventListener('click', createNewSession);
+        btnNewThread.addEventListener('click', startNewCleanSession);
+
+        function startNewCleanSession() {
+            currentThreadId = null;
+            localStorage.removeItem('aura_active_thread_id');
+            chatStreamWidth.innerHTML = '';
+            chatStreamWidth.appendChild(welcomeHero);
+            welcomeHero.style.display = 'block';
+            renderThreads();
+            userPromptInput.focus();
+        }
 
         // Permission Policy Gatekeeper
         function updatePermissionUI() {
@@ -2162,7 +2172,7 @@
                     updateUserUI();
                     await loadThreads();
                     await loadProjects();
-                    loadThreadMessages(currentThreadId);
+                    startNewCleanSession();
                 } else {
                     authOverlay.classList.add('open');
                 }
@@ -2863,6 +2873,20 @@ ${p.description ? `**Scope & Requirements:**\n> ${p.description}\n\n` : ''}Ready
             scrollChat();
 
             try {
+                if (!currentThreadId) {
+                    currentThreadId = 'thread_' + Date.now();
+                    localStorage.setItem('aura_active_thread_id', currentThreadId);
+                    const previewTitle = prompt.length > 25 ? prompt.substring(0, 25) + '...' : prompt;
+                    fetch('/api/threads/new', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentAuthToken}`
+                        },
+                        body: JSON.stringify({ id: currentThreadId, title: previewTitle })
+                    }).then(() => loadThreads()).catch(() => {});
+                }
+
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
