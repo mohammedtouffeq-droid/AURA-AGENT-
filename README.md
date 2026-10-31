@@ -8,6 +8,10 @@ AURA is an early-stage coding and game-development assistant. Its core local wor
 
 The master pipeline asks for **Allow once** before it runs a workflow. The approval prompt describes the requested workspace writes and local validation; generated code is executed locally and is not isolated. A denied or expired request does not dispatch an engine. Pipeline jobs do not collect system telemetry unless the `system` domain is explicitly selected. Generated output files are restricted to their respective AURA workspaces.
 
+## Model settings
+
+The signed-in workspace lets each user choose a supported Google Gemini model or a locally installed Ollama model. Gemini uses the server's `GEMINI_API_KEY`; Ollama connects only to `http://127.0.0.1:11434`. Provider/model preferences are stored per user, and credentials are not accepted or returned by the settings API. Codex and GitHub Copilot are not model providers in this build.
+
 ## Run locally
 
 Start the web workspace from the repository root:
@@ -32,6 +36,6 @@ The current master pipeline connects the CoderX and Godot paths. Media is an exp
 
 ## Next priorities
 
-1. Route all file, shell, browser, and device-changing entry points through the same user-visible consent gate; the new gate currently covers master-pipeline runs.
+1. Route every legacy file, shell, browser, and device-changing entry point through the same user-visible consent gate; the pipeline and OS-controller gates do not cover every direct API/tool route yet.
 2. Replace the static engine catalog with truthful runtime capability checks, then integrate only a small, tested coding/game toolchain.
 3. Add end-to-end workflow tests that exercise code generation, Godot validation, and artifact delivery without relying on fixed local machine state.

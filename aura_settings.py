@@ -12,10 +12,26 @@ Author: AURA Technologies Inc.
 import os
 import sys
 import json
+import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 CONFIG_PATH = Path(__file__).resolve().parent / "aura_config.json"
+MODEL_CATALOG = {
+    "gemini": {
+        "label": "Google Gemini",
+        "models": [
+            "gemini-flash-lite-latest",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+        ],
+    },
+    "ollama": {
+        "label": "Ollama (local)",
+        "models": [],
+    },
+}
 
 
 class AuraSettingsManager:
@@ -51,7 +67,7 @@ class AuraSettingsManager:
             "system": {"agent_name": "AURA", "creator": "AURA Technologies Inc.", "version": "4.2.0"},
             "brain_settings": {
                 "active_provider": "gemini",
-                "active_model": "gemini-3.1-flash-lite",
+                "active_model": "gemini-flash-lite-latest",
                 "temperature": 0.3,
                 "thinking_budget_level": "medium",
                 "custom_system_instruction": "You are AURA, an elite autonomous AI."
@@ -77,17 +93,41 @@ class AuraSettingsManager:
     # 1. BRAIN & MODEL CONTROLS (ChatGPT & Claude Inspired)
     # ===================================================================================
     def set_model(self, model_name: str) -> bool:
-        """Switches active reasoning model (e.g. gemini-3.1-flash-lite, gemini-2.5-pro, ollama/llama3)."""
-        valid_models = [
-            "gemini-3.1-flash-lite",
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "ollama/llama3",
-            "openai/gpt-4o",
-            "claude-3-5-sonnet"
-        ]
+        """Switches active model after validating it against its provider."""
+        provider = self.config.get("brain_settings", {}).get("active_provider", "gemini")
+        return self.set_model_selection(provider, model_name)
+
+    @staticmethod
+    def validate_model_selection(provider: str, model_name: str) -> bool:
+        if provider not in MODEL_CATALOG or not isinstance(model_name, str):
+            return False
+        model_name = model_name.strip()
+        if provider == "gemini":
+            return model_name in MODEL_CATALOG["gemini"]["models"]
+        return bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}", model_name))
+
+    def set_model_selection(self, provider: str, model_name: str) -> bool:
+        """Validate and persist a provider/model selection."""
+        model_name = model_name.strip() if isinstance(model_name, str) else ""
+        if not self.validate_model_selection(provider, model_name):
+            return False
+        brain_settings = self.config.setdefault("brain_settings", {})
+        old_provider = brain_settings.get("active_provider", "gemini")
+        old_model = brain_settings.get("active_model", "gemini-flash-lite-latest")
+        brain_settings["active_provider"] = provider
         self.config["brain_settings"]["active_model"] = model_name
-        return self.save_settings()
+        if self.save_settings():
+            return True
+        brain_settings["active_provider"] = old_provider
+        brain_settings["active_model"] = old_model
+        return False
+
+    @staticmethod
+    def public_model_catalog() -> Dict[str, Any]:
+        return {
+            provider: {"label": entry["label"], "models": list(entry["models"])}
+            for provider, entry in MODEL_CATALOG.items()
+        }
 
     def set_temperature(self, temp: float) -> bool:
         """Sets temperature (0.0 = deterministic/precise, 1.0 = highly creative)."""

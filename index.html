@@ -887,6 +887,52 @@
             background: var(--accent-primary);
         }
 
+        .model-settings-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(10, 11, 14, 0.82);
+            backdrop-filter: blur(10px);
+        }
+
+        .model-settings-card {
+            width: min(440px, 100%);
+            padding: 24px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            background: #171a22;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+        }
+
+        .model-settings-card h2 { margin: 0 0 7px; font-size: 19px; }
+        .model-settings-card p { color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+        .model-settings-card label { display: block; margin: 16px 0 6px; font-size: 12px; color: var(--text-muted); }
+        .model-settings-card select,
+        .model-settings-card input {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-main);
+            background: #101218;
+        }
+        .model-settings-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+        .model-settings-actions button {
+            padding: 9px 13px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-main);
+            background: var(--bg-hover);
+            cursor: pointer;
+        }
+        .model-settings-actions .model-settings-save { border-color: var(--accent-primary); background: var(--accent-primary); color: white; }
+        .model-settings-status { min-height: 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+
         .auth-card {
             background: #16181e;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1132,8 +1178,10 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <div class="model-picker-pill">
-                    <span>⚡ AURA 2.0 Autonomous</span>
-                    <span style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
+                    <button id="modelSettingsOpen" type="button" onclick="openModelSettings()" style="border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;">
+                        <span>⚡ AURA Model</span>
+                        <span id="activeModelLabel" style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
+                    </button>
                 </div>
             </div>
             <div class="mode-toggle-chip">
@@ -1229,6 +1277,28 @@
                 <p class="auth-desc">Sign in or create your permanent account. Your chat history and workspace data are saved permanently in SQLite database.</p>
             </div>
 
+            <div class="model-settings-overlay" id="modelSettingsOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modelSettingsTitle">
+                <section class="model-settings-card">
+                    <h2 id="modelSettingsTitle">Model settings</h2>
+                    <p>Choose the model AURA uses for your conversations. Provider credentials stay on the server; Ollama runs locally on this computer.</p>
+                    <label for="modelProvider">Provider</label>
+                    <select id="modelProvider">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="ollama">Ollama (local)</option>
+                    </select>
+                    <label for="modelChoice">Gemini model</label>
+                    <select id="modelChoice"></select>
+                    <label for="ollamaModel" id="ollamaModelLabel" style="display:none;">Installed Ollama model name</label>
+                    <input id="ollamaModel" type="text" maxlength="128" placeholder="e.g. qwen2.5-coder:7b" style="display:none;">
+                    <p id="modelProviderHint"></p>
+                    <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
+                    <div class="model-settings-actions">
+                        <button type="button" onclick="closeModelSettings()">Cancel</button>
+                        <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save model</button>
+                    </div>
+                </section>
+            </div>
+
             <div class="permission-prompt" id="permissionPrompt" role="alertdialog" aria-labelledby="permissionPromptTitle" aria-describedby="permissionPromptDetails" hidden>
                 <h2 id="permissionPromptTitle">AURA needs your approval</h2>
                 <p id="permissionPromptAction"></p>
@@ -1302,6 +1372,110 @@
         const sidebarBackdrop = document.getElementById('sidebarBackdrop');
         const attachmentChips = document.getElementById('attachmentChips');
         const filePicker = document.getElementById('filePicker');
+        const modelSettingsOverlay = document.getElementById('modelSettingsOverlay');
+        const modelProvider = document.getElementById('modelProvider');
+        const modelChoice = document.getElementById('modelChoice');
+        const ollamaModel = document.getElementById('ollamaModel');
+        const ollamaModelLabel = document.getElementById('ollamaModelLabel');
+        const modelProviderHint = document.getElementById('modelProviderHint');
+        const modelSettingsStatus = document.getElementById('modelSettingsStatus');
+        const activeModelLabel = document.getElementById('activeModelLabel');
+
+        function updateModelSettingsFields() {
+            const local = modelProvider.value === 'ollama';
+            modelChoice.style.display = local ? 'none' : 'block';
+            ollamaModel.style.display = local ? 'block' : 'none';
+            ollamaModelLabel.style.display = local ? 'block' : 'none';
+            modelProviderHint.textContent = local
+                ? 'Ollama must be running at http://127.0.0.1:11434 and the model must already be installed. API keys are not needed.'
+                : 'Gemini requires GEMINI_API_KEY to be configured on the AURA server.';
+        }
+
+        async function refreshActiveModelLabel() {
+            if (!authToken) return;
+            try {
+                const response = await fetch('/api/settings', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                const settings = data.brain_settings || {};
+                const labels = { gemini: 'Gemini', ollama: 'Ollama' };
+                if (labels[settings.active_provider] && settings.active_model) {
+                    activeModelLabel.textContent = `• ${labels[settings.active_provider]} · ${settings.active_model}`;
+                }
+            } catch (error) {
+                console.warn('Could not refresh the active model label:', error);
+            }
+        }
+
+        async function openModelSettings() {
+            if (!authToken) {
+                authOverlay.style.display = 'flex';
+                return;
+            }
+            modelSettingsStatus.textContent = 'Loading saved model settings…';
+            modelSettingsOverlay.style.display = 'flex';
+            try {
+                const response = await fetch('/api/settings', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Could not load settings.');
+                modelChoice.innerHTML = '';
+                (data.providers.gemini.models || []).forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelChoice.appendChild(option);
+                });
+                const settings = data.brain_settings || {};
+                modelProvider.value = settings.active_provider || 'gemini';
+                if (modelProvider.value === 'ollama') ollamaModel.value = settings.active_model || '';
+                else modelChoice.value = settings.active_model || 'gemini-flash-lite-latest';
+                if (modelProvider.value === 'gemini' && !data.gemini_key_configured) {
+                    modelSettingsStatus.textContent = 'Gemini is selected, but no server-side API key is configured.';
+                } else {
+                    modelSettingsStatus.textContent = '';
+                }
+                updateModelSettingsFields();
+            } catch (error) {
+                modelSettingsStatus.textContent = error.message;
+            }
+        }
+
+        function closeModelSettings() {
+            modelSettingsOverlay.style.display = 'none';
+        }
+
+        async function saveModelSettings() {
+            const provider = modelProvider.value;
+            const model = provider === 'ollama' ? ollamaModel.value.trim() : modelChoice.value;
+            modelSettingsStatus.textContent = 'Saving…';
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ active_provider: provider, active_model: model })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.error || 'Could not save model settings.');
+                const labels = { gemini: 'Gemini', ollama: 'Ollama' };
+                activeModelLabel.textContent = `• ${labels[provider]} · ${model}`;
+                modelSettingsStatus.textContent = 'Saved. Your next message will use this model.';
+                setTimeout(closeModelSettings, 700);
+            } catch (error) {
+                modelSettingsStatus.textContent = error.message;
+            }
+        }
+
+        modelProvider.addEventListener('change', updateModelSettingsFields);
+        modelSettingsOverlay.addEventListener('click', event => {
+            if (event.target === modelSettingsOverlay) closeModelSettings();
+        });
 
         // ---------------- Mobile Sidebar Drawer ----------------
         function toggleMobileSidebar() {
@@ -1529,6 +1703,7 @@
                     currentUser = data.user;
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
+                    await refreshActiveModelLabel();
                     authUsername.value = '';
                     authPassword.value = '';
 
@@ -1606,6 +1781,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             const authed = await verifyAuth();
             if (authed) {
+                await refreshActiveModelLabel();
                 await loadThreads();
                 if (currentThreadId) {
                     await loadThreadMessages(currentThreadId);

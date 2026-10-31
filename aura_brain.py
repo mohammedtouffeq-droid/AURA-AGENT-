@@ -16,12 +16,12 @@ Author: AURA Technologies Inc.
 
 import os
 import sys
-import re
 import json
 import sqlite3
 import subprocess
 import urllib.request
 import urllib.error
+import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -1871,11 +1871,105 @@ GEMINI_TOOLS_DECLARATION = [{
 # 4. MASTER AURA BRAIN CLASS
 # ===================================================================================
 class AuraBrain:
-    def __init__(self):
+    def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
         self.api_key = API_KEY
-        self.model = MODEL_NAME
+        self.provider = provider or "gemini"
+        self.model = model or MODEL_NAME
         self.history: List[Dict[str, Any]] = []
         self.last_tools: List[Dict[str, Any]] = []
+
+    @staticmethod
+    def _ollama_schema_value(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: (item.lower() if key == "type" and isinstance(item, str) else AuraBrain._ollama_schema_value(item))
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [AuraBrain._ollama_schema_value(item) for item in value]
+        return value
+
+    def _call_ollama(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]]) -> Dict[str, Any]:
+        messages = []
+        for item in contents:
+            role = "assistant" if item.get("role") == "model" else item.get("role", "user")
+            text_parts = []
+            tool_calls = []
+            tool_responses = []
+            images = []
+            for part in item.get("parts", []):
+                if "text" in part:
+                    text_parts.append(part["text"])
+                if "inlineData" in part:
+                    data = part["inlineData"].get("data")
+                    if data:
+                        images.append(data)
+                if "functionCall" in part:
+                    call = part["functionCall"]
+                    tool_calls.append({
+                        "type": "function",
+                        "function": {
+                            "name": call.get("name", ""),
+                            "arguments": call.get("args", {}),
+                        },
+                    })
+                if "functionResponse" in part:
+                    response = part["functionResponse"]
+                    tool_responses.append({
+                        "role": "tool",
+                        "tool_name": response.get("name", ""),
+                        "content": json.dumps(response.get("response", {})),
+                    })
+            if tool_responses:
+                messages.extend(tool_responses)
+            elif text_parts or tool_calls or images:
+                message = {"role": role, "content": "\n".join(text_parts)}
+                if tool_calls:
+                    message["tool_calls"] = tool_calls
+                if images:
+                    message["images"] = images
+                messages.append(message)
+
+        messages.insert(0, {
+            "role": "system",
+            "content": "You are AURA Core, a helpful coding and game-development assistant. Use available tools when needed and be clear about actions and limitations.",
+        })
+        payload = {"model": self.model, "messages": messages, "stream": False}
+        if tools:
+            declarations = tools[0].get("functionDeclarations", [])
+            payload["tools"] = [{
+                "type": "function",
+                "function": {
+                    "name": declaration["name"],
+                    "description": declaration.get("description", ""),
+                    "parameters": self._ollama_schema_value(declaration.get("parameters", {})),
+                },
+            } for declaration in declarations]
+        request = urllib.request.Request(
+            "http://127.0.0.1:11434/api/chat",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=120) as response:
+            result = json.loads(response.read().decode("utf-8"))
+        message = result.get("message", {})
+        parts = []
+        if message.get("content"):
+            parts.append({"text": message["content"]})
+        for call in message.get("tool_calls", []):
+            function = call.get("function", {})
+            arguments = function.get("arguments", {})
+            if isinstance(arguments, str):
+                arguments = json.loads(arguments)
+            parts.append({
+                "functionCall": {
+                    "name": function.get("name", ""),
+                    "args": arguments,
+                    "id": call.get("id", ""),
+                }
+            })
+        return {"candidates": [{"content": {"role": "model", "parts": parts}}]}
 
     def clear_history(self):
         self.history = []
@@ -2355,6 +2449,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
         return reply
 
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        if self.provider == "ollama":
+            return self._call_ollama(contents, tools)
         if not self.api_key or self.api_key.startswith("YOUR_"):
             return self._offline_autonomous_dispatch(contents, tools)
 
@@ -2428,6 +2524,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
             try:
                 data = self._call_api(self.history, GEMINI_TOOLS_DECLARATION)
             except Exception as e:
+                if self.provider == "ollama":
+                    return f"Ollama request failed: {e}. Check that Ollama is running locally and the selected model is installed."
                 print(f"[*] AURA API call exception, using autonomous fallback: {e}")
                 data = self._offline_autonomous_dispatch(self.history, GEMINI_TOOLS_DECLARATION)
 

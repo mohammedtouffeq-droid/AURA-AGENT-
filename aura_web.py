@@ -6,7 +6,7 @@ Enterprise-grade HTTP Server supporting:
 - Multi-user authentication & token sessions (SQLite aura_workspace.db)
 - Isolated threads, renaming, pinning, and message history
 - Per-user memory vault & settings management
-- Direct Gemini 3.1 ReAct execution loop with hardware tools
+- Per-user Gemini or local Ollama ReAct execution with tools
 - 0.0.0.0 cloud / LAN host binding for universal deployment
 Author: AURA Technologies Inc.
 ===================================================================================
@@ -32,6 +32,27 @@ BRAIN = AuraBrain()
 SETTINGS = AuraSettingsManager()
 HOST = os.environ.get("AURA_HOST", "127.0.0.1")
 PORT = int(os.environ.get("AURA_PORT", 5050))
+
+
+def _selected_brain_settings(user: Dict[str, Any]) -> Dict[str, str]:
+    user_settings = user.get("settings") or {}
+    user_brain = user_settings.get("brain_settings", {}) if isinstance(user_settings, dict) else {}
+    provider = user_brain.get(
+        "active_provider",
+        SETTINGS.config.get("brain_settings", {}).get("active_provider", "gemini")
+    )
+    model = user_brain.get(
+        "active_model",
+        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-flash-lite-latest")
+    )
+    if not AuraSettingsManager.validate_model_selection(provider, model):
+        provider, model = "gemini", "gemini-flash-lite-latest"
+    return {"active_provider": provider, "active_model": model}
+
+
+def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
+    selected = _selected_brain_settings(user)
+    return AuraBrain(provider=selected["active_provider"], model=selected["active_model"])
 
 
 class AuraWebHandler(BaseHTTPRequestHandler):
@@ -177,10 +198,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/settings":
             user = self._get_auth_user()
-            config = dict(SETTINGS.config)
-            if user and user.get("settings"):
-                config["user_custom"] = user["settings"]
-            self._send_json(config)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            self._send_json({
+                "success": True,
+                "brain_settings": _selected_brain_settings(user),
+                "providers": AuraSettingsManager.public_model_catalog(),
+                "gemini_key_configured": bool(BRAIN.api_key and not BRAIN.api_key.startswith("YOUR_")),
+            })
 
         elif path == "/api/projects":
             user = self._get_auth_user()
@@ -528,7 +554,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     conv_history.append({"role": role, "parts": [{"text": txt}]})
 
             print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Mode: {permission_mode}, Attachments: {len(attachments)}, History: {len(conv_history)})")
-            brain = AuraBrain()
+            brain = _create_user_brain(user)
             reply = brain.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, conversation_history=conv_history)
             tools_used = getattr(brain, "last_tools", [])
 
@@ -581,7 +607,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
-            brain = AuraBrain()
+            brain = _create_user_brain(user)
             accumulated_text = ""
             tools_used = []
 
@@ -645,13 +671,31 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         # 5. SETTINGS ROUTE
         elif path == "/api/settings":
             user = self._get_auth_user()
-            if user:
-                aura_db.save_user_settings(user["id"], body)
-            for cat, opts in body.items():
-                if cat in SETTINGS.config and isinstance(opts, dict):
-                    SETTINGS.config[cat].update(opts)
-            SETTINGS.save_settings()
-            self._send_json({"success": True, "config": SETTINGS.config})
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            requested = body.get("brain_settings", body)
+            if not isinstance(requested, dict):
+                self._send_json({"success": False, "error": "Invalid model settings"}, status=400)
+                return
+            provider = requested.get("active_provider")
+            model = requested.get("active_model")
+            if not AuraSettingsManager.validate_model_selection(provider, model):
+                self._send_json({"success": False, "error": "Unsupported provider or model"}, status=400)
+                return
+            saved = dict(user.get("settings") or {})
+            saved["brain_settings"] = {
+                "active_provider": provider,
+                "active_model": model.strip(),
+            }
+            if not aura_db.save_user_settings(user["id"], saved):
+                self._send_json({"success": False, "error": "Could not save model settings"}, status=500)
+                return
+            user["settings"] = saved
+            self._send_json({
+                "success": True,
+                "brain_settings": _selected_brain_settings(user),
+            })
 
         elif path == "/api/engines/search":
             from aura_agent import AuraAgent
