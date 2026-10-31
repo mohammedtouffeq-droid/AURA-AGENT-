@@ -441,16 +441,20 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertEqual(res.get("engine"), "NousResearch/hermes-agent")
         self.assertIn("function_call", res.get("structured_output", {}))
 
-    def test_40_all_63_engines_awakened_live(self):
+    def test_40_engine_mesh_reports_actual_mount_state(self):
         from aura_engine_mesh import AURA_ENGINE_MESH
         status = AURA_ENGINE_MESH.get_mesh_status()
         self.assertEqual(status["total_engines"], 63)
-        self.assertEqual(status["awakened_engines"], 63)
-        self.assertEqual(status["status"], "ALL_63_ENGINES_AWAKENED")
-        self.assertTrue(status["supervisor_alive"])
+        self.assertLessEqual(status["awakened_engines"], status["total_engines"])
+        self.assertIn(status["status"], {
+            "NO_ENGINES_MOUNTED",
+            "SOME_ENGINES_MOUNTED",
+            "ALL_DECLARED_ENGINES_MOUNTED"
+        })
+        self.assertEqual(status["supervisor_alive"], status["awakened_engines"] > 0)
         res = AURA_ENGINE_MESH.invoke("aider", "map_repo")
-        self.assertTrue(res.get("success"))
-        self.assertTrue(res.get("ast_repo_map_active"))
+        aider_status = next(engine for engine in status["engines"] if engine["key"] == "aider")
+        self.assertEqual(res.get("success"), aider_status["mounted"])
 
     def test_41_tool_autonomous_code_loop(self):
         res = tool_autonomous_code_loop(
@@ -532,19 +536,34 @@ class TestAuraProductionCertification(unittest.TestCase):
     def test_49_os_controller_powershell(self):
         import sys
         from aura_os_controller import laptop_controller
+        from aura_permission_system import permission_manager
         cmd = "Write-Output 'AURA_CERT_PASS'" if sys.platform == "win32" else "echo 'AURA_CERT_PASS'"
+
+        def approve_request():
+            deadline = time.time() + 3.0
+            while time.time() < deadline:
+                pending = [
+                    request for request in permission_manager.get_pending()
+                    if request["action_type"] == "powershell_exec" and request["command"] == cmd
+                ]
+                if pending:
+                    permission_manager.respond_request(pending[0]["id"], "ALLOW_ONCE")
+                    return
+                time.sleep(0.01)
+
+        approver = threading.Thread(target=approve_request, daemon=True)
+        approver.start()
         res = laptop_controller.execute_powershell(cmd)
+        approver.join(timeout=3.5)
         self.assertTrue(res.get("success"))
         self.assertIn("AURA_CERT_PASS", res.get("stdout", ""))
 
     def test_50_api_permission_endpoints(self):
         url = f"http://127.0.0.1:{self.test_port}/api/permission/pending"
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            self.assertEqual(resp.status, 200)
-            data = json.loads(resp.read().decode("utf-8"))
-            self.assertTrue(data.get("success"))
-            self.assertIn("pending", data)
+        with self.assertRaises(urllib.error.HTTPError) as response:
+            urllib.request.urlopen(req, timeout=5)
+        self.assertEqual(response.exception.code, 401)
 
     def test_51_godot_engine_manager_installed(self):
         from godot_engine_manager import AURA_GODOT_MANAGER
@@ -573,11 +592,14 @@ class TestAuraProductionCertification(unittest.TestCase):
 
     def test_54_master_pipeline_execution_game_dev(self):
         from aura_master_pipeline import AURA_PIPELINE
-        res = AURA_PIPELINE.execute(
-            goal="Test 3D game generation and validation",
-            domain="game_dev",
-            params={"project_name": "CyberCraft3D"}
-        )
+        from aura_permission_system import permission_manager
+        from unittest.mock import patch
+        with patch.object(permission_manager, "request_permission", return_value={"granted": True, "decision": "ALLOW_ONCE"}):
+            res = AURA_PIPELINE.execute(
+                goal="Test 3D game generation and validation",
+                domain="game_dev",
+                params={"project_name": "CyberCraft3D"}
+            )
         self.assertTrue(res.get("success"))
         self.assertEqual(res.get("stage"), "completed")
         self.assertGreater(len(res.get("artifacts", [])), 0)

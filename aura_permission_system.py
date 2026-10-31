@@ -97,30 +97,36 @@ class PermissionManager:
         target: str,
         command: str = "",
         details: str = "",
-        timeout: float = 45.0
+        timeout: float = 45.0,
+        require_approval: bool = False
     ) -> Dict[str, Any]:
         """
-        Evaluates permission. If SAFE, grants immediately.
-        If CRITICAL or CAUTION (per mode), registers request and waits for user approval.
+        Evaluates permission. Forced-approval actions always wait for a decision;
+        other actions follow the selected risk policy.
         """
         risk = self.classify_action(action_type, target, command)
 
-        # Check session allowlist
+        # A forced-approval action must always be approved for this invocation.
         signature = f"{action_type}:{command.strip() if command else target.strip()}"
-        if signature in self.session_allowlist:
+        if not require_approval and signature in self.session_allowlist:
             self._log_history(action_type, target, command, risk, "ALLOW_SESSION_CACHED")
             return {"granted": True, "reason": "session_allowlisted", "risk": risk.value}
 
-        # Check auto-allow based on mode
-        if self.security_mode == SecurityMode.FULL_AUTONOMOUS:
+        # Some workflows require per-action consent even when their risk would
+        # normally be auto-allowed by the selected security mode.
+        if not require_approval and self.security_mode == SecurityMode.FULL_AUTONOMOUS:
             self._log_history(action_type, target, command, risk, "ALLOW_AUTONOMOUS")
             return {"granted": True, "reason": "full_autonomous_mode", "risk": risk.value}
 
-        if risk == RiskLevel.SAFE:
+        if not require_approval and risk == RiskLevel.SAFE:
             self._log_history(action_type, target, command, risk, "ALLOW_SAFE")
             return {"granted": True, "reason": "safe_action", "risk": risk.value}
 
-        if risk == RiskLevel.CAUTION and self.security_mode == SecurityMode.PROMPT_HIGH_RISK:
+        if (
+            not require_approval
+            and risk == RiskLevel.CAUTION
+            and self.security_mode == SecurityMode.PROMPT_HIGH_RISK
+        ):
             self._log_history(action_type, target, command, risk, "ALLOW_CAUTION_POLICY")
             return {"granted": True, "reason": "caution_auto_allowed", "risk": risk.value}
 
@@ -152,10 +158,10 @@ class PermissionManager:
             self.request_events.pop(req_id, None)
             self.request_decisions.pop(req_id, None)
 
-        if decision == "ALLOW_ALWAYS":
+        if decision == "ALLOW_ALWAYS" and not require_approval:
             self.session_allowlist.add(signature)
             granted = True
-        elif decision == "ALLOW_ONCE":
+        elif decision in ["ALLOW_ONCE", "ALLOW_ALWAYS"]:
             granted = True
         else:
             granted = False
@@ -188,6 +194,8 @@ class PermissionManager:
             now = time.time()
             valid = []
             for rid, req in list(self.pending_requests.items()):
+                if rid in self.request_decisions:
+                    continue
                 elapsed = now - req["timestamp"]
                 if elapsed < req["expires_in"]:
                     req_copy = dict(req)

@@ -732,18 +732,19 @@ from aura_agent import AuraAgent
 GLOBAL_AGENT_MESH = AuraAgent()
 
 def tool_query_engine_mesh(category: str = "") -> Dict[str, Any]:
-    """Inspects all 32 mounted GitHub open-source repositories and engines."""
+    """Inspects the declared engine catalog and reports locally mounted entries."""
     engines = GLOBAL_AGENT_MESH.get_engine_list()
     if category:
         engines = [e for e in engines if category.lower() in e["category"].lower()]
     return {
         "success": True,
-        "total_mounted": len(engines),
+        "total_matching": len(engines),
+        "total_mounted": sum(1 for engine in engines if engine["alive"]),
         "engines": engines[:12]
     }
 
 def tool_search_engine_code(engine_name: str, keyword: str) -> Dict[str, Any]:
-    """Searches real source code inside any of the 32 cloned engines."""
+    """Searches source code only when the selected engine has a local checkout."""
     matches = GLOBAL_AGENT_MESH.search_mesh_code(keyword, target_engine=engine_name, max_results=5)
     return {
         "success": True,
@@ -754,9 +755,13 @@ def tool_search_engine_code(engine_name: str, keyword: str) -> Dict[str, Any]:
     }
 
 def tool_execute_engine_pipeline(goal: str) -> Dict[str, Any]:
-    """Orchestrates an end-to-end task through the 32-engine multi-stage pipeline."""
-    res = GLOBAL_AGENT_MESH.execute_goal(goal)
-    return {"success": True, "pipeline": res}
+    """Runs the supported coding/game pipeline after explicit user approval."""
+    try:
+        from aura_master_pipeline import AURA_PIPELINE
+        result = AURA_PIPELINE.execute(goal=goal)
+        return {"success": result.get("success", False), "pipeline": result}
+    except Exception as exc:
+        return {"success": False, "error": f"Pipeline execution failed: {exc}"}
 def tool_execute_shell(command: str, permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
     """Executes native PowerShell command on Windows with security sandbox validation."""
     is_safe, reason = is_safe_command(command)
@@ -1004,10 +1009,9 @@ def tool_master_pipeline_status() -> Dict[str, Any]:
         return {"success": False, "error": f"Master pipeline status failed: {e}"}
 
 
-def tool_master_pipeline_execute(goal: str, domain: str = "full_stack", project_name: str = "CyberCraft3D") -> Dict[str, Any]:
+def tool_master_pipeline_execute(goal: str, domain: Optional[str] = None, project_name: str = "CyberCraft3D") -> Dict[str, Any]:
     """
-    Executes a complete unified multi-engine pipeline:
-    Synthesizes CoderX logic, builds Godot 4.3 game with headless verification, and renders FLUX/MP4 cinema assets in one continuous pipe.
+    Runs the coding or game pipeline selected for the goal; media generation is opt-in.
     """
     try:
         from aura_master_pipeline import AURA_PIPELINE
@@ -1676,7 +1680,7 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_execute_engine_pipeline",
-            "description": "Orchestrates an end-to-end task through the 52-engine multi-stage universe pipeline.",
+            "description": "Runs the coding-first or game-development pipeline selected for the goal; asks for approval before execution.",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
@@ -1809,11 +1813,11 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_master_pipeline_execute",
-            "description": "Executes the unified master multi-engine pipeline connecting CoderX, Godot 4.3 Game Studio, AURA Cinema Media, and OS Telemetry.",
+            "description": "Runs the coding-first or game-development pipeline selected for the goal. Image/video generation is optional and requires an explicit request.",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
-                    "goal": {"type": "STRING", "description": "The unified goal or project instruction to execute across all piped engines."},
+                    "goal": {"type": "STRING", "description": "The coding, game, or explicitly requested media goal."},
                     "domain": {"type": "STRING", "description": "Target domain: 'full_stack', 'game_dev', 'media_studio', 'coderx', or 'system'."},
                     "project_name": {"type": "STRING", "description": "Project title or name (defaults to 'CyberCraft3D')."}
                 },
@@ -2278,7 +2282,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 "candidates": [{
                     "content": {
                         "role": "model",
-                        "parts": [{"functionCall": {"name": "tool_master_pipeline_execute", "args": {"goal": user_text.strip(), "domain": "full_stack"}}}]
+                        "parts": [{"functionCall": {"name": "tool_master_pipeline_execute", "args": {"goal": user_text.strip()}}}]
                     }
                 }]
             }

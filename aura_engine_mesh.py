@@ -1,12 +1,9 @@
 """
 ===================================================================================
-            AURA ENGINE MESH: 63-ENGINE LIVE AWAKENING BUS & RUNTIME SUPERVISOR
+            AURA ENGINE MESH: CHECKOUT STATUS & ADAPTER DISPATCH
 ===================================================================================
-Awakens all 63 upstream open-source engines from disk:
-1. Injects all 63 engine roots and package/src directories into sys.path.
-2. Maintains a live in-memory registry of all 63 engines with real-time heartbeats.
-3. Provides active Python & subprocess execution dispatchers for every engine.
-4. Runs a 24/7 background keep-alive supervisor daemon so no engine ever sleeps.
+Tracks which declared upstream repositories have local checkouts and exposes
+the set of explicit adapters implemented below.
 ===================================================================================
 """
 
@@ -35,7 +32,7 @@ except ImportError:
 
 class AuraEngineMeshBus:
     """
-    Central Nervous System connecting and keeping alive all 63 engines.
+    Registry for local checkouts and the engine adapters implemented here.
     """
     _instance = None
     _lock = threading.Lock()
@@ -56,14 +53,14 @@ class AuraEngineMeshBus:
         self.supervisor_active = False
         self._supervisor_thread: Optional[threading.Thread] = None
 
-        # 1. Awaken and mount all 63 engines in sys.path instantly
+        # 1. Register only checkouts that contain repository files.
         self._awaken_and_mount_all()
 
-        # 2. Start 24/7 background keep-alive supervisor daemon
+        # 2. Track mounted checkouts.
         self.start_supervisor_daemon()
 
     def _awaken_and_mount_all(self):
-        """Injects every engine folder and package root into Python sys.path, and registers live state."""
+        """Adds available checkout paths and records actual local mount state."""
         ENGINES_DIR.mkdir(parents=True, exist_ok=True)
         total_files_counted = 0
 
@@ -79,11 +76,14 @@ class AuraEngineMeshBus:
             key = item[0]
             name = item[1]
             category = item[2]
-            file_count = item[3] if len(item) > 3 else 500
             desc = item[4] if len(item) > 4 else ""
 
             eng_path = ENGINES_DIR / key
-            is_mounted = eng_path.exists() and eng_path.is_dir()
+            entries = []
+            if eng_path.exists() and eng_path.is_dir():
+                entries = [entry for entry in eng_path.iterdir() if entry.name != ".git"]
+            is_mounted = bool(entries)
+            actual_files = sum(1 for entry in entries if entry.is_file())
 
             if is_mounted:
                 eng_path_str = str(eng_path)
@@ -105,7 +105,7 @@ class AuraEngineMeshBus:
                             elif str(p) not in sys.path:
                                 sys.path.insert(0, str(p))
 
-                total_files_counted += file_count
+                total_files_counted += actual_files
 
             self.awakened_engines[key] = {
                 "key": key,
@@ -113,26 +113,32 @@ class AuraEngineMeshBus:
                 "category": category,
                 "description": desc,
                 "mounted": is_mounted,
-                "status": "AWAKENED_AND_LIVE" if is_mounted else "READY_FOR_CLONE",
+                "status": "MOUNTED" if is_mounted else "NOT_MOUNTED",
                 "path": str(eng_path),
-                "files_available": file_count,
+                "files_available": actual_files,
                 "last_heartbeat": now,
                 "alive": is_mounted
             }
 
         self.total_files = total_files_counted
-        logger.info(f"✨ AURA Engine Mesh: All {len(self.awakened_engines)} Engines AWAKENED! Total files: {self.total_files}")
+        mounted_count = sum(1 for engine in self.awakened_engines.values() if engine["mounted"])
+        logger.info(
+            "AURA Engine Mesh: %s of %s declared engines mounted; %s top-level files detected",
+            mounted_count,
+            len(self.awakened_engines),
+            self.total_files
+        )
 
     def start_supervisor_daemon(self):
         """Starts the background heartbeat supervisor daemon thread."""
-        if self.supervisor_active:
+        if self.supervisor_active or not any(engine["mounted"] for engine in self.awakened_engines.values()):
             return
         self.supervisor_active = True
         self._supervisor_thread = threading.Thread(target=self._keep_alive_loop, daemon=True, name="AuraEngineSupervisor")
         self._supervisor_thread.start()
 
     def _keep_alive_loop(self):
-        """Continuous heartbeat monitoring loop ensuring memory warmth."""
+        """Refreshes status timestamps for mounted checkouts."""
         while self.supervisor_active:
             now = time.time()
             for key, data in self.awakened_engines.items():
@@ -142,14 +148,21 @@ class AuraEngineMeshBus:
             time.sleep(10)
 
     def get_mesh_status(self) -> Dict[str, Any]:
-        """Returns the complete live status of the 63-engine universe."""
+        """Returns mount status for the declared engine catalog."""
         awakened_count = sum(1 for e in self.awakened_engines.values() if e["mounted"])
+        if awakened_count == 0:
+            status = "NO_ENGINES_MOUNTED"
+        elif awakened_count == len(self.awakened_engines):
+            status = "ALL_DECLARED_ENGINES_MOUNTED"
+        else:
+            status = "SOME_ENGINES_MOUNTED"
         return {
             "success": True,
-            "status": "ALL_63_ENGINES_AWAKENED",
+            "status": status,
             "total_engines": len(self.awakened_engines),
             "awakened_engines": awakened_count,
             "total_files": self.total_files,
+            "file_count_scope": "top-level files within mounted engine directories",
             "supervisor_alive": self.supervisor_active,
             "timestamp": time.time(),
             "engines": list(self.awakened_engines.values())
@@ -161,12 +174,19 @@ class AuraEngineMeshBus:
 
     def invoke(self, engine_key: str, action: str = "run", **kwargs) -> Dict[str, Any]:
         """
-        Dispatches a live action directly to the awakened engine on disk.
+        Dispatches an action only when a local checkout is available.
         """
         if engine_key not in self.awakened_engines:
             return {"success": False, "error": f"Engine '{engine_key}' not found in 63-engine mesh."}
 
         eng = self.awakened_engines[engine_key]
+        if not eng["mounted"]:
+            return {
+                "success": False,
+                "engine": engine_key,
+                "status": "NOT_MOUNTED",
+                "error": f"Engine '{engine_key}' has no local checkout."
+            }
         eng["last_heartbeat"] = time.time()
 
         # Dedicated Dispatcher Routing

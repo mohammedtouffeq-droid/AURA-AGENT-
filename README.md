@@ -1,80 +1,37 @@
-# AURA AGENT (Autonomous Universal Robotics & Automation)
+# AURA — Coding & Game Development Workspace
 
-> **The Definitive Autonomous Super-Agent Architecture**  
-> Unified orchestration combining 32 world-class open-source AI engines (nearly 300,000 live source files) into a single master control system.
+AURA is an early-stage coding and game-development assistant. Its core local workflows are:
 
----
+- **Coding:** CoderX generates a workspace file, checks Python syntax, and runs a validation command.
+- **Game development:** the Godot project builder creates a starter project; the trainer can run Godot headlessly to validate it.
+- **Optional media:** image and video generation remain available, but are not automatically included in coding or game runs.
 
-## 🌟 The 32 Mounted Super-Engines (298,165 Live Source Files)
+The master pipeline asks for **Allow once** before it runs a workflow. The approval prompt describes the requested workspace writes and local validation; generated code is executed locally and is not isolated. A denied or expired request does not dispatch an engine. Pipeline jobs do not collect system telemetry unless the `system` domain is explicitly selected. Generated output files are restricted to their respective AURA workspaces.
 
-### 1. OS & Desktop Automation
-* **Open-Interpreter** (`openinterpreter/open-interpreter`): Native PowerShell, mouse, keyboard & screen automation.
+## Run locally
 
-### 2. Autonomous Web & Browser
-* **Browser-Use** (`browser-use/browser-use`): Vision & LLM-driven browser navigation.
-* **Playwright** (`microsoft/playwright-python`): Deterministic high-speed browser engine.
-* **Skyvern** (`Skyvern-AI/skyvern`): Computer-vision browser automation for complex dynamic sites.
-* **Stagehand** (`browserbase/stagehand`): AI-assisted web actions and resilient extraction.
+Start the web workspace from the repository root:
 
-### 3. Autonomous Software Engineering
-* **Aider** (`Aider-AI/aider`): Real-time code patching & terminal pair programming.
-* **OpenHands** (`All-Hands-AI/OpenHands`): End-to-end software development agent.
-
-### 4. Multi-Agent Swarms & Orchestration
-* **CrewAI** (`crewAIInc/crewAI`): Multi-agent role swarm orchestration.
-* **LangGraph** (`langchain-ai/langgraph`): Cyclic state graphs & human-in-the-loop workflows.
-* **Microsoft Agent Framework** (`microsoft/agent-framework`): Enterprise async agent service bus.
-* **OpenAI Agents SDK** (`openai/openai-agents-python`): Tool safety guardrails and agent delegation.
-* **Semantic Kernel** (`microsoft/semantic-kernel`): Enterprise AI orchestration kernel.
-
-### 5. Reasoning, Typed Logic & Prompts
-* **LiteLLM** (`BerriAI/litellm`): Universal router supporting 100+ model backends.
-* **PydanticAI** (`pydantic/pydantic-ai`): Type-safe structured output validation.
-* **DSPy** (`stanfordnlp/dspy`): Self-optimizing prompt compilation.
-
-### 6. Long-Term Memory, RAG & Vector Storage
-* **Haystack** (`deepset-ai/haystack`): Production-grade neural search pipelines.
-* **LlamaIndex** (`run-llama/llama_index`): Business document intelligence and retrieval.
-* **Qdrant** (`qdrant/qdrant`): Ultra-fast vector similarity search engine.
-* **pgvector** (`pgvector/pgvector`): PostgreSQL-native vector search.
-
-### 7. SaaS Integrations & Connected Tools
-* **Dify** (`langgenius/dify`): Visual workflow application hub.
-* **n8n** (`n8n-io/n8n`): 400+ connected SaaS integrations.
-* **Activepieces** (`activepieces/activepieces`): Open-source enterprise business automations.
-* **Composio** (`ComposioHQ/composio`): Production tool integration platform (GitHub, Slack, Google).
-* **Model Context Protocol (MCP)** (`modelcontextprotocol/python-sdk`): Standardized AI tools protocol.
-
-### 8. Fault-Tolerant Task Reliability
-* **Temporal** (`temporalio/temporal`): Crash-proof state recovery for long-running workflows.
-* **Prefect** (`PrefectHQ/prefect`): Resilient pipeline scheduling and monitoring.
-
-### 9. Offline & High-Throughput Inference
-* **llama.cpp** (`ggml-org/llama.cpp`): Quantized C/C++ local model execution.
-* **Ollama** (`ollama/ollama`): Local model lifecycle management.
-* **Transformers** (`huggingface/transformers`): World-standard model hub & fine-tuning.
-* **vLLM** (`vllm-project/vllm`): High-throughput GPU inference serving.
-
-### 10. Observability & Telemetry
-* **Langfuse** (`langfuse/langfuse`): Production LLM observability, cost & latency analytics.
-* **Arize Phoenix** (`Arize-ai/phoenix`): Evaluation, tracing & debugging.
-
----
-
-## 🚀 Live Verification
-
-```bash
-python aura_agent.py
-```
-Output:
-```text
-[*] AURA Master Super-Agent v4.0.0 (Universe Edition) - ALL 32 ENGINES VERIFIED:
-[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: 298,165
-[*] Pipeline Status: ALL_32_ENGINES_ACTIVE_AND_SYNCHRONIZED (Exit Code 0)
+```powershell
+python aura_web.py
 ```
 
----
+By default, the server listens on `http://127.0.0.1:5050`. AURA can scaffold a Godot project without the engine; headless validation requires a compatible Godot binary available to `godot_engine_manager.py`.
 
-## 🛡️ Attribution & License
-All integrated engines are open-source and governed by their respective licenses (MIT / Apache 2.0).  
-Architecture designed by **Mohammed Touffeq** with Antigravity.
+Run the focused offline pipeline tests with:
+
+```powershell
+python -m unittest test_aura_pipeline -v
+```
+
+## Integration status
+
+The repository declares 63 upstream engine entries in `.gitmodules` and keeps descriptive metadata in `aura_agent.py`. In the current checkout, the engine audit reports those submodules as uninitialized. Listing or cloning an upstream project does **not** make its code callable by AURA; those entries are not all wired into the product pipeline. `engine_auditor.py` checks submodule metadata and local checkout state only—it does not test runtime integration or compatibility.
+
+The current master pipeline connects the CoderX and Godot paths. Media is an explicit optional capability. Other registered engines, desktop automation, and broad SaaS integrations should be treated as separate or experimental until they have an implemented adapter, an end-to-end test, and an approval flow appropriate to their effects.
+
+## Next priorities
+
+1. Route all file, shell, browser, and device-changing entry points through the same user-visible consent gate; the new gate currently covers master-pipeline runs.
+2. Replace the static engine catalog with truthful runtime capability checks, then integrate only a small, tested coding/game toolchain.
+3. Add end-to-end workflow tests that exercise code generation, Godot validation, and artifact delivery without relying on fixed local machine state.

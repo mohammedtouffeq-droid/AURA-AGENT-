@@ -28,6 +28,20 @@ GAMES_WORKSPACE = ROOT_DIR / "workspace" / "game_projects"
 GAMES_WORKSPACE.mkdir(parents=True, exist_ok=True)
 
 
+def _resolve_game_project(project_name: str) -> Path:
+    if not isinstance(project_name, str) or not project_name.strip():
+        raise ValueError("Project name must be a non-empty directory name.")
+    workspace = GAMES_WORKSPACE.resolve()
+    project_dir = (workspace / project_name).resolve()
+    try:
+        project_dir.relative_to(workspace)
+    except ValueError as exc:
+        raise ValueError("Project path must stay inside AURA's game workspace.") from exc
+    if project_dir == workspace:
+        raise ValueError("Project name must identify a directory inside AURA's game workspace.")
+    return project_dir
+
+
 # ---------------------------------------------------------------------------------
 # 1. GODOT ENGINE CLI & RUNTIME MANAGER
 # ---------------------------------------------------------------------------------
@@ -129,7 +143,10 @@ class GodotCarCraftingProjectBuilder:
 
     @staticmethod
     def build_project(project_name: str = "CyberCraft3D") -> Dict[str, Any]:
-        proj_dir = GAMES_WORKSPACE / project_name
+        try:
+            proj_dir = _resolve_game_project(project_name)
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
         scenes_dir = proj_dir / "scenes"
         scripts_dir = proj_dir / "scripts"
         assets_dir = proj_dir / "assets"
@@ -1051,7 +1068,10 @@ class GodotAutonomousTrainer:
         self.manager = manager
 
     def train_and_verify(self, project_name: str = "CyberCraft3D") -> Dict[str, Any]:
-        proj_dir = GAMES_WORKSPACE / project_name
+        try:
+            proj_dir = _resolve_game_project(project_name)
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
         if not proj_dir.exists():
             # Build project first
             build_res = GodotCarCraftingProjectBuilder.build_project(project_name)

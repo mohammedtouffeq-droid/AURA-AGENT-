@@ -839,6 +839,54 @@
             z-index: 1000;
         }
 
+        .permission-prompt {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: min(420px, calc(100vw - 32px));
+            padding: 18px;
+            border: 1px solid rgba(59, 130, 246, 0.45);
+            border-radius: 12px;
+            background: #171a22;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+            z-index: 1100;
+        }
+
+        .permission-prompt h2 {
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .permission-prompt p {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .permission-prompt-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .permission-prompt-actions button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 7px;
+            color: var(--text-main);
+            background: var(--bg-hover);
+            cursor: pointer;
+        }
+
+        .permission-prompt-actions .permission-allow {
+            color: white;
+            border-color: var(--accent-primary);
+            background: var(--accent-primary);
+        }
+
         .auth-card {
             background: #16181e;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1153,7 +1201,7 @@
                                 <line x1="12" y1="19" x2="12" y2="22"/>
                             </svg>
                         </button>
-                        <button class="btn-dock-icon" title="Hardware Auto-Pilot Active" style="color: var(--accent-emerald);">
+                        <button class="btn-dock-icon" title="AURA asks before running pipeline actions" style="color: var(--text-muted);">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </button>
                     </div>
@@ -1164,7 +1212,7 @@
                 </div>
             </div>
             <div class="dock-disclaimer">
-                AURA Agent • Multi-Engine Autonomous ReAct Workspace • 0.05s Local Execution
+                AURA Agent • Coding & Game Development • Pipeline actions require your approval
             </div>
         </div>
     </main>
@@ -1179,6 +1227,16 @@
                 </div>
                 <div class="auth-subtitle">Encrypted Workspace Intelligence</div>
                 <p class="auth-desc">Sign in or create your permanent account. Your chat history and workspace data are saved permanently in SQLite database.</p>
+            </div>
+
+            <div class="permission-prompt" id="permissionPrompt" role="alertdialog" aria-labelledby="permissionPromptTitle" aria-describedby="permissionPromptDetails" hidden>
+                <h2 id="permissionPromptTitle">AURA needs your approval</h2>
+                <p id="permissionPromptAction"></p>
+                <p id="permissionPromptDetails"></p>
+                <div class="permission-prompt-actions">
+                    <button type="button" id="permissionDeny">Deny</button>
+                    <button type="button" id="permissionAllow" class="permission-allow">Allow once</button>
+                </div>
             </div>
 
             <div class="auth-tabs">
@@ -1215,6 +1273,9 @@
         let currentThreadId = localStorage.getItem('aura_active_thread_id') || ('th_' + Date.now());
         let isSending = false;
         let currentAttachments = [];
+        let activePermissionId = null;
+        let permissionPollTimer = null;
+        let permissionPollInFlight = false;
 
         // DOM elements
         const userPrompt = document.getElementById('userPrompt');
@@ -1228,6 +1289,11 @@
         const tabSignIn = document.getElementById('tabSignIn');
         const tabSignUp = document.getElementById('tabSignUp');
         const btnAuthSubmit = document.getElementById('btnAuthSubmit');
+        const permissionPrompt = document.getElementById('permissionPrompt');
+        const permissionPromptAction = document.getElementById('permissionPromptAction');
+        const permissionPromptDetails = document.getElementById('permissionPromptDetails');
+        const permissionAllow = document.getElementById('permissionAllow');
+        const permissionDeny = document.getElementById('permissionDeny');
         const authUsername = document.getElementById('authUsername');
         const authPassword = document.getElementById('authPassword');
         const userAvatar = document.getElementById('userAvatar');
@@ -1472,6 +1538,7 @@
                     } else {
                         createNewChatSession();
                     }
+                    startPermissionPolling();
                 } else {
                     authErrorMsg.innerText = data.error || 'Authentication failed. Please check credentials.';
                     authErrorMsg.style.display = 'block';
@@ -1543,9 +1610,74 @@
                 if (currentThreadId) {
                     await loadThreadMessages(currentThreadId);
                 }
+                startPermissionPolling();
             }
             userPrompt.focus();
         });
+
+        function startPermissionPolling() {
+            if (permissionPollTimer) return;
+            refreshPermissionRequests();
+            permissionPollTimer = setInterval(refreshPermissionRequests, 1500);
+        }
+
+        async function refreshPermissionRequests() {
+            if (!authToken || permissionPollInFlight) return;
+            permissionPollInFlight = true;
+            try {
+                const res = await fetch('/api/permission/pending', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const request = data.pending && data.pending[0];
+                if (!request) {
+                    activePermissionId = null;
+                    permissionPrompt.hidden = true;
+                    return;
+                }
+                activePermissionId = request.id;
+                permissionPromptAction.textContent = `${request.action_type} · ${request.target} · expires in ${request.remaining_seconds}s`;
+                permissionPromptDetails.textContent = request.details || request.command || 'This action will modify or access local resources.';
+                permissionPrompt.hidden = false;
+            } catch (error) {
+                console.error('Permission request polling failed:', error);
+            } finally {
+                permissionPollInFlight = false;
+            }
+        }
+
+        async function respondToPermission(decision) {
+            if (!activePermissionId) return;
+            permissionAllow.disabled = true;
+            permissionDeny.disabled = true;
+            try {
+                const res = await fetch('/api/permission/respond', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ id: activePermissionId, decision })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    permissionPromptDetails.textContent = data.error || 'Could not submit your decision. The request will expire without approval.';
+                    return;
+                }
+                activePermissionId = null;
+                permissionPrompt.hidden = true;
+                await refreshPermissionRequests();
+            } catch (error) {
+                permissionPromptDetails.textContent = `Could not submit your decision: ${error.message}`;
+            } finally {
+                permissionAllow.disabled = false;
+                permissionDeny.disabled = false;
+            }
+        }
+
+        permissionAllow.addEventListener('click', () => respondToPermission('ALLOW_ONCE'));
+        permissionDeny.addEventListener('click', () => respondToPermission('DENY'));
 
         // Auto-expand textarea
         userPrompt.addEventListener('input', function() {

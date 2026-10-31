@@ -199,11 +199,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_brain import SAFE_WORKSPACE_ROOTS, STRICTLY_FORBIDDEN_PATHS
             self._send_json({
                 "success": True,
-                "sandbox_active": True,
+                "sandbox_active": False,
+                "command_filter_active": True,
+                "sandbox_note": "Command-pattern checks are not process isolation.",
                 "safe_workspaces": [str(p) for p in SAFE_WORKSPACE_ROOTS],
                 "strictly_forbidden_paths": [str(p) for p in STRICTLY_FORBIDDEN_PATHS],
-                "hardware_control": "Protected Foreground Subprocess",
-                "powershell_sandbox": "Command Pattern Filter + Review Gate",
+                "hardware_control": "Legacy tools are not all routed through the master-pipeline approval gate.",
+                "powershell_sandbox": "Command-pattern filter only; no OS-level isolation",
                 "multimodal_tools": ["tool_generate_image", "tool_generate_video", "tool_get_weather", "tool_open_browser"]
             })
 
@@ -212,10 +214,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             mesh_status = AURA_ENGINE_MESH.get_mesh_status()
             self._send_json({
                 "success": True,
-                "status": "ALL_63_ENGINES_AWAKENED",
+                "status": mesh_status["status"],
                 "total_engines": mesh_status["total_engines"],
                 "awakened_engines": mesh_status["awakened_engines"],
                 "total_files": mesh_status["total_files"],
+                "file_count_scope": mesh_status["file_count_scope"],
                 "supervisor_alive": mesh_status["supervisor_alive"],
                 "timestamp": mesh_status["timestamp"],
                 "engines": mesh_status["engines"]
@@ -277,11 +280,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     status["error"] = str(e)
             self._send_json(status)
         elif path == "/api/permission/pending":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_permission_system import permission_manager
             pending = permission_manager.get_pending()
             self._send_json({"success": True, "pending": pending, "count": len(pending)})
 
         elif path == "/api/permission/history":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_permission_system import permission_manager
             self._send_json({"success": True, "history": permission_manager.history})
 
@@ -758,8 +767,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/pipeline/run":
-            goal = body.get("goal", "Full-Stack multi-engine synthesis")
-            domain = body.get("domain", "full_stack")
+            goal = body.get("goal", "Create a coding task")
+            domain = body.get("domain")
             params = body.get("params", {})
             from aura_master_pipeline import AURA_PIPELINE
             res = AURA_PIPELINE.execute(goal=goal, domain=domain, params=params)
@@ -832,6 +841,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = AURA_ENGINE_MESH.invoke(engine_key, action=action, **params)
             self._send_json(res)
         elif path == "/api/permission/respond":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             req_id = body.get("id", "")
             decision = body.get("decision", "DENY")
             from aura_permission_system import permission_manager
@@ -839,6 +851,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": ok, "id": req_id, "decision": decision})
 
         elif path == "/api/permission/mode":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             mode = body.get("mode", "PROMPT_HIGH_RISK")
             from aura_permission_system import permission_manager
             ok = permission_manager.set_security_mode(mode)

@@ -29,16 +29,17 @@ PIPELINE_RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class PipelineDomain(str, Enum):
-    FULL_STACK = "full_stack"       # Code + Game + Media combined
+    FULL_STACK = "full_stack"       # Code + game, with media only when requested
     GAME_DEV = "game_dev"           # Godot 4 + 3D Physics + Playable WebGL
     MEDIA_STUDIO = "media_studio"   # FLUX.1 + Video + Background Removal
     CODERX = "coderx"               # AST + Code Generation + Testing
-    SYSTEM = "system"               # OS Telemetry + Maintenance
+    SYSTEM = "system"               # Explicit system telemetry request
 
 
 class PipelineStage(str, Enum):
     QUEUED = "queued"
     INTENT_ANALYSIS = "intent_analysis"
+    AWAITING_APPROVAL = "awaiting_approval"
     CONTEXT_INGESTION = "context_ingestion"
     ENGINE_DISPATCH = "engine_dispatch"
     VALIDATION = "validation"
@@ -111,41 +112,76 @@ class AuraMasterPipeline:
         """
         Executes a job through the unified 5-stage pipeline:
         Stage 1: Intent Routing
-        Stage 2: Context Gathering & Telemetry Ingestion
-        Stage 3: Engine Execution (CoderX, Game, Media)
+        Stage 2: Context Gathering (system telemetry only for the system domain)
+        Stage 3: Engine Execution (CoderX, Game, and explicitly requested Media)
         Stage 4: Headless Validation & Quality Check
         Stage 5: Final Synthesis & Delivery
         """
+        if not isinstance(goal, str) or not goal.strip():
+            return {"success": False, "stage": PipelineStage.FAILED.value, "error": "A non-empty goal is required"}
+        if domain is not None and not isinstance(domain, str):
+            return {"success": False, "stage": PipelineStage.FAILED.value, "error": "Pipeline domain must be a string"}
+        if params is not None and not isinstance(params, dict):
+            return {"success": False, "stage": PipelineStage.FAILED.value, "error": "Pipeline params must be an object"}
+        if domain:
+            try:
+                PipelineDomain(domain.lower())
+            except ValueError:
+                return {"success": False, "stage": PipelineStage.FAILED.value, "error": f"Unsupported pipeline domain: {domain}"}
         params = params or {}
         job_id = f"pipe_{uuid.uuid4().hex[:10]}"
         start_time = time.time()
+        selected_domain = self._determine_domain(goal, domain)
 
         run_record = {
             "job_id": job_id,
             "goal": goal,
-            "stage": PipelineStage.INTENT_ANALYSIS,
+            "stage": PipelineStage.QUEUED,
             "timeline": [],
             "results": {},
             "artifacts": [],
             "success": False
         }
         self._log_stage(run_record, PipelineStage.INTENT_ANALYSIS, "Analyzing goal intent and mapping target domain")
+        run_record["domain"] = selected_domain.value
+
+        self._log_stage(
+            run_record,
+            PipelineStage.AWAITING_APPROVAL,
+            "Waiting for explicit approval before running this pipeline"
+        )
+        try:
+            from aura_permission_system import permission_manager
+            approval = permission_manager.request_permission(
+                action_type="pipeline_execute",
+                target=f"{selected_domain.value}: {goal.strip()[:160]}",
+                details=self._approval_details(selected_domain, params, goal),
+                require_approval=True
+            )
+        except Exception as exc:
+            run_record["error"] = f"Permission check failed; pipeline was not started: {exc}"
+            return self._finish_run(run_record, start_time, success=False)
+
+        run_record["permission"] = approval
+        if not approval.get("granted"):
+            run_record["error"] = "Pipeline execution was not approved"
+            return self._finish_run(run_record, start_time, success=False)
 
         # -------------------------------------------------------------
         # STAGE 1: INTENT ROUTING
         # -------------------------------------------------------------
-        selected_domain = self._determine_domain(goal, domain)
-        run_record["domain"] = selected_domain.value
         self._log_stage(run_record, PipelineStage.CONTEXT_INGESTION, f"Routing job to domain: {selected_domain.value}")
 
         # -------------------------------------------------------------
         # STAGE 2: CONTEXT INGESTION
         # -------------------------------------------------------------
-        try:
-            from aura_os_controller import laptop_controller
-            system_snapshot = laptop_controller.get_system_telemetry()
-        except Exception as telem_err:
-            system_snapshot = {"status": "UNAVAILABLE", "telemetry_live": False, "ram_total_gb": 0.0, "error": str(telem_err)}
+        system_snapshot = {"status": "NOT_REQUESTED", "telemetry_live": False}
+        if selected_domain == PipelineDomain.SYSTEM:
+            try:
+                from aura_os_controller import laptop_controller
+                system_snapshot = laptop_controller.get_system_telemetry()
+            except Exception as telem_err:
+                system_snapshot = {"status": "UNAVAILABLE", "telemetry_live": False, "ram_total_gb": 0.0, "error": str(telem_err)}
 
         run_record["system_snapshot"] = system_snapshot
         self._log_stage(run_record, PipelineStage.ENGINE_DISPATCH, "Dispatching tasks across piped engines")
@@ -166,6 +202,7 @@ class AuraMasterPipeline:
                 train_res = AURA_GODOT_TRAINER.train_and_verify(proj_name)
                 
                 engine_outputs["game_engine"] = {
+                    "success": build_res.get("success") is True and train_res.get("success") is True,
                     "project_name": proj_name,
                     "build": build_res,
                     "headless_training": train_res,
@@ -181,7 +218,7 @@ class AuraMasterPipeline:
             except Exception as e:
                 engine_outputs["game_engine"] = {"success": False, "error": str(e)}
 
-        if selected_domain in [PipelineDomain.MEDIA_STUDIO, PipelineDomain.FULL_STACK]:
+        if self._include_media(selected_domain, params, goal):
             # Trigger AURA Cinema Media Engine
             try:
                 from aura_media_engine import AURA_CINEMA
@@ -196,6 +233,7 @@ class AuraMasterPipeline:
                 vid_res = AURA_CINEMA.create_cinematic_video(video_prompt, duration_sec=3, fps=24)
                 
                 engine_outputs["media_engine"] = {
+                    "success": img_res.get("success") is True and vid_res.get("success") is True,
                     "image": img_res,
                     "video": vid_res
                 }
@@ -218,15 +256,24 @@ class AuraMasterPipeline:
         if selected_domain in [PipelineDomain.CODERX, PipelineDomain.FULL_STACK]:
             # Trigger CoderX Unified Engine
             try:
-                from coderx_engine import CODERX, CodebaseAstMapper
+                from coderx_engine import CODERX
                 target_file = params.get("target_file", "pipeline_generated_script.py")
+                workspace_root = WORKSPACE_DIR.resolve()
+                target_path = (workspace_root / target_file).resolve()
+                try:
+                    target_file = target_path.relative_to(workspace_root).as_posix()
+                except (OSError, ValueError, TypeError):
+                    raise ValueError("Target file must stay inside AURA's workspace")
+                if target_path == workspace_root:
+                    raise ValueError("Target file must name a file inside AURA's workspace")
                 coderx_res = CODERX.run(
-                    goal=f"Implement high-performance logic module for: {goal}",
+                    goal=goal,
                     target_filename=target_file,
                     max_iterations=1
                 )
                 engine_outputs["coderx_engine"] = {
                     "code_output": coderx_res,
+                    "success": coderx_res.get("success") is True,
                     "target_file": target_file
                 }
                 run_record["artifacts"].append({
@@ -264,22 +311,9 @@ class AuraMasterPipeline:
         # STAGE 5: SYNTHESIS & PACKAGING
         # -------------------------------------------------------------
         self._log_stage(run_record, PipelineStage.SYNTHESIS, "Synthesizing master response and persisting run log")
-        total_time = round(time.time() - start_time, 3)
-        run_record["elapsed_seconds"] = total_time
-        run_record["success"] = not has_errors
-        run_record["stage"] = PipelineStage.COMPLETED if not has_errors else PipelineStage.FAILED
+        return self._finish_run(run_record, start_time, success=not has_errors)
 
-        # Persist run record to disk
-        save_file = PIPELINE_RUNS_DIR / f"{job_id}.json"
-        try:
-            save_file.write_text(json.dumps(run_record, indent=2, default=str), encoding="utf-8")
-            run_record["persisted_log"] = str(save_file)
-        except Exception as e:
-            run_record["persisted_log_error"] = str(e)
-
-        return run_record
-
-    def _determine_domain(self, goal: str, domain_hint: Optional[str]) -> PipelineDomain:
+    def _determine_domain(self, goal: str, domain_hint: Optional[str] = None) -> PipelineDomain:
         if domain_hint:
             try:
                 return PipelineDomain(domain_hint.lower())
@@ -287,16 +321,73 @@ class AuraMasterPipeline:
                 pass
 
         g_lower = goal.lower()
-        if any(w in g_lower for w in ["everything", "all", "pipeline", "connect", "full", "complete"]):
+        if any(w in g_lower for w in ["everything", "all engines", "full stack", "full-stack", "full pipeline"]):
             return PipelineDomain.FULL_STACK
-        elif any(w in g_lower for w in ["game", "godot", "car", "racing", "craft", "3d", "physics"]):
+        game_requested = any(w in g_lower for w in ["game", "godot", "car", "racing", "craft", "3d", "physics"])
+        code_requested = any(w in g_lower for w in ["code", "script", "ast", "python", "bug", "patch", "program"])
+        if game_requested and code_requested:
+            return PipelineDomain.FULL_STACK
+        if game_requested:
             return PipelineDomain.GAME_DEV
-        elif any(w in g_lower for w in ["video", "image", "photo", "render", "flux", "portrait", "camera"]):
+        if self._goal_requests_media(goal):
             return PipelineDomain.MEDIA_STUDIO
-        elif any(w in g_lower for w in ["code", "script", "ast", "python", "bug", "patch", "program"]):
+        if code_requested:
             return PipelineDomain.CODERX
-        else:
-            return PipelineDomain.FULL_STACK
+        return PipelineDomain.CODERX
+
+    def _approval_details(self, domain: PipelineDomain, params: Dict[str, Any], goal: str) -> str:
+        actions = []
+        if domain in [PipelineDomain.CODERX, PipelineDomain.FULL_STACK]:
+            target_file = params.get("target_file", "pipeline_generated_script.py")
+            actions.append(
+                f"generate or update {target_file} in AURA's workspace, then execute the generated file locally for validation (it is not isolated)"
+            )
+        if domain in [PipelineDomain.GAME_DEV, PipelineDomain.FULL_STACK]:
+            project_name = params.get("project_name", "CyberCraft3D")
+            actions.append(
+                f"write the {project_name} Godot project in AURA's game workspace and run Godot headlessly; project scripts may execute"
+            )
+        if self._include_media(domain, params, goal):
+            actions.append("create image/video files in AURA's workspace")
+        if domain == PipelineDomain.SYSTEM:
+            actions.append("read system telemetry")
+        if not actions:
+            actions.append("run the selected pipeline")
+        return "AURA will " + "; ".join(actions) + "."
+
+    @staticmethod
+    def _include_media(domain: PipelineDomain, params: Dict[str, Any], goal: str) -> bool:
+        return (
+            domain == PipelineDomain.MEDIA_STUDIO
+            or params.get("include_media") is True
+            or (
+                domain in [PipelineDomain.CODERX, PipelineDomain.GAME_DEV, PipelineDomain.FULL_STACK]
+                and AuraMasterPipeline._goal_requests_media(goal)
+            )
+        )
+
+    @staticmethod
+    def _goal_requests_media(goal: str) -> bool:
+        normalized = goal.lower()
+        return (
+            ("video" in normalized and "video game" not in normalized)
+            or any(
+                word in normalized
+                for word in ["image", "photo", "art", "asset", "illustration", "render", "flux", "portrait", "camera"]
+            )
+        )
+
+    def _finish_run(self, run_record: Dict[str, Any], start_time: float, success: bool) -> Dict[str, Any]:
+        run_record["elapsed_seconds"] = round(time.time() - start_time, 3)
+        run_record["success"] = success
+        run_record["stage"] = PipelineStage.COMPLETED if success else PipelineStage.FAILED
+        save_file = PIPELINE_RUNS_DIR / f"{run_record['job_id']}.json"
+        try:
+            save_file.write_text(json.dumps(run_record, indent=2, default=str), encoding="utf-8")
+            run_record["persisted_log"] = str(save_file)
+        except Exception as exc:
+            run_record["persisted_log_error"] = str(exc)
+        return run_record
 
     def _log_stage(self, record: Dict[str, Any], stage: PipelineStage, message: str) -> None:
         record["stage"] = stage.value

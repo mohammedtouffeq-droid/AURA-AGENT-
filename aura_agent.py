@@ -31,7 +31,7 @@ from typing import Dict, Any, List, Optional
 AURA_ROOT = Path(__file__).resolve().parent
 ENGINES_DIR = AURA_ROOT / "engines"
 
-# 32 Engine Names with Categories & Verified File Counts (298,165 total files)
+# Declared upstream engine catalog; file-count values are legacy metadata, not local measurements.
 ALL_32_ENGINES = [
     # OS & Desktop
     ("open-interpreter", "Open-Interpreter OS Engine", "OS & Desktop", 9727, "Executes system scripts, shell, Python and desktop automation directly."),
@@ -150,8 +150,9 @@ class UniversalEngineBridge:
 
     def get_status(self) -> Dict[str, Any]:
         mounted = self.repo_path.exists() and self.repo_path.is_dir()
-        actual_files = len(list(self.repo_path.glob("*"))) if mounted else 0
-        is_live = mounted and (actual_files > 0)
+        entries = [entry for entry in self.repo_path.iterdir() if entry.name != ".git"] if mounted else []
+        actual_files = sum(1 for entry in entries if entry.is_file())
+        is_live = mounted and bool(entries)
         return {
             "key": self.key,
             "name": self.display_name,
@@ -243,28 +244,30 @@ class AuraAgent:
         return results
 
     def execute_goal(self, goal: str) -> Dict[str, Any]:
-        """Full pipeline execution through the multi-engine mesh."""
+        """Return the planned mesh without claiming that any engine was executed."""
+        planned_phases = [
+            {"phase": "1. Safety & Guardrails", "engines": ["OpenAI Agents SDK", "PydanticAI"]},
+            {"phase": "2. Graph Orchestration & Autonomous Loops", "engines": ["LangGraph", "Semantic Kernel", "CrewAI", "Agent Framework", "OWL", "AutoGPT"]},
+            {"phase": "3. Context, Long-Term Memory & RAG", "engines": ["LlamaIndex", "Haystack", "Qdrant", "pgvector", "Mem0"]},
+            {"phase": "4. Local & Cloud AI Runtimes", "engines": ["LiteLLM", "Ollama", "llama.cpp", "Transformers", "vLLM", "DSPy", "Qwen-Agent", "Hermes-Agent"]},
+            {"phase": "5. Document & Multimedia Intelligence", "engines": ["MarkItDown", "yt-dlp"]},
+            {"phase": "6. Autonomous Coding", "engines": ["OpenCode", "OpenHands", "Cline", "Aider", "Continue"]},
+            {"phase": "7. Web & Screen Vision Automation", "engines": ["Browser-Use", "Playwright", "Skyvern", "Stagehand", "ShowUI", "Midscene", "OSWorld-G", "Self-Operating-Computer"]},
+            {"phase": "8. Desktop, Native Windows & Mobile Control", "engines": ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "Terminator", "OS-Copilot", "Cradle", "Screenpipe", "pywinauto", "pyautogui", "PowerToys", "scrcpy"]},
+            {"phase": "9. Social & Session Automation", "engines": ["Hyperbrowser", "WhatsApp-Web.js", "Instaloader", "PyGithub", "Undetected-Chromedriver"]},
+            {"phase": "10. Connected Tools, SaaS & MCP", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
+            {"phase": "11. Fault-Tolerant Reliability", "engines": ["Temporal", "Prefect"]},
+            {"phase": "12. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
+        ]
         return {
             "agent": self.name,
             "version": self.version,
             "goal": goal,
-            "total_engines_mounted": len(self.engines),
-            "total_source_files": sum(e.file_count for e in self.engines.values() if e.is_mounted),
-            "execution_mesh": [
-                {"phase": "1. Safety & Guardrails", "engines": ["OpenAI Agents SDK", "PydanticAI"]},
-                {"phase": "2. Graph Orchestration & Autonomous Loops", "engines": ["LangGraph", "Semantic Kernel", "CrewAI", "Agent Framework", "OWL", "AutoGPT"]},
-                {"phase": "3. Context, Long-Term Memory & RAG", "engines": ["LlamaIndex", "Haystack", "Qdrant", "pgvector", "Mem0"]},
-                {"phase": "4. Local & Cloud AI Runtimes", "engines": ["LiteLLM", "Ollama", "llama.cpp", "Transformers", "vLLM", "DSPy", "Qwen-Agent", "Hermes-Agent"]},
-                {"phase": "5. Document & Multimedia Intelligence", "engines": ["MarkItDown", "yt-dlp"]},
-                {"phase": "6. Autonomous Coding", "engines": ["OpenCode", "OpenHands", "Cline", "Aider", "Continue"]},
-                {"phase": "7. Web & Screen Vision Automation", "engines": ["Browser-Use", "Playwright", "Skyvern", "Stagehand", "ShowUI", "Midscene", "OSWorld-G", "Self-Operating-Computer"]},
-                {"phase": "8. Desktop, Native Windows & Mobile Control", "engines": ["Agent-S", "UI-TARS-desktop", "OmniParser", "UFO", "Terminator", "OS-Copilot", "Cradle", "Screenpipe", "pywinauto", "pyautogui", "PowerToys", "scrcpy"]},
-                {"phase": "9. Social & Session Automation", "engines": ["Hyperbrowser", "WhatsApp-Web.js", "Instaloader", "PyGithub", "Undetected-Chromedriver"]},
-                {"phase": "10. Connected Tools, SaaS & MCP", "engines": ["Composio", "MCP Python SDK", "n8n", "Activepieces", "Dify"]},
-                {"phase": "11. Fault-Tolerant Reliability", "engines": ["Temporal", "Prefect"]},
-                {"phase": "12. Telemetry & Analytics", "engines": ["Langfuse", "Phoenix"]}
-            ],
-            "status": "ALL_63_ENGINES_ACTIVE_AND_SYNCHRONIZED"
+            "total_engines_declared": len(self.engines),
+            "mounted_engines": sum(1 for engine in self.engines.values() if engine.get_status()["alive"]),
+            "planned_execution_mesh": planned_phases,
+            "status": "PLAN_ONLY_NOT_EXECUTED",
+            "note": "The catalog is descriptive; use AURA's master pipeline for supported coding and game workflows."
         }
 
 
@@ -275,8 +278,8 @@ AURA_AGENT = AuraAgent()
 if __name__ == "__main__":
     aura = AURA_AGENT
     status = aura.audit_all_engines()
-    print(f"\n[*] {aura.name} v{aura.version} - ALL 63 ENGINES VERIFIED:")
-    total_files = sum(d["files_available"] for d in status.values())
-    print(f"[*] TOTAL ACTIVE OPEN-SOURCE SOURCE FILES: {total_files}")
-    test_run = aura.execute_goal("Orchestrate complete 63-engine universe automation pipeline")
-    print(f"[*] Pipeline Status: {test_run['status']}")
+    mounted = sum(1 for engine in status.values() if engine["alive"])
+    print(f"\n[*] {aura.name} v{aura.version} - ENGINE CATALOG AUDIT:")
+    print(f"[*] Declared engines: {len(status)}; mounted checkouts: {mounted}")
+    plan = aura.execute_goal("Orchestrate coding and game-development workflows")
+    print(f"[*] Execution status: {plan['status']}")

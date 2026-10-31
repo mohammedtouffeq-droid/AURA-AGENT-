@@ -51,7 +51,8 @@ class LaptopController:
             target="PowerShell",
             command=command,
             details=f"Execution of PowerShell script (Timeout: {timeout}s, Elevated: {as_admin})",
-            timeout=45.0
+            timeout=45.0,
+            require_approval=True
         )
 
         if not perm["granted"]:
@@ -114,7 +115,8 @@ class LaptopController:
             action_type="read_file",
             target=str(p),
             command=f"Read {p.name}",
-            details=f"Read file content from {p}"
+            details=f"Read file content from {p}",
+            require_approval=True
         )
         if not perm["granted"]:
             return {"success": False, "error": "Permission Denied"}
@@ -148,7 +150,8 @@ class LaptopController:
             action_type="write_file",
             target=str(p),
             command=f"Write {p.name} ({len(content)} chars)",
-            details=f"Writing {len(content)} characters to {p}"
+            details=f"Writing {len(content)} characters to {p}",
+            require_approval=True
         )
         if not perm["granted"]:
             return {"success": False, "error": f"Permission Denied: {perm.get('decision')}"}
@@ -175,7 +178,8 @@ class LaptopController:
             target=str(p),
             command=f"Delete {p}",
             details=f"Permanently remove {p} from disk",
-            timeout=60.0
+            timeout=60.0,
+            require_approval=True
         )
         if not perm["granted"]:
             return {"success": False, "error": f"Permission Denied: {perm.get('decision')}"}
@@ -200,7 +204,9 @@ class LaptopController:
         perm = self.pm.request_permission(
             action_type="list_files",
             target=str(p),
-            command=f"List {p}"
+            command=f"List {p}",
+            details=f"List directory entries and file metadata for {p}",
+            require_approval=True
         )
         if not perm["granted"]:
             return {"success": False, "error": "Permission Denied"}
@@ -225,6 +231,14 @@ class LaptopController:
         """
         Returns active processes running on the laptop using native tasklist.
         """
+        perm = self.pm.request_permission(
+            action_type="get_process",
+            target=filter_name or "all running processes",
+            details="Read running process names, IDs, and memory usage",
+            require_approval=True
+        )
+        if not perm["granted"]:
+            return []
         try:
             cmd = ["tasklist", "/FO", "CSV", "/NH"]
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -254,7 +268,8 @@ class LaptopController:
             action_type="kill_process",
             target=str(pid_or_name),
             command=f"taskkill /F /PID {pid_or_name}" if str(pid_or_name).isdigit() else f"taskkill /F /IM {pid_or_name}",
-            details="Terminate process execution"
+            details="Terminate process execution",
+            require_approval=True
         )
         if not perm["granted"]:
             return {"success": False, "error": f"Permission Denied: {perm.get('decision')}"}
@@ -272,6 +287,14 @@ class LaptopController:
         Captures full desktop screenshot using PowerShell .NET GDI.
         """
         p = Path(save_path).resolve()
+        perm = self.pm.request_permission(
+            action_type="screen_capture",
+            target=str(p),
+            details=f"Capture the primary display and save a screenshot to {p}",
+            require_approval=True
+        )
+        if not perm["granted"]:
+            return {"success": False, "error": f"Permission Denied: {perm.get('decision')}"}
         p.parent.mkdir(parents=True, exist_ok=True)
         ps_code = f'''
         Add-Type -AssemblyName System.Windows.Forms
@@ -284,10 +307,27 @@ class LaptopController:
         $graphics.Dispose()
         $bmp.Dispose()
         '''
-        res = self.execute_powershell(ps_code, timeout=10)
-        if p.exists():
+        try:
+            if sys.platform == "win32":
+                result = subprocess.run(
+                    ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_code],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    shell=False
+                )
+            else:
+                return {"success": False, "error": "Screenshot capture is only supported on Windows."}
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "Screenshot capture timed out."}
+        except OSError as exc:
+            return {"success": False, "error": str(exc)}
+        if result.returncode == 0 and p.is_file():
             return {"success": True, "path": str(p), "size_bytes": p.stat().st_size}
-        return {"success": False, "error": res.get("stderr", "Screenshot capture failed")}
+        return {
+            "success": False,
+            "error": result.stderr or f"Screenshot capture failed (exit code {result.returncode})"
+        }
 
     def get_system_telemetry(self) -> Dict[str, Any]:
         """

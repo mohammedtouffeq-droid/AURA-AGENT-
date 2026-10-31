@@ -348,7 +348,22 @@ class CoderXStateGraph:
 
     def run(self, goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5) -> Dict[str, Any]:
         start_time = time.time()
-        target_path = self.workspace / target_filename
+        workspace_root = self.workspace.resolve()
+        try:
+            target_path = (workspace_root / target_filename).resolve()
+            target_filename = target_path.relative_to(workspace_root).as_posix()
+        except (OSError, ValueError, TypeError):
+            return {
+                "success": False,
+                "status": "INVALID_TARGET_PATH",
+                "error": "Target file must stay inside the configured CoderX workspace."
+            }
+        if target_path == workspace_root:
+            return {
+                "success": False,
+                "status": "INVALID_TARGET_PATH",
+                "error": "Target file must name a file inside the configured CoderX workspace."
+            }
         history = []
         last_error = None
         repo_map = CodebaseAstMapper.generate_repo_map(self.workspace)
