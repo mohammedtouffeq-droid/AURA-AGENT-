@@ -61,13 +61,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
         self.end_headers()
 
-    def _get_auth_user(self) -> Optional[Dict[str, Any]]:
+    def _get_auth_user(self, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         auth_header = self.headers.get("Authorization", "")
         token = ""
         if auth_header.startswith("Bearer "):
             token = auth_header[7:].strip()
         if not token:
             token = self.headers.get("X-Auth-Token", "").strip()
+        if not token and body and isinstance(body, dict):
+            token = body.get("session_token", "") or body.get("token", "")
         if not token:
             # Query param fallback
             parsed = urllib.parse.urlparse(self.path)
@@ -105,18 +107,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/threads":
             user = self._get_auth_user()
-            user_id = user["id"] if user else 1
-            threads = aura_db.get_user_threads(user_id)
+            if not user:
+                self._send_json({"success": False, "error": "Unauthorized", "threads": []}, status=401)
+                return
+            threads = aura_db.get_user_threads(user["id"])
             self._send_json({"success": True, "threads": threads})
 
         elif path == "/api/threads/messages":
             user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            if not user:
+                self._send_json({"success": False, "error": "Unauthorized", "messages": []}, status=401)
+                return
             thread_id = query.get("thread_id", [""])[0]
             if not thread_id:
                 self._send_json({"success": False, "error": "thread_id required"}, status=400)
                 return
-            messages = aura_db.get_thread_messages(user_id, thread_id)
+            messages = aura_db.get_thread_messages(user["id"], thread_id)
             self._send_json({"success": True, "messages": messages})
 
         elif path == "/api/memory":
@@ -327,10 +333,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         # 2. THREADS ROUTES
         elif path == "/api/threads/new":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Unauthorized"}, status=401)
+                return
+            user_id = user["id"]
             title = body.get("title", "New Session")
-            thread = aura_db.create_user_thread(user_id, title)
+            thread_id = body.get("id") or body.get("thread_id")
+            thread = aura_db.create_user_thread(user_id, title, thread_id=thread_id)
             self._send_json({"success": True, "thread": thread})
 
         elif path == "/api/threads/rename":
@@ -396,8 +406,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         # 3. CHAT DISPATCH
         elif path == "/api/chat":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"reply": "Session expired or not logged in. Please sign in to save your conversation and execute tasks.", "error": "unauthorized"}, status=401)
+                return
+            user_id = user["id"]
             prompt = body.get("prompt", "").strip()
             thread_id = body.get("thread_id", "default")
             attachments = body.get("attachments", [])

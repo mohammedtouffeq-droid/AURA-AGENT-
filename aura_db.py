@@ -253,10 +253,17 @@ def get_user_threads(user_id: int) -> List[Dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
-def create_user_thread(user_id: int, title: str = "New Session") -> Dict[str, Any]:
-    thread_id = f"th_{secrets.token_hex(8)}"
+def create_user_thread(user_id: int, title: str = "New Session", thread_id: Optional[str] = None) -> Dict[str, Any]:
+    if not thread_id:
+        thread_id = f"th_{secrets.token_hex(8)}"
     conn = get_connection()
     c = conn.cursor()
+    c.execute("SELECT id, title, is_pinned FROM threads WHERE id = ? AND user_id = ?", (thread_id, user_id))
+    existing = c.fetchone()
+    if existing:
+        conn.close()
+        return dict(existing)
+
     c.execute("""
         INSERT INTO threads (id, user_id, title)
         VALUES (?, ?, ?)
@@ -326,6 +333,16 @@ def get_thread_messages(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
 def save_message(user_id: int, thread_id: str, role: str, content: str, tools: Optional[List[Dict[str, Any]]] = None):
     conn = get_connection()
     c = conn.cursor()
+    # Ensure thread exists for this user
+    c.execute("SELECT id FROM threads WHERE id = ? AND user_id = ?", (thread_id, user_id))
+    if not c.fetchone():
+        clean_first = content.strip().split("\n")[0].strip()
+        title = (clean_first[:28] + "...") if len(clean_first) > 28 else (clean_first or "New Conversation")
+        c.execute("""
+            INSERT INTO threads (id, user_id, title)
+            VALUES (?, ?, ?)
+        """, (thread_id, user_id, title))
+
     tools_str = json.dumps(tools) if tools else None
     c.execute("""
         INSERT INTO messages (thread_id, user_id, role, content, tools_json)
