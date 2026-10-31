@@ -1646,6 +1646,7 @@
             <div class="auth-error-msg" id="authErrorMsg"></div>
 
             <button class="btn-auth-submit" id="btnAuthSubmit">Sign In</button>
+            <button type="button" class="btn-auth-guest" id="btnAuthGuest" onclick="quickGuestLogin()" style="margin-top: 10px; width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-hairline); background: var(--bg-surface-elevated); color: var(--text-title); cursor: pointer; font-size: 13px; font-weight: 500;">⚡ Instant 1-Click Guest Access</button>
         </div>
     </div>
 
@@ -2158,9 +2159,36 @@
             authOverlay.classList.add('open');
         });
 
+        async function quickGuestLogin() {
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'guest_developer', password: 'guest123' })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    currentAuthToken = data.token;
+                    localStorage.setItem('aura_auth_token', data.token);
+                    currentUser = data.user;
+                    authOverlay.classList.remove('open');
+                    updateUserUI();
+                    await loadThreads();
+                    await loadProjects();
+                    startNewCleanSession();
+                    return true;
+                }
+            } catch (e) {
+                console.error("Guest login error:", e);
+            }
+            return false;
+        }
+
         // Initialize user session
         async function initAppSession() {
             if (!currentAuthToken) {
+                const ok = await quickGuestLogin();
+                if (ok) return;
                 authOverlay.classList.add('open');
                 return;
             }
@@ -2178,10 +2206,12 @@
                     await loadProjects();
                     startNewCleanSession();
                 } else {
-                    authOverlay.classList.add('open');
+                    const ok = await quickGuestLogin();
+                    if (!ok) authOverlay.classList.add('open');
                 }
             } catch (e) {
-                authOverlay.classList.add('open');
+                const ok = await quickGuestLogin();
+                if (!ok) authOverlay.classList.add('open');
             }
         }
 

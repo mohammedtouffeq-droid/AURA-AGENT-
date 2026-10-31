@@ -175,8 +175,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/engines/search":
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
-            keyword = body.get("keyword", "")
-            target_engine = body.get("engine", None)
+            keyword = query.get("keyword", [""])[0]
+            target_engine = query.get("engine", [None])[0]
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 
@@ -195,9 +195,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "workspace": str(ws), "total_files": len(files), "files": files})
 
         elif path == "/api/workspace/file":
-            query = parsed.query
-            params = urllib.parse.parse_qs(query)
-            file_rel = params.get("path", [""])[0]
+            file_rel = query.get("path", [""])[0]
             ws = ROOT / "workspace"
             target_p = (ws / file_rel).resolve()
             if ws in target_p.parents or target_p == ws or str(target_p).startswith(str(ws)):
@@ -464,8 +462,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/engines/search":
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
-            keyword = body.get("keyword", "")
-            target_engine = body.get("engine", None)
+            keyword = query.get("keyword", [""])[0]
+            target_engine = query.get("engine", [None])[0]
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 

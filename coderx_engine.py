@@ -36,7 +36,7 @@ class UnifiedModelRouter:
     LiteLLM-inspired model router that routes between Gemini Cloud API and local Ollama,
     ensuring zero-dependency multi-model redundancy.
     """
-    def __init__(self, ollama_url: str = "http://localhost:11434"):
+    def __init__(self, ollama_url: str = "http://127.0.0.1:11434"):
         self.ollama_url = ollama_url
         self.gemini_key = os.environ.get("GEMINI_API_KEY", "")
 
@@ -44,7 +44,7 @@ class UnifiedModelRouter:
         """Checks if local Ollama daemon is responding."""
         try:
             req = urllib.request.Request(f"{self.ollama_url}/api/tags", headers={"User-Agent": "CoderX/1.0"})
-            with urllib.request.urlopen(req, timeout=1.5) as resp:
+            with urllib.request.urlopen(req, timeout=0.3) as resp:
                 return resp.status == 200
         except Exception:
             return False
@@ -53,7 +53,7 @@ class UnifiedModelRouter:
         """Lists downloaded models in local Ollama daemon."""
         try:
             req = urllib.request.Request(f"{self.ollama_url}/api/tags", headers={"User-Agent": "CoderX/1.0"})
-            with urllib.request.urlopen(req, timeout=2) as resp:
+            with urllib.request.urlopen(req, timeout=0.5) as resp:
                 data = json.loads(resp.read().decode())
                 return [m.get("name", "") for m in data.get("models", [])]
         except Exception:
