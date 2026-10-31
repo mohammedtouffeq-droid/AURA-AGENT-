@@ -95,7 +95,7 @@ class TestAuraProductionCertification(unittest.TestCase):
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode())
             self.assertTrue(data.get("success"))
-            self.assertTrue(data.get("sandbox_active"))
+            self.assertTrue(data.get("command_filter_active"))
             self.assertIn("tool_generate_image", data.get("multimodal_tools", []))
 
     def test_03_projects_endpoint(self):
