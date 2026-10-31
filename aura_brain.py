@@ -38,8 +38,8 @@ def load_env() -> Dict[str, str]:
     return config
 
 ENV = load_env()
-API_KEY = ENV.get("GEMINI_API_KEY", "")
-MODEL_NAME = "gemini-3.1-flash-lite"
+API_KEY = ENV.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")
+MODEL_NAME = ENV.get("GEMINI_MODEL", "gemini-flash-lite-latest")
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent?key={API_KEY}"
 DB_PATH = Path(__file__).resolve().parent / "aura_memory.db"
 
@@ -2299,42 +2299,66 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 }]
             }
         else:
+            lower = lower_q.strip()
+            if any(w in lower for w in ["hi", "hello", "hey", "yoo", "yo", "sup", "wassup", "whats up", "what's up", "namaste", "salam"]):
+                reply = "Hey! What's up? I'm AURA, your AI workspace copilot. How can I help you today?"
+            elif any(w in lower for w in ["how are you", "kaise ho", "kaisa hai", "how r u"]):
+                reply = "I'm doing great and running at peak performance! All systems are online and ready. What are we building or exploring today?"
+            elif any(w in lower for w in ["who are you", "what are you", "who r u", "kaun ho"]):
+                reply = "I am AURA, your full-stack AI developer assistant and workspace copilot. I can write and debug code, browse the web, execute terminal tasks, generate media, build 3D games, and help you automate your work."
+            elif any(w in lower for w in ["bye", "goodbye", "cya", "see you"]):
+                reply = "Catch you later! Reach out whenever you need anything built or solved."
+            elif any(w in lower for w in ["thanks", "thank you", "shukriya", "dhanyawad"]):
+                reply = "You're very welcome! Let me know if you need anything else."
+            else:
+                reply = "I'm ready to assist with coding, debugging, browser automation, 3D game engines, or system operations. What would you like to build or run?"
+
             return {
                 "candidates": [{
                     "content": {
                         "role": "model",
                         "parts": [{
-                            "text": f"### 🚀 AURA Autonomous Intelligence Online\n\nI am AURA, your full-stack developer workspace assistant with 57 integrated engines (Hyperbrowser, WhatsApp-Web.js, Instaloader, PyGithub, Undetected-Chromedriver, OpenCode, OpenHands, Cline, Aider, Continue, Agent-S, UI-TARS, UFO, OmniParser, ShowUI, Midscene, OWL, OSWorld-G, Mem0, Qwen-Agent, n8n, Browser-Use). All security sandbox guardrails, strict permission jail gates, screen vision grounding, and multimodal generators are verified and ready.\n\nHow can I help you today?"
+                            "text": reply
                         }]
                     }
                 }]
             }
 
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
-        if not self.api_key or not self.api_key.startswith("AIzaSy"):
+        if not self.api_key or self.api_key.startswith("YOUR_"):
             return self._offline_autonomous_dispatch(contents, tools)
 
         payload = {
             "contents": contents,
             "systemInstruction": {
-                "parts": [{"text": "You are AURA Core, an elite autonomous developer workspace agent created by AURA Technologies Inc. You have full native execution tools for Google Chrome, PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. open Chrome on screen, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. NEVER say 'I don't have access' or 'I am only a language model' because you are running locally with full tool execution."}]
+                "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have full native execution tools for Google Chrome, PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. open Chrome on screen, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. When the user engages in casual conversation, banter, or greetings, reply naturally, warmly, and helpfully without robotic canned blocks."}]
             }
         }
         if tools:
             payload["tools"] = tools
 
-        try:
-            req = urllib.request.Request(
-                API_URL,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                return json.loads(resp.read().decode())
-        except Exception as e:
-            print(f"[*] AURA Gemini live request fallback (timeout or error): {e}")
-            return self._offline_autonomous_dispatch(contents, tools)
+        candidate_models = [self.model, "gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest"]
+        models_to_try = []
+        for m in candidate_models:
+            if m and m not in models_to_try:
+                models_to_try.append(m)
+
+        for mod in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent?key={self.api_key}"
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    return json.loads(resp.read().decode())
+            except Exception as e:
+                print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
+                continue
+
+        return self._offline_autonomous_dispatch(contents, tools)
 
     def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15) -> str:
         """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response with full Multimodal support."""
