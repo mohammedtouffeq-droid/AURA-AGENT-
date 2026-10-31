@@ -3536,10 +3536,10 @@ ${p.description ? `**Scope & Requirements:**\n> ${p.description}\n\n` : ''}Ready
             const goal = input.value.trim() || 'Full-Stack multi-engine synthesis';
             btn.disabled = true;
             btn.textContent = 'Executing...';
-            output.textContent = '[*] Dispatching goal into Master Pipeline bus...
+            output.textContent = `[*] Dispatching goal into Master Pipeline bus...
 [Stage 1]: Intent Analysis
 [Stage 2]: Telemetry Ingestion
-[Stage 3]: Multi-Engine Execution (CoderX + Godot 4 + Cinema)...';
+[Stage 3]: Multi-Engine Execution (CoderX + Godot 4 + Cinema)...`;
             try {
                 const res = await fetch('/api/pipeline/run', {
                     method: 'POST',
