@@ -56,6 +56,7 @@
             flex-shrink: 0;
             user-select: none;
             z-index: 20;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .sidebar-header {
@@ -257,6 +258,66 @@
             border-color: rgba(239, 68, 68, 0.4);
         }
 
+        /* ---------------- Mobile Sidebar Drawer ---------------- */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 99;
+        }
+
+        .btn-mobile-menu {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            margin-right: 8px;
+        }
+        .btn-mobile-menu:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .btn-mobile-menu {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 100;
+                transform: translateX(-100%);
+                box-shadow: 15px 0 40px rgba(0, 0, 0, 0.7);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .sidebar-backdrop.mobile-open {
+                display: block;
+            }
+            .starter-cards-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .chat-stream-container {
+                padding: 16px 12px 140px 12px !important;
+            }
+            .top-navbar {
+                padding: 0 14px !important;
+            }
+        }
+
         /* ---------------- Main Viewport ---------------- */
         .main-chat-viewport {
             flex: 1;
@@ -274,9 +335,14 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border-subtle);
-            background: rgba(13, 14, 18, 0.8);
+            background: rgba(13, 14, 18, 0.85);
             backdrop-filter: blur(10px);
             z-index: 10;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
         }
 
         .model-picker-pill {
@@ -309,7 +375,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 24px 20px 140px 20px;
+            padding: 24px 20px 150px 20px;
+            transition: background 0.2s;
+        }
+
+        .chat-stream-container.drag-over {
+            background: rgba(0, 102, 255, 0.04);
+            outline: 2px dashed rgba(0, 102, 255, 0.4);
+            outline-offset: -10px;
         }
 
         .chat-stream-container::-webkit-scrollbar {
@@ -334,7 +407,7 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
-            margin-top: 40px;
+            margin-top: 36px;
             animation: fadeIn 0.3s ease;
         }
 
@@ -426,6 +499,24 @@
             word-break: break-word;
         }
 
+        .user-turn-attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .user-attached-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11.5px;
+        }
+
         .msg-header {
             display: flex;
             align-items: center;
@@ -450,6 +541,22 @@
             margin-bottom: 0;
         }
 
+        .streaming-cursor {
+            display: inline-block;
+            width: 7px;
+            height: 15px;
+            background: var(--accent-primary);
+            border-radius: 2px;
+            margin-left: 4px;
+            vertical-align: middle;
+            animation: cursorBlink 0.8s infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
         .tool-badge-pill {
             display: inline-flex;
             align-items: center;
@@ -462,6 +569,7 @@
             font-size: 12px;
             font-family: var(--font-code);
             margin-bottom: 8px;
+            animation: fadeIn 0.2s ease;
         }
 
         .code-container {
@@ -564,6 +672,74 @@
             box-shadow: 0 10px 35px rgba(0, 102, 255, 0.12);
         }
 
+        /* Attachment Chips Preview */
+        .attachment-chips-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .attachment-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 12px;
+            max-width: 220px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .attachment-chip-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 5px;
+            object-fit: cover;
+            background: #000;
+        }
+
+        .attachment-chip-icon {
+            font-size: 16px;
+        }
+
+        .attachment-chip-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .attachment-chip-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .attachment-chip-size {
+            font-size: 10px;
+            color: var(--text-subtle);
+        }
+
+        .attachment-chip-del {
+            background: transparent;
+            border: none;
+            color: var(--text-subtle);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .attachment-chip-del:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+        }
+
         .main-textarea {
             width: 100%;
             background: transparent;
@@ -590,13 +766,19 @@
             border-top: 1px solid rgba(255, 255, 255, 0.04);
         }
 
+        .input-left-tools {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .btn-dock-icon {
             background: transparent;
             border: none;
             color: var(--text-muted);
             cursor: pointer;
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             border-radius: 6px;
             display: flex;
             align-items: center;
@@ -811,8 +993,11 @@
 </head>
 <body>
 
+    <!-- Mobile Drawer Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
+
     <!-- ---------------- Left Sidebar ---------------- -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="brand-badge">
                 <div class="brand-logo-icon">⚡</div>
@@ -820,7 +1005,7 @@
             </div>
         </div>
 
-        <button class="btn-new-chat" id="btnNewChat" onclick="createNewChatSession()">
+        <button class="btn-new-chat" id="btnNewChat" onclick="createNewChatSession(); closeMobileSidebar();">
             <span>+ New Chat</span>
             <span style="font-size: 11px; color: var(--text-subtle);">Ctrl+K</span>
         </button>
@@ -850,9 +1035,14 @@
     <main class="main-chat-viewport">
         <!-- Top Navbar -->
         <header class="top-navbar">
-            <div class="model-picker-pill">
-                <span>⚡ AURA 2.0 Autonomous</span>
-                <span style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
+            <div class="navbar-left">
+                <button class="btn-mobile-menu" id="btnMobileMenu" onclick="toggleMobileSidebar()" aria-label="Toggle Navigation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div class="model-picker-pill">
+                    <span>⚡ AURA 2.0 Autonomous</span>
+                    <span style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
+                </div>
             </div>
             <div class="mode-toggle-chip">
                 <span>●</span>
@@ -894,7 +1084,11 @@
 
         <!-- Floating Bottom Input Dock -->
         <div class="bottom-dock-wrapper">
-            <div class="input-dock-card">
+            <div class="input-dock-card" id="inputDockCard">
+                
+                <!-- Attached Files Chips Preview -->
+                <div class="attachment-chips-row" id="attachmentChips" style="display: none;"></div>
+
                 <textarea 
                     class="main-textarea" 
                     id="userPrompt" 
@@ -904,6 +1098,10 @@
                 
                 <div class="input-controls-row">
                     <div class="input-left-tools">
+                        <input type="file" id="filePicker" multiple style="display: none;" onchange="handleFileSelect(event)">
+                        <button class="btn-dock-icon" id="btnAttachFile" title="Attach files or images (drag-and-drop supported)" onclick="document.getElementById('filePicker').click()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
                         <button class="btn-dock-icon" title="Hardware Auto-Pilot Active" style="color: var(--accent-emerald);">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         </button>
@@ -965,6 +1163,7 @@
         let authToken = localStorage.getItem('aura_auth_token') || '';
         let currentThreadId = localStorage.getItem('aura_active_thread_id') || ('th_' + Date.now());
         let isSending = false;
+        let currentAttachments = [];
 
         // DOM elements
         const userPrompt = document.getElementById('userPrompt');
@@ -982,6 +1181,107 @@
         const authPassword = document.getElementById('authPassword');
         const userAvatar = document.getElementById('userAvatar');
         const userName = document.getElementById('userName');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const attachmentChips = document.getElementById('attachmentChips');
+        const filePicker = document.getElementById('filePicker');
+
+        // ---------------- Mobile Sidebar Drawer ----------------
+        function toggleMobileSidebar() {
+            sidebar.classList.toggle('mobile-open');
+            sidebarBackdrop.classList.toggle('mobile-open');
+        }
+
+        function closeMobileSidebar() {
+            sidebar.classList.remove('mobile-open');
+            sidebarBackdrop.classList.remove('mobile-open');
+        }
+
+        // ---------------- File Attachments & Drag-and-Drop ----------------
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                processFiles(files);
+            }
+            e.target.value = '';
+        }
+
+        function processFiles(files) {
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                const isImage = file.type.startsWith('image/');
+                reader.onload = (event) => {
+                    const dataUri = event.target.result;
+                    currentAttachments.push({
+                        name: file.name,
+                        size: file.size,
+                        mime_type: file.type || 'application/octet-stream',
+                        data: dataUri,
+                        is_image: isImage
+                    });
+                    renderAttachmentChips();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeAttachment(index) {
+            currentAttachments.splice(index, 1);
+            renderAttachmentChips();
+        }
+
+        function renderAttachmentChips() {
+            if (currentAttachments.length === 0) {
+                attachmentChips.style.display = 'none';
+                attachmentChips.innerHTML = '';
+                return;
+            }
+
+            attachmentChips.style.display = 'flex';
+            attachmentChips.innerHTML = '';
+            currentAttachments.forEach((att, idx) => {
+                const chip = document.createElement('div');
+                chip.className = 'attachment-chip';
+                const sizeKb = Math.round(att.size / 1024);
+                let visual = '';
+                if (att.is_image) {
+                    visual = `<img src="${att.data}" class="attachment-chip-thumb" alt="preview">`;
+                } else {
+                    visual = `<span class="attachment-chip-icon">📄</span>`;
+                }
+
+                chip.innerHTML = `
+                    ${visual}
+                    <div class="attachment-chip-info">
+                        <span class="attachment-chip-name" title="${escapeHtml(att.name)}">${escapeHtml(att.name)}</span>
+                        <span class="attachment-chip-size">${sizeKb} KB</span>
+                    </div>
+                    <button class="attachment-chip-del" onclick="removeAttachment(${idx})" title="Remove file">✕</button>
+                `;
+                attachmentChips.appendChild(chip);
+            });
+        }
+
+        // Drag & Drop Setup
+        ['dragenter', 'dragover'].forEach(name => {
+            chatContainer.addEventListener(name, (e) => {
+                e.preventDefault();
+                chatContainer.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            chatContainer.addEventListener(name, (e) => {
+                e.preventDefault();
+                chatContainer.classList.remove('drag-over');
+            });
+        });
+
+        chatContainer.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processFiles(e.dataTransfer.files);
+            }
+        });
 
         // ---------------- Authentication Handling ----------------
         function switchAuthTab(mode) {
@@ -1025,7 +1325,6 @@
                     authUsername.value = '';
                     authPassword.value = '';
 
-                    // Load user's threads
                     await loadThreads();
                     if (data.default_thread_id) {
                         selectThread(data.default_thread_id);
@@ -1111,7 +1410,7 @@
         userPrompt.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 200) + 'px';
-            btnSend.disabled = !this.value.trim();
+            btnSend.disabled = !this.value.trim() && currentAttachments.length === 0;
         });
 
         // Enter key to send (Shift+Enter for newline)
@@ -1149,9 +1448,11 @@
             renderThreadActiveState();
         }
 
+        // ---------------- Live Streaming Message Dispatcher ----------------
         async function sendMessage() {
             const text = userPrompt.value.trim();
-            if (!text || isSending) return;
+            const hasAttachments = currentAttachments.length > 0;
+            if ((!text && !hasAttachments) || isSending) return;
 
             if (!authToken) {
                 authOverlay.style.display = 'flex';
@@ -1161,24 +1462,28 @@
             isSending = true;
             btnSend.disabled = true;
 
-            // Hide welcome hero on first message
             if (welcomeHero) {
                 welcomeHero.style.display = 'none';
             }
 
+            // Copy attachments and clear current
+            const attachedToSend = [...currentAttachments];
+            currentAttachments = [];
+            renderAttachmentChips();
+
             // Append User Message to UI
-            appendUserMessage(text);
+            appendUserMessage(text, attachedToSend);
             userPrompt.value = '';
             userPrompt.style.height = 'auto';
             scrollChatToBottom();
 
-            // Show Thinking Indicator
-            const thinkingId = appendThinkingIndicator();
+            // Create Agent Message Turn with Thinking Indicator
+            const turnData = createAgentStreamingTurn();
             scrollChatToBottom();
 
             try {
-                // Send to AURA Chat API
-                const res = await fetch('/api/chat', {
+                // Connect to AURA Streaming SSE Endpoint
+                const res = await fetch('/api/chat/stream', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1188,29 +1493,77 @@
                         prompt: text,
                         thread_id: currentThreadId,
                         session_token: authToken,
+                        attachments: attachedToSend,
                         mode: 'auto_pilot'
                     })
                 });
 
-                removeThinkingIndicator(thinkingId);
-
                 if (res.status === 401) {
-                    appendAgentMessage('Your session has expired. Please sign in again.');
+                    turnData.bubble.innerHTML = 'Your session has expired. Please sign in again.';
                     authOverlay.style.display = 'flex';
                     return;
                 }
 
-                const data = await res.json();
-                if (res.ok) {
-                    appendAgentMessage(data.reply || 'Task completed.', data.tools || []);
-                    // Refresh sidebar threads list so new conversation title appears
-                    loadThreads();
+                // If SSE is supported and active
+                if (res.body && res.body.getReader) {
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let buffer = '';
+                    let accumulatedMarkdown = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop(); // keep remainder
+
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (trimmed.startsWith('data:')) {
+                                const jsonStr = trimmed.substring(5).trim();
+                                if (!jsonStr) continue;
+                                try {
+                                    const eventData = JSON.parse(jsonStr);
+                                    if (eventData.type === 'tool') {
+                                        // Append tool badge
+                                        const badge = document.createElement('div');
+                                        badge.className = 'tool-badge-pill';
+                                        badge.innerHTML = `⚙️ Executed ${escapeHtml(eventData.name || 'tool')}`;
+                                        turnData.toolsContainer.appendChild(badge);
+                                    } else if (eventData.type === 'token') {
+                                        turnData.thinking.style.display = 'none';
+                                        accumulatedMarkdown += eventData.delta;
+                                        turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown) + '<span class="streaming-cursor"></span>';
+                                        scrollChatToBottom();
+                                    } else if (eventData.type === 'done') {
+                                        turnData.thinking.style.display = 'none';
+                                        accumulatedMarkdown = eventData.reply || accumulatedMarkdown;
+                                        turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
+                                        loadThreads();
+                                    }
+                                } catch (e) {
+                                    console.error('SSE JSON parse error:', e);
+                                }
+                            }
+                        }
+                    }
+
+                    // Remove blinking cursor on completion
+                    turnData.thinking.style.display = 'none';
+                    if (accumulatedMarkdown) {
+                        turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
+                    }
                 } else {
-                    appendAgentMessage('Error executing task: ' + (data.reply || data.error || 'Server error.'));
+                    // Standard fallback
+                    const data = await res.json();
+                    turnData.thinking.style.display = 'none';
+                    turnData.bubble.innerHTML = renderMarkdown(data.reply || 'Completed.');
                 }
             } catch (err) {
-                removeThinkingIndicator(thinkingId);
-                appendAgentMessage('Connection Error: ' + err.message);
+                turnData.thinking.style.display = 'none';
+                turnData.bubble.innerHTML = '<span style="color: #fca5a5;">Connection Error: ' + escapeHtml(err.message) + '</span>';
             } finally {
                 isSending = false;
                 btnSend.disabled = false;
@@ -1219,60 +1572,66 @@
             }
         }
 
-        function appendUserMessage(text) {
+        function appendUserMessage(text, attachments = []) {
             const turn = document.createElement('div');
             turn.className = 'msg-turn user';
-            turn.innerHTML = `
-                <div class="msg-bubble-user">${escapeHtml(text)}</div>
-            `;
-            chatStream.appendChild(turn);
-        }
 
-        function appendAgentMessage(replyMarkdown, tools = []) {
-            const turn = document.createElement('div');
-            turn.className = 'msg-turn agent';
-
-            let toolsHtml = '';
-            if (tools && tools.length > 0) {
-                tools.forEach(t => {
-                    toolsHtml += `<div class="tool-badge-pill">⚙️ Executed ${escapeHtml(t.name || 'tool')}</div>`;
+            let attachmentsHtml = '';
+            if (attachments.length > 0) {
+                attachmentsHtml = '<div class="user-turn-attachments">';
+                attachments.forEach(att => {
+                    attachmentsHtml += `
+                        <div class="user-attached-pill">
+                            <span>${att.is_image ? '🖼️' : '📄'}</span>
+                            <span>${escapeHtml(att.name)}</span>
+                        </div>
+                    `;
                 });
+                attachmentsHtml += '</div>';
             }
 
             turn.innerHTML = `
-                <div class="msg-header">
-                    <span style="color: var(--accent-primary);">⚡ AURA Core</span>
-                </div>
-                ${toolsHtml}
-                <div class="msg-bubble-agent">${renderMarkdown(replyMarkdown)}</div>
+                ${attachmentsHtml}
+                ${text ? `<div class="msg-bubble-user">${escapeHtml(text)}</div>` : ''}
             `;
             chatStream.appendChild(turn);
         }
 
-        function appendThinkingIndicator() {
-            const id = 'think_' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'thinking-indicator';
-            div.innerHTML = `
+        function createAgentStreamingTurn() {
+            const turn = document.createElement('div');
+            turn.className = 'msg-turn agent';
+
+            const header = document.createElement('div');
+            header.className = 'msg-header';
+            header.innerHTML = '<span style="color: var(--accent-primary);">⚡ AURA Core</span>';
+            turn.appendChild(header);
+
+            const toolsContainer = document.createElement('div');
+            turn.appendChild(toolsContainer);
+
+            const thinking = document.createElement('div');
+            thinking.className = 'thinking-indicator';
+            thinking.innerHTML = `
                 <span>AURA is thinking</span>
                 <span class="dot-pulse"></span>
                 <span class="dot-pulse"></span>
                 <span class="dot-pulse"></span>
             `;
-            chatStream.appendChild(div);
-            return id;
-        }
+            turn.appendChild(thinking);
 
-        function removeThinkingIndicator(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble-agent';
+            turn.appendChild(bubble);
+
+            chatStream.appendChild(turn);
+
+            return { turn, toolsContainer, thinking, bubble };
         }
 
         function scrollChatToBottom() {
             setTimeout(() => {
                 chatContainer.scrollTop = chatContainer.scrollHeight;
-            }, 50);
+            }, 30);
         }
 
         // ---------------- Sidebar Threads Management ----------------
@@ -1304,6 +1663,7 @@
                 item.onclick = (e) => {
                     if (e.target.classList.contains('thread-del-btn')) return;
                     selectThread(t.id);
+                    closeMobileSidebar();
                 };
 
                 item.innerHTML = `
@@ -1362,7 +1722,21 @@
                         } else {
                             let tools = [];
                             try { tools = m.tools_used ? JSON.parse(m.tools_used) : (m.tools || []); } catch(e){}
-                            appendAgentMessage(m.content, tools);
+                            
+                            const turn = document.createElement('div');
+                            turn.className = 'msg-turn agent';
+                            let toolsHtml = '';
+                            if (tools.length > 0) {
+                                tools.forEach(t => {
+                                    toolsHtml += `<div class="tool-badge-pill">⚙️ Executed ${escapeHtml(t.name || 'tool')}</div>`;
+                                });
+                            }
+                            turn.innerHTML = `
+                                <div class="msg-header"><span style="color: var(--accent-primary);">⚡ AURA Core</span></div>
+                                ${toolsHtml}
+                                <div class="msg-bubble-agent">${renderMarkdown(m.content)}</div>
+                            `;
+                            chatStream.appendChild(turn);
                         }
                     });
                     scrollChatToBottom();

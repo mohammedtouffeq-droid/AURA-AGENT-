@@ -430,8 +430,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
 
             print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Mode: {permission_mode}, Attachments: {len(attachments)})")
-            reply = BRAIN.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved)
-            tools_used = getattr(BRAIN, "last_tools", [])
+            brain = AuraBrain()
+            reply = brain.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved)
+            tools_used = getattr(brain, "last_tools", [])
 
             # Save assistant response
             aura_db.save_message(user_id, thread_id, "assistant", reply, tools_used)
@@ -441,6 +442,73 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "tools": tools_used,
                 "status": "completed"
             })
+
+        # 3B. STREAMING CHAT DISPATCH (SSE)
+        elif path == "/api/chat/stream":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"reply": "Session expired or not logged in.", "error": "unauthorized"}, status=401)
+                return
+            user_id = user["id"]
+            prompt = body.get("prompt", "").strip()
+            thread_id = body.get("thread_id", "default")
+            attachments = body.get("attachments", [])
+            permission_mode = body.get("mode", "auto_pilot")
+            approved = body.get("approved", False)
+
+            if not prompt and not attachments:
+                self._send_json({"error": "Prompt or attachments required"}, status=400)
+                return
+
+            display_prompt = prompt
+            if attachments:
+                att_names = [a.get("name", "attachment") for a in attachments]
+                display_prompt += f"\n[📎 {len(attachments)} Attachment(s): {', '.join(att_names)}]"
+
+            aura_db.save_message(user_id, thread_id, "user", display_prompt)
+
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+
+            brain = AuraBrain()
+            accumulated_text = ""
+            tools_used = []
+
+            try:
+                for chunk in brain.think_and_act_stream(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved):
+                    chunk_type = chunk.get("type")
+                    if chunk_type == "token":
+                        accumulated_text += chunk.get("delta", "")
+                        payload = json.dumps({"type": "token", "delta": chunk.get("delta", "")})
+                        self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                        self.wfile.flush()
+                    elif chunk_type == "tool":
+                        tools_used.append({"name": chunk.get("name")})
+                        payload = json.dumps({"type": "tool", "name": chunk.get("name")})
+                        self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                        self.wfile.flush()
+                    elif chunk_type == "done":
+                        if not accumulated_text:
+                            accumulated_text = chunk.get("reply", "")
+                        payload = json.dumps({"type": "done", "reply": accumulated_text, "tools": tools_used})
+                        self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                        self.wfile.flush()
+
+                aura_db.save_message(user_id, thread_id, "assistant", accumulated_text, tools_used)
+            except Exception as e:
+                err_payload = json.dumps({"type": "error", "error": str(e)})
+                try:
+                    self.wfile.write(f"data: {err_payload}\n\n".encode("utf-8"))
+                    self.wfile.flush()
+                except Exception:
+                    pass
+            finally:
+                self.close_connection = True
+            return
 
         # 4. MEMORY ROUTES
         elif path == "/api/memory/add":

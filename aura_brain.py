@@ -2473,6 +2473,29 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         return "Task execution finished with all tool steps resolved."
 
+    def think_and_act_stream(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15):
+        """Streaming generator yielding dicts:
+           {'type': 'tool', 'name': str}
+           {'type': 'token', 'delta': str}
+           {'type': 'done', 'reply': str, 'tools': list}
+        """
+        full_reply = self.think_and_act(user_prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, max_turns=max_turns)
+        
+        for t in self.last_tools:
+            yield {"type": "tool", "name": t.get("name", "tool")}
+
+        lines = full_reply.split("\n")
+        for line_idx, line in enumerate(lines):
+            words = line.split(" ")
+            for w_idx, w in enumerate(words):
+                token = w + (" " if w_idx < len(words) - 1 else "")
+                yield {"type": "token", "delta": token}
+            if line_idx < len(lines) - 1:
+                yield {"type": "token", "delta": "\n"}
+
+        yield {"type": "done", "reply": full_reply, "tools": self.last_tools}
+
+
 
 if __name__ == "__main__":
     brain = AuraBrain()
