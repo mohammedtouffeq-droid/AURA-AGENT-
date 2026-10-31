@@ -71,7 +71,7 @@ BANNED_SHELL_PATTERNS = [
 ]
 
 def validate_safe_path(filepath: str, allow_create: bool = False) -> Path:
-    """Ensures file operations cannot escape into protected Windows system directories."""
+    """Ensures file operations cannot escape into protected Windows system directories or outside authorized workspace roots."""
     resolved = Path(filepath).resolve()
     for forbidden in STRICTLY_FORBIDDEN_PATHS:
         try:
@@ -79,19 +79,20 @@ def validate_safe_path(filepath: str, allow_create: bool = False) -> Path:
             raise PermissionError(f"Security Sandbox: Target directory '{forbidden}' is strictly protected.")
         except ValueError:
             pass
-    # Verify path doesn't contain forbidden traversal tricks
-    parts = Path(filepath).parts
-    if ".." in parts:
-        is_safe = False
-        for root in SAFE_WORKSPACE_ROOTS:
-            try:
-                resolved.relative_to(root)
-                is_safe = True
-                break
-            except ValueError:
-                pass
-        if not is_safe:
-            raise PermissionError(f"Security Sandbox: Path traversal outside authorized workspaces is blocked.")
+
+    # Strict workspace boundary enforcement: all paths must reside within approved roots
+    is_safe = False
+    for root in SAFE_WORKSPACE_ROOTS:
+        try:
+            resolved.relative_to(root)
+            is_safe = True
+            break
+        except ValueError:
+            pass
+
+    if not is_safe:
+        raise PermissionError(f"Security Sandbox: Path traversal outside authorized workspaces is blocked: '{resolved}'")
+
     return resolved
 
 def is_safe_command(command: str) -> tuple[bool, str]:

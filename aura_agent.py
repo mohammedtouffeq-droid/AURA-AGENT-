@@ -149,16 +149,19 @@ class UniversalEngineBridge:
         self.is_mounted = self.repo_path.exists()
 
     def get_status(self) -> Dict[str, Any]:
+        mounted = self.repo_path.exists() and self.repo_path.is_dir()
+        actual_files = len(list(self.repo_path.glob("*"))) if mounted else 0
+        is_live = mounted and (actual_files > 0)
         return {
             "key": self.key,
             "name": self.display_name,
             "category": self.category,
-            "mounted": self.is_mounted,
-            "awakened": True,
-            "status": "AWAKENED_AND_LIVE",
-            "alive": True,
+            "mounted": mounted,
+            "awakened": is_live,
+            "status": "AWAKENED_AND_LIVE" if is_live else "NOT_MOUNTED",
+            "alive": is_live,
             "path": str(self.repo_path),
-            "files_available": self.file_count if self.is_mounted else 0,
+            "files_available": actual_files if is_live else 0,
             "description": self.description
         }
 

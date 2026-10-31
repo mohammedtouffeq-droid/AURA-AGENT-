@@ -30,7 +30,7 @@ from aura_settings import AuraSettingsManager
 
 BRAIN = AuraBrain()
 SETTINGS = AuraSettingsManager()
-HOST = os.environ.get("AURA_HOST", "0.0.0.0")
+HOST = os.environ.get("AURA_HOST", "127.0.0.1")
 PORT = int(os.environ.get("AURA_PORT", 5050))
 
 
@@ -80,6 +80,16 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             return None
         return aura_db.authenticate_token(token)
 
+    def _is_authorized_admin(self, body: Optional[Dict[str, Any]] = None) -> bool:
+        user = self._get_auth_user(body)
+        if user:
+            return True
+        client_ip = self.client_address[0]
+        # Restrict unauthenticated execution strictly to local loopback dev mode
+        if client_ip in ("127.0.0.1", "::1", "localhost") and os.environ.get("AURA_ALLOW_LOCAL_DEV_TERMINAL", "1") == "1":
+            return True
+        return False
+
     def do_GET(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
@@ -127,8 +137,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/memory":
             user = self._get_auth_user()
-            user_id = user["id"] if user else 1
-            memories = aura_db.get_user_memories(user_id)
+            if not user:
+                self._send_json({"success": True, "memories": [], "authenticated": False})
+                return
+            memories = aura_db.get_user_memories(user["id"])
             self._send_json({"success": True, "memories": memories})
 
         elif path == "/api/settings":
@@ -140,8 +152,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/projects":
             user = self._get_auth_user()
-            user_id = user["id"] if user else 1
-            projects = aura_db.get_user_projects(user_id)
+            if not user:
+                self._send_json({"success": True, "projects": [], "authenticated": False})
+                return
+            projects = aura_db.get_user_projects(user["id"])
             self._send_json({"success": True, "projects": projects})
 
         elif path == "/api/system/test_browser":
@@ -331,6 +345,19 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             status = 200 if res.get("success") else 401
             self._send_json(res, status=status)
 
+        elif path == "/api/auth/logout":
+            token = ""
+            auth_header = self.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header[7:].strip()
+            if not token:
+                token = self.headers.get("X-Auth-Token", "").strip()
+            if not token and body and isinstance(body, dict):
+                token = body.get("token", "")
+            if token:
+                aura_db.revoke_session(token)
+            self._send_json({"success": True, "message": "Session terminated successfully"})
+
         # 2. THREADS ROUTES
         elif path == "/api/threads/new":
             user = self._get_auth_user(body)
@@ -344,8 +371,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "thread": thread})
 
         elif path == "/api/threads/rename":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             thread_id = body.get("thread_id", "")
             new_title = body.get("title", "").strip()
             if not thread_id or not new_title:
@@ -355,24 +385,33 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": ok})
 
         elif path == "/api/threads/pin":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             thread_id = body.get("thread_id", "")
             is_pinned = body.get("is_pinned", False)
             ok = aura_db.pin_user_thread(user_id, thread_id, is_pinned)
             self._send_json({"success": ok})
 
         elif path == "/api/threads/delete":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             thread_id = body.get("thread_id", "")
             ok = aura_db.delete_user_thread(user_id, thread_id)
             self._send_json({"success": ok})
 
         # 2B. CODING PROJECTS ROUTES
         elif path == "/api/projects/new":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             name = body.get("name", "New Project")
             company = body.get("company", "")
             stack = body.get("stack", "Python")
@@ -382,24 +421,33 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "project": proj})
 
         elif path == "/api/projects/pin":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             proj_id = body.get("project_id", "")
             is_pinned = body.get("is_pinned", False)
             ok = aura_db.pin_user_project(user_id, proj_id, is_pinned)
             self._send_json({"success": ok})
 
         elif path == "/api/projects/rename":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             proj_id = body.get("project_id", "")
             new_name = body.get("name", "").strip()
             ok = aura_db.rename_user_project(user_id, proj_id, new_name)
             self._send_json({"success": ok})
 
         elif path == "/api/projects/delete":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             proj_id = body.get("project_id", "")
             ok = aura_db.delete_user_project(user_id, proj_id)
             self._send_json({"success": ok})
@@ -512,8 +560,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         # 4. MEMORY ROUTES
         elif path == "/api/memory/add":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             key = body.get("key", "").strip()
             val = body.get("value", "").strip()
             if not key or not val:
@@ -523,8 +574,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": ok, "key": key, "value": val})
 
         elif path == "/api/memory/delete":
-            user = self._get_auth_user()
-            user_id = user["id"] if user else 1
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_id = user["id"]
             key = body.get("key", "").strip()
             ok = aura_db.delete_user_memory(user_id, key)
             self._send_json({"success": ok, "deleted": key})
@@ -561,25 +615,33 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Save path outside workspace is forbidden"}, status=403)
 
         elif path == "/api/terminal/exec":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for terminal execution"}, status=401)
+                return
             cmd = body.get("command", "")
             ws = ROOT / "workspace"
             ws.mkdir(parents=True, exist_ok=True)
             if not cmd:
                 self._send_json({"success": False, "error": "Command is required"}, status=400)
-            else:
-                import subprocess
-                try:
-                    proc = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
-                                          cwd=str(ws), capture_output=True, text=True, timeout=30)
-                    self._send_json({
-                        "success": True,
-                        "command": cmd,
-                        "exit_code": proc.returncode,
-                        "stdout": proc.stdout,
-                        "stderr": proc.stderr
-                    })
-                except Exception as e:
-                    self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
+                return
+            from aura_brain import is_safe_command
+            is_safe, reason = is_safe_command(cmd)
+            if not is_safe:
+                self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}", "exit_code": 1}, status=403)
+                return
+            import subprocess
+            try:
+                proc = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+                                      cwd=str(ws), capture_output=True, text=True, timeout=30)
+                self._send_json({
+                    "success": True,
+                    "command": cmd,
+                    "exit_code": proc.returncode,
+                    "stdout": proc.stdout,
+                    "stderr": proc.stderr
+                })
+            except Exception as e:
+                self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
 
         elif path == "/api/game/world/generate":
             theme = body.get("theme", "gta_city")
@@ -733,26 +795,55 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": ok, "mode": mode})
 
         elif path == "/api/os/execute":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for OS execution"}, status=401)
+                return
             cmd = body.get("command", "")
+            from aura_brain import is_safe_command
+            is_safe, reason = is_safe_command(cmd)
+            if not is_safe:
+                self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}"}, status=403)
+                return
             as_admin = body.get("as_admin", False)
             from aura_os_controller import laptop_controller
             res = laptop_controller.execute_powershell(cmd, as_admin=as_admin)
             self._send_json(res)
 
         elif path == "/api/os/read_file":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for file read"}, status=401)
+                return
             filepath = body.get("path", "")
+            from aura_brain import validate_safe_path
+            try:
+                validated_p = validate_safe_path(filepath)
+            except PermissionError as pe:
+                self._send_json({"success": False, "error": str(pe)}, status=403)
+                return
             from aura_os_controller import laptop_controller
-            res = laptop_controller.read_file(filepath)
+            res = laptop_controller.read_file(str(validated_p))
             self._send_json(res)
 
         elif path == "/api/os/write_file":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for file write"}, status=401)
+                return
             filepath = body.get("path", "")
+            from aura_brain import validate_safe_path
+            try:
+                validated_p = validate_safe_path(filepath, allow_create=True)
+            except PermissionError as pe:
+                self._send_json({"success": False, "error": str(pe)}, status=403)
+                return
             file_content = body.get("content", "")
             from aura_os_controller import laptop_controller
-            res = laptop_controller.write_file(filepath, file_content)
+            res = laptop_controller.write_file(str(validated_p), file_content)
             self._send_json(res)
 
         elif path == "/api/os/screenshot":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for screen capture"}, status=401)
+                return
             from aura_os_controller import laptop_controller
             res = laptop_controller.capture_screenshot()
             self._send_json(res)

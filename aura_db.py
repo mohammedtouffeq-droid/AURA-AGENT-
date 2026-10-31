@@ -12,6 +12,8 @@ Author: AURA Technologies Inc.
 """
 
 import os
+import datetime
+import time
 import sqlite3
 import hashlib
 import secrets
@@ -34,6 +36,38 @@ def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
     hashed = hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
     return hashed, salt
 
+
+
+_LOGIN_FAILURES: Dict[str, List[float]] = {}
+MAX_LOGIN_FAILURES = 5
+LOCKOUT_WINDOW_SECONDS = 300  # 5 minutes lockout
+
+def check_login_rate_limit(username: str) -> Tuple[bool, int]:
+    now = time.time()
+    attempts = [t for t in _LOGIN_FAILURES.get(username, []) if now - t < LOCKOUT_WINDOW_SECONDS]
+    _LOGIN_FAILURES[username] = attempts
+    if len(attempts) >= MAX_LOGIN_FAILURES:
+        wait_seconds = int(LOCKOUT_WINDOW_SECONDS - (now - attempts[0]))
+        return False, max(1, wait_seconds)
+    return True, 0
+
+def record_login_failure(username: str):
+    now = time.time()
+    if username not in _LOGIN_FAILURES:
+        _LOGIN_FAILURES[username] = []
+    _LOGIN_FAILURES[username].append(now)
+
+def clear_login_failures(username: str):
+    _LOGIN_FAILURES.pop(username, None)
+
+def validate_password_strength(password: str) -> Tuple[bool, str]:
+    if len(password) < 6:
+        return False, "Password must be at least 6 characters long."
+    has_letter = any(c.isalpha() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    if not (has_letter and has_digit):
+        return False, "Password must contain both letters and numbers."
+    return True, ""
 
 def init_database():
     conn = get_connection()
@@ -58,6 +92,7 @@ def init_database():
             token TEXT PRIMARY KEY,
             user_id INTEGER NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     """)
@@ -120,6 +155,16 @@ def init_database():
         )
     """)
 
+
+    # Schema migration: ensure expires_at exists in auth_sessions
+    c.execute("PRAGMA table_info(auth_sessions)")
+    existing_cols = [row[1] for row in c.fetchall()]
+    if "expires_at" not in existing_cols:
+        try:
+            c.execute("ALTER TABLE auth_sessions ADD COLUMN expires_at DATETIME")
+        except Exception:
+            pass
+
     conn.commit()
     conn.close()
 
@@ -135,8 +180,9 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
     username = username.strip().lower()
     if len(username) < 3:
         return {"success": False, "error": "Username must be at least 3 characters."}
-    if len(password) < 4:
-        return {"success": False, "error": "Password must be at least 4 characters."}
+    valid_pass, pass_err = validate_password_strength(password)
+    if not valid_pass:
+        return {"success": False, "error": pass_err}
 
     hashed, salt = hash_password(password)
     display_name = username.capitalize()
@@ -150,9 +196,10 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
         """, (username, hashed, salt, display_name, json.dumps({})))
         user_id = c.lastrowid
 
-        # Generate session token
+        # Generate session token with 30-day expiration
         token = secrets.token_hex(24)
-        c.execute("INSERT INTO auth_sessions (token, user_id) VALUES (?, ?)", (token, user_id))
+        expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+        c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
 
         # Create default initial thread
         default_thread_id = f"th_{secrets.token_hex(8)}"
@@ -182,22 +229,31 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
 
 def login_user(username: str, password: str) -> Dict[str, Any]:
     username = username.strip().lower()
+    allowed, wait_sec = check_login_rate_limit(username)
+    if not allowed:
+        return {"success": False, "error": f"Too many failed login attempts. Please wait {wait_sec} seconds before trying again."}
+
     conn = get_connection()
     c = conn.cursor()
     c.execute("SELECT id, username, password_hash, salt, display_name, settings_json FROM users WHERE username = ?", (username,))
     row = c.fetchone()
     if not row:
         conn.close()
+        record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
 
     user_id = row["id"]
     hashed, _ = hash_password(password, row["salt"])
     if hashed != row["password_hash"]:
         conn.close()
+        record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
 
+    # Successful authentication
+    clear_login_failures(username)
     token = secrets.token_hex(24)
-    c.execute("INSERT INTO auth_sessions (token, user_id) VALUES (?, ?)", (token, user_id))
+    expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+    c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
     conn.commit()
     conn.close()
 
@@ -218,21 +274,51 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
-        SELECT u.id, u.username, u.display_name, u.settings_json
+        SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at
         FROM auth_sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.token = ?
     """, (token,))
     row = c.fetchone()
-    conn.close()
     if not row:
+        conn.close()
         return None
+
+    # Enforce session expiration check
+    expires_at_str = row["expires_at"]
+    if expires_at_str:
+        try:
+            exp = datetime.datetime.fromisoformat(expires_at_str)
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=datetime.timezone.utc)
+            if exp < now:
+                c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+                conn.commit()
+                conn.close()
+                return None
+        except Exception:
+            pass
+
+    conn.close()
     return {
         "id": row["id"],
         "username": row["username"],
         "display_name": row["display_name"] or row["username"].capitalize(),
         "settings": json.loads(row["settings_json"] or "{}")
     }
+
+
+def revoke_session(token: str) -> bool:
+    if not token:
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+    affected = c.rowcount > 0
+    conn.commit()
+    conn.close()
+    return affected
 
 
 # ===================================================================================

@@ -144,8 +144,8 @@ class AuraMasterPipeline:
         try:
             from aura_os_controller import laptop_controller
             system_snapshot = laptop_controller.get_system_telemetry()
-        except Exception:
-            system_snapshot = {"status": "ONLINE", "ram_total_gb": 16.0}
+        except Exception as telem_err:
+            system_snapshot = {"status": "UNAVAILABLE", "telemetry_live": False, "ram_total_gb": 0.0, "error": str(telem_err)}
 
         run_record["system_snapshot"] = system_snapshot
         self._log_stage(run_record, PipelineStage.ENGINE_DISPATCH, "Dispatching tasks across piped engines")
@@ -247,6 +247,18 @@ class AuraMasterPipeline:
             isinstance(v, dict) and (v.get("success") is False or "error" in v)
             for v in engine_outputs.values()
         )
+        # Fail-closed artifact verification: confirm all declared artifacts exist on disk and are not 0 bytes
+        for artifact in run_record.get("artifacts", []):
+            art_path = artifact.get("path")
+            if art_path:
+                p = Path(art_path)
+                if not p.exists() or p.stat().st_size == 0:
+                    artifact["verified"] = False
+                    artifact["error"] = "Artifact file missing or zero bytes on disk"
+                    has_errors = True
+                else:
+                    artifact["verified"] = True
+                    artifact["size_bytes"] = p.stat().st_size
         
         # -------------------------------------------------------------
         # STAGE 5: SYNTHESIS & PACKAGING
