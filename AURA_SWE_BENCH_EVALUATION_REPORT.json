@@ -1,0 +1,61 @@
+{
+  "benchmark_suite": "AURA-SWE-bench-Reproducible-Evaluation-v1.0",
+  "total_tasks_evaluated": 5,
+  "tasks_resolved": 5,
+  "resolve_rate_percentage": 100.0,
+  "total_latency_seconds": 2.046,
+  "average_task_latency_sec": 0.409,
+  "reproducible_evidence": "Verifiable Python subprocess test results on disk",
+  "task_results": [
+    {
+      "instance_id": "AURA-SWE-001",
+      "title": "Fix off-by-one pagination limit calculation",
+      "pre_patch_test_failed": true,
+      "patch_applied": true,
+      "post_patch_test_passed": true,
+      "resolved": true,
+      "patch_latency_sec": 0.0,
+      "test_output": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK"
+    },
+    {
+      "instance_id": "AURA-SWE-002",
+      "title": "Prevent division by zero in throughput calculation",
+      "pre_patch_test_failed": true,
+      "patch_applied": true,
+      "post_patch_test_passed": true,
+      "resolved": true,
+      "patch_latency_sec": 0.0,
+      "test_output": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.000s\n\nOK"
+    },
+    {
+      "instance_id": "AURA-SWE-003",
+      "title": "Fix path traversal sanitize function",
+      "pre_patch_test_failed": true,
+      "patch_applied": true,
+      "post_patch_test_passed": true,
+      "resolved": true,
+      "patch_latency_sec": 0.0,
+      "test_output": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.003s\n\nOK"
+    },
+    {
+      "instance_id": "AURA-SWE-004",
+      "title": "Deduplicate tags while preserving insertion order",
+      "pre_patch_test_failed": true,
+      "patch_applied": true,
+      "post_patch_test_passed": true,
+      "resolved": true,
+      "patch_latency_sec": 0.0,
+      "test_output": ".\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK"
+    },
+    {
+      "instance_id": "AURA-SWE-005",
+      "title": "Validate token bearer header format",
+      "pre_patch_test_failed": true,
+      "patch_applied": true,
+      "post_patch_test_passed": true,
+      "resolved": true,
+      "patch_latency_sec": 0.0,
+      "test_output": "...\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK"
+    }
+  ]
+}
