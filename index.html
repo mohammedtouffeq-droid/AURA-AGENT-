@@ -989,6 +989,48 @@
             margin-top: 18px;
             letter-spacing: 0.2px;
         }
+
+        /* Generated Image Cards & Media */
+        .chat-image-card {
+            margin: 12px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            background: #141720;
+            max-width: 520px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.45);
+        }
+        .chat-generated-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .chat-generated-image:hover {
+            transform: scale(1.015);
+        }
+        .chat-image-caption {
+            padding: 8px 14px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-subtle);
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-dock-icon.mic-active {
+            color: #ef4444 !important;
+            background: rgba(239, 68, 68, 0.2) !important;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            animation: micPulse 1.2s infinite ease-in-out;
+        }
+        @keyframes micPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            50% { transform: scale(1.1); box-shadow: 0 0 12px 4px rgba(239, 68, 68, 0.3); }
+        }
     </style>
 </head>
 <body>
@@ -997,7 +1039,8 @@
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
 
     <!-- ---------------- Left Sidebar ---------------- -->
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar">
+
         <div class="sidebar-section-switcher" style="display:none;" aria-hidden="true"></div>
         <div class="sidebar-header">
             <div class="brand-badge">
@@ -1102,6 +1145,13 @@
                         <input type="file" id="filePicker" multiple style="display: none;" onchange="handleFileSelect(event)">
                         <button class="btn-dock-icon" id="btnAttachFile" title="Attach files or images (drag-and-drop supported)" onclick="document.getElementById('filePicker').click()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
+                        <button class="btn-dock-icon" id="btnVoiceInput" title="Voice to Text: Speak your prompt" onclick="toggleVoiceInput(event)">
+                            <svg id="micIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                <line x1="12" y1="19" x2="12" y2="22"/>
+                            </svg>
                         </button>
                         <button class="btn-dock-icon" title="Hardware Auto-Pilot Active" style="color: var(--accent-emerald);">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -1262,6 +1312,96 @@
                 attachmentChips.appendChild(chip);
             });
         }
+
+
+        // ---------------- Speech Recognition (Voice-to-Text) ----------------
+        let recognition = null;
+        let isListening = false;
+
+        function initSpeechRecognition() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                alert("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+                return null;
+            }
+            const rec = new SpeechRec();
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.lang = 'en-US';
+
+            rec.onstart = () => {
+                isListening = true;
+                const btn = document.getElementById('btnVoiceInput');
+                if (btn) {
+                    btn.classList.add('mic-active');
+                    btn.title = "Listening... Click to stop";
+                }
+                userPrompt.placeholder = "🎙️ Listening... Speak your prompt now...";
+            };
+
+            rec.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                if (transcript) {
+                    userPrompt.value = transcript;
+                    userPrompt.style.height = 'auto';
+                    userPrompt.style.height = Math.min(userPrompt.scrollHeight, 200) + 'px';
+                    btnSend.disabled = false;
+                }
+            };
+
+            rec.onerror = (e) => {
+                console.warn("Speech recognition error:", e.error);
+                stopVoiceInput();
+            };
+
+            rec.onend = () => {
+                stopVoiceInput();
+            };
+
+            return rec;
+        }
+
+        function toggleVoiceInput(e) {
+            if (e) e.preventDefault();
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+                if (!recognition) return;
+            }
+            if (isListening) {
+                recognition.stop();
+                stopVoiceInput();
+            } else {
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.error("Could not start speech recognition:", err);
+                }
+            }
+        }
+
+        function stopVoiceInput() {
+            isListening = false;
+            const btn = document.getElementById('btnVoiceInput');
+            if (btn) {
+                btn.classList.remove('mic-active');
+                btn.title = "Voice to Text: Speak your prompt";
+            }
+            if (userPrompt) {
+                userPrompt.placeholder = "Message AURA (Press Enter to send, Shift+Enter for new line)...";
+            }
+        }
+
+        // Global Window Drag & Drop Safety
+        window.addEventListener('dragover', (e) => { e.preventDefault(); });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processFiles(e.dataTransfer.files);
+            }
+        });
 
         // Drag & Drop Setup
         ['dragenter', 'dragover'].forEach(name => {
@@ -1799,7 +1939,20 @@
             // Wrap bullet lists
             html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
-            // Markdown Links
+            // Markdown Images: ![alt](url)
+            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+                return `
+                    <div class="chat-image-card">
+                        <img src="${src}" alt="${escapeHtml(alt)}" class="chat-generated-image" loading="lazy" onclick="window.open('${src}', '_blank')">
+                        <div class="chat-image-caption">
+                            <span>✨ ${escapeHtml(alt || 'Generated Media')}</span>
+                            <span style="font-size:11px; opacity:0.7;">(Click to view full size)</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Markdown Links: [text](url)
             html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
             // Paragraphs / line breaks

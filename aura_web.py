@@ -115,6 +115,38 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"authenticated": True, "user": user})
 
+        elif path.startswith("/media/"):
+            # Serve generated media securely from workspace
+            media_rel = path[7:] # strip "/media/"
+            ws = ROOT / "workspace"
+            target_file = (ws / media_rel).resolve()
+            if str(target_file).startswith(str(ws)) and target_file.exists() and target_file.is_file():
+                ext = target_file.suffix.lower()
+                mime_map = {
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                    ".gif": "image/gif",
+                    ".mp4": "video/mp4",
+                    ".webm": "video/webm",
+                    ".svg": "image/svg+xml"
+                }
+                content_type = mime_map.get(ext, "application/octet-stream")
+                data = target_file.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            else:
+                self.send_error(404, "Media file not found")
+                return
+
         elif path == "/api/threads":
             user = self._get_auth_user()
             if not user:
@@ -477,9 +509,18 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
 
-            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Mode: {permission_mode}, Attachments: {len(attachments)})")
+            # Retrieve prior thread messages for multi-turn conversational memory
+            prior_messages = aura_db.get_thread_messages(user_id, thread_id)
+            conv_history = []
+            for m in prior_messages[:-1]:
+                role = "user" if m.get("role") == "user" else "model"
+                txt = m.get("content", "")
+                if txt:
+                    conv_history.append({"role": role, "parts": [{"text": txt}]})
+
+            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Mode: {permission_mode}, Attachments: {len(attachments)}, History: {len(conv_history)})")
             brain = AuraBrain()
-            reply = brain.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved)
+            reply = brain.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, conversation_history=conv_history)
             tools_used = getattr(brain, "last_tools", [])
 
             # Save assistant response
@@ -515,6 +556,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
 
+            # Retrieve prior thread messages for multi-turn conversational memory
+            prior_messages = aura_db.get_thread_messages(user_id, thread_id)
+            conv_history = []
+            for m in prior_messages[:-1]:
+                role = "user" if m.get("role") == "user" else "model"
+                txt = m.get("content", "")
+                if txt:
+                    conv_history.append({"role": role, "parts": [{"text": txt}]})
+
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
@@ -527,7 +577,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             tools_used = []
 
             try:
-                for chunk in brain.think_and_act_stream(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved):
+                for chunk in brain.think_and_act_stream(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, conversation_history=conv_history):
                     chunk_type = chunk.get("type")
                     if chunk_type == "token":
                         accumulated_text += chunk.get("delta", "")

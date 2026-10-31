@@ -2057,12 +2057,13 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
-        elif "generate image" in lower_q or "draw" in lower_q or "create image" in lower_q or "make image" in lower_q or "image bana" in lower_q:
+        elif any(k in lower_q for k in ["generate image", "make a image", "make an image", "make image", "create image", "draw", "paint", "image of", "picture of", "photo of", "image bana", "sketch"]):
+            clean_sub = re.sub(r"^(make|generate|draw|create|show|give me)\s+(an?\s+)?(image|picture|photo|illustration|drawing|art)\s+(of\s+)?", "", user_text.strip(), flags=re.I).strip()
             return {
                 "candidates": [{
                     "content": {
                         "role": "model",
-                        "parts": [{"functionCall": {"name": "tool_generate_image", "args": {"prompt": user_text.strip()}}}]
+                        "parts": [{"functionCall": {"name": "tool_generate_image", "args": {"prompt": clean_sub or user_text.strip()}}}]
                     }
                 }]
             }
@@ -2325,6 +2326,30 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 }]
             }
 
+    def _embed_generated_media(self, reply: str) -> str:
+        """Inspects last executed tools and auto-embeds markdown images/videos if missing."""
+        for t in self.last_tools:
+            tool_name = t.get("name", "")
+            out = t.get("output", {})
+            if isinstance(out, dict):
+                if tool_name in ["tool_generate_image", "tool_transform_image"]:
+                    web_url = out.get("web_url")
+                    if not web_url and out.get("file_path"):
+                        web_url = f"/media/generated_images/{Path(out['file_path']).name}"
+                    if not web_url and out.get("image_url"):
+                        web_url = out.get("image_url")
+                    if web_url and web_url not in reply and Path(web_url).name not in reply:
+                        prompt_label = t.get("args", {}).get("prompt", "Generated Artwork")
+                        reply += f"\n\n![{prompt_label}]({web_url})\n\n*(Click image to view high-resolution render)*"
+                elif tool_name == "tool_generate_video":
+                    vpath = out.get("video_path") or out.get("mp4_path") or out.get("video_player_path")
+                    if vpath:
+                        fname = Path(vpath).name
+                        web_url = f"/media/generated_videos/{fname}"
+                        if web_url not in reply and fname not in reply:
+                            reply += f"\n\n<video controls src='{web_url}' style='max-width:100%; border-radius:12px; margin-top:8px;'></video>\n"
+        return reply
+
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         if not self.api_key or self.api_key.startswith("YOUR_"):
             return self._offline_autonomous_dispatch(contents, tools)
@@ -2361,7 +2386,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         return self._offline_autonomous_dispatch(contents, tools)
 
-    def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15) -> str:
+    def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15, conversation_history: Optional[List[Dict[str, Any]]] = None) -> str:
         """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response with full Multimodal support."""
         self.last_tools = []
         user_parts = [{"text": user_prompt}] if user_prompt else []
@@ -2391,6 +2416,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
         if not user_parts:
             user_parts = [{"text": "Analyze the attached input."}]
 
+        # Preload prior turns for continuous conversational memory
+        self.history = list(conversation_history) if conversation_history else []
         self.history.append({"role": "user", "parts": user_parts})
 
         for turn in range(max_turns):
@@ -2411,6 +2438,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 reply_texts = [p["text"] for p in parts if "text" in p]
                 final_reply = "\n".join(reply_texts).strip()
                 self.history.append(model_turn)
+                final_reply = self._embed_generated_media(final_reply)
                 return final_reply
 
             # Append exact model turn (with thoughtSignature) to history
@@ -2468,19 +2496,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
             parts = candidate.get("content", {}).get("parts", [])
             reply_texts = [p["text"] for p in parts if "text" in p]
             if reply_texts:
-                return "\n".join(reply_texts).strip()
+                return self._embed_generated_media("\n".join(reply_texts).strip())
         except Exception:
             pass
 
         return "Task execution finished with all tool steps resolved."
 
-    def think_and_act_stream(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15):
+    def think_and_act_stream(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15, conversation_history: Optional[List[Dict[str, Any]]] = None):
         """Streaming generator yielding dicts:
            {'type': 'tool', 'name': str}
            {'type': 'token', 'delta': str}
            {'type': 'done', 'reply': str, 'tools': list}
         """
-        full_reply = self.think_and_act(user_prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, max_turns=max_turns)
+        full_reply = self.think_and_act(user_prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, max_turns=max_turns, conversation_history=conversation_history)
         
         for t in self.last_tools:
             yield {"type": "tool", "name": t.get("name", "tool")}
