@@ -16,12 +16,19 @@ import datetime
 import time
 import sqlite3
 import hashlib
+import hmac
 import secrets
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
 DB_PATH = Path(__file__).resolve().parent / "aura_workspace.db"
+
+# Scrypt configuration (OWASP standard, ~20ms, zero third-party dependencies)
+SCRYPT_N = 16384
+SCRYPT_R = 8
+SCRYPT_P = 1
+SCRYPT_KEYLEN = 64
 
 
 def get_connection():
@@ -31,10 +38,49 @@ def get_connection():
 
 
 def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
+    """Generates a versioned scrypt hash using salt and constant-time parameters."""
     if not salt:
         salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
+    derived = hashlib.scrypt(
+        password.encode("utf-8"),
+        salt=salt.encode("utf-8"),
+        n=SCRYPT_N,
+        r=SCRYPT_R,
+        p=SCRYPT_P,
+        maxmem=33554432,
+        dklen=SCRYPT_KEYLEN
+    )
+    hashed = f"scrypt$v1$n={SCRYPT_N},r={SCRYPT_R},p={SCRYPT_P}${derived.hex()}"
     return hashed, salt
+
+
+def verify_password(password: str, stored_hash: str, salt: str) -> Tuple[bool, bool]:
+    """
+    Verifies a password against stored hash using constant-time comparison.
+    Returns (is_valid, needs_upgrade).
+    Seamlessly verifies legacy SHA-256 and flags it for automatic upgrade!
+    """
+    if stored_hash.startswith("scrypt$v1$"):
+        parts = stored_hash.split("$")
+        if len(parts) == 4:
+            expected_hex = parts[3]
+            actual_derived = hashlib.scrypt(
+                password.encode("utf-8"),
+                salt=salt.encode("utf-8"),
+                n=SCRYPT_N,
+                r=SCRYPT_R,
+                p=SCRYPT_P,
+                maxmem=33554432,
+                dklen=SCRYPT_KEYLEN
+            )
+            is_valid = hmac.compare_digest(actual_derived.hex(), expected_hex)
+            return is_valid, False
+        return False, False
+    else:
+        # Legacy SHA-256 constant-time check
+        legacy_hash = hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
+        is_valid = hmac.compare_digest(legacy_hash, stored_hash)
+        return is_valid, is_valid
 
 
 
@@ -156,6 +202,13 @@ def init_database():
     """)
 
 
+    # Schema migration: ensure role exists in users table defaulting to 'user'
+    c.execute("PRAGMA table_info(users)")
+    user_cols = [col[1] for col in c.fetchall()]
+    if "role" not in user_cols:
+        c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+    conn.commit()
+
     # Schema migration: ensure expires_at exists in auth_sessions
     c.execute("PRAGMA table_info(auth_sessions)")
     existing_cols = [row[1] for row in c.fetchall()]
@@ -191,8 +244,8 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
     c = conn.cursor()
     try:
         c.execute("""
-            INSERT INTO users (username, password_hash, salt, display_name, settings_json)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
+            VALUES (?, ?, ?, ?, ?, 'user')
         """, (username, hashed, salt, display_name, json.dumps({})))
         user_id = c.lastrowid
 
@@ -243,11 +296,17 @@ def login_user(username: str, password: str) -> Dict[str, Any]:
         return {"success": False, "error": "Invalid username or password."}
 
     user_id = row["id"]
-    hashed, _ = hash_password(password, row["salt"])
-    if hashed != row["password_hash"]:
+    is_valid, needs_upgrade = verify_password(password, row["password_hash"], row["salt"])
+    if not is_valid:
         conn.close()
         record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
+
+    # Seamless automatic upgrade of legacy hashes to scrypt upon successful login
+    if needs_upgrade:
+        new_hash, new_salt = hash_password(password)
+        c.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user_id))
+        conn.commit()
 
     # Successful authentication
     clear_login_failures(username)
@@ -286,7 +345,7 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
-        SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at
+        SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at, COALESCE(u.role, 'user') as role
         FROM auth_sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.token = ?
@@ -317,6 +376,7 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
         "id": row["id"],
         "username": row["username"],
         "display_name": row["display_name"] or row["username"].capitalize(),
+        "role": row["role"] if "role" in row.keys() else "user",
         "settings": json.loads(row["settings_json"] or "{}")
     }
 
@@ -585,3 +645,15 @@ def delete_user_project(user_id: int, project_id: str) -> bool:
     conn.commit()
     conn.close()
     return affected
+
+
+def set_user_role(user_id: int, role: str) -> bool:
+    """Assigns a verified role ('admin', 'developer', 'user') to a user. Cannot be self-invoked via API."""
+    if role not in ("admin", "developer", "user"):
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
+    conn.commit()
+    conn.close()
+    return True

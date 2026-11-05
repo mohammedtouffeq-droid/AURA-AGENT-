@@ -49,7 +49,14 @@ class GodotEngineManager:
     """Manages the portable Godot 4.3 executable, CLI execution, and game launch."""
 
     def __init__(self, executable_path: Optional[Path] = None):
-        self.exe_path = executable_path or GODOT_EXE
+        if executable_path:
+            self.exe_path = executable_path
+        elif GODOT_EXE.exists() and GODOT_EXE.is_file():
+            self.exe_path = GODOT_EXE
+        else:
+            # Check system PATH for cross-platform godot binary (Linux/macOS)
+            system_godot = shutil.which("godot") or shutil.which("godot4")
+            self.exe_path = Path(system_godot) if system_godot else GODOT_EXE
         self._cached_version: Optional[str] = None
 
     def is_installed(self) -> bool:

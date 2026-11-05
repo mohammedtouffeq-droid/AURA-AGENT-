@@ -51,17 +51,16 @@ jobs:
 
       - name: Run Bandit Python AST Security Audit
         run: |
-          bandit -r aura_brain.py aura_web.py aura_agent.py aura_db.py -ll || true
+          bandit -r aura_brain.py aura_web.py aura_agent.py aura_db.py -ll
 
       - name: Run pip-audit Dependency Vulnerability Scan
         run: |
-          pip-audit || true
+          pip-audit
 
       - name: Run Gitleaks Secret Scanner
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
   web-api-tests:
     name: AURA Web API & Security Gate Tests
@@ -84,13 +83,9 @@ jobs:
         run: |
           python -m unittest test_aura_web.py
 
-  certified-tests:
-    name: AURA Certified Integration Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
+  certified-tests-windows:
+    name: AURA Certified Integration Tests (Windows)
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -105,24 +100,39 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
 
-      - name: Install Ubuntu GUI & Godot Requirements
-        if: runner.os == 'Linux'
+      - name: Run Certified Audit Test Suite
+        run: |
+          python -m unittest test_aura_certified.py
+
+  certified-tests-ubuntu:
+    name: AURA Certified Integration Tests (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+
+      - name: Install Ubuntu 24.04 Headless GUI & Godot
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb x11-utils libxkbcommon0 libgl1-mesa-glx
-          # Download headless Godot 4.3 binary for Linux
+          sudo apt-get install -y xvfb x11-utils libxkbcommon0 libgl1 libglx-mesa0 libegl1
+          # Install Godot 4.3 Headless on Ubuntu
           wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
           unzip -q Godot_v4.3-stable_linux.x86_64.zip
           sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
           sudo chmod +x /usr/local/bin/godot
-          godot --version || true
+          mkdir -p engines/godot
+          sudo cp /usr/local/bin/godot engines/godot/godot.exe || true
 
-      - name: Run Certified Audit Test Suite (Windows)
-        if: runner.os == 'Windows'
+      - name: Run Certified Audit Test Suite with Virtual Framebuffer
         run: |
-          python -m unittest test_aura_certified.py
-
-      - name: Run Certified Audit Test Suite (Linux with XVFB)
-        if: runner.os == 'Linux'
-        run: |
-          xvfb-run -a python -m unittest test_aura_certified.py || python -m unittest test_aura_web.py
+          xvfb-run -a python -m unittest test_aura_certified.py

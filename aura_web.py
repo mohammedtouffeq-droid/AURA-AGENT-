@@ -104,18 +104,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
     def _is_authorized_admin(self, body: Optional[Dict[str, Any]] = None) -> bool:
         user = self._get_auth_user(body)
         if user:
-            # Enforce verified admin role or primary account ownership
-            role = user.get("role", "")
-            username = user.get("username", "")
-            if role in ("admin", "superuser", "owner") or username in ("admin", "owner", "mohammedtouffeq"):
+            # Strictly database-backed role enforcement. No username bypasses, no self-promotion via settings.
+            role = user.get("role", "user")
+            if role in ("admin", "superuser"):
                 return True
-            # Check user settings flag
-            if (user.get("settings") or {}).get("is_admin") is True:
-                return True
-        client_ip = self.client_address[0]
-        # Only allow unauthenticated local execution if explicitly opted-in via env var (default disabled in production)
-        if client_ip in ("127.0.0.1", "::1", "localhost") and os.environ.get("AURA_ALLOW_LOCAL_DEV_TERMINAL", "0") == "1":
-            return True
         return False
 
     def do_GET(self):
@@ -309,6 +301,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/cyberheist/status":
             ch_dir = Path(r"C:\Users\hp\cyberheist")
+            if not ch_dir.exists():
+                ch_dir = ROOT / "cyberheist" if (ROOT / "cyberheist").exists() else (ROOT / "workspace")
             status = {"success": True, "mounted": ch_dir.exists(), "path": str(ch_dir)}
             if ch_dir.exists():
                 try:

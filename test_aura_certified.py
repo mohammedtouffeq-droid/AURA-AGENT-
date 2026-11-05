@@ -471,16 +471,19 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertGreaterEqual(res.get("iterations_taken", 0), 1)
 
     def test_42_api_workspace_tree(self):
-        # 1. Unauthenticated request must be blocked
         url = f"http://127.0.0.1:{self.test_port}/api/workspace/tree"
+        # 1. Unauthenticated request must be blocked with 401
         unauth_req = urllib.request.Request(url)
         with self.assertRaises(urllib.error.HTTPError) as err:
             urllib.request.urlopen(unauth_req, timeout=5)
         self.assertEqual(err.exception.code, 401)
 
-        # 2. Authenticated request succeeds
-        token = aura_db.create_session_token(1)
-        auth_req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+        # 2. Authenticated request succeeds with properly registered isolated user
+        u_res = aura_db.register_user(f"ws_user_{int(time.time()*1000)}", "ValidPass123")
+        self.assertTrue(u_res.get("success"), f"Failed to register test user: {u_res}")
+        user_token = u_res["token"]
+
+        auth_req = urllib.request.Request(url, headers={"Authorization": f"Bearer {user_token}"})
         with urllib.request.urlopen(auth_req, timeout=5) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
@@ -488,19 +491,35 @@ class TestAuraProductionCertification(unittest.TestCase):
             self.assertIn("files", data)
 
     def test_43_api_terminal_exec(self):
-        # 1. Unauthenticated request must be blocked
         url = f"http://127.0.0.1:{self.test_port}/api/terminal/exec"
-        payload = json.dumps({"command": "echo 'IDE Terminal Live'"}).encode("utf-8")
+        cmd = "echo 'IDE Terminal Live'" if sys.platform != "win32" else "Write-Output 'IDE Terminal Live'"
+        payload = json.dumps({"command": cmd}).encode("utf-8")
+
+        # 1. Unauthenticated request must be blocked
         unauth_req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
         with self.assertRaises(urllib.error.HTTPError) as err:
             urllib.request.urlopen(unauth_req, timeout=5)
         self.assertEqual(err.exception.code, 401)
 
-        # 2. Authenticated admin request succeeds (user has is_admin setting)
-        aura_db.save_user_settings(1, {"is_admin": True})
-        token = aura_db.create_session_token(1)
-        auth_req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"}, method="POST")
-        with urllib.request.urlopen(auth_req, timeout=5) as resp:
+        # 2. Normal user (role='user') must be blocked from admin terminal execution
+        norm_res = aura_db.register_user(f"norm_user_{int(time.time()*1000)}", "NormalPass123")
+        self.assertTrue(norm_res.get("success"))
+        norm_token = norm_res["token"]
+
+        norm_req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {norm_token}"}, method="POST")
+        with self.assertRaises(urllib.error.HTTPError) as err:
+            urllib.request.urlopen(norm_req, timeout=5)
+        self.assertEqual(err.exception.code, 401)
+
+        # 3. Authenticated user with explicit DB admin role succeeds
+        admin_res = aura_db.register_user(f"admin_user_{int(time.time()*1000)}", "AdminPass123")
+        self.assertTrue(admin_res.get("success"))
+        admin_user_id = admin_res["user"]["id"]
+        admin_token = admin_res["token"]
+        aura_db.set_user_role(admin_user_id, "admin")
+
+        admin_req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {admin_token}"}, method="POST")
+        with urllib.request.urlopen(admin_req, timeout=5) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
             self.assertTrue(data.get("success"))

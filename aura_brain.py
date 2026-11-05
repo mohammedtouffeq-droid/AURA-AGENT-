@@ -246,7 +246,7 @@ def tool_gui_click_and_type(action: str = "click", x: int = 0, y: int = 0, text:
         import ctypes
         import time
 
-        pyautogui.FAILSAFE = False
+        pyautogui.FAILSAFE = True
 
         clean_act = action.lower().strip()
         if clean_act in ["click", "left_click"]:
@@ -456,20 +456,28 @@ def tool_browser_action(action: str = "open", url: str = "", query: str = "", ex
     except Exception as e:
         return {"success": False, "error": f"Browser action failed: {e}"}
 
-def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: str = "", category: str = "general") -> Dict[str, Any]:
-    """Long-term human memory engine preserving user habits, coding preferences and workflow shortcuts (Mem0 style)."""
+def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: str = "", category: str = "general", user_id: int = 1) -> Dict[str, Any]:
+    """Long-term human memory engine preserving user habits, coding preferences and workflow shortcuts (User-scoped Mem0 style)."""
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("""
             CREATE TABLE IF NOT EXISTS mem0_store (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                key TEXT UNIQUE,
+                user_id INTEGER DEFAULT 1,
+                key TEXT NOT NULL,
                 value TEXT,
                 category TEXT,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, key)
             )
         """)
+        # Schema migration: ensure user_id exists and has a unique index for upserts
+        c.execute("PRAGMA table_info(mem0_store)")
+        cols = [col[1] for col in c.fetchall()]
+        if "user_id" not in cols:
+            c.execute("ALTER TABLE mem0_store ADD COLUMN user_id INTEGER DEFAULT 1")
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_mem0_user_key ON mem0_store(user_id, key)")
         conn.commit()
 
         act = action.lower().strip()
@@ -477,22 +485,22 @@ def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: st
             if not key or not value:
                 return {"success": False, "error": "Both 'key' and 'value' are required to store memory."}
             c.execute("""
-                INSERT INTO mem0_store (key, value, category, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(key) DO UPDATE SET value=excluded.value, category=excluded.category, updated_at=CURRENT_TIMESTAMP
-            """, (key, value, category))
+                INSERT INTO mem0_store (user_id, key, value, category, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id, key) DO UPDATE SET value=excluded.value, category=excluded.category, updated_at=CURRENT_TIMESTAMP
+            """, (user_id, key, value, category))
             conn.commit()
             conn.close()
-            return {"success": True, "action": "stored", "key": key, "value": value, "category": category, "engine": "Mem0-Long-Term-Memory"}
+            return {"success": True, "action": "stored", "key": key, "value": value, "category": category, "user_id": user_id, "engine": "Mem0-Long-Term-Memory"}
         elif act in ["recall", "search", "get"]:
             if key:
-                c.execute("SELECT key, value, category, updated_at FROM mem0_store WHERE key LIKE ? OR value LIKE ?", (f"%{key}%", f"%{key}%"))
+                c.execute("SELECT key, value, category, updated_at FROM mem0_store WHERE user_id = ? AND (key LIKE ? OR value LIKE ?)", (user_id, f"%{key}%", f"%{key}%"))
             else:
-                c.execute("SELECT key, value, category, updated_at FROM mem0_store ORDER BY updated_at DESC LIMIT 20")
+                c.execute("SELECT key, value, category, updated_at FROM mem0_store WHERE user_id = ? ORDER BY updated_at DESC LIMIT 20", (user_id,))
             rows = c.fetchall()
             conn.close()
             facts = [{"key": r[0], "value": r[1], "category": r[2], "updated_at": r[3]} for r in rows]
-            return {"success": True, "action": "recalled", "total_facts": len(facts), "facts": facts, "engine": "Mem0-Long-Term-Memory"}
+            return {"success": True, "action": "recalled", "total_facts": len(facts), "facts": facts, "user_id": user_id, "engine": "Mem0-Long-Term-Memory"}
         else:
             conn.close()
             return {"success": False, "error": f"Unsupported mem0 action: {action}"}
