@@ -104,10 +104,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
     def _is_authorized_admin(self, body: Optional[Dict[str, Any]] = None) -> bool:
         user = self._get_auth_user(body)
         if user:
-            return True
+            # Enforce verified admin role or primary account ownership
+            role = user.get("role", "")
+            username = user.get("username", "")
+            if role in ("admin", "superuser", "owner") or username in ("admin", "owner", "mohammedtouffeq"):
+                return True
+            # Check user settings flag
+            if (user.get("settings") or {}).get("is_admin") is True:
+                return True
         client_ip = self.client_address[0]
-        # Restrict unauthenticated execution strictly to local loopback dev mode
-        if client_ip in ("127.0.0.1", "::1", "localhost") and os.environ.get("AURA_ALLOW_LOCAL_DEV_TERMINAL", "1") == "1":
+        # Only allow unauthenticated local execution if explicitly opted-in via env var (default disabled in production)
+        if client_ip in ("127.0.0.1", "::1", "localhost") and os.environ.get("AURA_ALLOW_LOCAL_DEV_TERMINAL", "0") == "1":
             return True
         return False
 
@@ -254,6 +261,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_response(204)
             self.end_headers()
         elif path == "/api/engines/search":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
             keyword = query.get("keyword", [""])[0]
@@ -262,6 +272,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "results": res})
 
         elif path == "/api/workspace/tree":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             ws = ROOT / "workspace"
             ws.mkdir(parents=True, exist_ok=True)
             files = []
@@ -276,6 +289,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "workspace": str(ws), "total_files": len(files), "files": files})
 
         elif path == "/api/workspace/file":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             file_rel = query.get("path", [""])[0]
             ws = ROOT / "workspace"
             target_p = (ws / file_rel).resolve()
@@ -750,6 +766,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
 
         elif path == "/api/game/world/generate":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             theme = body.get("theme", "gta_city")
             chunks = body.get("chunks", 4)
             seed = body.get("seed", 42)
@@ -758,6 +777,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/game/physics/simulate":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             steps = body.get("steps", 60)
             name = body.get("name", "car")
             mass = body.get("mass", 1200.0)
@@ -768,6 +790,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(jolt.simulate(steps=steps))
 
         elif path == "/api/game/navmesh/pathfind":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             sx = body.get("start_x", 0)
             sy = body.get("start_y", 0)
             gx = body.get("goal_x", 10)
@@ -777,18 +802,27 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/game/agent/train":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             episodes = body.get("episodes", 5)
             from aura_game_engine import MLAgentsCarlaTrainer
             res = MLAgentsCarlaTrainer.train_driving_agent(episodes=episodes)
             self._send_json(res)
 
         elif path == "/api/game/multiplayer/sync":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             count = body.get("player_count", 100)
             from aura_game_engine import AgonesNetcodeSynchronizer
             res = AgonesNetcodeSynchronizer.simulate_100_player_tick(player_count=count)
             self._send_json(res)
 
         elif path == "/api/game/project/export":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             proj = body.get("project_name", "open_world_demo")
             from aura_game_engine import EngineProjectExporter
             res = EngineProjectExporter.export_project(project_name=proj)
@@ -845,6 +879,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/media/image/transform":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             img_path = body.get("image_path", "")
             instruction = body.get("instruction", "iPhone portrait")
             from aura_media_engine import AURA_CINEMA
@@ -852,6 +889,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/media/image/remove_bg":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             img_path = body.get("image_path", "")
             from aura_media_engine import NativeSegmentationEngine
             inp = Path(img_path)

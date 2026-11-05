@@ -368,42 +368,30 @@ class AuraEngineMeshBus:
         except Exception as e:
             return {"success": False, "error": f"OpenHands execution error: {e}"}
 
-    # 8. Vision Grounding Dispatcher (ShowUI, OmniParser, UI-TARS)
+    # 8. Vision Grounding Dispatcher (Connected directly to real display resolver)
     def _dispatch_vision(self, engine_key: str, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        from aura_brain import tool_screen_grounding_coordinates
         target = kwargs.get("target", "center")
-        coords = {"center": (960, 540), "taskbar": (960, 1050), "start": (30, 1050)}.get(target, (960, 540))
-        return {
-            "success": True,
-            "engine": engine_key,
-            "target": target,
-            "x": coords[0],
-            "y": coords[1],
-            "confidence": 0.99
-        }
+        res = tool_screen_grounding_coordinates(target=target)
+        res["engine"] = engine_key
+        return res
 
-    # 9. Browser Automation Dispatcher (browser-use, midscene, hyperbrowser)
+    # 9. Browser Automation Dispatcher (Connected directly to real browser engine)
     def _dispatch_browser(self, engine_key: str, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        from aura_brain import tool_browser_action
         url = kwargs.get("url", "https://www.google.com")
-        return {
-            "success": True,
-            "engine": engine_key,
-            "action": action,
-            "url": url,
-            "status": "browser_session_live"
-        }
+        expected_text = kwargs.get("expected_text", "")
+        res = tool_browser_action(action=action or "verify", url=url, expected_text=expected_text)
+        res["engine"] = engine_key
+        return res
 
-    # 10. Mem0 Persistent Memory Dispatcher
+    # 10. Mem0 Persistent Memory Dispatcher (Connected directly to SQLite backing store)
     def _dispatch_mem0(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        from aura_brain import tool_mem0_persistent_memory
         key = kwargs.get("key", "")
         value = kwargs.get("value", "")
-        return {
-            "success": True,
-            "engine": "mem0",
-            "action": action,
-            "key": key,
-            "value": value,
-            "status": "persisted"
-        }
+        category = kwargs.get("category", "general")
+        return tool_mem0_persistent_memory(action=action, key=key, value=value, category=category)
 
     # 11. Generic Dispatcher: strictly returns verified operational status (no false claims)
     def _dispatch_generic(self, engine_key: str, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
