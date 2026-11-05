@@ -405,19 +405,21 @@ class AuraEngineMeshBus:
             "status": "persisted"
         }
 
-    # 11. Generic Dispatcher for all other 53 engines
+    # 11. Generic Dispatcher: strictly returns verified operational status (no false claims)
     def _dispatch_generic(self, engine_key: str, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         eng = self.awakened_engines.get(engine_key, {})
+        is_mounted = eng.get("mounted", False)
+        status = "AVAILABLE" if is_mounted else "REGISTERED"
         return {
-            "success": True,
+            "success": is_mounted,
             "engine": engine_key,
             "name": eng.get("name", engine_key),
             "category": eng.get("category", "General"),
             "action": action,
-            "status": "AWAKENED_AND_EXECUTING",
-            "alive": True,
+            "status": status,
+            "alive": is_mounted,
             "last_heartbeat": time.time(),
-            "note": f"Engine '{engine_key}' actively responded through the live mesh bus."
+            "note": f"Engine '{engine_key}' registered in mesh. Local mount: {is_mounted}."
         }
 
 

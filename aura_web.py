@@ -706,6 +706,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "results": res})
 
         elif path == "/api/workspace/save":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             file_rel = body.get("path", "")
             file_content = body.get("content", "")
             ws = ROOT / "workspace"
@@ -792,6 +795,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/godot/build":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             proj = body.get("project_name", "CyberCraft3D")
             from godot_engine_manager import GodotCarCraftingProjectBuilder
             res = GodotCarCraftingProjectBuilder.build_project(project_name=proj)
@@ -819,6 +825,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/media/image/generate":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             prompt = body.get("prompt", "")
             style = body.get("style", "auto")
             aspect_ratio = body.get("aspect_ratio", "1:1")
@@ -852,6 +861,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/coderx/execute":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             goal = body.get("goal", "")
             filename = body.get("filename", "coderx_script.py")
             cmd = body.get("test_command", "")
@@ -861,6 +873,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/coderx/patch":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             file_rel = body.get("path", "")
             patch_text = body.get("patch", "")
             ws = ROOT / "workspace"
@@ -878,6 +893,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/engines/invoke":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             engine_key = body.get("engine", "")
             action = body.get("action", "run")
             params = body.get("params", {})

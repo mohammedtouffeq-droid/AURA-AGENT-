@@ -372,11 +372,13 @@ class CoderXStateGraph:
             # Step 1: Prompt Synthesis
             prompt = self._build_prompt(goal, target_filename, target_path, repo_map, last_error, iteration)
             
-            # Step 2: Model Inference via Unified Router
+            # Step 2: Model Inference via Unified Router (No fake auto-scaffolds)
             try:
                 raw_response = self.router.generate(prompt, system_prompt="You are CoderX, the world's most disciplined autonomous software engineer.")
             except Exception as e:
-                raw_response = f"# CoderX Auto-Scaffold\nprint('Auto-generated for {goal}')\n"
+                last_error = f"Model generation error: {e}"
+                history.append({"iteration": iteration, "stage": "MODEL_INFERENCE", "error": last_error})
+                continue
 
             # Step 3: Extract Clean Code
             code = self._clean_code_fences(raw_response)
