@@ -804,12 +804,18 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/godot/verify":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             proj = body.get("project_name", "CyberCraft3D")
             from godot_engine_manager import AURA_GODOT_TRAINER
             res = AURA_GODOT_TRAINER.train_and_verify(project_name=proj)
             self._send_json(res)
 
         elif path == "/api/godot/launch":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             proj = body.get("project_name", "CyberCraft3D")
             from godot_engine_manager import AURA_GODOT_MANAGER, GAMES_WORKSPACE
             proj_dir = GAMES_WORKSPACE / proj
@@ -817,6 +823,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/pipeline/run":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             goal = body.get("goal", "Create a coding task")
             domain = body.get("domain")
             params = body.get("params", {})
@@ -851,6 +860,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/media/video/generate":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             prompt = body.get("prompt", "")
             duration = body.get("duration_sec", 5)
             fps = body.get("fps", 24)
@@ -885,6 +897,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/autonomous/mission":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             goal = body.get("goal", "")
             filename = body.get("filename", "mission_script.py")
             from aura_autonomous_loop import AURA_LOOP

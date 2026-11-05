@@ -457,11 +457,15 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertEqual(res.get("success"), aider_status["mounted"])
 
     def test_41_tool_autonomous_code_loop(self):
-        res = tool_autonomous_code_loop(
-            goal="Build certified autonomous testing script",
-            target_filename="auto_cert_test.py",
-            max_iterations=3
-        )
+        from unittest.mock import patch
+        from coderx_engine import CODERX
+        mock_code = "print('Certified autonomous test passed successfully')\n"
+        with patch.object(CODERX.router, "generate", return_value=mock_code):
+            res = tool_autonomous_code_loop(
+                goal="Build certified autonomous testing script",
+                target_filename="auto_cert_test.py",
+                max_iterations=3
+            )
         self.assertTrue(res.get("success"))
         self.assertEqual(res.get("status"), "COMPLETED_WITHOUT_ERRORS")
         self.assertGreaterEqual(res.get("iterations_taken", 0), 1)

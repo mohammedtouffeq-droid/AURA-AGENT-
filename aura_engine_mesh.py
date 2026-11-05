@@ -409,9 +409,10 @@ class AuraEngineMeshBus:
     def _dispatch_generic(self, engine_key: str, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         eng = self.awakened_engines.get(engine_key, {})
         is_mounted = eng.get("mounted", False)
-        status = "AVAILABLE" if is_mounted else "REGISTERED"
+        # Having files mounted is NOT equivalent to having executed a verified operation
+        status = "MOUNTED_NO_DISPATCHER" if is_mounted else "NOT_MOUNTED"
         return {
-            "success": is_mounted,
+            "success": False,
             "engine": engine_key,
             "name": eng.get("name", engine_key),
             "category": eng.get("category", "General"),
@@ -419,7 +420,7 @@ class AuraEngineMeshBus:
             "status": status,
             "alive": is_mounted,
             "last_heartbeat": time.time(),
-            "note": f"Engine '{engine_key}' registered in mesh. Local mount: {is_mounted}."
+            "note": f"Engine '{engine_key}' has no specialized operational adapter. Direct execution rejected to prevent false-success."
         }
 
 
