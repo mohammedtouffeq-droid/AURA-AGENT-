@@ -1,0 +1,45 @@
+name: Release Liberty AURA PC Installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Package Windows Portable Executable
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Build Tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller -r requirements.txt
+
+      - name: Build Standalone Windows Executable
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "Liberty-AURA" --add-data "index.html;." --add-data "aura_config.json;." aura_web.py
+
+      - name: Compress Release Archive
+        run: |
+          Compress-Archive -Path dist\Liberty-AURA -DestinationPath dist\Liberty-AURA-Windows-x64.zip
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/Liberty-AURA-Windows-x64.zip
+          name: "Liberty AURA Desktop Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
