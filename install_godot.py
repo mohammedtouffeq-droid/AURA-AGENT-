@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 def setup_godot():
-    target_dir = Path(r"c:\Users\hp\AURA-Agent\engines\godot")
+    target_dir = Path(__file__).resolve().parent / "engines" / "godot"
     target_dir.mkdir(parents=True, exist_ok=True)
     
     godot_exe = target_dir / "godot.exe"

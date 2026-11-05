@@ -180,9 +180,9 @@ def tool_open_browser(url: str) -> Dict[str, Any]:
     # Method 2: Shell command 'start chrome <url>'
     try:
         if chrome_bin:
-            subprocess.Popen(f'cmd /c start "" "{chrome_bin}" "{url}"', shell=True)
+            subprocess.Popen(["cmd.exe", "/c", "start", "", chrome_bin, url])  # nosec B602 B603 B607
         else:
-            subprocess.Popen(f'cmd /c start "" "{url}"', shell=True)
+            subprocess.Popen(["cmd.exe", "/c", "start", "", url])  # nosec B602 B603 B607
         opened = True
     except Exception:
         pass
@@ -332,7 +332,7 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
             if app_key == "chrome":
                 # Ensure a visible window appears in foreground on physical monitor
                 try:
-                    subprocess.Popen(f'cmd /c start "" "{target}" --new-window "https://www.google.com"', shell=True)
+                    subprocess.Popen(["cmd.exe", "/c", "start", "", target, "--new-window", "https://www.google.com"])  # nosec B602 B603 B607
                 except Exception:
                     pass
                 try:
@@ -340,15 +340,15 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
                 except Exception:
                     pass
                 try:
-                    subprocess.Popen('powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).AppActivate(\"Chrome\")"', shell=True)
+                    subprocess.Popen(["powershell.exe", "-NoProfile", "-Command", '(New-Object -ComObject WScript.Shell).AppActivate("Chrome")'])  # nosec B602 B603 B607
                 except Exception:
                     pass
             elif app_key == "notepad":
-                subprocess.Popen('cmd /c start notepad.exe', shell=True)
+                subprocess.Popen(["cmd.exe", "/c", "start", "notepad.exe"])  # nosec B602 B603 B607
             elif app_key in ["calculator", "calc"]:
-                subprocess.Popen('cmd /c start calc.exe', shell=True)
+                subprocess.Popen(["cmd.exe", "/c", "start", "calc.exe"])  # nosec B602 B603 B607
             else:
-                subprocess.Popen(f'cmd /c start "" "{target}"', shell=True)
+                subprocess.Popen(["cmd.exe", "/c", "start", "", target])  # nosec B602 B603 B607
 
             return {"success": True, "action": "opened_on_screen", "app": app_name, "executable": target, "engine": "Microsoft-UFO-Windows-Controller"}
         elif action == "close":
@@ -363,11 +363,27 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
 def tool_parse_screen_ui() -> Dict[str, Any]:
     """Inspects screen resolution, active foreground window title, and UI geometry (OmniParser style)."""
     try:
-        import subprocess
-        res_w = subprocess.run(["powershell", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width"], capture_output=True, text=True, timeout=5)
-        res_h = subprocess.run(["powershell", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height"], capture_output=True, text=True, timeout=5)
-        w = int(res_w.stdout.strip()) if res_w.stdout.strip().isdigit() else 1536
-        h = int(res_h.stdout.strip()) if res_h.stdout.strip().isdigit() else 864
+        import sys
+        w, h = 1920, 1080
+        if sys.platform == "win32":
+            import subprocess
+            try:
+                res_w = subprocess.run(["powershell", "-NoProfile", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width"], capture_output=True, text=True, timeout=5)
+                res_h = subprocess.run(["powershell", "-NoProfile", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height"], capture_output=True, text=True, timeout=5)
+                if res_w.stdout.strip().isdigit():
+                    w = int(res_w.stdout.strip())
+                if res_h.stdout.strip().isdigit():
+                    h = int(res_h.stdout.strip())
+            except Exception:
+                pass
+        else:
+            try:
+                import pyautogui
+                size = pyautogui.size()
+                w, h = size.width, size.height
+            except Exception:
+                pass
+
         return {
             "success": True,
             "screen_width": w,
@@ -529,8 +545,8 @@ def tool_hyperbrowser_session(action: str = "attach_profile", url: str = "https:
         user_data = os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\User Data")
         
         # Launch Chrome with remote debugging on port 9222 and user's profile
-        cmd = f'"{chrome_exe}" --remote-debugging-port=9222 --user-data-dir="{user_data}" "{url}"'
-        subprocess.Popen(cmd, shell=True)
+        cmd_args = [chrome_exe, "--remote-debugging-port=9222", f"--user-data-dir={user_data}", url]
+        subprocess.Popen(cmd_args)  # nosec B603
         return {
             "success": True,
             "action": "attached_cdp_session",
@@ -851,7 +867,7 @@ def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio
             image_url = f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true&enhance=true"
             output_dir = Path(__file__).resolve().parent / "workspace" / "generated_images"
             output_dir.mkdir(parents=True, exist_ok=True)
-            img_id = hashlib.md5(f"{clean_prompt}_{seed}".encode()).hexdigest()[:12]
+            img_id = hashlib.sha256(f"{clean_prompt}_{seed}".encode()).hexdigest()[:12]
             file_path = output_dir / f"aura_img_{img_id}.png"
             req = urllib.request.Request(image_url, headers={"User-Agent": "AURA-Agent/2.0"})
             with urllib.request.urlopen(req, timeout=12) as resp:
@@ -1040,7 +1056,7 @@ def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Di
         clean_prompt = prompt.strip()
         output_dir = Path(__file__).resolve().parent / "workspace" / "generated_videos"
         output_dir.mkdir(parents=True, exist_ok=True)
-        vid_id = hashlib.md5(f"{clean_prompt}_{time.time()}".encode()).hexdigest()[:12]
+        vid_id = hashlib.sha256(f"{clean_prompt}_{time.time()}".encode()).hexdigest()[:12]
         
         video_html_path = output_dir / f"aura_video_{vid_id}.html"
         video_meta_path = output_dir / f"aura_video_{vid_id}.json"

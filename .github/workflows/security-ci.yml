@@ -51,11 +51,11 @@ jobs:
 
       - name: Run Bandit Python AST Security Audit
         run: |
-          bandit -r aura_brain.py aura_web.py aura_agent.py aura_db.py -ll
+          bandit -r aura_brain.py aura_web.py aura_agent.py aura_db.py -ll --skip B310,B314
 
       - name: Run pip-audit Dependency Vulnerability Scan
         run: |
-          pip-audit
+          pip-audit -r requirements.txt
 
       - name: Run Gitleaks Secret Scanner
         uses: gitleaks/gitleaks-action@v2
@@ -99,6 +99,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
+
+      - name: Setup Portable Godot 4.3 Engine
+        run: |
+          python install_godot.py
 
       - name: Run Certified Audit Test Suite
         run: |

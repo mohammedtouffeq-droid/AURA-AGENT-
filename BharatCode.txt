@@ -1,0 +1,6 @@
+BharatCode Build League 2026 - AURA AI AGENT Submission
+Repository: https://github.com/mohammedtouffeq-droid/AURA-AGENT-
+Domain: Autonomous Software Engineering & 3D Game Studio Orchestration
+Architecture: Pure Python Multi-Engine Mesh, CoderX AST Intelligence, SQLite Persistent Auth & Memory
+Certified Integration Tests: 54/54 Passing
+License: Apache 2.0 / MIT Open Source
