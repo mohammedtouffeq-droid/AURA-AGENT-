@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aura-agent
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python aura_web.py
+    envVars:
+      - key: AURA_HOST
+        value: 0.0.0.0
+      - key: AURA_PORT
+        value: 10000
