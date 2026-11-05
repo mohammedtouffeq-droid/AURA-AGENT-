@@ -471,19 +471,36 @@ class TestAuraProductionCertification(unittest.TestCase):
         self.assertGreaterEqual(res.get("iterations_taken", 0), 1)
 
     def test_42_api_workspace_tree(self):
+        # 1. Unauthenticated request must be blocked
         url = f"http://127.0.0.1:{self.test_port}/api/workspace/tree"
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        unauth_req = urllib.request.Request(url)
+        with self.assertRaises(urllib.error.HTTPError) as err:
+            urllib.request.urlopen(unauth_req, timeout=5)
+        self.assertEqual(err.exception.code, 401)
+
+        # 2. Authenticated request succeeds
+        token = aura_db.create_session_token(1)
+        auth_req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(auth_req, timeout=5) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
             self.assertTrue(data.get("success"))
             self.assertIn("files", data)
 
     def test_43_api_terminal_exec(self):
+        # 1. Unauthenticated request must be blocked
         url = f"http://127.0.0.1:{self.test_port}/api/terminal/exec"
         payload = json.dumps({"command": "echo 'IDE Terminal Live'"}).encode("utf-8")
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        unauth_req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+        with self.assertRaises(urllib.error.HTTPError) as err:
+            urllib.request.urlopen(unauth_req, timeout=5)
+        self.assertEqual(err.exception.code, 401)
+
+        # 2. Authenticated admin request succeeds (user has is_admin setting)
+        aura_db.save_user_settings(1, {"is_admin": True})
+        token = aura_db.create_session_token(1)
+        auth_req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"}, method="POST")
+        with urllib.request.urlopen(auth_req, timeout=5) as resp:
             self.assertEqual(resp.status, 200)
             data = json.loads(resp.read().decode("utf-8"))
             self.assertTrue(data.get("success"))

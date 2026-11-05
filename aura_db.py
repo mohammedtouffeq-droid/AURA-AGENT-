@@ -268,6 +268,18 @@ def login_user(username: str, password: str) -> Dict[str, Any]:
     }
 
 
+def create_session_token(user_id: int) -> str:
+    """Generates and registers an active session token for a given user ID."""
+    token = secrets.token_hex(24)
+    expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
+    conn.commit()
+    conn.close()
+    return token
+
+
 def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
     if not token:
         return None
