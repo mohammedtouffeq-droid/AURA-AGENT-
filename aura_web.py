@@ -1031,6 +1031,11 @@ def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
     return ThreadingHTTPServer((host, port), AuraWebHandler)
 
 
+# Top-level serverless function entrypoint for Vercel (@vercel/python)
+handler = AuraWebHandler
+app = AuraWebHandler
+
+
 def run():
     httpd = make_server(HOST, PORT)
     url = f"http://127.0.0.1:{PORT}"

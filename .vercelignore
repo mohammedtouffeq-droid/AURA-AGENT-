@@ -1,0 +1,18 @@
+# Vercel Deployment Ignore List
+# Avoid cloning/uploading heavy engines, git submodules, caches, and test artifacts
+engines/
+.gitmodules
+hyberhiest/
+hyberhiest_repo/
+workspace/game_projects/
+generated_benchmarks/
+downloads/
+dist/
+build/
+*.exe
+*.zip
+*.db
+*.log
+__pycache__/
+*.pyc
+tests/
