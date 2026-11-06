@@ -1352,76 +1352,7 @@
         </div>
     </main>
 
-    <!-- ---------------- Enterprise Auth Modal ---------------- -->
-    <div class="auth-modal-overlay" id="authOverlay" style="display: none !important;">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-brand">
-                    <span style="font-size: 24px;">⚡</span>
-                    <span class="auth-title">AURA Core</span>
-                </div>
-                <div class="auth-subtitle">Encrypted Workspace Intelligence</div>
-                <p class="auth-desc">Sign in or create your permanent account. Your chat history and workspace data are saved permanently in SQLite database.</p>
-            </div>
-
-            <div class="model-settings-overlay" id="modelSettingsOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modelSettingsTitle">
-                <section class="model-settings-card">
-                    <h2 id="modelSettingsTitle">Model settings</h2>
-                    <p>Choose the model AURA uses for your conversations. Provider credentials stay on the server; Ollama runs locally on this computer.</p>
-                    <label for="modelProvider">Provider</label>
-                    <select id="modelProvider">
-                        <option value="gemini">Google Gemini</option>
-                        <option value="ollama">Ollama (local)</option>
-                    </select>
-                    <label for="modelChoice">Gemini model</label>
-                    <select id="modelChoice"></select>
-                    <label for="ollamaModel" id="ollamaModelLabel" style="display:none;">Installed Ollama model name</label>
-                    <input id="ollamaModel" type="text" maxlength="128" placeholder="e.g. qwen2.5-coder:7b" style="display:none;">
-                    <p id="modelProviderHint"></p>
-                    <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
-                    <div class="model-settings-actions">
-                        <button type="button" onclick="closeModelSettings()">Cancel</button>
-                        <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save model</button>
-                    </div>
-                </section>
-            </div>
-
-            <div class="permission-prompt" id="permissionPrompt" role="alertdialog" aria-labelledby="permissionPromptTitle" aria-describedby="permissionPromptDetails" hidden>
-                <h2 id="permissionPromptTitle">AURA needs your approval</h2>
-                <p id="permissionPromptAction"></p>
-                <p id="permissionPromptDetails"></p>
-                <div class="permission-prompt-actions">
-                    <button type="button" id="permissionDeny">Deny</button>
-                    <button type="button" id="permissionAllow" class="permission-allow">Allow once</button>
-                </div>
-            </div>
-
-            <div class="auth-tabs">
-                <button class="auth-tab active" id="tabSignIn" onclick="switchAuthTab('login')">Sign In</button>
-                <button class="auth-tab" id="tabSignUp" onclick="switchAuthTab('register')">Create Account</button>
-            </div>
-
-            <div class="auth-error-banner" id="authErrorMsg" style="display: none;"></div>
-
-            <form id="authForm" onsubmit="handleAuthSubmit(event)">
-                <div class="auth-field">
-                    <label for="authUsername">Username</label>
-                    <input type="text" id="authUsername" class="auth-input" placeholder="e.g. mohammed" autocomplete="username" required>
-                </div>
-                <div class="auth-field">
-                    <label for="authPassword">Password</label>
-                    <input type="password" id="authPassword" class="auth-input" placeholder="Enter password" autocomplete="current-password" required>
-                </div>
-                <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Sign In</button>
-            </form>
-
-            <div class="auth-footer-note">
-                🔒 SHA-256 + 16-byte Salt Encrypted • Isolated User History Forever
-            </div>
-        </div>
-    </div>
-
-    <!-- ---------------- Client Script ---------------- -->
+    <!-- Auth Modal Deleted -->
     <script>
         // State
         let authMode = 'login';
