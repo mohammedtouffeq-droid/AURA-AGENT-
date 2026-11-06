@@ -1245,13 +1245,13 @@
         <div class="sidebar-footer">
             <div class="user-profile-row">
                 <div class="user-meta-left">
-                    <div class="user-avatar-circle" id="userAvatar">U</div>
+                    <div class="user-avatar-circle" id="userAvatar">D</div>
                     <div class="user-text-col">
-                        <div class="user-display-name" id="userName">User</div>
+                        <div class="user-display-name" id="userName">Developer</div>
                         <div class="user-status-pill">● Online</div>
                     </div>
                 </div>
-                <button class="btn-signout" id="btnSignOut" onclick="logoutUser()" title="Sign Out">Sign Out</button>
+                
             </div>
         </div>
     </aside>
@@ -1352,12 +1352,55 @@
         </div>
     </main>
 
-    <!-- Auth Modal Deleted -->
+    <!-- ---------------- Model Settings & Permission Modals ---------------- -->
+    <div class="model-settings-overlay" id="modelSettingsOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modelSettingsTitle">
+        <section class="model-settings-card">
+            <h2 id="modelSettingsTitle">Model settings</h2>
+            <p>Choose the model AURA uses for your conversations. Provider credentials stay on the server; Ollama runs locally on this computer.</p>
+            <label for="modelProvider">Provider</label>
+            <select id="modelProvider">
+                <option value="gemini">Google Gemini</option>
+                <option value="ollama">Ollama (local)</option>
+            </select>
+            <label for="modelChoice">Gemini model</label>
+            <select id="modelChoice"></select>
+            <label for="ollamaModel" id="ollamaModelLabel" style="display:none;">Installed Ollama model name</label>
+            <input id="ollamaModel" type="text" maxlength="128" placeholder="e.g. qwen2.5-coder:7b" style="display:none;">
+            <p id="modelProviderHint"></p>
+            <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
+            <div class="model-settings-actions">
+                <button type="button" onclick="closeModelSettings()">Cancel</button>
+                <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save model</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="permission-prompt" id="permissionPrompt" role="alertdialog" aria-labelledby="permissionPromptTitle" aria-describedby="permissionPromptDetails" hidden>
+        <h2 id="permissionPromptTitle">AURA needs your approval</h2>
+        <p id="permissionPromptAction"></p>
+        <p id="permissionPromptDetails"></p>
+        <div class="permission-prompt-actions">
+            <button type="button" id="permissionDeny">Deny</button>
+            <button type="button" id="permissionAllow" class="permission-allow">Allow once</button>
+        </div>
+    </div>
+
+    <!-- Hidden placeholders to keep legacy JS references safe without any login screen -->
+    <div id="authOverlay" style="display:none !important;" hidden>
+        <div id="authErrorMsg"></div>
+        <button id="tabSignIn" type="button"></button>
+        <button id="tabSignUp" type="button"></button>
+        <button id="btnAuthSubmit" type="button"></button>
+        <input id="authUsername" type="hidden">
+        <input id="authPassword" type="hidden">
+    </div>
+
     <script>
         // State
         let authMode = 'login';
         let currentUser = null;
-        let authToken = localStorage.getItem('aura_auth_token') || '';
+        let authToken = localStorage.getItem('aura_auth_token') || 'aura_public_workspace_token';
+        localStorage.setItem('aura_auth_token', authToken);
         let currentThreadId = localStorage.getItem('aura_active_thread_id') || ('th_' + Date.now());
         let isSending = false;
         let currentAttachments = [];
@@ -1754,8 +1797,8 @@
 
         async function verifyAuth() {
             if (!authToken) {
-                authOverlay.style.display = 'none';
-                return false;
+                authToken = 'aura_public_workspace_token';
+                localStorage.setItem('aura_auth_token', authToken);
             }
             try {
                 const res = await fetch('/api/auth/me', {
@@ -1765,18 +1808,12 @@
                 if (data.authenticated && data.user) {
                     currentUser = data.user;
                     updateUserUI(currentUser);
-                    authOverlay.style.display = 'none';
                     return true;
-                } else {
-                    localStorage.removeItem('aura_auth_token');
-                    authToken = '';
-                    authOverlay.style.display = 'none';
-                    return false;
                 }
-            } catch (e) {
-                authOverlay.style.display = 'none';
-                return false;
-            }
+            } catch (e) {}
+            currentUser = { id: 1, username: 'developer', display_name: 'Developer' };
+            updateUserUI(currentUser);
+            return true;
         }
 
         function logoutUser() {

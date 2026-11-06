@@ -16,7 +16,21 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-CONFIG_PATH = Path(__file__).resolve().parent / "aura_config.json"
+import tempfile
+
+def _resolve_config_path() -> Path:
+    default_dir = Path(__file__).resolve().parent
+    if os.environ.get("VERCEL") or not os.access(default_dir, os.W_OK):
+        tmp_cfg = Path(tempfile.gettempdir()) / "aura_config.json"
+        if not tmp_cfg.exists() and (default_dir / "aura_config.json").exists():
+            try:
+                tmp_cfg.write_text((default_dir / "aura_config.json").read_text(encoding="utf-8"), encoding="utf-8")
+            except Exception:
+                pass
+        return tmp_cfg
+    return default_dir / "aura_config.json"
+
+CONFIG_PATH = _resolve_config_path()
 MODEL_CATALOG = {
     "gemini": {
         "label": "Google Gemini",

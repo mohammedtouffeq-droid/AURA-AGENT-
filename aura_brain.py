@@ -41,7 +41,15 @@ ENV = load_env()
 API_KEY = ENV.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")
 MODEL_NAME = ENV.get("GEMINI_MODEL", "gemini-flash-lite-latest")
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent?key={API_KEY}"
-DB_PATH = Path(__file__).resolve().parent / "aura_memory.db"
+import tempfile
+
+def _resolve_memory_db_path() -> Path:
+    default_dir = Path(__file__).resolve().parent
+    if os.environ.get("VERCEL") or not os.access(default_dir, os.W_OK):
+        return Path(tempfile.gettempdir()) / "aura_memory.db"
+    return default_dir / "aura_memory.db"
+
+DB_PATH = _resolve_memory_db_path()
 
 # ===================================================================================
 # PRODUCTION SAFETY SANDBOX & ACCESS CONTROL
