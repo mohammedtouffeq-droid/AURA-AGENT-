@@ -8,6 +8,81 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* ---------------- Antigravity-Style Shining Splash Logo ---------------- */
+        #auraSplash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #08090c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+        }
+        .splash-logo-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .splash-glow-ring {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 102, 255, 0.4) 0%, rgba(0, 212, 255, 0.15) 50%, transparent 75%);
+            animation: pulseGlow 2.5s infinite ease-in-out;
+        }
+        .splash-logo-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0066ff, #00d4ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 0 35px rgba(0, 102, 255, 0.65), 0 0 70px rgba(0, 212, 255, 0.3);
+            animation: floatLogo 3s ease-in-out infinite;
+            z-index: 2;
+        }
+        .splash-title {
+            margin-top: 24px;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, #ffffff 40%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            animation: fadeInText 1.5s ease-out;
+        }
+        .splash-subtitle {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #6b7280;
+            letter-spacing: 1px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(0.9); opacity: 0.5; }
+            50% { transform: scale(1.35); opacity: 0.9; }
+        }
+        @keyframes floatLogo {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        @keyframes fadeInText {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         :root {
             --bg-primary: #0d0e12;
             --bg-sidebar: #13151b;
@@ -825,6 +900,8 @@
 
         /* ---------------- Auth Modal Overlay ---------------- */
         .auth-modal-overlay {
+            display: none !important;
+
             position: fixed;
             top: 0;
             left: 0;
@@ -1128,6 +1205,16 @@
     </style>
 </head>
 <body>
+    <!-- Antigravity-Style Shining Splash Screen -->
+    <div id="auraSplash">
+        <div class="splash-logo-container">
+            <div class="splash-glow-ring"></div>
+            <div class="splash-logo-icon">▲</div>
+        </div>
+        <div class="splash-title">AURA Core</div>
+        <div class="splash-subtitle">Autonomous Intelligence Workspace</div>
+    </div>
+
 
     <!-- Mobile Drawer Backdrop -->
     <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeMobileSidebar()"></div>
@@ -1266,7 +1353,7 @@
     </main>
 
     <!-- ---------------- Enterprise Auth Modal ---------------- -->
-    <div class="auth-modal-overlay" id="authOverlay" style="display: none;">
+    <div class="auth-modal-overlay" id="authOverlay" style="display: none !important;">
         <div class="auth-card">
             <div class="auth-header">
                 <div class="auth-brand">
@@ -1411,7 +1498,7 @@
 
         async function openModelSettings() {
             if (!authToken) {
-                authOverlay.style.display = 'flex';
+                authOverlay.style.display = 'none';
                 return;
             }
             modelSettingsStatus.textContent = 'Loading saved model settings…';
@@ -1736,7 +1823,7 @@
 
         async function verifyAuth() {
             if (!authToken) {
-                authOverlay.style.display = 'flex';
+                authOverlay.style.display = 'none';
                 return false;
             }
             try {
@@ -1752,11 +1839,11 @@
                 } else {
                     localStorage.removeItem('aura_auth_token');
                     authToken = '';
-                    authOverlay.style.display = 'flex';
+                    authOverlay.style.display = 'none';
                     return false;
                 }
             } catch (e) {
-                authOverlay.style.display = 'flex';
+                authOverlay.style.display = 'none';
                 return false;
             }
         }
@@ -1773,12 +1860,40 @@
             welcomeHero.style.display = 'flex';
             userName.innerText = 'User';
             userAvatar.innerText = 'U';
-            authOverlay.style.display = 'flex';
+            authOverlay.style.display = 'none';
             switchAuthTab('login');
         }
 
         // ---------------- Initialization ----------------
         window.addEventListener('DOMContentLoaded', async () => {
+            // Dismiss shining splash after 1.4s
+            setTimeout(() => {
+                const splash = document.getElementById('auraSplash');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.style.display = 'none', 800);
+                }
+            }, 1400);
+
+            // Auto-provision seamless session (No login barrier)
+            if (!authToken) {
+                try {
+                    const guestUser = 'user_' + Math.random().toString(36).substring(2, 7);
+                    const res = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: guestUser, password: 'AuraGuestUser2026!' })
+                    });
+                    const data = await res.json();
+                    if (data.token) {
+                        authToken = data.token;
+                        localStorage.setItem('aura_auth_token', authToken);
+                    }
+                } catch (e) {
+                    console.log('Guest session notice:', e);
+                }
+            }
+
             const authed = await verifyAuth();
             if (authed) {
                 await refreshActiveModelLabel();
@@ -1904,7 +2019,7 @@
             if ((!text && !hasAttachments) || isSending) return;
 
             if (!authToken) {
-                authOverlay.style.display = 'flex';
+                authOverlay.style.display = 'none';
                 return;
             }
 
@@ -1949,7 +2064,7 @@
 
                 if (res.status === 401) {
                     turnData.bubble.innerHTML = 'Your session has expired. Please sign in again.';
-                    authOverlay.style.display = 'flex';
+                    authOverlay.style.display = 'none';
                     return;
                 }
 
