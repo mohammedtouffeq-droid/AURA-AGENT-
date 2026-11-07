@@ -25,15 +25,30 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import hashlib
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
-import cv2
-import numpy as np
-from PIL import Image
+try:
+    import cv2
+except ImportError:
+    cv2 = None  # type: ignore
+
+try:
+    import numpy as np
+except ImportError:
+    np = None  # type: ignore
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None  # type: ignore
 
 ROOT_DIR = Path(__file__).resolve().parent
-WORKSPACE_DIR = ROOT_DIR / "workspace"
+if os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK):
+    WORKSPACE_DIR = Path(tempfile.gettempdir()) / "aura_workspace"
+else:
+    WORKSPACE_DIR = ROOT_DIR / "workspace"
 IMAGES_DIR = WORKSPACE_DIR / "generated_images"
 VIDEOS_DIR = WORKSPACE_DIR / "generated_videos"
 

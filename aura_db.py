@@ -79,10 +79,11 @@ def get_storage_status() -> Dict[str, Any]:
     if os.environ.get("VERCEL"):
         return {
             "persistent": False,
-            "mode": "ephemeral_serverless_tmp",
-            "engine": "sqlite3_ephemeral",
-            "production_accounts_available": False,
-            "message": "Production accounts unavailable: persistent database storage (AURA_DATABASE_URL / TURSO_DATABASE_URL) is not configured on this serverless deployment. /tmp SQLite is ephemeral and is not used for permanent account storage."
+            "mode": "serverless_sqlite_with_vault_sync",
+            "engine": "sqlite3_ephemeral_plus_signed_vault",
+            "production_accounts_available": True,
+            "vault_sync_enabled": True,
+            "message": "Serverless SQLite active with signed browser-vault synchronization (/tmp is ephemeral across cold starts; set TURSO_DATABASE_URL for dedicated cloud DB)."
         }
     return {
         "persistent": True,
@@ -405,15 +406,11 @@ init_database()
 # ===================================================================================
 
 def register_user(username: str, password: str) -> Dict[str, Any]:
-    if not is_persistent_storage_configured():
-        return {
-            "success": False,
-            "storage_unavailable": True,
-            "error": "Production accounts are unavailable: persistent database storage is not configured on this serverless deployment."
-        }
     username = username.strip().lower()
     if len(username) < 3:
         return {"success": False, "error": "Username must be at least 3 characters."}
+    if not all(ch.isalnum() or ch in ("_", ".", "-") for ch in username):
+        return {"success": False, "error": "Username may only contain letters, numbers, underscores, dots, or hyphens."}
     valid_pass, pass_err = validate_password_strength(password)
     if not valid_pass:
         return {"success": False, "error": pass_err}
@@ -462,12 +459,6 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
 
 
 def login_user(username: str, password: str) -> Dict[str, Any]:
-    if not is_persistent_storage_configured():
-        return {
-            "success": False,
-            "storage_unavailable": True,
-            "error": "Production accounts are unavailable: persistent database storage is not configured on this serverless deployment."
-        }
     username = username.strip().lower()
     allowed, wait_sec = check_login_rate_limit(username)
     if not allowed:
@@ -966,4 +957,179 @@ def verify_csrf_token(session_token: str, csrf_token: str) -> bool:
         return False
     expected = compute_csrf_token(session_token)
     return hmac.compare_digest(expected, csrf_token.strip())
+
+
+def compute_vault_signature(payload_json: str) -> str:
+    """Computes an HMAC-SHA256 signature for a serialized user vault snapshot."""
+    secret_seed = os.environ.get("AURA_VAULT_SECRET", "aura-signed-vault-hmac-v1")
+    return hmac.new(
+        secret_seed.encode("utf-8"),
+        payload_json.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+
+def export_user_vault(user_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Exports a cryptographically signed snapshot of a single user's account,
+    sessions, threads, messages, memories, and coding projects so their data
+    can survive serverless cold starts when synced with their browser vault.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, username, password_hash, salt, display_name, settings_json, COALESCE(role, 'user') as role, created_at FROM users WHERE id = ?", (user_id,))
+        u_row = c.fetchone()
+        if not u_row:
+            return None
+        user_dict = dict(u_row)
+
+        c.execute("SELECT token, user_id, created_at, expires_at FROM auth_sessions WHERE user_id = ?", (user_id,))
+        sessions = [dict(r) for r in c.fetchall()]
+
+        c.execute("SELECT id, user_id, title, is_pinned, created_at, updated_at FROM threads WHERE user_id = ?", (user_id,))
+        threads = [dict(r) for r in c.fetchall()]
+
+        c.execute("SELECT id, thread_id, user_id, role, content, tools_json, created_at FROM messages WHERE user_id = ? ORDER BY id ASC", (user_id,))
+        messages = [dict(r) for r in c.fetchall()]
+
+        c.execute("SELECT id, user_id, key, value, created_at FROM user_memories WHERE user_id = ?", (user_id,))
+        memories = [dict(r) for r in c.fetchall()]
+
+        c.execute("SELECT id, user_id, name, company, stack, path, description, is_pinned, created_at, updated_at FROM projects WHERE user_id = ?", (user_id,))
+        projects = [dict(r) for r in c.fetchall()]
+
+        payload = {
+            "user": user_dict,
+            "sessions": sessions,
+            "threads": threads,
+            "messages": messages,
+            "user_memories": memories,
+            "projects": projects,
+        }
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        sig = compute_vault_signature(canonical)
+        return {
+            "version": 1,
+            "username": user_dict["username"],
+            "payload": payload,
+            "signature": sig
+        }
+    finally:
+        conn.close()
+
+
+def restore_user_vault(vault_envelope: Any) -> bool:
+    """
+    Verifies the HMAC-SHA256 signature of a user vault envelope and idempotently
+    restores the user's account, sessions, threads, messages, memories, and projects.
+    Never overwrites a different existing user's account.
+    """
+    if not vault_envelope:
+        return False
+    if isinstance(vault_envelope, str):
+        try:
+            vault_envelope = json.loads(vault_envelope)
+        except Exception:
+            return False
+    if not isinstance(vault_envelope, dict):
+        return False
+
+    payload = vault_envelope.get("payload")
+    sig = vault_envelope.get("signature", "")
+    if not isinstance(payload, dict) or not sig or not isinstance(sig, str):
+        return False
+
+    try:
+        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    except Exception:
+        return False
+
+    expected_sig = compute_vault_signature(canonical)
+    if not hmac.compare_digest(expected_sig, sig):
+        return False
+
+    u = payload.get("user")
+    if not isinstance(u, dict) or not u.get("username") or not u.get("password_hash") or not u.get("salt"):
+        return False
+
+    username = str(u["username"]).strip().lower()
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, password_hash, salt FROM users WHERE username = ?", (username,))
+        existing = c.fetchone()
+        if existing:
+            if not hmac.compare_digest(str(existing["password_hash"]), str(u["password_hash"])):
+                return False
+            target_user_id = existing["id"]
+        else:
+            c.execute("""
+                INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                username,
+                u["password_hash"],
+                u["salt"],
+                u.get("display_name") or username.capitalize(),
+                u.get("settings_json") or "{}",
+                "user"
+            ))
+            target_user_id = c.lastrowid
+
+        for s in payload.get("sessions", []):
+            if isinstance(s, dict) and s.get("token"):
+                c.execute("""
+                    INSERT OR IGNORE INTO auth_sessions (token, user_id, expires_at)
+                    VALUES (?, ?, ?)
+                """, (s["token"], target_user_id, s.get("expires_at")))
+
+        for t in payload.get("threads", []):
+            if isinstance(t, dict) and t.get("id") and t.get("title"):
+                c.execute("""
+                    INSERT OR IGNORE INTO threads (id, user_id, title, is_pinned)
+                    VALUES (?, ?, ?, ?)
+                """, (t["id"], target_user_id, t["title"], int(t.get("is_pinned", 0))))
+
+        # Restore messages for threads owned by this user if thread currently has fewer messages
+        for t in payload.get("threads", []):
+            tid = t.get("id")
+            if not tid:
+                continue
+            c.execute("SELECT COUNT(*) as cnt FROM messages WHERE thread_id = ? AND user_id = ?", (tid, target_user_id))
+            cnt_row = c.fetchone()
+            existing_cnt = (cnt_row["cnt"] if isinstance(cnt_row, dict) else cnt_row[0]) if cnt_row else 0
+            t_msgs = [m for m in payload.get("messages", []) if isinstance(m, dict) and m.get("thread_id") == tid]
+            if existing_cnt == 0 and t_msgs:
+                for m in t_msgs:
+                    c.execute("""
+                        INSERT INTO messages (thread_id, user_id, role, content, tools_json)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (tid, target_user_id, m.get("role", "user"), m.get("content", ""), m.get("tools_json")))
+
+        for mem in payload.get("user_memories", []):
+            if isinstance(mem, dict) and mem.get("key"):
+                c.execute("""
+                    INSERT OR IGNORE INTO user_memories (user_id, key, value)
+                    VALUES (?, ?, ?)
+                """, (target_user_id, mem["key"], mem.get("value", "")))
+
+        for p in payload.get("projects", []):
+            if isinstance(p, dict) and p.get("id") and p.get("name"):
+                c.execute("""
+                    INSERT OR IGNORE INTO projects (id, user_id, name, company, stack, path, description, is_pinned)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    p["id"], target_user_id, p["name"], p.get("company", ""),
+                    p.get("stack", "Python"), p.get("path", ""), p.get("description", ""),
+                    int(p.get("is_pinned", 0))
+                ))
+
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
 

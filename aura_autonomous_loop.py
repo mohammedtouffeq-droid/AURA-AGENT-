@@ -18,6 +18,7 @@ import sys
 import time
 import subprocess
 import logging
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 
@@ -25,7 +26,10 @@ logger = logging.getLogger("AuraAutonomousLoop")
 logger.setLevel(logging.INFO)
 
 ROOT_DIR = Path(__file__).resolve().parent
-WORKSPACE_DIR = ROOT_DIR / "workspace"
+if os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK):
+    WORKSPACE_DIR = Path(tempfile.gettempdir()) / "aura_workspace"
+else:
+    WORKSPACE_DIR = ROOT_DIR / "workspace"
 
 
 class AutonomousExecutionLoop:

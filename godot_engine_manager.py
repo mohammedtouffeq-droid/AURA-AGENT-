@@ -18,13 +18,17 @@ import json
 import time
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
 ROOT_DIR = Path(__file__).resolve().parent
 ENGINES_DIR = ROOT_DIR / "engines" / "godot"
 GODOT_EXE = ENGINES_DIR / "godot.exe"
-GAMES_WORKSPACE = ROOT_DIR / "workspace" / "game_projects"
+if os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK):
+    GAMES_WORKSPACE = Path(tempfile.gettempdir()) / "aura_workspace" / "game_projects"
+else:
+    GAMES_WORKSPACE = ROOT_DIR / "workspace" / "game_projects"
 GAMES_WORKSPACE.mkdir(parents=True, exist_ok=True)
 
 

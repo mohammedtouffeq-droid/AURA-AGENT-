@@ -15,6 +15,7 @@ Author: AURA Technologies Inc.
 import os
 import sys
 import json
+import tempfile
 import urllib.parse
 from http.cookies import SimpleCookie
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -24,6 +25,15 @@ from typing import Dict, Any, List, Optional
 # Add root folder to sys.path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
+
+
+def _resolve_workspace_dir() -> Path:
+    if os.environ.get("VERCEL") or not os.access(ROOT, os.W_OK):
+        ws = Path(tempfile.gettempdir()) / "aura_workspace"
+    else:
+        ws = ROOT / "workspace"
+    ws.mkdir(parents=True, exist_ok=True)
+    return ws
 
 import aura_db
 from aura_brain import AuraBrain
@@ -188,6 +198,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         return False
 
     def do_GET(self):
+        try:
+            self._handle_get()
+        except Exception as exc:
+            self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
+
+    def _handle_get(self):
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         query = urllib.parse.parse_qs(parsed_url.query)
@@ -215,13 +231,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     "authenticated": True,
                     "user": user,
                     "csrf_token": user.get("csrf_token"),
-                    "storage_status": storage_status
+                    "storage_status": storage_status,
+                    "user_vault": aura_db.export_user_vault(user["id"])
                 })
 
         elif path.startswith("/media/"):
             # Serve generated media securely from workspace
             media_rel = path[7:] # strip "/media/"
-            ws = ROOT / "workspace"
+            ws = _resolve_workspace_dir()
             target_file = (ws / media_rel).resolve()
             if str(target_file).startswith(str(ws)) and target_file.exists() and target_file.is_file():
                 ext = target_file.suffix.lower()
@@ -354,8 +371,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._get_auth_user():
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            ws = ROOT / "workspace"
-            ws.mkdir(parents=True, exist_ok=True)
+            ws = _resolve_workspace_dir()
             files = []
             for f in ws.rglob("*"):
                 if f.is_file() and not f.name.startswith("."):
@@ -372,7 +388,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             file_rel = query.get("path", [""])[0]
-            ws = ROOT / "workspace"
+            ws = _resolve_workspace_dir()
             target_p = (ws / file_rel).resolve()
             if ws in target_p.parents or target_p == ws or str(target_p).startswith(str(ws)):
                 if target_p.exists() and target_p.is_file():
@@ -469,9 +485,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from coderx_engine import CodebaseAstMapper
-            ws = ROOT / "workspace"
+            ws = _resolve_workspace_dir()
             repo_map = CodebaseAstMapper.generate_repo_map(ws)
             self._send_json({"success": True, "repo_map": repo_map})
+
+        elif path == "/api/flagship/overview":
+            from aura_flagship_repos import get_all_flagship_status
+            self._send_json(get_all_flagship_status())
 
         elif path == "/api/pipeline/status":
             from aura_master_pipeline import AURA_PIPELINE
@@ -494,6 +514,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
     def do_POST(self):
+        try:
+            self._handle_post()
+        except Exception as exc:
+            self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
+
+    def _handle_post(self):
         content_length = int(self.headers.get("Content-Length", 0))
         post_data = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else "{}"
         try:
@@ -509,10 +535,16 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         if path == "/api/auth/register":
             username = body.get("username", "")
             password = body.get("password", "")
+            if body.get("vault_backup"):
+                aura_db.restore_user_vault(body.get("vault_backup"))
+            if isinstance(body.get("vault_backups"), list):
+                for vb in body.get("vault_backups"):
+                    aura_db.restore_user_vault(vb)
             res = aura_db.register_user(username, password)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
+                res["user_vault"] = aura_db.export_user_vault(res["user"]["id"])
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
                 self._send_json(res, status=200, extra_headers=extra)
             else:
@@ -522,15 +554,37 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/auth/login":
             username = body.get("username", "")
             password = body.get("password", "")
+            if body.get("vault_backup"):
+                aura_db.restore_user_vault(body.get("vault_backup"))
+            if isinstance(body.get("vault_backups"), list):
+                for vb in body.get("vault_backups"):
+                    aura_db.restore_user_vault(vb)
             res = aura_db.login_user(username, password)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
+                res["user_vault"] = aura_db.export_user_vault(res["user"]["id"])
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
                 self._send_json(res, status=200, extra_headers=extra)
             else:
                 status = 503 if res.get("storage_unavailable") else 401
                 self._send_json(res, status=status)
+
+        elif path == "/api/auth/restore_vault":
+            vb = body.get("vault_backup")
+            restored = aura_db.restore_user_vault(vb)
+            user = self._get_auth_user(body)
+            if restored and user:
+                self._send_json({
+                    "success": True,
+                    "authenticated": True,
+                    "user": user,
+                    "csrf_token": user.get("csrf_token"),
+                    "storage_status": aura_db.get_storage_status(),
+                    "user_vault": aura_db.export_user_vault(user["id"])
+                })
+            else:
+                self._send_json({"success": False, "authenticated": False, "restored": restored}, status=401)
 
         elif path == "/api/auth/logout":
             token = ""
@@ -687,7 +741,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({
                 "reply": reply,
                 "tools": tools_used,
-                "status": "completed"
+                "status": "completed",
+                "user_vault": aura_db.export_user_vault(user_id)
             })
 
         # 3B. STREAMING CHAT DISPATCH (SSE)
@@ -838,7 +893,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             file_rel = body.get("path", "")
             file_content = body.get("content", "")
-            ws = ROOT / "workspace"
+            ws = _resolve_workspace_dir()
             target_p = (ws / file_rel).resolve()
             if str(target_p).startswith(str(ws)):
                 target_p.parent.mkdir(parents=True, exist_ok=True)
@@ -852,8 +907,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for terminal execution"}, status=401)
                 return
             cmd = body.get("command", "")
-            ws = ROOT / "workspace"
-            ws.mkdir(parents=True, exist_ok=True)
+            ws = _resolve_workspace_dir()
             if not cmd:
                 self._send_json({"success": False, "error": "Command is required"}, status=400)
                 return
@@ -1146,6 +1200,62 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_os_controller import laptop_controller
             res = laptop_controller.capture_screenshot()
             self._send_json(res)
+
+        # 8. FLAGSHIP REPOSITORIES HUB ROUTES (OpenHands • Open Interpreter • AutoGPT • Trinity Pipeline)
+        elif path == "/api/flagship/openhands":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_flagship_repos import OPENHANDS_HUB
+            res = OPENHANDS_HUB.execute_swe_task(
+                task_prompt=body.get("task_prompt") or body.get("goal") or "Inspect project, fix login/auth bug, and run unit tests",
+                project_name=body.get("project_name", "openhands_workspace"),
+                canvas_agent=body.get("canvas_agent", "openhands_codeact"),
+                target_file=body.get("target_file"),
+                schedule_cron=body.get("schedule_cron")
+            )
+            self._send_json(res)
+
+        elif path == "/api/flagship/open_interpreter":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_flagship_repos import OPEN_INTERPRETER_HUB
+            res = OPEN_INTERPRETER_HUB.execute_computer_use_task(
+                prompt=body.get("prompt") or body.get("goal") or "Mere workspace folder me sabse badi files kaunsi hain? Unka size dikhao aur summary banao.",
+                skill=body.get("skill", "auto"),
+                harness=body.get("harness", "rust_codex_fast"),
+                model=body.get("model", "gemini-flash-lite-latest"),
+                target_dir=body.get("target_dir")
+            )
+            self._send_json(res)
+
+        elif path == "/api/flagship/autogpt":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_flagship_repos import AUTOGPT_HUB
+            res = AUTOGPT_HUB.build_and_run_workflow(
+                goal=body.get("goal") or "Mere liye potential customers research karo, website analyze karo, aur outreach email draft ready karo.",
+                surface=body.get("surface", "autopilot"),
+                template_id=body.get("template_id"),
+                trigger_type=body.get("trigger_type", "manual_or_api")
+            )
+            self._send_json(res)
+
+        elif path == "/api/flagship/pipeline":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_flagship_repos import run_flagship_trinity_pipeline
+            res = run_flagship_trinity_pipeline(
+                goal=body.get("goal") or "Build, test, and QA an enterprise authentication & customer workflow module end-to-end",
+                project_name=body.get("project_name", "aura_trinity_mission"),
+                canvas_agent=body.get("canvas_agent", "openhands_codeact"),
+                oi_harness=body.get("harness", "rust_codex_fast")
+            )
+            self._send_json(res)
+
         else:
             self.send_error(404, "Not Found")
 
@@ -1155,8 +1265,9 @@ def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
 
 
 # Top-level serverless function entrypoint for Vercel (@vercel/python)
+# IMPORTANT: Only export `handler` (subclass of BaseHTTPRequestHandler). Do NOT export `app = AuraWebHandler`
+# because @vercel/python treats `app` as a 2-arg WSGI callable `(environ, start_response)`.
 handler = AuraWebHandler
-app = AuraWebHandler
 
 
 def run():

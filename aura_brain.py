@@ -51,6 +51,15 @@ def _resolve_memory_db_path() -> Path:
 
 DB_PATH = _resolve_memory_db_path()
 
+def _resolve_workspace_dir() -> Path:
+    default_dir = Path(__file__).resolve().parent
+    if os.environ.get("VERCEL") or not os.access(default_dir, os.W_OK):
+        ws = Path(tempfile.gettempdir()) / "aura_workspace"
+    else:
+        ws = default_dir / "workspace"
+    ws.mkdir(parents=True, exist_ok=True)
+    return ws
+
 # ===================================================================================
 # PRODUCTION SAFETY SANDBOX & ACCESS CONTROL
 # ===================================================================================
@@ -58,6 +67,8 @@ SAFE_WORKSPACE_ROOTS = [
     Path("c:/Users/hp/cyberheist").resolve(),
     Path("c:/Users/hp/AURA-Agent").resolve(),
     Path(__file__).resolve().parent,
+    Path(tempfile.gettempdir()).resolve(),
+    (Path(tempfile.gettempdir()) / "aura_workspace").resolve(),
 ]
 
 STRICTLY_FORBIDDEN_PATHS = [
@@ -898,7 +909,7 @@ def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio
             w, h = (1280, 720) if aspect_ratio == "16:9" else ((720, 1280) if aspect_ratio == "9:16" else (1024, 1024))
             seed = int(time.time() * 1000) % 999999
             image_url = f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true&enhance=true"
-            output_dir = Path(__file__).resolve().parent / "workspace" / "generated_images"
+            output_dir = _resolve_workspace_dir() / "generated_images"
             output_dir.mkdir(parents=True, exist_ok=True)
             img_id = hashlib.sha256(f"{clean_prompt}_{seed}".encode()).hexdigest()[:12]
             file_path = output_dir / f"aura_img_{img_id}.png"
@@ -1080,6 +1091,73 @@ def tool_master_pipeline_execute(goal: str, domain: Optional[str] = None, projec
     except Exception as e:
         return {"success": False, "error": f"Pipeline execution failed: {e}"}
 
+
+def tool_openhands_engineer(
+    task_prompt: str,
+    project_name: str = "aura_swe_task",
+    canvas_agent: str = "openhands_codeact",
+    target_file: Optional[str] = None
+) -> Dict[str, Any]:
+    """Executes the OpenHands 7-step autonomous Software Agent SDK loop inside an isolated workspace."""
+    try:
+        from aura_flagship_repos import OPENHANDS_HUB
+        return OPENHANDS_HUB.execute_swe_task(
+            task_prompt=task_prompt,
+            project_name=project_name,
+            canvas_agent=canvas_agent,
+            target_file=target_file
+        )
+    except Exception as e:
+        return {"success": False, "error": f"OpenHands execution failed: {e}"}
+
+
+def tool_open_interpreter_computer_use(
+    prompt: str,
+    skill: str = "auto",
+    harness: str = "rust_codex_fast",
+    target_dir: Optional[str] = None
+) -> Dict[str, Any]:
+    """Executes an Open Interpreter computer-use or terminal task with Rust/Python harness, MCP/ACP, and safety hooks."""
+    try:
+        from aura_flagship_repos import OPEN_INTERPRETER_HUB
+        return OPEN_INTERPRETER_HUB.execute_computer_use_task(
+            prompt=prompt,
+            skill=skill,
+            harness=harness,
+            target_dir=target_dir
+        )
+    except Exception as e:
+        return {"success": False, "error": f"Open Interpreter execution failed: {e}"}
+
+
+def tool_autogpt_workflow(
+    goal: str,
+    surface: str = "autopilot",
+    template_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """Executes an AutoGPT multi-step agent workflow across AutoPilot, Agents, Marketplace, and Visual Builder."""
+    try:
+        from aura_flagship_repos import AUTOGPT_HUB
+        return AUTOGPT_HUB.build_and_run_workflow(
+            goal=goal,
+            surface=surface,
+            template_id=template_id
+        )
+    except Exception as e:
+        return {"success": False, "error": f"AutoGPT workflow failed: {e}"}
+
+
+def tool_flagship_trinity_pipeline(
+    goal: str,
+    project_name: str = "aura_trinity_mission"
+) -> Dict[str, Any]:
+    """Runs the unified A-to-Z Flagship Trinity Pipeline (AutoGPT Workflow -> OpenHands SWE -> Open Interpreter Computer-Use QA)."""
+    try:
+        from aura_flagship_repos import run_flagship_trinity_pipeline
+        return run_flagship_trinity_pipeline(goal=goal, project_name=project_name)
+    except Exception as e:
+        return {"success": False, "error": f"Trinity pipeline failed: {e}"}
+
 def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Dict[str, Any]:
     """Generates an animated video simulation sequence or multimedia player from text prompts."""
     try:
@@ -1087,7 +1165,7 @@ def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Di
         import time
 
         clean_prompt = prompt.strip()
-        output_dir = Path(__file__).resolve().parent / "workspace" / "generated_videos"
+        output_dir = _resolve_workspace_dir() / "generated_videos"
         output_dir.mkdir(parents=True, exist_ok=True)
         vid_id = hashlib.sha256(f"{clean_prompt}_{time.time()}".encode()).hexdigest()[:12]
         
@@ -1534,6 +1612,10 @@ AVAILABLE_TOOLS = {
     "tool_godot_launch_game": tool_godot_launch_game,
     "tool_master_pipeline_status": tool_master_pipeline_status,
     "tool_master_pipeline_execute": tool_master_pipeline_execute,
+    "tool_openhands_engineer": tool_openhands_engineer,
+    "tool_open_interpreter_computer_use": tool_open_interpreter_computer_use,
+    "tool_autogpt_workflow": tool_autogpt_workflow,
+    "tool_flagship_trinity_pipeline": tool_flagship_trinity_pipeline,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
@@ -1918,6 +2000,57 @@ GEMINI_TOOLS_DECLARATION = [{
                 "properties": {
                     "project_name": {"type": "STRING", "description": "Project name to launch."}
                 }
+            }
+        },
+        {
+            "name": "tool_openhands_engineer",
+            "description": "Runs the OpenHands Software Agent SDK 7-step autonomous software engineering cycle (Agent Canvas, Isolated Workspaces, AST inspection, code editing, unit testing, self-healing).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "task_prompt": {"type": "STRING", "description": "The software engineering or bug-fix task to execute."},
+                    "project_name": {"type": "STRING", "description": "Isolated workspace project name."},
+                    "canvas_agent": {"type": "STRING", "description": "Canvas agent ID (e.g. 'openhands_codeact', 'aider_architect')."}
+                },
+                "required": ["task_prompt"]
+            }
+        },
+        {
+            "name": "tool_open_interpreter_computer_use",
+            "description": "Runs Open Interpreter natural-language computer use, folder/file size auditing, Rust/Codex coding harness, and ACP/MCP verification.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "prompt": {"type": "STRING", "description": "Natural language computer-use or coding instruction."},
+                    "skill": {"type": "STRING", "description": "Skill ID: 'auto', 'folder_size_auditor', 'python_sandbox_runner', or 'webapp_endpoint_qa'."},
+                    "harness": {"type": "STRING", "description": "Harness: 'rust_codex_fast' or 'python_computer_use'."}
+                },
+                "required": ["prompt"]
+            }
+        },
+        {
+            "name": "tool_autogpt_workflow",
+            "description": "Runs AutoGPT multi-step agent workflow across AutoPilot, Agents, Marketplace, and Visual Node Workflow Builder.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "goal": {"type": "STRING", "description": "High-level workflow or multi-agent automation goal."},
+                    "surface": {"type": "STRING", "description": "Surface: 'autopilot', 'agents', 'marketplace', or 'build'."},
+                    "template_id": {"type": "STRING", "description": "Optional marketplace template ID."}
+                },
+                "required": ["goal"]
+            }
+        },
+        {
+            "name": "tool_flagship_trinity_pipeline",
+            "description": "Runs the connected A-to-Z Flagship Trinity Pipeline (AutoGPT workflow planning -> OpenHands software engineering & unit testing -> Open Interpreter computer-use QA).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "goal": {"type": "STRING", "description": "End-to-end mission goal across AutoGPT, OpenHands, and Open Interpreter."},
+                    "project_name": {"type": "STRING", "description": "Target project workspace name."}
+                },
+                "required": ["goal"]
             }
         }
     ]

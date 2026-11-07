@@ -61,7 +61,10 @@ class AuraEngineMeshBus:
 
     def _awaken_and_mount_all(self):
         """Adds available checkout paths and records actual local mount state."""
-        ENGINES_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            ENGINES_DIR.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
         total_files_counted = 0
 
         # Read catalog from ALL_63_ENGINES
@@ -204,6 +207,8 @@ class AuraEngineMeshBus:
             return self._dispatch_powertoys(action, kwargs)
         elif engine_key == "OpenHands":
             return self._dispatch_openhands(action, kwargs)
+        elif engine_key == "open-interpreter":
+            return self._dispatch_open_interpreter(action, kwargs)
         elif engine_key in ["ShowUI", "OmniParser", "UI-TARS-desktop"]:
             return self._dispatch_vision(engine_key, action, kwargs)
         elif engine_key in ["browser-use", "midscene", "hyperbrowser"]:
@@ -216,11 +221,17 @@ class AuraEngineMeshBus:
     # 1. Aider Code Pair Programmer Dispatcher
     def _dispatch_aider(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """Live Aider pair-programming engine: parses repo map, builds AST, prepares code edits."""
-        workspace = kwargs.get("workspace", str(ROOT_DIR / "workspace"))
+        import tempfile
+        default_ws = Path(tempfile.gettempdir()) / "aura_workspace" if (os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK)) else (ROOT_DIR / "workspace")
+        workspace = kwargs.get("workspace", str(default_ws))
         goal = kwargs.get("goal", "Analyze codebase and suggest enhancements")
         
         ws_path = Path(workspace)
-        ws_path.mkdir(parents=True, exist_ok=True)
+        try:
+            ws_path.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            ws_path = Path(tempfile.gettempdir()) / "aura_workspace"
+            ws_path.mkdir(parents=True, exist_ok=True)
         files = [str(f.relative_to(ws_path)) for f in ws_path.rglob("*") if f.is_file() and not f.name.startswith(".")]
 
         return {
@@ -323,9 +334,18 @@ class AuraEngineMeshBus:
             "supported": ["Screen Mirror", "Keyboard Forwarding", "Direct App Launch"]
         }
 
-    # 5. AutoGPT Recursive Planner Dispatcher
+    # 5. AutoGPT Recursive Planner & 4-Surface Workflow Dispatcher
     def _dispatch_autogpt(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         goal = kwargs.get("goal", "Execute autonomous mission")
+        try:
+            from aura_flagship_repos import AUTOGPT_HUB
+            wf_res = AUTOGPT_HUB.build_and_run_workflow(
+                goal=goal,
+                surface=kwargs.get("surface", "autopilot"),
+                template_id=kwargs.get("template_id")
+            )
+        except Exception as e:
+            wf_res = {"error": str(e)}
         return {
             "success": True,
             "engine": "AutoGPT",
@@ -336,6 +356,7 @@ class AuraEngineMeshBus:
                 {"step": 3, "phase": "Recursive Self-Correction & Unit Verification"},
                 {"step": 4, "phase": "Final Artifact Deployment & Database Commit"}
             ],
+            "workflow_run": wf_res,
             "status": "mission_orchestration_active"
         }
 
@@ -350,23 +371,52 @@ class AuraEngineMeshBus:
             "confidence": 0.98
         }
 
-    # 7. OpenHands Terminal & Sandbox Dispatcher
+    # 7. OpenHands Terminal, Agent Canvas & SWE SDK Dispatcher
     def _dispatch_openhands(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        import tempfile
+        import shutil
         cmd = kwargs.get("command", "echo 'OpenHands live'")
-        workspace = kwargs.get("workspace", str(ROOT_DIR / "workspace"))
-        
+        default_ws = Path(tempfile.gettempdir()) / "aura_workspace" if (os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK)) else (ROOT_DIR / "workspace")
+        workspace = kwargs.get("workspace", str(default_ws))
+        Path(workspace).mkdir(parents=True, exist_ok=True)
         try:
-            res = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+            from aura_flagship_repos import OPENHANDS_HUB
+            swe_report = OPENHANDS_HUB.execute_swe_task(
+                task_prompt=kwargs.get("goal", cmd),
+                project_name=kwargs.get("project_name", "openhands_mesh_task")
+            )
+        except Exception as e:
+            swe_report = {"error": str(e)}
+        try:
+            if sys.platform == "win32":
+                shell_args = ["powershell", "-NoProfile", "-Command", cmd]
+            else:
+                pwsh_bin = shutil.which("pwsh") or shutil.which("powershell")
+                shell_args = [pwsh_bin, "-NoProfile", "-Command", cmd] if pwsh_bin else ["/bin/sh", "-c", cmd]
+            res = subprocess.run(shell_args,
                                  cwd=workspace, capture_output=True, text=True, timeout=15)
             return {
                 "success": res.returncode == 0,
                 "engine": "OpenHands",
                 "exit_code": res.returncode,
                 "stdout": res.stdout,
-                "stderr": res.stderr
+                "stderr": res.stderr,
+                "swe_sdk_report": swe_report
             }
         except Exception as e:
-            return {"success": False, "error": f"OpenHands execution error: {e}"}
+            return {"success": False, "error": f"OpenHands execution error: {e}", "swe_sdk_report": swe_report}
+
+    # 7B. Open Interpreter Rust/Python Computer-Use & ACP Dispatcher
+    def _dispatch_open_interpreter(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            from aura_flagship_repos import OPEN_INTERPRETER_HUB
+            return OPEN_INTERPRETER_HUB.execute_computer_use_task(
+                prompt=kwargs.get("prompt") or kwargs.get("goal") or action or "Inspect workspace largest files",
+                skill=kwargs.get("skill", "auto"),
+                harness=kwargs.get("harness", "rust_codex_fast")
+            )
+        except Exception as e:
+            return {"success": False, "engine": "open-interpreter", "error": str(e)}
 
     # 8. Vision Grounding Dispatcher (Connected directly to real display resolver)
     def _dispatch_vision(self, engine_key: str, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:

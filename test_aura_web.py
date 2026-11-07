@@ -402,18 +402,32 @@ class AuraWebIntegrationTests(unittest.TestCase):
             self.assertEqual(ctx.exception.code, 401, f"Expected 401 for non-admin POST {admin_post}")
 
     def test_honest_serverless_storage_detection_and_backup_migration(self):
-        """Verify Vercel ephemeral storage never claims to be permanent and blocks silent account loss."""
+        """Verify Vercel storage reports persistent=False honestly while preserving accounts via signed vault sync."""
         import aura_db
         import os
+        import secrets
 
-        # When VERCEL=1 without AURA_DATABASE_URL, storage is marked non-persistent and signup returns storage_unavailable
+        uname = f"vault_user_{secrets.token_hex(4)}"
         with patch.dict(os.environ, {"VERCEL": "1", "AURA_DATABASE_URL": "", "TURSO_DATABASE_URL": "", "AURA_PERSISTENT_DB_PATH": ""}):
             status = aura_db.get_storage_status()
             self.assertFalse(status["persistent"])
-            self.assertFalse(status["production_accounts_available"])
-            res = aura_db.register_user("vercel_ephemeral_user", "ValidPass123!")
-            self.assertFalse(res["success"])
-            self.assertTrue(res.get("storage_unavailable"))
+            self.assertTrue(status["production_accounts_available"])
+            self.assertTrue(status.get("vault_sync_enabled"))
+            res = aura_db.register_user(uname, "ValidPass123!")
+            self.assertTrue(res["success"])
+            uid = res["user"]["id"]
+            aura_db.save_message(uid, res["default_thread_id"], "user", "Saved across cold starts")
+            vault = aura_db.export_user_vault(uid)
+            self.assertIsNotNone(vault)
+            self.assertEqual(vault["username"], uname)
+
+            # Tampered vault signature must be rejected
+            tampered = dict(vault)
+            tampered["signature"] = "0" * 64
+            self.assertFalse(aura_db.restore_user_vault(tampered))
+
+            # Valid signed vault restores cleanly
+            self.assertTrue(aura_db.restore_user_vault(vault))
 
         # Verify database backup export & import across invocations
         snap = aura_db.export_database_backup()
@@ -421,6 +435,98 @@ class AuraWebIntegrationTests(unittest.TestCase):
         self.assertIn("users", snap["tables"])
         counts = aura_db.import_database_backup(snap)
         self.assertGreaterEqual(counts["users"], 1)
+
+    def test_flagship_repositories_and_trinity_pipeline_a_to_z(self):
+        """
+        Verify OpenHands, Open Interpreter, AutoGPT, and the A-to-Z Flagship Trinity Pipeline
+        execute end-to-end via the HTTP API and enforce authentication.
+        """
+        import aura_db
+        import secrets
+
+        # 1. Overview & 9-dimension comparison matrix
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/api/flagship/overview", timeout=10) as r:
+            overview = json.loads(r.read().decode())
+        self.assertTrue(overview["success"])
+        self.assertIn("openhands", overview)
+        self.assertIn("open_interpreter", overview)
+        self.assertIn("autogpt", overview)
+        self.assertEqual(len(overview["comparison_matrix"]["dimensions"]), 9)
+
+        # Register user for authenticated flagship execution
+        u = aura_db.register_user(f"flagship_{secrets.token_hex(4)}", "Flagship123!")
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {u['token']}"}
+
+        # 2. OpenHands 7-Step SWE SDK
+        oh_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/flagship/openhands",
+            data=json.dumps({
+                "task_prompt": "Fix login bug and verify duplicate username rejection",
+                "project_name": "test_oh_login_fix",
+                "canvas_agent": "openhands_codeact"
+            }).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(oh_req, timeout=15) as r:
+            oh_data = json.loads(r.read().decode())
+        self.assertTrue(oh_data["success"])
+        self.assertEqual(oh_data["engine"], "OpenHands")
+        self.assertTrue(oh_data["seven_step_execution"]["step_5_tests_passed"])
+
+        # 3. Open Interpreter Computer-Use & ACP/1.0
+        oi_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/flagship/open_interpreter",
+            data=json.dumps({
+                "prompt": "Mere workspace folder me sabse badi files kaunsi hain? Unka size dikhao.",
+                "skill": "folder_size_auditor",
+                "harness": "rust_codex_fast"
+            }).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(oi_req, timeout=15) as r:
+            oi_data = json.loads(r.read().decode())
+        self.assertTrue(oi_data["success"])
+        self.assertEqual(oi_data["engine"], "Open Interpreter")
+        self.assertEqual(oi_data["acp_envelope"]["protocol"], "ACP/1.0")
+        self.assertIn("top_5_largest_files", oi_data["execution_output"])
+
+        # 4. AutoGPT 4-Surface Workflow & License Compliance
+        ag_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/flagship/autogpt",
+            data=json.dumps({
+                "goal": "Research potential customers and prepare outreach email drafts",
+                "surface": "autopilot",
+                "template_id": "agpt_mkt_customer_outreach"
+            }).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(ag_req, timeout=15) as r:
+            ag_data = json.loads(r.read().decode())
+        self.assertTrue(ag_data["success"])
+        self.assertEqual(ag_data["engine"], "AutoGPT")
+        self.assertEqual(len(ag_data["visual_graph"]["nodes"]), 5)
+        self.assertIn("Polyform Shield", ag_data["license_compliance"]["autogpt_platform_directory"]["license"])
+
+        # 5. Connected A-to-Z Flagship Trinity Pipeline (AutoGPT -> OpenHands -> Open Interpreter)
+        tri_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/flagship/pipeline",
+            data=json.dumps({
+                "goal": "Build, test, and QA an authentication module end-to-end",
+                "project_name": "test_trinity_e2e"
+            }).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(tri_req, timeout=25) as r:
+            tri_data = json.loads(r.read().decode())
+        self.assertTrue(tri_data["success"])
+        self.assertIn("stage_1_autogpt_workflow", tri_data["stages"])
+        self.assertIn("stage_2_openhands_engineering", tri_data["stages"])
+        self.assertIn("stage_3_open_interpreter_qa", tri_data["stages"])
+        self.assertEqual(len(tri_data["handoff_chain"]), 3)
 
     def test_complete_end_to_end_user_journey(self):
         """

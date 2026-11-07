@@ -1233,6 +1233,11 @@
             <span style="font-size: 11px; color: var(--text-subtle);">Ctrl+K</span>
         </button>
 
+        <button class="btn-new-chat" id="btnSidebarFlagship" onclick="openFlagshipHub('trinity'); closeMobileSidebar();" style="margin-top: -4px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(59, 130, 246, 0.16)); border-color: rgba(16, 185, 129, 0.4);">
+            <span>🚀 Flagship Repos Hub</span>
+            <span style="font-size: 10px; color: #34d399;">3 Engines A-Z</span>
+        </button>
+
         <div class="threads-scroll" id="threadsContainer">
             <div class="thread-group-title">Recent Chats</div>
             <div id="threadsList">
@@ -1268,6 +1273,10 @@
                         <span id="activeModelLabel" style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
                     </button>
                 </div>
+                <button type="button" id="btnNavbarFlagshipHub" onclick="openFlagshipHub('openhands')" style="margin-left: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.12); color: #6ee7b7; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>🚀 Flagship Engines</span>
+                    <span style="font-size: 10.5px; opacity: 0.85;">OpenHands • Open Interpreter • AutoGPT</span>
+                </button>
             </div>
             <div class="mode-toggle-chip">
                 <span>●</span>
@@ -1297,9 +1306,21 @@
                             <div class="starter-card-title">📰 Real-Time Tech News</div>
                             <div class="starter-card-desc">Search and summarize the latest updates from Google News.</div>
                         </div>
-                        <div class="starter-card" onclick="sendQuickPrompt('Inspect system telemetry: CPU, RAM, and disk status.')">
-                            <div class="starter-card-title">💻 System Telemetry</div>
-                            <div class="starter-card-desc">Audit hardware performance and storage metrics directly.</div>
+                        <div class="starter-card" onclick="openFlagshipHub('openhands')">
+                            <div class="starter-card-title">🛠️ OpenHands SWE Platform</div>
+                            <div class="starter-card-desc">Agent Canvas, 7-Step Software Agent SDK, Isolated Workspaces & Automation Server.</div>
+                        </div>
+                        <div class="starter-card" onclick="openFlagshipHub('open_interpreter')">
+                            <div class="starter-card-title">💻 Open Interpreter Harness</div>
+                            <div class="starter-card-desc">Rust-Core & Python Computer-Use, Largest Files Auditor, Skills, Hooks & ACP/MCP.</div>
+                        </div>
+                        <div class="starter-card" onclick="openFlagshipHub('autogpt')">
+                            <div class="starter-card-title">🤖 AutoGPT 4-Surface Hub</div>
+                            <div class="starter-card-desc">AutoPilot, Agents, Marketplace Templates & Visual Node Workflow Builder.</div>
+                        </div>
+                        <div class="starter-card" onclick="openFlagshipHub('trinity')">
+                            <div class="starter-card-title">🔗 A-to-Z Trinity Pipeline</div>
+                            <div class="starter-card-desc">Connected AutoGPT ➔ OpenHands ➔ Open Interpreter execution & Comparison Matrix.</div>
                         </div>
                     </div>
                 </div>
@@ -1383,22 +1404,22 @@
         </div>
     </div>
 
-    <!-- ---------------- Enterprise Auth Modal ---------------- -->
+    <!-- ---------------- Enterprise Auth Modal (Instagram-Style Smooth Login & Signup) ---------------- -->
     <div class="auth-modal-overlay" id="authOverlay" style="display: none;">
-        <div class="auth-card">
+        <div class="auth-card" style="max-width: 410px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 64px rgba(0,0,0,0.75);">
             <div class="auth-header">
                 <div class="auth-brand">
                     <div class="brand-logo-icon">⚡</div>
                     <span class="auth-title">AURA Agent</span>
                 </div>
-                <div class="auth-subtitle">AURA Technologies Inc.</div>
-                <p class="auth-desc" id="authStorageDesc">Sign in or create an account to access your isolated workspace, threads, and memory vault.</p>
+                <div class="auth-subtitle">Personal AI Engineering & Automation Account</div>
+                <p class="auth-desc" id="authStorageDesc">Sign in with your username and password to open your saved chat history and workspace, or create a unique account.</p>
             </div>
 
-            <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.45); color: #fcd34d;"></div>
+            <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; font-size: 12px;"></div>
 
             <div class="auth-tabs">
-                <button class="auth-tab active" id="tabSignIn" type="button" onclick="switchAuthTab('login')">Sign In</button>
+                <button class="auth-tab active" id="tabSignIn" type="button" onclick="switchAuthTab('login')">Log In</button>
                 <button class="auth-tab" id="tabSignUp" type="button" onclick="switchAuthTab('register')">Create Account</button>
             </div>
 
@@ -1406,18 +1427,240 @@
 
             <form id="authForm" onsubmit="handleAuthSubmit(event)">
                 <div class="auth-field">
-                    <label>Username</label>
-                    <input type="text" id="authUsername" class="auth-input" placeholder="e.g. touffeq" required minlength="3">
+                    <label for="authUsername">Username</label>
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username (e.g. touffeq)" autocomplete="username" required minlength="3">
                 </div>
                 <div class="auth-field">
-                    <label>Password</label>
-                    <input type="password" id="authPassword" class="auth-input" placeholder="Minimum 6 chars (letters + numbers)" required minlength="6">
+                    <label for="authPassword" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Password</span>
+                        <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#34d399; font-size:11.5px; cursor:pointer; padding:0;">Show</button>
+                    </label>
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password (min 6 chars, letters + numbers)" autocomplete="current-password" required minlength="6">
                 </div>
-                <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Sign In</button>
+                <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Log In</button>
             </form>
 
-            <div class="auth-footer-note">
-                🔒 Scrypt Password Hashing • Isolated Multi-User Sessions
+            <div style="margin-top: 14px; text-align: center; font-size: 12.5px; color: var(--text-muted);" id="authBottomSwitchRow">
+                Don't have an account? <button type="button" onclick="switchAuthTab('register')" style="background:none; border:none; color:#34d399; font-weight:600; cursor:pointer; padding:0;">Sign up</button>
+            </div>
+
+            <div class="auth-footer-note" style="margin-top: 12px;">
+                🔒 Unique Username Enforcement • Scrypt Hashing • Private History Vault
+            </div>
+        </div>
+    </div>
+
+    <!-- ---------------- Flagship Repositories Hub Modal (OpenHands • Open Interpreter • AutoGPT • Trinity) ---------------- -->
+    <div class="auth-modal-overlay" id="flagshipHubOverlay" style="display: none; z-index: 9500;">
+        <div class="auth-card" style="max-width: 980px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px; margin-bottom: 16px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 22px;">🚀</span>
+                        <h2 style="margin: 0; font-size: 19px; color: #f8fafc;">AURA Flagship Repositories Hub (A-to-Z Connected Pipeline)</h2>
+                    </div>
+                    <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #94a3b8;">Dedicated architectural sections & unified pipeline for <strong>OpenHands</strong>, <strong>Open Interpreter</strong>, and <strong>AutoGPT</strong>.</p>
+                </div>
+                <button type="button" onclick="closeFlagshipHub()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600;">✕ Close</button>
+            </div>
+
+            <!-- 4 Section Tabs -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
+                <button type="button" id="fTab_openhands" onclick="switchFlagshipTab('openhands')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(16,185,129,0.5); background: rgba(16,185,129,0.18); color: #ecfdf5; font-weight: 600; font-size: 12.5px; cursor: pointer;">
+                    1. 🛠️ OpenHands (SWE Platform)
+                </button>
+                <button type="button" id="fTab_open_interpreter" onclick="switchFlagshipTab('open_interpreter')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #cbd5e1; font-weight: 600; font-size: 12.5px; cursor: pointer;">
+                    2. 💻 Open Interpreter (Computer Use)
+                </button>
+                <button type="button" id="fTab_autogpt" onclick="switchFlagshipTab('autogpt')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #cbd5e1; font-weight: 600; font-size: 12.5px; cursor: pointer;">
+                    3. 🤖 AutoGPT (4-Surface Workflow)
+                </button>
+                <button type="button" id="fTab_trinity" onclick="switchFlagshipTab('trinity')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #cbd5e1; font-weight: 600; font-size: 12.5px; cursor: pointer;">
+                    4. 🔗 A-to-Z Pipeline & Comparison
+                </button>
+            </div>
+
+            <!-- SECTION 1: OPENHANDS -->
+            <div id="fSection_openhands" style="display: block;">
+                <div style="background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.28); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:#6ee7b7; font-size:14px;">OpenHands — All-Hands-AI/OpenHands (OpenHands/OpenHands)</strong>
+                            <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">AI Software Engineer Platform: Inspects files, builds AST, fixes bugs, executes terminal commands, runs unit tests & self-heals.</div>
+                        </div>
+                        <span style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(16,185,129,0.2); color:#a7f3d0;">MIT Core + Enterprise</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#34d399; font-weight:600;">1. Agent Canvas</div>
+                            <div style="color:#94a3b8;">UI control center & 3rd-party coding agent manager (OpenHands, Aider, Cline, OpenCode)</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#34d399; font-weight:600;">2. Software Agent SDK</div>
+                            <div style="color:#94a3b8;">7-Step SWE Loop: Inspect ➔ AST ➔ Patch ➔ Terminal ➔ Test ➔ Self-Heal ➔ Report</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#34d399; font-weight:600;">3. Agent Server</div>
+                            <div style="color:#94a3b8;">Multi-turn coding sessions & Action/Observation event stream API</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#34d399; font-weight:600;">4. Workspaces</div>
+                            <div style="color:#94a3b8;">Isolated project directories + Dockerfile.openhands-sandbox generator</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#34d399; font-weight:600;">5. Automation Server</div>
+                            <div style="color:#94a3b8;">Scheduled cron & webhook-triggered repo maintenance jobs</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <input id="ohTaskPrompt" class="auth-input" type="text" value="Mere project me login bug fix karo, duplicate username block karo, aur unit tests run karo">
+                    <select id="ohCanvasAgent" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                        <option value="openhands_codeact">Agent Canvas: OpenHands CodeAct SWE</option>
+                        <option value="aider_architect">Agent Canvas: Aider Diff-Patcher</option>
+                        <option value="cline_autonomous">Agent Canvas: Cline Autonomous</option>
+                        <option value="opencode_terminal">Agent Canvas: OpenCode Terminal</option>
+                    </select>
+                    <input id="ohProjectName" class="auth-input" type="text" value="aura_login_bugfix" placeholder="Workspace Name">
+                </div>
+                <button type="button" class="btn-auth-submit" onclick="runOpenHandsTask()" style="margin-bottom:12px;">🛠️ Run OpenHands 7-Step SWE Pipeline</button>
+                <pre id="ohResultBox" style="background:#090d16; color:#a7f3d0; padding:12px; border-radius:10px; font-size:11.5px; max-height:280px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click "Run OpenHands 7-Step SWE Pipeline" to execute across Agent Canvas, Workspaces, Agent Server, and Software Agent SDK.</pre>
+            </div>
+
+            <!-- SECTION 2: OPEN INTERPRETER -->
+            <div id="fSection_open_interpreter" style="display: none;">
+                <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:#93c5fd; font-size:14px;">Open Interpreter — open-interpreter/open-interpreter</strong>
+                            <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">Modern Rust-Based Coding Harness & Classic Python Computer-Use Engine with MCP, ACP 1.0, Skills & Safety Hooks.</div>
+                        </div>
+                        <span style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(59,130,246,0.2); color:#bfdbfe;">Rust + Python • MCP & ACP</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#60a5fa; font-weight:600;">1. Natural Language Terminal</div>
+                            <div style="color:#94a3b8;">Inspects folders, ranks largest files, runs Python/shell scripts & creates files</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#60a5fa; font-weight:600;">2. Rust/Codex Harness</div>
+                            <div style="color:#94a3b8;">Fast diff harness + low-cost model switching (Gemini Flash / Ollama)</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#60a5fa; font-weight:600;">3. MCP & ACP 1.0 Bridge</div>
+                            <div style="color:#94a3b8;">Model Context Protocol tools + Agent Client Protocol envelopes</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#60a5fa; font-weight:600;">4. Skills & Safety Hooks</div>
+                            <div style="color:#94a3b8;">Pre/Post execution PathGuard hooks & computer-use QA assertions</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <input id="oiPrompt" class="auth-input" type="text" value="Mere workspace folder me sabse badi files kaunsi hain? Unka size dikhao aur summary banao.">
+                    <select id="oiSkill" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                        <option value="auto">Skill: Auto-Detect</option>
+                        <option value="folder_size_auditor">Skill: Folder & Largest Files Auditor</option>
+                        <option value="python_sandbox_runner">Skill: Sandboxed Python Runner</option>
+                        <option value="webapp_endpoint_qa">Skill: Computer-Use WebApp QA</option>
+                    </select>
+                    <select id="oiHarness" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                        <option value="rust_codex_fast">Harness: Rust-Core Codex</option>
+                        <option value="python_computer_use">Harness: Classic Python REPL</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-auth-submit" onclick="runOpenInterpreterTask()" style="margin-bottom:12px;">💻 Run Open Interpreter Computer-Use Task</button>
+                <pre id="oiResultBox" style="background:#090d16; color:#bfdbfe; padding:12px; border-radius:10px; font-size:11.5px; max-height:280px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click "Run Open Interpreter Computer-Use Task" to execute folder/file inspection or Python scripts with ACP/MCP envelopes.</pre>
+            </div>
+
+            <!-- SECTION 3: AUTOGPT -->
+            <div id="fSection_autogpt" style="display: none;">
+                <div style="background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:#d8b4fe; font-size:14px;">AutoGPT — Significant-Gravitas/AutoGPT</strong>
+                            <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">Continuous Multi-Agent Workflow Automation Platform across AutoPilot, Agents, Marketplace & Visual Builder.</div>
+                        </div>
+                        <span style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(245,158,11,0.2); color:#fde68a;" title="classic/ is MIT; autogpt_platform/ uses Polyform Shield">License: classic/ MIT • platform/ Polyform Shield</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#c084fc; font-weight:600;">1. AutoPilot</div>
+                            <div style="color:#94a3b8;">Creates autonomous multi-step agents directly from natural language goals</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#c084fc; font-weight:600;">2. Agents</div>
+                            <div style="color:#94a3b8;">Manages created agents, continuous background runs & monitoring</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#c084fc; font-weight:600;">3. Marketplace</div>
+                            <div style="color:#94a3b8;">Pre-built agent templates (Customer Outreach, Repo Security, Market Intel)</div>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                            <div style="color:#c084fc; font-weight:600;">4. Build (Visual Workflow)</div>
+                            <div style="color:#94a3b8;">Node-graph workflow designer (Trigger ➔ Planner ➔ Research ➔ Synthesis ➔ Sink)</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <input id="agGoal" class="auth-input" type="text" value="Mere liye potential customers research karo, unki website analyze karo, aur outreach email draft ready karo.">
+                    <select id="agSurface" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                        <option value="autopilot">Surface: 1. AutoPilot</option>
+                        <option value="build">Surface: 4. Build (Visual Node Graph)</option>
+                        <option value="marketplace">Surface: 3. Marketplace Template</option>
+                        <option value="agents">Surface: 2. Agents Runner</option>
+                    </select>
+                    <select id="agTemplate" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                        <option value="agpt_mkt_customer_outreach">Template: B2B Customer Outreach</option>
+                        <option value="agpt_mkt_repo_sec_auditor">Template: Repo Security Auditor</option>
+                        <option value="agpt_mkt_market_intel">Template: Competitor Intelligence</option>
+                        <option value="agpt_mkt_content_pipeline">Template: Release Notes Publisher</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-auth-submit" onclick="runAutoGPTTask()" style="margin-bottom:12px;">🤖 Build & Execute AutoGPT Multi-Step Workflow</button>
+                <pre id="agResultBox" style="background:#090d16; color:#e9d5ff; padding:12px; border-radius:10px; font-size:11.5px; max-height:280px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click "Build & Execute AutoGPT Multi-Step Workflow" to generate the 5-node workflow graph and deliverables.</pre>
+            </div>
+
+            <!-- SECTION 4: UNIFIED A-TO-Z TRINITY PIPELINE & 9-DIMENSION COMPARISON MATRIX -->
+            <div id="fSection_trinity" style="display: none;">
+                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(59,130,246,0.12), rgba(168,85,247,0.12)); border: 1px solid rgba(16,185,129,0.4); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                    <strong style="color:#6ee7b7; font-size:14px;">🔗 Connected A-to-Z Flagship Trinity Pipeline (AutoGPT ➔ OpenHands ➔ Open Interpreter)</strong>
+                    <div style="font-size:12px; color:#cbd5e1; margin-top:4px;">
+                        <strong>Stage 1 (AutoGPT):</strong> Decomposes goal & builds 5-node workflow graph ➔
+                        <strong>Stage 2 (OpenHands):</strong> Synthesizes code, AST & runs unit tests in isolated workspace ➔
+                        <strong>Stage 3 (Open Interpreter):</strong> Audits generated workspace files, runs safety hooks & emits ACP/1.0 verification.
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <input id="trinityGoalInput" class="auth-input" type="text" value="Engineer an authenticated user workflow service, run unit tests, and audit workspace artifacts end-to-end" style="flex:1;">
+                        <button type="button" class="btn-auth-submit" onclick="runTrinityPipeline()" style="width:auto; padding:0 18px; white-space:nowrap;">⚡ Execute A-to-Z Trinity Pipeline</button>
+                    </div>
+                </div>
+                <pre id="trinityResultBox" style="background:#090d16; color:#6ee7b7; padding:12px; border-radius:10px; font-size:11.5px; max-height:190px; overflow:auto; border:1px solid rgba(255,255,255,0.1); margin-bottom:14px;">Click "Execute A-to-Z Trinity Pipeline" to run all 3 flagship engines in sequence.</pre>
+
+                <h3 style="font-size:13.5px; color:#f8fafc; margin: 8px 0;">📊 Direct 9-Dimension Comparison Matrix</h3>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:11.5px; color:#e2e8f0; background:rgba(0,0,0,0.3); border-radius:8px; overflow:hidden;">
+                        <thead>
+                            <tr style="background:rgba(255,255,255,0.08); text-align:left;">
+                                <th style="padding:8px 10px;">Feature</th>
+                                <th style="padding:8px 10px; color:#6ee7b7;">OpenHands</th>
+                                <th style="padding:8px 10px; color:#93c5fd;">Open Interpreter</th>
+                                <th style="padding:8px 10px; color:#d8b4fe;">AutoGPT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Coding</td><td style="padding:6px 10px;">Very Strong (SWE SDK + AST + Tests)</td><td style="padding:6px 10px;">Strong (Rust/Codex Harness)</td><td style="padding:6px 10px;">Medium (Via blocks & handoffs)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Terminal access</td><td style="padding:6px 10px;">Yes (Sandboxed Action stream)</td><td style="padding:6px 10px;">Yes (Core natural-language shell)</td><td style="padding:6px 10px;">Partial / Tool-based</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">File operations</td><td style="padding:6px 10px;">Yes (Surgical AST & file edit)</td><td style="padding:6px 10px;">Yes (Folder & largest files audit)</td><td style="padding:6px 10px;">Workspace-based artifact sinks</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Computer use</td><td style="padding:6px 10px;">Limited (Workspace & browser QA)</td><td style="padding:6px 10px;">Very Strong (Local OS & scripts)</td><td style="padding:6px 10px;">No (Server workflow focus)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Multi-agent</td><td style="padding:6px 10px;">Yes (Agent Canvas multi-agent)</td><td style="padding:6px 10px;">Partial (Via ACP 1.0 protocol)</td><td style="padding:6px 10px;">Yes (Multi-agent node graphs)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Workflow automation</td><td style="padding:6px 10px;">Medium-High (Automation Server)</td><td style="padding:6px 10px;">Medium (Skills & lifecycle hooks)</td><td style="padding:6px 10px;">Very Strong (45+ block connectors)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Visual builder</td><td style="padding:6px 10px;">Agent Canvas UI</td><td style="padding:6px 10px;">No</td><td style="padding:6px 10px;">Yes (Full Visual Node Builder)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Developer SDK</td><td style="padding:6px 10px;">Yes (Software Agent SDK)</td><td style="padding:6px 10px;">Yes (Python + Rust + MCP/ACP)</td><td style="padding:6px 10px;">Platform / REST API / Blocks</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">General-purpose assistant</td><td style="padding:6px 10px;">Medium (Engineering specialist)</td><td style="padding:6px 10px;">High (Local computer & code)</td><td style="padding:6px 10px;">High (Research, outreach & ops)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -1753,56 +1996,115 @@
             }
         });
 
+        // ---------------- Safe JSON Parser & Signed Vault Persistence ----------------
+        async function safeParseJson(res) {
+            const rawText = await res.text();
+            try {
+                return JSON.parse(rawText);
+            } catch (err) {
+                const snippet = (rawText || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+                return {
+                    success: false,
+                    error: `Server response error (HTTP ${res.status}): ${snippet || 'Unexpected response format'}`
+                };
+            }
+        }
+
+        function saveUserVault(vaultObj) {
+            if (!vaultObj || !vaultObj.username || !vaultObj.signature) return;
+            try {
+                const uname = String(vaultObj.username).toLowerCase();
+                localStorage.setItem('aura_user_vault_' + uname, JSON.stringify(vaultObj));
+                localStorage.setItem('aura_active_vault', JSON.stringify(vaultObj));
+            } catch (e) {}
+        }
+
+        function getAllSavedVaults() {
+            const vaults = [];
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('aura_user_vault_')) {
+                        const parsed = JSON.parse(localStorage.getItem(k));
+                        if (parsed && parsed.signature) vaults.push(parsed);
+                    }
+                }
+            } catch (e) {}
+            return vaults;
+        }
+
+        function togglePasswordVisibility() {
+            const btn = document.getElementById('btnTogglePwd');
+            if (!authPassword) return;
+            if (authPassword.type === 'password') {
+                authPassword.type = 'text';
+                if (btn) btn.innerText = 'Hide';
+            } else {
+                authPassword.type = 'password';
+                if (btn) btn.innerText = 'Show';
+            }
+        }
+
         // ---------------- Authentication Handling ----------------
         function applyStorageStatusUI(storageStatus) {
             const warnEl = document.getElementById('authStorageWarning');
-            const descEl = document.getElementById('authStorageDesc');
-            if (!storageStatus) return;
-            if (storageStatus.persistent === false || storageStatus.production_accounts_available === false) {
-                if (warnEl) {
-                    warnEl.innerText = storageStatus.message || 'Production accounts are unavailable: persistent database storage is not configured on this serverless deployment.';
-                    warnEl.style.display = 'block';
-                }
-                if (descEl) {
-                    descEl.innerText = 'Persistent database storage is not configured on this deployment. Configure AURA_DATABASE_URL / TURSO_DATABASE_URL to enable permanent accounts.';
-                }
+            if (!storageStatus || !warnEl) return;
+            if (storageStatus.vault_sync_enabled) {
+                warnEl.innerText = '🔒 Signed Account & History Vault Sync Active — Your username, password, and chats are protected.';
+                warnEl.style.display = 'block';
             } else {
-                if (warnEl) warnEl.style.display = 'none';
+                warnEl.style.display = 'none';
             }
         }
 
         function switchAuthTab(mode) {
             authMode = mode;
             authErrorMsg.style.display = 'none';
+            const bottomRow = document.getElementById('authBottomSwitchRow');
             if (mode === 'login') {
                 tabSignIn.classList.add('active');
                 tabSignUp.classList.remove('active');
-                btnAuthSubmit.innerText = 'Sign In';
+                btnAuthSubmit.innerText = 'Log In';
+                if (bottomRow) {
+                    bottomRow.innerHTML = `Don't have an account? <button type="button" onclick="switchAuthTab('register')" style="background:none; border:none; color:#34d399; font-weight:600; cursor:pointer; padding:0;">Sign up</button>`;
+                }
             } else {
                 tabSignUp.classList.add('active');
                 tabSignIn.classList.remove('active');
                 btnAuthSubmit.innerText = 'Create Account';
+                if (bottomRow) {
+                    bottomRow.innerHTML = `Already have an account? <button type="button" onclick="switchAuthTab('login')" style="background:none; border:none; color:#34d399; font-weight:600; cursor:pointer; padding:0;">Log in</button>`;
+                }
             }
         }
 
         async function handleAuthSubmit(e) {
             e.preventDefault();
-            const u = authUsername.value.trim();
+            const u = authUsername.value.trim().toLowerCase();
             const p = authPassword.value;
             if (!u || !p) return;
 
             btnAuthSubmit.disabled = true;
-            btnAuthSubmit.innerText = 'Please wait...';
+            btnAuthSubmit.innerText = authMode === 'login' ? 'Logging in...' : 'Creating account...';
             authErrorMsg.style.display = 'none';
 
             const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+            const specificVault = localStorage.getItem('aura_user_vault_' + u);
+            let parsedSpecificVault = null;
+            try { if (specificVault) parsedSpecificVault = JSON.parse(specificVault); } catch (err) {}
+
             try {
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
+                    body: JSON.stringify({
+                        username: u,
+                        password: p,
+                        vault_backup: parsedSpecificVault,
+                        vault_backups: getAllSavedVaults()
+                    })
                 });
-                const data = await res.json();
+                const data = await safeParseJson(res);
                 if (data.storage_status) {
                     applyStorageStatusUI(data.storage_status);
                 }
@@ -1811,6 +2113,9 @@
                     csrfToken = data.csrf_token || '';
                     localStorage.setItem('aura_auth_token', authToken);
                     localStorage.setItem('aura_csrf_token', csrfToken);
+                    if (data.user_vault) {
+                        saveUserVault(data.user_vault);
+                    }
                     currentUser = data.user;
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
@@ -1822,19 +2127,25 @@
                     if (data.default_thread_id) {
                         selectThread(data.default_thread_id);
                     } else {
-                        createNewChatSession();
+                        const threadsRes = await fetch('/api/threads', { headers: { 'Authorization': `Bearer ${authToken}` } });
+                        const threadsData = await safeParseJson(threadsRes);
+                        if (threadsData.threads && threadsData.threads.length > 0) {
+                            selectThread(threadsData.threads[0].id);
+                        } else {
+                            createNewChatSession();
+                        }
                     }
                     startPermissionPolling();
                 } else {
-                    authErrorMsg.innerText = data.error || 'Authentication failed. Please check credentials.';
+                    authErrorMsg.innerText = data.error || 'Authentication failed. Please check your username and password.';
                     authErrorMsg.style.display = 'block';
                 }
             } catch (err) {
-                authErrorMsg.innerText = 'Connection error: ' + err.message;
+                authErrorMsg.innerText = 'Network error: ' + err.message;
                 authErrorMsg.style.display = 'block';
             } finally {
                 btnAuthSubmit.disabled = false;
-                btnAuthSubmit.innerText = authMode === 'login' ? 'Sign In' : 'Create Account';
+                btnAuthSubmit.innerText = authMode === 'login' ? 'Log In' : 'Create Account';
             }
         }
 
@@ -1849,7 +2160,7 @@
             try {
                 const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
                 const res = await fetch('/api/auth/me', { headers });
-                const data = await res.json();
+                const data = await safeParseJson(res);
                 if (data.storage_status) {
                     applyStorageStatusUI(data.storage_status);
                 }
@@ -1859,9 +2170,38 @@
                         csrfToken = data.csrf_token;
                         localStorage.setItem('aura_csrf_token', csrfToken);
                     }
+                    if (data.user_vault) {
+                        saveUserVault(data.user_vault);
+                    }
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
                     return true;
+                }
+                // Cold-start recovery: if we have an active token + signed browser vault, restore seamlessly
+                const activeVaultRaw = localStorage.getItem('aura_active_vault');
+                if (authToken && activeVaultRaw) {
+                    const restoreRes = await fetch('/api/auth/restore_vault', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ vault_backup: JSON.parse(activeVaultRaw) })
+                    });
+                    const restoreData = await safeParseJson(restoreRes);
+                    if (restoreRes.ok && restoreData.authenticated && restoreData.user) {
+                        currentUser = restoreData.user;
+                        if (restoreData.csrf_token) {
+                            csrfToken = restoreData.csrf_token;
+                            localStorage.setItem('aura_csrf_token', csrfToken);
+                        }
+                        if (restoreData.user_vault) {
+                            saveUserVault(restoreData.user_vault);
+                        }
+                        updateUserUI(currentUser);
+                        authOverlay.style.display = 'none';
+                        return true;
+                    }
                 }
             } catch (e) {}
             localStorage.removeItem('aura_auth_token');
@@ -1871,6 +2211,134 @@
             currentUser = null;
             authOverlay.style.display = 'flex';
             return false;
+        }
+
+        // ---------------- Flagship Repositories Hub Controller ----------------
+        function openFlagshipHub(tab = 'openhands') {
+            if (!authToken) {
+                authOverlay.style.display = 'flex';
+                return;
+            }
+            const modal = document.getElementById('flagshipHubOverlay');
+            if (modal) {
+                modal.style.display = 'flex';
+                switchFlagshipTab(tab);
+            }
+        }
+
+        function closeFlagshipHub() {
+            const modal = document.getElementById('flagshipHubOverlay');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function switchFlagshipTab(tabName) {
+            const tabs = ['openhands', 'open_interpreter', 'autogpt', 'trinity'];
+            tabs.forEach(t => {
+                const sec = document.getElementById('fSection_' + t);
+                const btn = document.getElementById('fTab_' + t);
+                if (sec) sec.style.display = (t === tabName) ? 'block' : 'none';
+                if (btn) {
+                    if (t === tabName) {
+                        btn.style.background = 'rgba(16,185,129,0.22)';
+                        btn.style.borderColor = 'rgba(16,185,129,0.6)';
+                        btn.style.color = '#ecfdf5';
+                    } else {
+                        btn.style.background = 'rgba(255,255,255,0.04)';
+                        btn.style.borderColor = 'rgba(255,255,255,0.12)';
+                        btn.style.color = '#cbd5e1';
+                    }
+                }
+            });
+        }
+
+        async function runOpenHandsTask() {
+            const box = document.getElementById('ohResultBox');
+            const task_prompt = document.getElementById('ohTaskPrompt').value.trim();
+            const canvas_agent = document.getElementById('ohCanvasAgent').value;
+            const project_name = document.getElementById('ohProjectName').value.trim() || 'aura_swe_task';
+            box.textContent = '⏳ Running OpenHands 7-Step SWE SDK (Inspect ➔ AST ➔ Edit ➔ Terminal ➔ Unit Tests ➔ Self-Heal ➔ Report)...';
+            try {
+                const res = await fetch('/api/flagship/openhands', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ task_prompt, canvas_agent, project_name })
+                });
+                const data = await safeParseJson(res);
+                box.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                box.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function runOpenInterpreterTask() {
+            const box = document.getElementById('oiResultBox');
+            const prompt = document.getElementById('oiPrompt').value.trim();
+            const skill = document.getElementById('oiSkill').value;
+            const harness = document.getElementById('oiHarness').value;
+            box.textContent = '⏳ Running Open Interpreter Computer-Use Harness (Pre-Hook ➔ Skill Execution ➔ Post-Hook QA ➔ ACP/1.0 Envelope)...';
+            try {
+                const res = await fetch('/api/flagship/open_interpreter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ prompt, skill, harness })
+                });
+                const data = await safeParseJson(res);
+                box.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                box.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function runAutoGPTTask() {
+            const box = document.getElementById('agResultBox');
+            const goal = document.getElementById('agGoal').value.trim();
+            const surface = document.getElementById('agSurface').value;
+            const template_id = document.getElementById('agTemplate').value;
+            box.textContent = '⏳ Building & Executing AutoGPT 5-Node Visual Workflow Graph across AutoPilot, Agents, Marketplace & Build...';
+            try {
+                const res = await fetch('/api/flagship/autogpt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ goal, surface, template_id })
+                });
+                const data = await safeParseJson(res);
+                box.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                box.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function runTrinityPipeline() {
+            const box = document.getElementById('trinityResultBox');
+            const goal = document.getElementById('trinityGoalInput').value.trim();
+            box.textContent = '⏳ Executing Connected A-to-Z Flagship Trinity Pipeline (Stage 1: AutoGPT ➔ Stage 2: OpenHands ➔ Stage 3: Open Interpreter)...';
+            try {
+                const res = await fetch('/api/flagship/pipeline', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ goal, project_name: 'trinity_a_to_z_workspace' })
+                });
+                const data = await safeParseJson(res);
+                box.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                box.textContent = 'Error: ' + err.message;
+            }
         }
 
         async function logoutUser() {

@@ -21,11 +21,15 @@ import ast
 import subprocess
 import urllib.request
 import urllib.error
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Callable
 
 ROOT_DIR = Path(__file__).resolve().parent
-WORKSPACE_DIR = ROOT_DIR / "workspace"
+if os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK):
+    WORKSPACE_DIR = Path(tempfile.gettempdir()) / "aura_workspace"
+else:
+    WORKSPACE_DIR = ROOT_DIR / "workspace"
 WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------------

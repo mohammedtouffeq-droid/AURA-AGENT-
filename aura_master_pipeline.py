@@ -18,22 +18,30 @@ import sys
 import time
 import json
 import uuid
+import tempfile
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent
-WORKSPACE_DIR = ROOT_DIR / "workspace"
+if os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK):
+    WORKSPACE_DIR = Path(tempfile.gettempdir()) / "aura_workspace"
+else:
+    WORKSPACE_DIR = ROOT_DIR / "workspace"
 PIPELINE_RUNS_DIR = WORKSPACE_DIR / "pipeline_runs"
 PIPELINE_RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class PipelineDomain(str, Enum):
-    FULL_STACK = "full_stack"       # Code + game, with media only when requested
-    GAME_DEV = "game_dev"           # Godot 4 + 3D Physics + Playable WebGL
-    MEDIA_STUDIO = "media_studio"   # FLUX.1 + Video + Background Removal
-    CODERX = "coderx"               # AST + Code Generation + Testing
-    SYSTEM = "system"               # Explicit system telemetry request
+    FULL_STACK = "full_stack"               # Code + game, with media only when requested
+    GAME_DEV = "game_dev"                   # Godot 4 + 3D Physics + Playable WebGL
+    MEDIA_STUDIO = "media_studio"           # FLUX.1 + Video + Background Removal
+    CODERX = "coderx"                       # AST + Code Generation + Testing
+    SYSTEM = "system"                       # Explicit system telemetry request
+    OPENHANDS = "openhands"                 # OpenHands Agent Canvas + SWE SDK + Workspaces + Automation
+    OPEN_INTERPRETER = "open_interpreter"   # Open Interpreter Rust/Python Computer-Use + ACP/MCP + Skills
+    AUTOGPT = "autogpt"                     # AutoGPT AutoPilot + Agents + Marketplace + Visual Builder
+    FLAGSHIP_TRINITY = "flagship_trinity"   # Connected A-to-Z: AutoGPT -> OpenHands -> Open Interpreter
 
 
 class PipelineStage(str, Enum):
@@ -94,15 +102,23 @@ class AuraMasterPipeline:
         except Exception as e:
             telemetry = {"status": "UNKNOWN", "error": str(e)}
 
+        # Check Flagship Ecosystems (OpenHands, Open Interpreter, AutoGPT)
+        try:
+            from aura_flagship_repos import get_all_flagship_status
+            flagship_status = get_all_flagship_status()
+        except Exception as e:
+            flagship_status = {"success": False, "error": str(e)}
+
         return {
-            "pipeline_name": "AURA Master Unified Pipeline v2.5",
+            "pipeline_name": "AURA Master Unified Pipeline v3.0 (Flagship Trinity Connected)",
             "status": "OPERATIONAL",
             "bus_type": "Multi-Engine Synchronous & Event-Driven",
             "connections": {
                 "coderx_engine": coderx_status,
                 "media_cinema_engine": media_status,
                 "game_studio_engine": game_status,
-                "os_telemetry": telemetry
+                "os_telemetry": telemetry,
+                "flagship_trinity_hub": flagship_status
             },
             "supported_domains": [d.value for d in PipelineDomain],
             "total_completed_runs": len(list(PIPELINE_RUNS_DIR.glob("*.json")))
@@ -284,6 +300,59 @@ class AuraMasterPipeline:
             except Exception as e:
                 engine_outputs["coderx_engine"] = {"success": False, "error": str(e)}
 
+        if selected_domain == PipelineDomain.OPENHANDS:
+            try:
+                from aura_flagship_repos import OPENHANDS_HUB
+                oh_res = OPENHANDS_HUB.execute_swe_task(
+                    task_prompt=goal,
+                    project_name=params.get("project_name", "openhands_pipeline_proj"),
+                    canvas_agent=params.get("canvas_agent", "openhands_codeact"),
+                    target_file=params.get("target_file")
+                )
+                engine_outputs["openhands_engine"] = oh_res
+            except Exception as e:
+                engine_outputs["openhands_engine"] = {"success": False, "error": str(e)}
+
+        if selected_domain == PipelineDomain.OPEN_INTERPRETER:
+            try:
+                from aura_flagship_repos import OPEN_INTERPRETER_HUB
+                oi_res = OPEN_INTERPRETER_HUB.execute_computer_use_task(
+                    prompt=goal,
+                    skill=params.get("skill", "auto"),
+                    harness=params.get("harness", "rust_codex_fast"),
+                    model=params.get("model", "gemini-flash-lite-latest"),
+                    target_dir=params.get("target_dir")
+                )
+                engine_outputs["open_interpreter_engine"] = oi_res
+            except Exception as e:
+                engine_outputs["open_interpreter_engine"] = {"success": False, "error": str(e)}
+
+        if selected_domain == PipelineDomain.AUTOGPT:
+            try:
+                from aura_flagship_repos import AUTOGPT_HUB
+                ag_res = AUTOGPT_HUB.build_and_run_workflow(
+                    goal=goal,
+                    surface=params.get("surface", "autopilot"),
+                    template_id=params.get("template_id"),
+                    trigger_type=params.get("trigger_type", "pipeline_bus")
+                )
+                engine_outputs["autogpt_engine"] = ag_res
+            except Exception as e:
+                engine_outputs["autogpt_engine"] = {"success": False, "error": str(e)}
+
+        if selected_domain == PipelineDomain.FLAGSHIP_TRINITY:
+            try:
+                from aura_flagship_repos import run_flagship_trinity_pipeline
+                trinity_res = run_flagship_trinity_pipeline(
+                    goal=goal,
+                    project_name=params.get("project_name", "aura_trinity_mission"),
+                    canvas_agent=params.get("canvas_agent", "openhands_codeact"),
+                    oi_harness=params.get("harness", "rust_codex_fast")
+                )
+                engine_outputs["flagship_trinity_engine"] = trinity_res
+            except Exception as e:
+                engine_outputs["flagship_trinity_engine"] = {"success": False, "error": str(e)}
+
         run_record["results"] = engine_outputs
 
         # -------------------------------------------------------------
@@ -321,6 +390,14 @@ class AuraMasterPipeline:
                 pass
 
         g_lower = goal.lower()
+        if any(w in g_lower for w in ["trinity", "flagship pipeline", "all 3 flagship"]):
+            return PipelineDomain.FLAGSHIP_TRINITY
+        if "openhands" in g_lower or "agent canvas" in g_lower:
+            return PipelineDomain.OPENHANDS
+        if "open interpreter" in g_lower or "open-interpreter" in g_lower or "open_interpreter" in g_lower:
+            return PipelineDomain.OPEN_INTERPRETER
+        if "autogpt" in g_lower or "autopilot workflow" in g_lower:
+            return PipelineDomain.AUTOGPT
         if any(w in g_lower for w in ["everything", "all engines", "full stack", "full-stack", "full pipeline"]):
             return PipelineDomain.FULL_STACK
         game_requested = any(w in g_lower for w in ["game", "godot", "car", "racing", "craft", "3d", "physics"])

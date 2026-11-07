@@ -17,11 +17,15 @@ import sys
 import time
 import json
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List
 
 ROOT_DIR = Path(__file__).resolve().parent
-BENCHMARK_DIR = ROOT_DIR / "workspace" / "swe_bench_eval"
+if os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK):
+    BENCHMARK_DIR = Path(tempfile.gettempdir()) / "aura_workspace" / "swe_bench_eval"
+else:
+    BENCHMARK_DIR = ROOT_DIR / "workspace" / "swe_bench_eval"
 BENCHMARK_DIR.mkdir(parents=True, exist_ok=True)
 
 from aura_adapters.coding_agents import AiderDiffPatcher
