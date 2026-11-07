@@ -106,7 +106,7 @@ jobs:
 
       - name: Run Certified Audit Test Suite
         run: |
-          python -m unittest test_aura_certified.py
+          python -m unittest test_aura_certified.py -v
 
   certified-tests-ubuntu:
     name: AURA Certified Integration Tests (Ubuntu)
