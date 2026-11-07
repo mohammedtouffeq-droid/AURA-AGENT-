@@ -178,6 +178,250 @@ class AuraWebIntegrationTests(unittest.TestCase):
                 self.assertIn("reply", data)
             brain_type.assert_called_once_with(provider="ollama", model="qwen2.5-coder:7b")
 
+    def test_public_workspace_bypass_token_is_strictly_rejected(self):
+        """Verify aura_public_workspace_token is never accepted by database or API."""
+        import aura_db
+        self.assertIsNone(aura_db.authenticate_token("aura_public_workspace_token"))
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/me",
+            headers={"Authorization": "Bearer aura_public_workspace_token"}
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req, timeout=5)
+        self.assertEqual(ctx.exception.code, 401)
+
+    def test_signup_login_wrong_password_expiry_and_logout_lifecycle(self):
+        """Test full signup, login, wrong password rejection, session expiry, and server-side logout."""
+        import aura_db
+        import secrets
+        import datetime
+
+        uname = f"sec_user_{secrets.token_hex(4)}"
+        good_pass = "StrongPass2026!"
+
+        # 1. Signup via API
+        reg_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/register",
+            data=json.dumps({"username": uname, "password": good_pass}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(reg_req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            set_cookie = resp.headers.get("Set-Cookie", "")
+            self.assertIn("HttpOnly", set_cookie)
+            self.assertIn("SameSite=Strict", set_cookie)
+            reg_data = json.loads(resp.read().decode())
+        self.assertTrue(reg_data["success"])
+        token1 = reg_data["token"]
+        self.assertTrue(len(token1) >= 32)
+        self.assertNotEqual(token1, "aura_public_workspace_token")
+
+        # 2. Wrong password rejection (401)
+        bad_login = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/login",
+            data=json.dumps({"username": uname, "password": "WrongPassword999"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(bad_login, timeout=5)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # 3. Valid login via API
+        ok_login = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/login",
+            data=json.dumps({"username": uname, "password": good_pass}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(ok_login, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            login_data = json.loads(resp.read().decode())
+        self.assertTrue(login_data["success"])
+        token2 = login_data["token"]
+        self.assertNotEqual(token1, token2)
+
+        # 4. Session expiry enforcement
+        expired_token = secrets.token_hex(24)
+        past_iso = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)).isoformat()
+        conn = aura_db.get_connection()
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
+            (expired_token, login_data["user"]["id"], past_iso)
+        )
+        conn.commit()
+        conn.close()
+        self.assertIsNone(aura_db.authenticate_token(expired_token))
+
+        # 5. Logout revokes active session token
+        logout_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/logout",
+            data=json.dumps({"token": token2}).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token2}"},
+            method="POST"
+        )
+        with urllib.request.urlopen(logout_req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+
+        me_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/me",
+            headers={"Authorization": f"Bearer {token2}"}
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(me_req, timeout=5)
+        self.assertEqual(ctx.exception.code, 401)
+
+    def test_user_a_and_user_b_strict_multi_tenant_isolation(self):
+        """Verify User A cannot read, modify, or delete User B's threads, messages, memory, settings, or projects."""
+        import aura_db
+        import secrets
+
+        u_a = aura_db.register_user(f"alice_{secrets.token_hex(4)}", "AlicePass123!")
+        u_b = aura_db.register_user(f"bob_{secrets.token_hex(4)}", "BobPass123!")
+        self.assertTrue(u_a["success"] and u_b["success"])
+        tok_a, id_a = u_a["token"], u_a["user"]["id"]
+        tok_b, id_b = u_b["token"], u_b["user"]["id"]
+
+        # User A creates thread, message, memory, project, and model settings
+        th_a = aura_db.create_user_thread(id_a, "Alice Secret Thread")
+        aura_db.save_message(id_a, th_a["id"], "user", "Alice confidential message")
+        aura_db.save_user_memory(id_a, "secret_api_note", "Alice vault value")
+        proj_a = aura_db.create_user_project(id_a, "AliceStealthProject", "AliceCorp", "Rust")
+        aura_db.save_user_settings(id_a, {"brain_settings": {"active_provider": "ollama", "active_model": "llama3:8b"}})
+
+        # User B attempts to read User A's threads and messages via API
+        req_b_threads = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/threads",
+            headers={"Authorization": f"Bearer {tok_b}"}
+        )
+        with urllib.request.urlopen(req_b_threads, timeout=5) as resp:
+            b_threads = json.loads(resp.read().decode())["threads"]
+        self.assertNotIn(th_a["id"], [t["id"] for t in b_threads])
+
+        req_b_msgs = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/threads/messages?thread_id={th_a['id']}",
+            headers={"Authorization": f"Bearer {tok_b}"}
+        )
+        with urllib.request.urlopen(req_b_msgs, timeout=5) as resp:
+            b_msgs = json.loads(resp.read().decode())["messages"]
+        self.assertEqual(b_msgs, [])
+
+        # User B attempts to rename, pin, or delete User A's thread
+        self.assertFalse(aura_db.rename_user_thread(id_b, th_a["id"], "Hacked Title"))
+        self.assertFalse(aura_db.pin_user_thread(id_b, th_a["id"], True))
+        self.assertFalse(aura_db.delete_user_thread(id_b, th_a["id"]))
+
+        # User B attempts to read or delete User A's memory
+        b_mems = aura_db.get_user_memories(id_b)
+        self.assertNotIn("secret_api_note", [m["key"] for m in b_mems])
+        self.assertFalse(aura_db.delete_user_memory(id_b, "secret_api_note"))
+
+        # User B attempts to read, rename, pin, or delete User A's project
+        b_projs = aura_db.get_user_projects(id_b)
+        self.assertNotIn(proj_a["id"], [p["id"] for p in b_projs])
+        self.assertFalse(aura_db.rename_user_project(id_b, proj_a["id"], "HackedProj"))
+        self.assertFalse(aura_db.pin_user_project(id_b, proj_a["id"], True))
+        self.assertFalse(aura_db.delete_user_project(id_b, proj_a["id"]))
+
+        # User B's settings remain isolated from User A's settings
+        auth_b = aura_db.authenticate_token(tok_b)
+        self.assertNotEqual(auth_b["settings"].get("brain_settings", {}).get("active_model"), "llama3:8b")
+
+    def test_cookie_csrf_protection_and_cors_origin_restriction(self):
+        """Verify cookie-based POST requests require valid X-CSRF-Token and CORS blocks wildcard origins."""
+        import aura_db
+        import secrets
+
+        u = aura_db.register_user(f"csrf_{secrets.token_hex(4)}", "CsrfPass123!")
+        token = u["token"]
+        csrf = aura_db.compute_csrf_token(token)
+
+        # 1. Cookie-authenticated POST without CSRF token must return 401
+        req_no_csrf = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/threads/new",
+            data=json.dumps({"title": "Cookie Thread"}).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Cookie": f"aura_session={token}",
+                "Origin": "https://evil.example.com"
+            },
+            method="POST"
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req_no_csrf, timeout=5)
+        self.assertEqual(ctx.exception.code, 401)
+        # Verify wildcard '*' is not returned for untrusted origin
+        self.assertNotEqual(ctx.exception.headers.get("Access-Control-Allow-Origin"), "*")
+        self.assertNotEqual(ctx.exception.headers.get("Access-Control-Allow-Origin"), "https://evil.example.com")
+
+        # 2. Cookie-authenticated POST with valid X-CSRF-Token succeeds
+        req_with_csrf = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/threads/new",
+            data=json.dumps({"title": "Valid CSRF Thread"}).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Cookie": f"aura_session={token}",
+                "X-CSRF-Token": csrf,
+                "Origin": "https://aura-agent-mohammedtouffeq-7681s-projects.vercel.app"
+            },
+            method="POST"
+        )
+        with urllib.request.urlopen(req_with_csrf, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertEqual(
+                resp.headers.get("Access-Control-Allow-Origin"),
+                "https://aura-agent-mohammedtouffeq-7681s-projects.vercel.app"
+            )
+
+    def test_unauthenticated_and_non_admin_endpoints_blocked(self):
+        """Verify private endpoints return 401 unauthenticated and admin endpoints reject standard users."""
+        import aura_db
+        import secrets
+
+        # Unauthenticated requests to private endpoints must return 401
+        for get_ep in ["/api/threads", "/api/threads/messages?thread_id=1", "/api/workspace/tree", "/api/workspace/file?path=a.txt", "/api/coderx/ast", "/api/pipeline/runs", "/api/system/test_browser"]:
+            req = urllib.request.Request(f"http://127.0.0.1:{self.port}{get_ep}")
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req, timeout=5)
+            self.assertEqual(ctx.exception.code, 401, f"Expected 401 for unauthenticated GET {get_ep}")
+
+        # Standard non-admin user must be rejected (401) on terminal and OS endpoints
+        std_user = aura_db.register_user(f"std_{secrets.token_hex(4)}", "StdPass123!")
+        std_tok = std_user["token"]
+        for admin_post in ["/api/terminal/exec", "/api/os/execute", "/api/os/read_file", "/api/os/write_file", "/api/os/screenshot"]:
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{self.port}{admin_post}",
+                data=json.dumps({"command": "whoami", "path": "test.txt"}).encode("utf-8"),
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {std_tok}"},
+                method="POST"
+            )
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(req, timeout=5)
+            self.assertEqual(ctx.exception.code, 401, f"Expected 401 for non-admin POST {admin_post}")
+
+    def test_honest_serverless_storage_detection_and_backup_migration(self):
+        """Verify Vercel ephemeral storage never claims to be permanent and blocks silent account loss."""
+        import aura_db
+        import os
+
+        # When VERCEL=1 without AURA_DATABASE_URL, storage is marked non-persistent and signup returns storage_unavailable
+        with patch.dict(os.environ, {"VERCEL": "1", "AURA_DATABASE_URL": "", "TURSO_DATABASE_URL": "", "AURA_PERSISTENT_DB_PATH": ""}):
+            status = aura_db.get_storage_status()
+            self.assertFalse(status["persistent"])
+            self.assertFalse(status["production_accounts_available"])
+            res = aura_db.register_user("vercel_ephemeral_user", "ValidPass123!")
+            self.assertFalse(res["success"])
+            self.assertTrue(res.get("storage_unavailable"))
+
+        # Verify database backup export & import across invocations
+        snap = aura_db.export_database_backup()
+        self.assertEqual(snap["schema_version"], 1)
+        self.assertIn("users", snap["tables"])
+        counts = aura_db.import_database_backup(snap)
+        self.assertGreaterEqual(counts["users"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

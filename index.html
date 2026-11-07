@@ -900,8 +900,6 @@
 
         /* ---------------- Auth Modal Overlay ---------------- */
         .auth-modal-overlay {
-            display: none !important;
-
             position: fixed;
             top: 0;
             left: 0;
@@ -1245,13 +1243,13 @@
         <div class="sidebar-footer">
             <div class="user-profile-row">
                 <div class="user-meta-left">
-                    <div class="user-avatar-circle" id="userAvatar">D</div>
+                    <div class="user-avatar-circle" id="userAvatar">U</div>
                     <div class="user-text-col">
-                        <div class="user-display-name" id="userName">Developer</div>
+                        <div class="user-display-name" id="userName">User</div>
                         <div class="user-status-pill">● Online</div>
                     </div>
                 </div>
-                
+                <button class="btn-logout-small" id="btnSignOut" onclick="logoutUser()" title="Sign Out">Sign Out</button>
             </div>
         </div>
     </aside>
@@ -1385,22 +1383,51 @@
         </div>
     </div>
 
-    <!-- Hidden placeholders to keep legacy JS references safe without any login screen -->
-    <div id="authOverlay" style="display:none !important;" hidden>
-        <div id="authErrorMsg"></div>
-        <button id="tabSignIn" type="button"></button>
-        <button id="tabSignUp" type="button"></button>
-        <button id="btnAuthSubmit" type="button"></button>
-        <input id="authUsername" type="hidden">
-        <input id="authPassword" type="hidden">
+    <!-- ---------------- Enterprise Auth Modal ---------------- -->
+    <div class="auth-modal-overlay" id="authOverlay" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-brand">
+                    <div class="brand-logo-icon">⚡</div>
+                    <span class="auth-title">AURA Agent</span>
+                </div>
+                <div class="auth-subtitle">AURA Technologies Inc.</div>
+                <p class="auth-desc" id="authStorageDesc">Sign in or create an account to access your isolated workspace, threads, and memory vault.</p>
+            </div>
+
+            <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.45); color: #fcd34d;"></div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabSignIn" type="button" onclick="switchAuthTab('login')">Sign In</button>
+                <button class="auth-tab" id="tabSignUp" type="button" onclick="switchAuthTab('register')">Create Account</button>
+            </div>
+
+            <div id="authErrorMsg" class="auth-error-banner" style="display: none;"></div>
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)">
+                <div class="auth-field">
+                    <label>Username</label>
+                    <input type="text" id="authUsername" class="auth-input" placeholder="e.g. touffeq" required minlength="3">
+                </div>
+                <div class="auth-field">
+                    <label>Password</label>
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Minimum 6 chars (letters + numbers)" required minlength="6">
+                </div>
+                <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Sign In</button>
+            </form>
+
+            <div class="auth-footer-note">
+                🔒 Scrypt Password Hashing • Isolated Multi-User Sessions
+            </div>
+        </div>
     </div>
 
     <script>
         // State
         let authMode = 'login';
         let currentUser = null;
-        let authToken = localStorage.getItem('aura_auth_token') || 'aura_public_workspace_token';
-        localStorage.setItem('aura_auth_token', authToken);
+        let authToken = localStorage.getItem('aura_auth_token') || '';
+        let csrfToken = localStorage.getItem('aura_csrf_token') || '';
         let currentThreadId = localStorage.getItem('aura_active_thread_id') || ('th_' + Date.now());
         let isSending = false;
         let currentAttachments = [];
@@ -1472,7 +1499,7 @@
 
         async function openModelSettings() {
             if (!authToken) {
-                authOverlay.style.display = 'none';
+                authOverlay.style.display = 'flex';
                 return;
             }
             modelSettingsStatus.textContent = 'Loading saved model settings…';
@@ -1518,7 +1545,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({ active_provider: provider, active_model: model })
                 });
@@ -1726,6 +1754,23 @@
         });
 
         // ---------------- Authentication Handling ----------------
+        function applyStorageStatusUI(storageStatus) {
+            const warnEl = document.getElementById('authStorageWarning');
+            const descEl = document.getElementById('authStorageDesc');
+            if (!storageStatus) return;
+            if (storageStatus.persistent === false || storageStatus.production_accounts_available === false) {
+                if (warnEl) {
+                    warnEl.innerText = storageStatus.message || 'Production accounts are unavailable: persistent database storage is not configured on this serverless deployment.';
+                    warnEl.style.display = 'block';
+                }
+                if (descEl) {
+                    descEl.innerText = 'Persistent database storage is not configured on this deployment. Configure AURA_DATABASE_URL / TURSO_DATABASE_URL to enable permanent accounts.';
+                }
+            } else {
+                if (warnEl) warnEl.style.display = 'none';
+            }
+        }
+
         function switchAuthTab(mode) {
             authMode = mode;
             authErrorMsg.style.display = 'none';
@@ -1758,9 +1803,14 @@
                     body: JSON.stringify({ username: u, password: p })
                 });
                 const data = await res.json();
+                if (data.storage_status) {
+                    applyStorageStatusUI(data.storage_status);
+                }
                 if (data.success && data.token) {
                     authToken = data.token;
+                    csrfToken = data.csrf_token || '';
                     localStorage.setItem('aura_auth_token', authToken);
+                    localStorage.setItem('aura_csrf_token', csrfToken);
                     currentUser = data.user;
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
@@ -1790,37 +1840,57 @@
 
         function updateUserUI(user) {
             if (!user) return;
-            const name = user.display_name || user.username || 'Developer';
+            const name = user.display_name || user.username || 'User';
             userName.innerText = name;
             userAvatar.innerText = name[0].toUpperCase();
         }
 
         async function verifyAuth() {
-            if (!authToken) {
-                authToken = 'aura_public_workspace_token';
-                localStorage.setItem('aura_auth_token', authToken);
-            }
             try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+                const res = await fetch('/api/auth/me', { headers });
                 const data = await res.json();
-                if (data.authenticated && data.user) {
+                if (data.storage_status) {
+                    applyStorageStatusUI(data.storage_status);
+                }
+                if (res.ok && data.authenticated && data.user) {
                     currentUser = data.user;
+                    if (data.csrf_token) {
+                        csrfToken = data.csrf_token;
+                        localStorage.setItem('aura_csrf_token', csrfToken);
+                    }
                     updateUserUI(currentUser);
+                    authOverlay.style.display = 'none';
                     return true;
                 }
             } catch (e) {}
-            currentUser = { id: 1, username: 'developer', display_name: 'Developer' };
-            updateUserUI(currentUser);
-            return true;
+            localStorage.removeItem('aura_auth_token');
+            localStorage.removeItem('aura_csrf_token');
+            authToken = '';
+            csrfToken = '';
+            currentUser = null;
+            authOverlay.style.display = 'flex';
+            return false;
         }
 
-        function logoutUser() {
+        async function logoutUser() {
             if (!confirm('Are you sure you want to sign out?')) return;
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ token: authToken })
+                });
+            } catch (e) {}
             localStorage.removeItem('aura_auth_token');
+            localStorage.removeItem('aura_csrf_token');
             localStorage.removeItem('aura_active_thread_id');
             authToken = '';
+            csrfToken = '';
             currentUser = null;
             threadsList.innerHTML = '<div style="font-size: 12px; color: var(--text-subtle); padding: 8px 10px;">Signed out</div>';
             chatStream.innerHTML = '';
@@ -1828,7 +1898,7 @@
             welcomeHero.style.display = 'flex';
             userName.innerText = 'User';
             userAvatar.innerText = 'U';
-            authOverlay.style.display = 'none';
+            authOverlay.style.display = 'flex';
             switchAuthTab('login');
         }
 
@@ -1843,25 +1913,6 @@
                 }
             }, 1400);
 
-            // Auto-provision seamless session (No login barrier)
-            if (!authToken) {
-                try {
-                    const guestUser = 'user_' + Math.random().toString(36).substring(2, 7);
-                    const res = await fetch('/api/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: guestUser, password: 'AuraGuestUser2026!' })
-                    });
-                    const data = await res.json();
-                    if (data.token) {
-                        authToken = data.token;
-                        localStorage.setItem('aura_auth_token', authToken);
-                    }
-                } catch (e) {
-                    console.log('Guest session notice:', e);
-                }
-            }
-
             const authed = await verifyAuth();
             if (authed) {
                 await refreshActiveModelLabel();
@@ -1870,8 +1921,8 @@
                     await loadThreadMessages(currentThreadId);
                 }
                 startPermissionPolling();
+                userPrompt.focus();
             }
-            userPrompt.focus();
         });
 
         function startPermissionPolling() {
@@ -1987,7 +2038,7 @@
             if ((!text && !hasAttachments) || isSending) return;
 
             if (!authToken) {
-                authOverlay.style.display = 'none';
+                authOverlay.style.display = 'flex';
                 return;
             }
 
@@ -2019,7 +2070,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
+                        'Authorization': `Bearer ${authToken}`,
+                        'X-CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({
                         prompt: text,
@@ -2032,7 +2084,7 @@
 
                 if (res.status === 401) {
                     turnData.bubble.innerHTML = 'Your session has expired. Please sign in again.';
-                    authOverlay.style.display = 'none';
+                    authOverlay.style.display = 'flex';
                     return;
                 }
 

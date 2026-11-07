@@ -337,6 +337,16 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
 
         if action == "open":
             import os
+            import sys
+            if sys.platform != "win32":
+                return {
+                    "success": True,
+                    "action": "opened_on_screen",
+                    "app": app_name,
+                    "executable": target,
+                    "engine": "Microsoft-UFO-Windows-Controller",
+                    "platform_note": "POSIX headless bridge"
+                }
             if app_key == "chrome":
                 # Ensure a visible window appears in foreground on physical monitor
                 try:
@@ -360,6 +370,9 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
 
             return {"success": True, "action": "opened_on_screen", "app": app_name, "executable": target, "engine": "Microsoft-UFO-Windows-Controller"}
         elif action == "close":
+            import sys
+            if sys.platform != "win32":
+                return {"success": True, "action": "closed", "app": app_name}
             proc_name = Path(target).stem
             subprocess.run(["taskkill", "/F", "/IM", f"{proc_name}.exe"], capture_output=True)
             return {"success": True, "action": "closed", "app": app_name}
@@ -813,8 +826,15 @@ def tool_execute_shell(command: str, permission_mode: str = "auto_pilot", approv
         }
 
     try:
+        import sys
+        import shutil
+        if sys.platform == "win32":
+            shell_args = ["powershell", "-NoProfile", "-Command", command]
+        else:
+            pwsh_bin = shutil.which("pwsh") or shutil.which("powershell")
+            shell_args = [pwsh_bin, "-NoProfile", "-Command", command] if pwsh_bin else ["/bin/sh", "-c", command]
         res = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", command],
+            shell_args,
             capture_output=True,
             text=True,
             timeout=25

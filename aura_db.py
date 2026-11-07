@@ -23,14 +23,174 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
 import tempfile
+import urllib.request
+import urllib.error
 
 def _resolve_db_path() -> Path:
+    custom_path = os.environ.get("AURA_PERSISTENT_DB_PATH", "").strip()
+    if custom_path:
+        return Path(custom_path)
     default_dir = Path(__file__).resolve().parent
     if os.environ.get("VERCEL") or not os.access(default_dir, os.W_OK):
         return Path(tempfile.gettempdir()) / "aura_workspace.db"
     return default_dir / "aura_workspace.db"
 
 DB_PATH = _resolve_db_path()
+
+
+def is_persistent_storage_configured() -> bool:
+    """
+    Returns True only when backed by durable storage:
+    - External cloud database via AURA_DATABASE_URL / TURSO_DATABASE_URL, OR
+    - Explicit persistent volume path via AURA_PERSISTENT_DB_PATH, OR
+    - Local writable non-serverless filesystem (when not running in Vercel serverless).
+    Never claims /tmp SQLite on Vercel is persistent.
+    """
+    if os.environ.get("AURA_DATABASE_URL", "").strip() or os.environ.get("TURSO_DATABASE_URL", "").strip():
+        return True
+    if os.environ.get("AURA_PERSISTENT_DB_PATH", "").strip():
+        return True
+    if os.environ.get("VERCEL"):
+        return False
+    default_dir = Path(__file__).resolve().parent
+    return os.access(default_dir, os.W_OK)
+
+
+def get_storage_status() -> Dict[str, Any]:
+    """Returns honest metadata about the active database storage layer."""
+    remote_url = os.environ.get("AURA_DATABASE_URL", "").strip() or os.environ.get("TURSO_DATABASE_URL", "").strip()
+    custom_path = os.environ.get("AURA_PERSISTENT_DB_PATH", "").strip()
+    if remote_url:
+        return {
+            "persistent": True,
+            "mode": "persistent_cloud_db",
+            "engine": "libsql_remote",
+            "production_accounts_available": True,
+            "message": "Connected to persistent cloud database."
+        }
+    if custom_path:
+        return {
+            "persistent": True,
+            "mode": "persistent_volume_sqlite",
+            "engine": "sqlite3",
+            "production_accounts_available": True,
+            "message": "Using configured persistent volume database."
+        }
+    if os.environ.get("VERCEL"):
+        return {
+            "persistent": False,
+            "mode": "ephemeral_serverless_tmp",
+            "engine": "sqlite3_ephemeral",
+            "production_accounts_available": False,
+            "message": "Production accounts unavailable: persistent database storage (AURA_DATABASE_URL / TURSO_DATABASE_URL) is not configured on this serverless deployment. /tmp SQLite is ephemeral and is not used for permanent account storage."
+        }
+    return {
+        "persistent": True,
+        "mode": "persistent_local_sqlite",
+        "engine": "sqlite3",
+        "production_accounts_available": True,
+        "message": "Saved in local persistent SQLite workspace database."
+    }
+
+
+class _RemoteLibSQLCursor:
+    """DB-API 2.0 compatible cursor wrapper for Turso / LibSQL HTTP v2 pipeline API."""
+    def __init__(self, url: str, auth_token: str):
+        self.url = url.rstrip("/")
+        if self.url.startswith("libsql://"):
+            self.url = "https://" + self.url[len("libsql://"):]
+        if not self.url.endswith("/v2/pipeline"):
+            self.url = self.url + "/v2/pipeline"
+        self.auth_token = auth_token
+        self._rows: List[Dict[str, Any]] = []
+        self._pos = 0
+        self.lastrowid: Optional[int] = None
+        self.rowcount: int = 0
+
+    def _convert_arg(self, val: Any) -> Dict[str, Any]:
+        if val is None:
+            return {"type": "null"}
+        if isinstance(val, bool):
+            return {"type": "integer", "value": "1" if val else "0"}
+        if isinstance(val, int):
+            return {"type": "integer", "value": str(val)}
+        if isinstance(val, float):
+            return {"type": "float", "value": val}
+        return {"type": "text", "value": str(val)}
+
+    def execute(self, sql: str, params: Tuple[Any, ...] = ()):
+        stmt: Dict[str, Any] = {"sql": sql}
+        if params:
+            stmt["args"] = [self._convert_arg(p) for p in params]
+        payload = json.dumps({
+            "requests": [
+                {"type": "execute", "stmt": stmt},
+                {"type": "close"}
+            ]
+        }).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if self.auth_token:
+            headers["Authorization"] = f"Bearer {self.auth_token}"
+        req = urllib.request.Request(self.url, data=payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        first = data.get("results", [{}])[0]
+        if first.get("type") == "error":
+            err_msg = first.get("error", {}).get("message", "LibSQL execution error")
+            if "UNIQUE constraint failed" in err_msg:
+                raise sqlite3.IntegrityError(err_msg)
+            raise sqlite3.OperationalError(err_msg)
+        res = first.get("response", {}).get("result", {})
+        cols = [c.get("name") for c in res.get("cols", [])]
+        raw_rows = res.get("rows", [])
+        self._rows = []
+        for r in raw_rows:
+            row_dict = {}
+            for idx, col_name in enumerate(cols):
+                cell = r[idx]
+                ctype = cell.get("type")
+                cval = cell.get("value")
+                if ctype == "null":
+                    row_dict[col_name] = None
+                elif ctype == "integer":
+                    row_dict[col_name] = int(cval) if cval is not None else 0
+                elif ctype == "float":
+                    row_dict[col_name] = float(cval) if cval is not None else 0.0
+                else:
+                    row_dict[col_name] = cval
+            self._rows.append(row_dict)
+        self._pos = 0
+        last_id = res.get("last_insert_rowid")
+        self.lastrowid = int(last_id) if last_id is not None else None
+        self.rowcount = int(res.get("affected_row_count", 0))
+        return self
+
+    def fetchone(self):
+        if self._pos < len(self._rows):
+            r = self._rows[self._pos]
+            self._pos += 1
+            return r
+        return None
+
+    def fetchall(self):
+        rem = self._rows[self._pos:]
+        self._pos = len(self._rows)
+        return rem
+
+
+class _RemoteLibSQLConnection:
+    def __init__(self, url: str, auth_token: str):
+        self.url = url
+        self.auth_token = auth_token
+
+    def cursor(self):
+        return _RemoteLibSQLCursor(self.url, self.auth_token)
+
+    def commit(self):
+        pass
+
+    def close(self):
+        pass
 
 # Scrypt configuration (OWASP standard, ~20ms, zero third-party dependencies)
 SCRYPT_N = 16384
@@ -40,6 +200,10 @@ SCRYPT_KEYLEN = 64
 
 
 def get_connection():
+    remote_url = os.environ.get("AURA_DATABASE_URL", "").strip() or os.environ.get("TURSO_DATABASE_URL", "").strip()
+    if remote_url:
+        auth_token = os.environ.get("AURA_DATABASE_AUTH_TOKEN", "").strip() or os.environ.get("TURSO_AUTH_TOKEN", "").strip()
+        return _RemoteLibSQLConnection(remote_url, auth_token)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -212,14 +376,17 @@ def init_database():
 
     # Schema migration: ensure role exists in users table defaulting to 'user'
     c.execute("PRAGMA table_info(users)")
-    user_cols = [col[1] for col in c.fetchall()]
+    user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
     if "role" not in user_cols:
-        c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+        except Exception:
+            pass
     conn.commit()
 
     # Schema migration: ensure expires_at exists in auth_sessions
     c.execute("PRAGMA table_info(auth_sessions)")
-    existing_cols = [row[1] for row in c.fetchall()]
+    existing_cols = [(row["name"] if isinstance(row, dict) else row[1]) for row in c.fetchall()]
     if "expires_at" not in existing_cols:
         try:
             c.execute("ALTER TABLE auth_sessions ADD COLUMN expires_at DATETIME")
@@ -238,6 +405,12 @@ init_database()
 # ===================================================================================
 
 def register_user(username: str, password: str) -> Dict[str, Any]:
+    if not is_persistent_storage_configured():
+        return {
+            "success": False,
+            "storage_unavailable": True,
+            "error": "Production accounts are unavailable: persistent database storage is not configured on this serverless deployment."
+        }
     username = username.strip().lower()
     if len(username) < 3:
         return {"success": False, "error": "Username must be at least 3 characters."}
@@ -289,6 +462,12 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
 
 
 def login_user(username: str, password: str) -> Dict[str, Any]:
+    if not is_persistent_storage_configured():
+        return {
+            "success": False,
+            "storage_unavailable": True,
+            "error": "Production accounts are unavailable: persistent database storage is not configured on this serverless deployment."
+        }
     username = username.strip().lower()
     allowed, wait_sec = check_login_rate_limit(username)
     if not allowed:
@@ -350,37 +529,6 @@ def create_session_token(user_id: int) -> str:
 def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
     if not token:
         return None
-    if token == "aura_public_workspace_token":
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute("SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = 'developer'")
-        row = c.fetchone()
-        if not row:
-            hashed, salt = hash_password("AuraDeveloper2026!")
-            c.execute(
-                "INSERT INTO users (username, password_hash, salt, display_name, settings_json, role) VALUES (?, ?, ?, ?, ?, 'user')",
-                ("developer", hashed, salt, "Developer", json.dumps({}))
-            )
-            conn.commit()
-            user_id = c.lastrowid
-            c.execute("INSERT OR IGNORE INTO threads (id, user_id, title, is_pinned) VALUES (?, ?, ?, 1)", ("th_default_welcome", user_id, "Welcome & Overview"))
-            conn.commit()
-            conn.close()
-            return {
-                "id": user_id,
-                "username": "developer",
-                "display_name": "Developer",
-                "role": "user",
-                "settings": {}
-            }
-        conn.close()
-        return {
-            "id": row["id"],
-            "username": row["username"],
-            "display_name": row["display_name"] or "Developer",
-            "role": row["role"],
-            "settings": json.loads(row["settings_json"] or "{}")
-        }
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
@@ -696,3 +844,120 @@ def set_user_role(user_id: int, role: str) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+# ===================================================================================
+# DATABASE BACKUP & MIGRATION API
+# ===================================================================================
+
+def export_database_backup(backup_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Exports all users, threads, messages, user_memories, and projects into a
+    portable JSON backup snapshot so existing local SQLite data can be safely
+    migrated to a persistent cloud database (e.g., Turso/LibSQL) or restored.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    tables = ["users", "threads", "messages", "user_memories", "projects"]
+    snapshot: Dict[str, Any] = {
+        "schema_version": 1,
+        "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "storage_status": get_storage_status(),
+        "tables": {}
+    }
+    for tbl in tables:
+        c.execute(f"SELECT * FROM {tbl}")
+        snapshot["tables"][tbl] = [dict(r) for r in c.fetchall()]
+    conn.close()
+
+    if backup_path:
+        target = Path(backup_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+    return snapshot
+
+
+def import_database_backup(snapshot: Dict[str, Any]) -> Dict[str, int]:
+    """
+    Idempotently imports a database backup snapshot into the active database
+    (local SQLite or remote cloud LibSQL/Turso) without overwriting existing conflicts.
+    """
+    tables = snapshot.get("tables", {})
+    counts: Dict[str, int] = {}
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        for u in tables.get("users", []):
+            c.execute("""
+                INSERT OR IGNORE INTO users (id, username, password_hash, salt, display_name, settings_json, role, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                u["id"], u["username"], u["password_hash"], u["salt"],
+                u.get("display_name"), u.get("settings_json", "{}"),
+                u.get("role", "user"), u.get("created_at")
+            ))
+        counts["users"] = len(tables.get("users", []))
+
+        for t in tables.get("threads", []):
+            c.execute("""
+                INSERT OR IGNORE INTO threads (id, user_id, title, is_pinned, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                t["id"], t["user_id"], t["title"], t.get("is_pinned", 0),
+                t.get("created_at"), t.get("updated_at")
+            ))
+        counts["threads"] = len(tables.get("threads", []))
+
+        for m in tables.get("messages", []):
+            c.execute("""
+                INSERT OR IGNORE INTO messages (id, thread_id, user_id, role, content, tools_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                m["id"], m["thread_id"], m["user_id"], m["role"],
+                m["content"], m.get("tools_json"), m.get("created_at")
+            ))
+        counts["messages"] = len(tables.get("messages", []))
+
+        for mem in tables.get("user_memories", []):
+            c.execute("""
+                INSERT OR IGNORE INTO user_memories (id, user_id, key, value, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                mem["id"], mem["user_id"], mem["key"], mem["value"], mem.get("created_at")
+            ))
+        counts["user_memories"] = len(tables.get("user_memories", []))
+
+        for p in tables.get("projects", []):
+            c.execute("""
+                INSERT OR IGNORE INTO projects (id, user_id, name, company, stack, path, description, is_pinned, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                p["id"], p["user_id"], p["name"], p.get("company", ""),
+                p.get("stack", "Python"), p.get("path", ""), p.get("description", ""),
+                p.get("is_pinned", 0), p.get("created_at"), p.get("updated_at")
+            ))
+        counts["projects"] = len(tables.get("projects", []))
+
+        conn.commit()
+    finally:
+        conn.close()
+    return counts
+
+
+def compute_csrf_token(session_token: str) -> str:
+    """Computes a deterministic per-session CSRF token bound to the session token."""
+    secret_seed = os.environ.get("AURA_CSRF_SECRET", "aura-csrf-hmac-key-v1")
+    return hmac.new(
+        secret_seed.encode("utf-8"),
+        session_token.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()[:32]
+
+
+def verify_csrf_token(session_token: str, csrf_token: str) -> bool:
+    """Constant-time verification of a per-session CSRF token."""
+    if not session_token or not csrf_token:
+        return False
+    expected = compute_csrf_token(session_token)
+    return hmac.compare_digest(expected, csrf_token.strip())
+

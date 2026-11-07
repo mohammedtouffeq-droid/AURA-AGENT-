@@ -16,6 +16,7 @@ import os
 import sys
 import json
 import urllib.parse
+from http.cookies import SimpleCookie
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -55,18 +56,75 @@ def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
     return AuraBrain(provider=selected["active_provider"], model=selected["active_model"])
 
 
+DEFAULT_ALLOWED_ORIGINS = {
+    "http://127.0.0.1:5050",
+    "http://localhost:5050",
+    "http://127.0.0.1:5051",
+    "http://localhost:5051",
+    "http://127.0.0.1:5052",
+    "http://localhost:5052",
+    "https://aura-agent.vercel.app",
+    "https://aura-agent-mohammedtouffeq-7681s-projects.vercel.app",
+}
+
+
+def _get_allowed_origins() -> set:
+    origins = set(DEFAULT_ALLOWED_ORIGINS)
+    extra = os.environ.get("AURA_ALLOWED_ORIGINS", "")
+    for item in extra.split(","):
+        cleaned = item.strip().rstrip("/")
+        if cleaned:
+            origins.add(cleaned)
+    vercel_url = os.environ.get("VERCEL_URL", "").strip()
+    if vercel_url:
+        origins.add(f"https://{vercel_url}")
+    return origins
+
+
 class AuraWebHandler(BaseHTTPRequestHandler):
-    def _send_json(self, data: Dict[str, Any], status: int = 200):
+    def _resolve_cors_origin(self) -> str:
+        req_origin = (self.headers.get("Origin") or "").strip().rstrip("/")
+        allowed = _get_allowed_origins()
+        if req_origin and req_origin in allowed:
+            return req_origin
+        return "http://127.0.0.1:5050"
+
+    def _send_json(self, data: Dict[str, Any], status: int = 200, extra_headers: Optional[List[tuple]] = None):
         encoded = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Connection", "close")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
+        if extra_headers:
+            for h_name, h_val in extra_headers:
+                self.send_header(h_name, h_val)
         self.end_headers()
         self.wfile.write(encoded)
+
+    def _build_session_cookie(self, token: str, clear: bool = False) -> str:
+        is_https = bool(os.environ.get("VERCEL")) or (self.headers.get("X-Forwarded-Proto", "").lower() == "https")
+        secure_attr = "; Secure" if is_https else ""
+        if clear:
+            return f"aura_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict{secure_attr}"
+        return f"aura_session={token}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Strict{secure_attr}"
+
+    def _extract_cookie_token(self) -> str:
+        raw_cookie = self.headers.get("Cookie", "")
+        if not raw_cookie:
+            return ""
+        try:
+            cookie = SimpleCookie()
+            cookie.load(raw_cookie)
+            if "aura_session" in cookie:
+                return cookie["aura_session"].value.strip()
+        except Exception:
+            pass
+        return ""
 
     def do_HEAD(self):
         self.send_response(200)
@@ -77,14 +135,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Length", "0")
         self.send_header("Connection", "close")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
         self.end_headers()
 
     def _get_auth_user(self, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         auth_header = self.headers.get("Authorization", "")
         token = ""
+        used_cookie = False
         if auth_header.startswith("Bearer "):
             token = auth_header[7:].strip()
         if not token:
@@ -96,10 +157,26 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             parsed = urllib.parse.urlparse(self.path)
             qs = urllib.parse.parse_qs(parsed.query)
             token = qs.get("token", [""])[0]
+        if not token:
+            token = self._extract_cookie_token()
+            if token:
+                used_cookie = True
 
         if not token:
             return None
-        return aura_db.authenticate_token(token)
+
+        # Enforce CSRF token check on state-changing requests authenticated solely via cookie
+        if used_cookie and getattr(self, "command", "GET").upper() == "POST":
+            csrf_token = self.headers.get("X-CSRF-Token", "").strip()
+            if not csrf_token and body and isinstance(body, dict):
+                csrf_token = str(body.get("csrf_token", "")).strip()
+            if not aura_db.verify_csrf_token(token, csrf_token):
+                return None
+
+        user = aura_db.authenticate_token(token)
+        if user:
+            user["csrf_token"] = aura_db.compute_csrf_token(token)
+        return user
 
     def _is_authorized_admin(self, body: Optional[Dict[str, Any]] = None) -> bool:
         user = self._get_auth_user(body)
@@ -130,10 +207,16 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/auth/me":
             user = self._get_auth_user()
+            storage_status = aura_db.get_storage_status()
             if not user:
-                self._send_json({"authenticated": False}, status=401)
+                self._send_json({"authenticated": False, "storage_status": storage_status}, status=401)
             else:
-                self._send_json({"authenticated": True, "user": user})
+                self._send_json({
+                    "authenticated": True,
+                    "user": user,
+                    "csrf_token": user.get("csrf_token"),
+                    "storage_status": storage_status
+                })
 
         elif path.startswith("/media/"):
             # Serve generated media securely from workspace
@@ -158,7 +241,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", content_type)
                 self.send_header("Content-Length", str(len(data)))
                 self.send_header("Cache-Control", "public, max-age=86400")
-                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
                 self.send_header("Connection", "close")
                 self.end_headers()
                 self.wfile.write(data)
@@ -216,6 +299,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "projects": projects})
 
         elif path == "/api/system/test_browser":
+            if not self._is_authorized_admin():
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required"}, status=401)
+                return
             from aura_brain import tool_open_browser
             res = tool_open_browser("https://www.google.com")
             self._send_json(res)
@@ -231,7 +317,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "strictly_forbidden_paths": [str(p) for p in STRICTLY_FORBIDDEN_PATHS],
                 "hardware_control": "Legacy tools are not all routed through the master-pipeline approval gate.",
                 "powershell_sandbox": "Command-pattern filter only; no OS-level isolation",
-                "multimodal_tools": ["tool_generate_image", "tool_generate_video", "tool_get_weather", "tool_open_browser"]
+                "multimodal_tools": ["tool_generate_image", "tool_generate_video", "tool_get_weather", "tool_open_browser"],
+                "storage_status": aura_db.get_storage_status()
             })
 
         elif path == "/api/engines":
@@ -375,6 +462,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             })
 
         elif path == "/api/coderx/ast":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from coderx_engine import CodebaseAstMapper
             ws = ROOT / "workspace"
             repo_map = CodebaseAstMapper.generate_repo_map(ws)
@@ -385,6 +475,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "pipeline": AURA_PIPELINE.get_pipeline_topology()})
 
         elif path == "/api/pipeline/runs":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_master_pipeline import PIPELINE_RUNS_DIR
             runs = []
             for f in sorted(PIPELINE_RUNS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
@@ -405,22 +498,36 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         except Exception:
             body = {}
 
-        path = urllib.parse.urlparse(self.path).path
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+        query = urllib.parse.parse_qs(parsed_url.query)
 
         # 1. AUTH ROUTES
         if path == "/api/auth/register":
             username = body.get("username", "")
             password = body.get("password", "")
             res = aura_db.register_user(username, password)
-            status = 200 if res.get("success") else 400
-            self._send_json(res, status=status)
+            res["storage_status"] = aura_db.get_storage_status()
+            if res.get("success") and res.get("token"):
+                res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
+                extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
+                self._send_json(res, status=200, extra_headers=extra)
+            else:
+                status = 503 if res.get("storage_unavailable") else 400
+                self._send_json(res, status=status)
 
         elif path == "/api/auth/login":
             username = body.get("username", "")
             password = body.get("password", "")
             res = aura_db.login_user(username, password)
-            status = 200 if res.get("success") else 401
-            self._send_json(res, status=status)
+            res["storage_status"] = aura_db.get_storage_status()
+            if res.get("success") and res.get("token"):
+                res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
+                extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
+                self._send_json(res, status=200, extra_headers=extra)
+            else:
+                status = 503 if res.get("storage_unavailable") else 401
+                self._send_json(res, status=status)
 
         elif path == "/api/auth/logout":
             token = ""
@@ -431,9 +538,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 token = self.headers.get("X-Auth-Token", "").strip()
             if not token and body and isinstance(body, dict):
                 token = body.get("token", "")
+            if not token:
+                token = self._extract_cookie_token()
             if token:
                 aura_db.revoke_session(token)
-            self._send_json({"success": True, "message": "Session terminated successfully"})
+            extra = [("Set-Cookie", self._build_session_cookie("", clear=True))]
+            self._send_json({"success": True, "message": "Session terminated successfully"}, extra_headers=extra)
 
         # 2. THREADS ROUTES
         elif path == "/api/threads/new":
@@ -614,7 +724,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
             self.send_header("Connection", "keep-alive")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
+            self.send_header("Access-Control-Allow-Credentials", "true")
             self.end_headers()
 
             brain = _create_user_brain(user)
@@ -708,10 +819,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             })
 
         elif path == "/api/engines/search":
+            if not self._get_auth_user(body):
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
-            keyword = query.get("keyword", [""])[0]
-            target_engine = query.get("engine", [None])[0]
+            keyword = body.get("keyword") or query.get("keyword", [""])[0]
+            target_engine = body.get("engine") or query.get("engine", [None])[0]
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 
@@ -746,8 +860,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}", "exit_code": 1}, status=403)
                 return
             import subprocess
+            import shutil
             try:
-                proc = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+                if sys.platform == "win32":
+                    shell_args = ["powershell", "-NoProfile", "-Command", cmd]
+                else:
+                    pwsh_bin = shutil.which("pwsh") or shutil.which("powershell")
+                    shell_args = [pwsh_bin, "-NoProfile", "-Command", cmd] if pwsh_bin else ["/bin/sh", "-c", cmd]
+                proc = subprocess.run(shell_args,
                                       cwd=str(ws), capture_output=True, text=True, timeout=30)
                 self._send_json({
                     "success": True,
