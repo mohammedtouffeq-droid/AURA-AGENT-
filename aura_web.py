@@ -273,7 +273,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/memory":
             user = self._get_auth_user()
             if not user:
-                self._send_json({"success": True, "memories": [], "authenticated": False})
+                self._send_json({"success": False, "error": "Authentication required", "memories": [], "authenticated": False}, status=401)
                 return
             memories = aura_db.get_user_memories(user["id"])
             self._send_json({"success": True, "memories": memories})
@@ -418,6 +418,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": True, "history": permission_manager.history})
 
         elif path == "/api/os/telemetry":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_os_controller import laptop_controller
             self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
 

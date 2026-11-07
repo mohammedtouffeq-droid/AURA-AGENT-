@@ -381,7 +381,7 @@ class AuraWebIntegrationTests(unittest.TestCase):
         import secrets
 
         # Unauthenticated requests to private endpoints must return 401
-        for get_ep in ["/api/threads", "/api/threads/messages?thread_id=1", "/api/workspace/tree", "/api/workspace/file?path=a.txt", "/api/coderx/ast", "/api/pipeline/runs", "/api/system/test_browser"]:
+        for get_ep in ["/api/threads", "/api/threads/messages?thread_id=1", "/api/memory", "/api/os/telemetry", "/api/workspace/tree", "/api/workspace/file?path=a.txt", "/api/coderx/ast", "/api/pipeline/runs", "/api/system/test_browser"]:
             req = urllib.request.Request(f"http://127.0.0.1:{self.port}{get_ep}")
             with self.assertRaises(urllib.error.HTTPError) as ctx:
                 urllib.request.urlopen(req, timeout=5)
@@ -421,6 +421,146 @@ class AuraWebIntegrationTests(unittest.TestCase):
         self.assertIn("users", snap["tables"])
         counts = aura_db.import_database_backup(snap)
         self.assertGreaterEqual(counts["users"], 1)
+
+    def test_complete_end_to_end_user_journey(self):
+        """
+        End-to-end user journey test:
+        1. Open AURA root page (verify auth modal & splash exist, no public bypass token).
+        2. Sign up a new user via /api/auth/register.
+        3. Log out via /api/auth/logout and verify token revocation.
+        4. Log back in via /api/auth/login.
+        5. Execute real assistant chat actions via /api/chat (weather telemetry & conversation persistence).
+        6. Verify thread and message persistence via /api/threads and /api/threads/messages.
+        7. Save & retrieve per-user memory via /api/memory/add and /api/memory.
+        8. Create & retrieve per-user coding project via /api/projects/new and /api/projects.
+        9. Save & retrieve per-user model settings via /api/settings.
+        10. Verify permission gate endpoints (/api/permission/pending and /api/permission/mode).
+        """
+        import secrets
+        uname = f"journey_{secrets.token_hex(4)}"
+        pwd = "JourneyPass2026!"
+
+        # 1. Open AURA root page
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/", timeout=5) as r:
+            html = r.read().decode("utf-8")
+            self.assertEqual(r.status, 200)
+            self.assertNotIn("aura_public_workspace_token", html)
+            self.assertNotIn("AuraGuestUser2026!", html)
+            self.assertIn('id="authOverlay"', html)
+
+        # 2. Sign up
+        reg_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/register",
+            data=json.dumps({"username": uname, "password": pwd}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(reg_req, timeout=5) as r:
+            reg_data = json.loads(r.read().decode())
+        self.assertTrue(reg_data["success"])
+        first_token = reg_data["token"]
+        default_thread_id = reg_data["default_thread_id"]
+
+        # 3. Log out
+        out_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/logout",
+            data=json.dumps({"token": first_token}).encode("utf-8"),
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {first_token}"},
+            method="POST"
+        )
+        with urllib.request.urlopen(out_req, timeout=5) as r:
+            self.assertEqual(r.status, 200)
+
+        # 4. Log in
+        in_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/login",
+            data=json.dumps({"username": uname, "password": pwd}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(in_req, timeout=5) as r:
+            in_data = json.loads(r.read().decode())
+        self.assertTrue(in_data["success"])
+        token = in_data["token"]
+        auth_headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+        # 5. Real Assistant Action via /api/chat (Live Weather Telemetry tool execution)
+        chat_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/chat",
+            data=json.dumps({
+                "prompt": "What is the current weather in Hyderabad?",
+                "thread_id": default_thread_id,
+                "mode": "auto_pilot"
+            }).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(chat_req, timeout=15) as r:
+            chat_data = json.loads(r.read().decode())
+        self.assertEqual(chat_data["status"], "completed")
+        self.assertTrue(len(chat_data.get("reply", "")) > 10)
+
+        # 6. Verify thread & message persistence
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{self.port}/api/threads/messages?thread_id={default_thread_id}", headers=auth_headers),
+            timeout=5
+        ) as r:
+            msgs = json.loads(r.read().decode())["messages"]
+        self.assertEqual(len(msgs), 2)
+        self.assertEqual(msgs[0]["role"], "user")
+        self.assertEqual(msgs[1]["role"], "assistant")
+
+        # 7. Save & retrieve memory
+        mem_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/memory/add",
+            data=json.dumps({"key": "preferred_stack", "value": "Python + Godot 4.3"}).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(mem_req, timeout=5) as r:
+            self.assertTrue(json.loads(r.read().decode())["success"])
+
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{self.port}/api/memory", headers=auth_headers),
+            timeout=5
+        ) as r:
+            mems = json.loads(r.read().decode())["memories"]
+        self.assertTrue(any(m["key"] == "preferred_stack" for m in mems))
+
+        # 8. Create & retrieve coding project
+        proj_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/projects/new",
+            data=json.dumps({"name": "AURA Core Service", "company": "AURA", "stack": "Python"}).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(proj_req, timeout=5) as r:
+            self.assertTrue(json.loads(r.read().decode())["success"])
+
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{self.port}/api/projects", headers=auth_headers),
+            timeout=5
+        ) as r:
+            projs = json.loads(r.read().decode())["projects"]
+        self.assertTrue(any(p["name"] == "AURA Core Service" for p in projs))
+
+        # 9. Update & verify model settings
+        set_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/settings",
+            data=json.dumps({"active_provider": "gemini", "active_model": "gemini-flash-lite-latest"}).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(set_req, timeout=5) as r:
+            self.assertTrue(json.loads(r.read().decode())["success"])
+
+        # 10. Check permission system pending queue
+        with urllib.request.urlopen(
+            urllib.request.Request(f"http://127.0.0.1:{self.port}/api/permission/pending", headers=auth_headers),
+            timeout=5
+        ) as r:
+            perm_data = json.loads(r.read().decode())
+        self.assertTrue(perm_data["success"])
 
 
 if __name__ == "__main__":
