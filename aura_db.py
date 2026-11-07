@@ -858,15 +858,21 @@ def export_database_backup(backup_path: Optional[str] = None) -> Dict[str, Any]:
     """
     conn = get_connection()
     c = conn.cursor()
-    tables = ["users", "threads", "messages", "user_memories", "projects"]
+    table_queries = {
+        "users": "SELECT * FROM users",
+        "threads": "SELECT * FROM threads",
+        "messages": "SELECT * FROM messages",
+        "user_memories": "SELECT * FROM user_memories",
+        "projects": "SELECT * FROM projects",
+    }
     snapshot: Dict[str, Any] = {
         "schema_version": 1,
         "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "storage_status": get_storage_status(),
         "tables": {}
     }
-    for tbl in tables:
-        c.execute(f"SELECT * FROM {tbl}")
+    for tbl, query_sql in table_queries.items():
+        c.execute(query_sql)
         snapshot["tables"][tbl] = [dict(r) for r in c.fetchall()]
     conn.close()
 
