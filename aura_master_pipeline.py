@@ -210,6 +210,31 @@ class AuraMasterPipeline:
                 system_snapshot = {"status": "UNAVAILABLE", "telemetry_live": False, "ram_total_gb": 0.0, "error": str(telem_err)}
 
         run_record["system_snapshot"] = system_snapshot
+
+        # Cross-System Context Bus: Pre-Execution RouteLLM + Bi-Temporal Memory + Security Gate
+        cross_engine_bus = {
+            "job_id": job_id,
+            "domain": selected_domain.value,
+            "handoffs": []
+        }
+        try:
+            from aura_10_systems import AURA_10_SYSTEMS
+            sec_gate = AURA_10_SYSTEMS.sys10_security.evaluate_and_guard(goal)
+            route_info = AURA_10_SYSTEMS.sys1_neural.estimate_task_difficulty(goal)
+            mem_info = AURA_10_SYSTEMS.sys2_memory.record_and_consolidate(goal, user_tag="master_pipeline")
+            cross_engine_bus["security_gate_passed"] = sec_gate.get("allowed", True)
+            cross_engine_bus["openssf_score"] = sec_gate.get("openssf_scorecard", {}).get("overall_score_out_of_10", 10.0)
+            cross_engine_bus["routed_model"] = route_info.get("selected_model", {}).get("model_id", "gemini-2.5-flash")
+            cross_engine_bus["temporal_edge_id"] = (mem_info.get("temporal_knowledge_graph_edges") or [{}])[0].get("edge_id")
+            cross_engine_bus["handoffs"].append({
+                "stage": "pre_dispatch_omni_bus",
+                "routed_model": cross_engine_bus["routed_model"],
+                "temporal_edge_id": cross_engine_bus["temporal_edge_id"]
+            })
+        except Exception:
+            pass
+        run_record["cross_engine_bus"] = cross_engine_bus
+
         self._log_stage(run_record, PipelineStage.ENGINE_DISPATCH, "Dispatching tasks across piped engines")
 
         # -------------------------------------------------------------
@@ -375,6 +400,16 @@ class AuraMasterPipeline:
                 engine_outputs["ten_systems_omni_engine"] = {"success": False, "error": str(e)}
 
         run_record["results"] = engine_outputs
+
+        # Record cross-engine handoff chain across executed engines
+        executed_engines = list(engine_outputs.keys())
+        if len(executed_engines) > 1:
+            for idx in range(len(executed_engines) - 1):
+                cross_engine_bus["handoffs"].append({
+                    "from_engine": executed_engines[idx],
+                    "to_engine": executed_engines[idx + 1],
+                    "artifacts_shared": len(run_record.get("artifacts", []))
+                })
 
         # -------------------------------------------------------------
         # STAGE 4: VALIDATION
