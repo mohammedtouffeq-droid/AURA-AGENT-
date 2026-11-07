@@ -493,6 +493,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_flagship_repos import get_all_flagship_status
             self._send_json(get_all_flagship_status())
 
+        elif path == "/api/systems10/overview":
+            from aura_10_systems import AURA_10_SYSTEMS
+            self._send_json(AURA_10_SYSTEMS.get_overview())
+
         elif path == "/api/pipeline/status":
             from aura_master_pipeline import AURA_PIPELINE
             self._send_json({"success": True, "pipeline": AURA_PIPELINE.get_pipeline_topology()})
@@ -1254,6 +1258,31 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 canvas_agent=body.get("canvas_agent", "openhands_codeact"),
                 oi_harness=body.get("harness", "rust_codex_fast")
             )
+            self._send_json(res)
+
+        # 9. AURA 10-SYSTEM OMNI-CORE ROUTES ("One AURA = 100 AI")
+        elif path == "/api/systems10/execute":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_10_systems import AURA_10_SYSTEMS
+            try:
+                sys_id = int(body.get("system_id", 1))
+            except (TypeError, ValueError):
+                sys_id = 1
+            goal = body.get("goal") or body.get("prompt") or "Architect, verify, and benchmark an enterprise AI system module"
+            res = AURA_10_SYSTEMS.execute_single_system(system_id=sys_id, goal=goal)
+            self._send_json(res)
+
+        elif path == "/api/systems10/omnipipeline":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_10_systems import AURA_10_SYSTEMS
+            goal = body.get("goal") or body.get("prompt") or "Design, simulate, engineer, verify, and audit a full-stack autonomous system across all 10 AI cores"
+            res = AURA_10_SYSTEMS.run_10_system_omnipipeline(goal=goal, user_tag=user.get("username", "aura_operator"))
             self._send_json(res)
 
         else:

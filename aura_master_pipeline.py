@@ -42,6 +42,7 @@ class PipelineDomain(str, Enum):
     OPEN_INTERPRETER = "open_interpreter"   # Open Interpreter Rust/Python Computer-Use + ACP/MCP + Skills
     AUTOGPT = "autogpt"                     # AutoGPT AutoPilot + Agents + Marketplace + Visual Builder
     FLAGSHIP_TRINITY = "flagship_trinity"   # Connected A-to-Z: AutoGPT -> OpenHands -> Open Interpreter
+    TEN_SYSTEMS_OMNI = "ten_systems_omni"   # 1 AURA = 100 AI: All 10 Systems Connected A-to-Z
 
 
 class PipelineStage(str, Enum):
@@ -118,11 +119,20 @@ class AuraMasterPipeline:
                 "media_cinema_engine": media_status,
                 "game_studio_engine": game_status,
                 "os_telemetry": telemetry,
-                "flagship_trinity_hub": flagship_status
+                "flagship_trinity_hub": flagship_status,
+                "ten_systems_omni_core": self._get_ten_systems_status()
             },
             "supported_domains": [d.value for d in PipelineDomain],
             "total_completed_runs": len(list(PIPELINE_RUNS_DIR.glob("*.json")))
         }
+
+    @staticmethod
+    def _get_ten_systems_status() -> Dict[str, Any]:
+        try:
+            from aura_10_systems import AURA_10_SYSTEMS
+            return AURA_10_SYSTEMS.get_overview()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def execute(self, goal: str, domain: Optional[str] = None, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
@@ -353,6 +363,17 @@ class AuraMasterPipeline:
             except Exception as e:
                 engine_outputs["flagship_trinity_engine"] = {"success": False, "error": str(e)}
 
+        if selected_domain == PipelineDomain.TEN_SYSTEMS_OMNI:
+            try:
+                from aura_10_systems import AURA_10_SYSTEMS
+                omni_res = AURA_10_SYSTEMS.run_10_system_omnipipeline(
+                    goal=goal,
+                    user_tag=params.get("user_tag", "aura_pipeline")
+                )
+                engine_outputs["ten_systems_omni_engine"] = omni_res
+            except Exception as e:
+                engine_outputs["ten_systems_omni_engine"] = {"success": False, "error": str(e)}
+
         run_record["results"] = engine_outputs
 
         # -------------------------------------------------------------
@@ -390,6 +411,8 @@ class AuraMasterPipeline:
                 pass
 
         g_lower = goal.lower()
+        if any(w in g_lower for w in ["10 systems", "10-system", "100 ai", "omnipipeline", "omni-pipeline", "ten systems"]):
+            return PipelineDomain.TEN_SYSTEMS_OMNI
         if any(w in g_lower for w in ["trinity", "flagship pipeline", "all 3 flagship"]):
             return PipelineDomain.FLAGSHIP_TRINITY
         if "openhands" in g_lower or "agent canvas" in g_lower:

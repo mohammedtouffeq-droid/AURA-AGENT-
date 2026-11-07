@@ -1567,6 +1567,19 @@ def tool_coderx_status() -> Dict[str, Any]:
     }
 
 
+
+def tool_aura_10_systems_pipeline(goal: str) -> Dict[str, Any]:
+    """Executes all 10 AURA Systems (1 AURA = 100 AI) in a single connected A-to-Z Omni-Pipeline."""
+    from aura_10_systems import AURA_10_SYSTEMS
+    return AURA_10_SYSTEMS.run_10_system_omnipipeline(goal=goal)
+
+
+def tool_aura_execute_system(system_id: int, goal: str) -> Dict[str, Any]:
+    """Executes any single system (1..10) from the AURA 10-System Architecture."""
+    from aura_10_systems import AURA_10_SYSTEMS
+    return AURA_10_SYSTEMS.execute_single_system(system_id=int(system_id), goal=goal)
+
+
 AVAILABLE_TOOLS = {
     "tool_autonomous_code_loop": tool_autonomous_code_loop,
     "tool_coderx_build": tool_coderx_build,
@@ -1616,6 +1629,8 @@ AVAILABLE_TOOLS = {
     "tool_open_interpreter_computer_use": tool_open_interpreter_computer_use,
     "tool_autogpt_workflow": tool_autogpt_workflow,
     "tool_flagship_trinity_pipeline": tool_flagship_trinity_pipeline,
+    "tool_aura_10_systems_pipeline": tool_aura_10_systems_pipeline,
+    "tool_aura_execute_system": tool_aura_execute_system,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
@@ -2051,6 +2066,29 @@ GEMINI_TOOLS_DECLARATION = [{
                     "project_name": {"type": "STRING", "description": "Target project workspace name."}
                 },
                 "required": ["goal"]
+            }
+        },
+        {
+            "name": "tool_aura_10_systems_pipeline",
+            "description": "Runs all 10 AURA Systems (Neural Core, Infinite Memory, Multi-Agent Swarm, Autonomous SWE, Universal Computer Use, World Model, Sandboxed Self-Improvement, STORM Research, 3D Spatial Blender/Godot, and Trust/Security Core) in one A-to-Z Omni-Pipeline.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "goal": {"type": "STRING", "description": "Mission goal to execute across all 10 interconnected AI systems."}
+                },
+                "required": ["goal"]
+            }
+        },
+        {
+            "name": "tool_aura_execute_system",
+            "description": "Executes a specific system (1 to 10) in the AURA 10-System Architecture.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "system_id": {"type": "INTEGER", "description": "System number from 1 to 10."},
+                    "goal": {"type": "STRING", "description": "Task or query for the chosen system."}
+                },
+                "required": ["system_id", "goal"]
             }
         }
     ]

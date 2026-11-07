@@ -668,6 +668,67 @@ class AuraWebIntegrationTests(unittest.TestCase):
             perm_data = json.loads(r.read().decode())
         self.assertTrue(perm_data["success"])
 
+    def test_10_systems_architecture_and_omnipipeline(self):
+        """E2E Test: Verifies all 10 AURA Systems ('One AURA = 100 AI') and the connected A-to-Z Omni-Pipeline."""
+        uname = f"sys10_{int(time.time() * 1000) % 100000}"
+        pwd = "Sys10User2026!"
+
+        # 1. Overview endpoint returns all 10 systems & 29 pillars
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/api/systems10/overview", timeout=5) as r:
+            ov = json.loads(r.read().decode())
+        self.assertTrue(ov["success"])
+        self.assertEqual(ov["total_systems"], 10)
+        self.assertEqual(len(ov["systems"]), 10)
+
+        # 2. Authenticate operator
+        reg_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/auth/register",
+            data=json.dumps({"username": uname, "password": pwd}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(reg_req, timeout=5) as r:
+            reg_data = json.loads(r.read().decode())
+        token = reg_data["token"]
+        auth_headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+        # 3. Test individual System 2 (Infinite Contextual Memory + Bi-Temporal Graphiti KG)
+        s2_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/systems10/execute",
+            data=json.dumps({"system_id": 2, "goal": "Store bi-temporal architecture decision for AURA 10-System Omni-Core"}).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(s2_req, timeout=10) as r:
+            s2_data = json.loads(r.read().decode())
+        self.assertTrue(s2_data["success"])
+        self.assertIn("temporal_knowledge_graph_edges", s2_data)
+
+        # 4. Test individual System 7 (Verified Self-Improvement in Isolated Sandbox)
+        s7_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/systems10/execute",
+            data=json.dumps({"system_id": 7, "goal": "Benchmark and evolve routing heuristic in isolated sandbox"}).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(s7_req, timeout=10) as r:
+            s7_data = json.loads(r.read().decode())
+        self.assertTrue(s7_data["success"])
+        self.assertTrue(s7_data["production_code_untouched"])
+
+        # 5. Test Full 10-System A-to-Z Omni-Pipeline
+        omni_req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/systems10/omnipipeline",
+            data=json.dumps({"goal": "Build, simulate, research, and verify an autonomous 3D telemetry module across all 10 AI systems"}).encode("utf-8"),
+            headers=auth_headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(omni_req, timeout=30) as r:
+            omni_data = json.loads(r.read().decode())
+        self.assertTrue(omni_data["success"])
+        self.assertEqual(omni_data["total_systems_executed"], 10)
+        self.assertEqual(len(omni_data["pipeline_chain"]), 11)
+
 
 if __name__ == "__main__":
     unittest.main()
