@@ -597,6 +597,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_os_controller import laptop_controller
             self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
 
+        elif path == "/api/os/brightness":
+            if not self._is_authorized_admin():
+                self._send_json({"success": False, "error": "Admin authentication required"}, status=401)
+                return
+            from aura_os_controller import laptop_controller
+            self._send_json(laptop_controller.get_brightness())
+
         elif path == "/api/game/status":
             if not self._get_auth_user():
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
@@ -1591,6 +1598,31 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_os_controller import laptop_controller
             res = laptop_controller.capture_screenshot()
             self._send_json(res)
+
+        elif path == "/api/os/brightness":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required"}, status=401)
+                return
+            level = int(body.get("level", 50))
+            from aura_os_controller import laptop_controller
+            self._send_json(laptop_controller.set_brightness(level))
+
+        elif path == "/api/os/volume":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required"}, status=401)
+                return
+            level = int(body.get("level", 50))
+            mute = bool(body.get("mute", False))
+            from aura_os_controller import laptop_controller
+            self._send_json(laptop_controller.set_volume(level, mute=mute))
+
+        elif path == "/api/os/launch":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Unauthorized: Admin authentication required"}, status=401)
+                return
+            app_name = str(body.get("app_name", body.get("app", "")))
+            from aura_os_controller import laptop_controller
+            self._send_json(laptop_controller.launch_app(app_name))
 
         # 8. FLAGSHIP REPOSITORIES HUB ROUTES
         elif path == "/api/flagship/openhands":

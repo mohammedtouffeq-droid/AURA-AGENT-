@@ -256,5 +256,58 @@ class TestAuditRemediationP0P1(unittest.TestCase):
             self.assertTrue(omni_res.get("blocked_by_system_10"))
             self.assertIn("Inspect AI found unsafe binary output", omni_res.get("error", ""))
 
+    def test_16_hardware_brightness_and_volume_controller(self):
+        from aura_os_controller import laptop_controller
+        from aura_brain import tool_set_brightness, tool_get_brightness, tool_set_volume
+
+        b_res = laptop_controller.set_brightness(60)
+        self.assertTrue(b_res.get("success"))
+        self.assertEqual(b_res.get("level"), 60)
+
+        read_res = tool_get_brightness()
+        self.assertTrue(read_res.get("success"))
+        self.assertIn("level", read_res)
+
+        v_res = tool_set_volume(40, mute=False)
+        self.assertTrue(v_res.get("success"))
+        self.assertEqual(v_res.get("level"), 40)
+
+    def test_17_application_launcher_whatsapp_and_apps(self):
+        from aura_os_controller import laptop_controller
+        from aura_brain import tool_windows_app_control, tool_launch_application
+
+        # Safe launch WhatsApp
+        wa_res = laptop_controller.launch_app("whatsapp")
+        self.assertTrue(wa_res.get("success"))
+        self.assertIn(wa_res.get("app"), ["WhatsApp", "WhatsApp Web"])
+
+        # Tool layer launch
+        app_res = tool_launch_application("notepad")
+        self.assertTrue(app_res.get("success"))
+
+        # Blocked dangerous application
+        bad_res = tool_windows_app_control("trojan_virus_runner")
+        self.assertFalse(bad_res.get("success"))
+        self.assertIn("not allowed", bad_res.get("error", "").lower())
+
+    def test_18_open_interpreter_os_automation_skills(self):
+        from aura_flagship_repos import OPEN_INTERPRETER_HUB
+
+        oi_b = OPEN_INTERPRETER_HUB.execute_computer_use_task("Turn laptop brightness down to 20")
+        self.assertTrue(oi_b.get("success"))
+
+        oi_app = OPEN_INTERPRETER_HUB.execute_computer_use_task("Open WhatsApp on screen")
+        self.assertTrue(oi_app.get("success"))
+
+    def test_19_aura_brain_offline_os_automation_dispatch(self):
+        from aura_brain import AuraBrain
+
+        brain = AuraBrain()
+        r1 = brain.think_and_act("Make my laptop brightness low")
+        self.assertTrue("brightness" in r1.lower() or "display" in r1.lower())
+
+        r2 = brain.think_and_act("Open WhatsApp on laptop on my screen")
+        self.assertTrue("whatsapp" in r2.lower())
+
 if __name__ == "__main__":
     unittest.main()

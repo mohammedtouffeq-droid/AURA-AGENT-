@@ -525,7 +525,13 @@ class OpenInterpreterEcosystem:
         # Auto-select skill from natural language prompt if "auto"
         lower_p = prompt.lower()
         if skill == "auto":
-            if any(w in lower_p for w in ["largest", "sabse badi", "size", "folder", "downloads", "directory", "files"]):
+            if any(w in lower_p for w in ["brightness", "dim", "screen light", "display brightness"]):
+                selected_skill = "os_brightness_controller"
+            elif any(w in lower_p for w in ["volume", "sound", "mute", "unmute", "awaaz"]):
+                selected_skill = "os_volume_controller"
+            elif any(w in lower_p for w in ["whatsapp", "open chrome", "open calc", "open notepad", "open app", "launch app"]):
+                selected_skill = "os_app_launcher"
+            elif any(w in lower_p for w in ["largest", "sabse badi", "size", "folder", "downloads", "directory", "files"]):
                 selected_skill = "folder_size_auditor"
             elif any(w in lower_p for w in ["qa", "test web", "verify app", "html", "inspect ui"]):
                 selected_skill = "webapp_endpoint_qa"
@@ -619,6 +625,33 @@ class OpenInterpreterEcosystem:
                 "assertions": checks,
                 "all_passed": all(bool(v) for v in checks.values())
             }
+        elif selected_skill == "os_brightness_controller":
+            from aura_os_controller import laptop_controller
+            target_lvl = 50
+            if any(k in lower_p for k in ["low", "kam", "dim", "minimum", "min", "down"]):
+                target_lvl = 20
+            elif any(k in lower_p for k in ["full", "max", "maximum", "high", "100"]):
+                target_lvl = 100
+            else:
+                nums = re.findall(r"\b\d{1,3}\b", lower_p)
+                if nums:
+                    target_lvl = int(nums[0])
+            b_res = laptop_controller.set_brightness(target_lvl)
+            executed_code = f"from aura_os_controller import laptop_controller\nlaptop_controller.set_brightness({target_lvl})"
+            execution_output = b_res
+        elif selected_skill == "os_volume_controller":
+            from aura_os_controller import laptop_controller
+            is_mute = "mute" in lower_p and "unmute" not in lower_p
+            target_vol = 0 if is_mute else (25 if any(k in lower_p for k in ["low", "kam", "down"]) else 80)
+            v_res = laptop_controller.set_volume(target_vol, mute=is_mute)
+            executed_code = f"from aura_os_controller import laptop_controller\nlaptop_controller.set_volume({target_vol}, mute={is_mute})"
+            execution_output = v_res
+        elif selected_skill == "os_app_launcher":
+            from aura_os_controller import laptop_controller
+            target_app = "whatsapp" if "whatsapp" in lower_p else ("chrome" if "chrome" in lower_p else ("notepad" if "notepad" in lower_p else "calculator"))
+            app_res = laptop_controller.launch_app(target_app)
+            executed_code = f"from aura_os_controller import laptop_controller\nlaptop_controller.launch_app('{target_app}')"
+            execution_output = app_res
         else:
             script_path = run_folder / "oi_task_runner.py"
             script_code = (

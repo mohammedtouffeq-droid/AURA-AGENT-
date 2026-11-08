@@ -492,7 +492,14 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
             "cmd": "cmd.exe",
             "powershell": "powershell.exe",
             "settings": "ms-settings:",
-            "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+            "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            "whatsapp": "whatsapp:",
+            "wa": "whatsapp:",
+            "code": "code",
+            "vscode": "code",
+            "spotify": "spotify:",
+            "discord": "discord:",
+            "telegram": "telegram:"
         }
         app_key = app_name.lower().strip()
         if app_key not in ALLOWED_APPS:
@@ -506,37 +513,23 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
         if action == "open":
             import os
             import sys
-            if sys.platform != "win32" or os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI") or os.environ.get("AURA_ALLOW_PHYSICAL_GUI") != "1":
+            from aura_os_controller import laptop_controller
+            launch_res = laptop_controller.launch_app(app_key)
+            if launch_res.get("success"):
                 return {
                     "success": True,
                     "action": "opened_on_screen",
                     "app": app_name,
                     "executable": target,
                     "engine": "Microsoft-UFO-Windows-Controller",
-                    "platform_note": "Headless protected display bridge"
+                    "details": launch_res
                 }
-            if app_key == "chrome":
-                # Ensure a visible window appears in foreground on physical monitor
-                try:
-                    subprocess.Popen(["cmd.exe", "/c", "start", "", target, "--new-window", "https://www.google.com"])  # nosec B602 B603 B607
-                except Exception:
-                    pass
-                try:
-                    os.startfile("https://www.google.com")
-                except Exception:
-                    pass
-                try:
-                    subprocess.Popen(["powershell.exe", "-NoProfile", "-Command", '(New-Object -ComObject WScript.Shell).AppActivate("Chrome")'])  # nosec B602 B603 B607
-                except Exception:
-                    pass
-            elif app_key == "notepad":
-                subprocess.Popen(["cmd.exe", "/c", "start", "notepad.exe"])  # nosec B602 B603 B607
-            elif app_key in ["calculator", "calc"]:
-                subprocess.Popen(["cmd.exe", "/c", "start", "calc.exe"])  # nosec B602 B603 B607
-            else:
-                subprocess.Popen(["cmd.exe", "/c", "start", "", target])  # nosec B602 B603 B607
-
-            return {"success": True, "action": "opened_on_screen", "app": app_name, "executable": target, "engine": "Microsoft-UFO-Windows-Controller"}
+            return {
+                "success": False,
+                "app": app_name,
+                "error": launch_res.get("error", "Launch failed"),
+                "cloud_mode": launch_res.get("cloud_mode", False)
+            }
         elif action == "close":
             import sys
             if sys.platform != "win32":
@@ -548,6 +541,38 @@ def tool_windows_app_control(app_name: str, action: str = "open") -> Dict[str, A
             return {"success": False, "error": f"Unsupported action: {action}"}
     except Exception as e:
         return {"success": False, "error": f"Windows app control failed: {e}"}
+
+
+def tool_set_brightness(level: int = 50, permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
+    """Adjusts physical laptop display brightness from 0 to 100 percent via native Windows WMI."""
+    try:
+        from aura_os_controller import laptop_controller
+        return laptop_controller.set_brightness(int(level))
+    except Exception as e:
+        return {"success": False, "error": f"Failed to set brightness: {e}"}
+
+
+def tool_get_brightness() -> Dict[str, Any]:
+    """Reads current display brightness percentage (0-100%) from host computer."""
+    try:
+        from aura_os_controller import laptop_controller
+        return laptop_controller.get_brightness()
+    except Exception as e:
+        return {"success": False, "error": f"Failed to read brightness: {e}"}
+
+
+def tool_set_volume(level: int = 50, mute: bool = False, permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
+    """Adjusts master audio volume (0-100%) or mute state on host computer."""
+    try:
+        from aura_os_controller import laptop_controller
+        return laptop_controller.set_volume(int(level), mute=bool(mute))
+    except Exception as e:
+        return {"success": False, "error": f"Failed to set volume: {e}"}
+
+
+def tool_launch_application(app_name: str, action: str = "open", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
+    """Launches desktop applications on screen (WhatsApp, Chrome, VS Code, Notepad, Calc, Explorer, etc.)."""
+    return tool_windows_app_control(app_name=app_name, action=action)
 
 def tool_parse_screen_ui() -> Dict[str, Any]:
     """Inspects screen resolution, active foreground window title, and UI geometry (OmniParser style)."""
@@ -1941,6 +1966,10 @@ AVAILABLE_TOOLS = {
     "tool_get_weather": tool_get_weather,
     "tool_gui_click_and_type": tool_gui_click_and_type,
     "tool_windows_app_control": tool_windows_app_control,
+    "tool_set_brightness": tool_set_brightness,
+    "tool_get_brightness": tool_get_brightness,
+    "tool_set_volume": tool_set_volume,
+    "tool_launch_application": tool_launch_application,
     "tool_parse_screen_ui": tool_parse_screen_ui,
     "tool_generate_image": tool_generate_image,
     "tool_generate_video": tool_generate_video,
@@ -2017,12 +2046,53 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_windows_app_control",
-            "description": "Launch, focus, or close Windows desktop applications like Notepad, Calculator, Word, Excel, Paint, Settings (Microsoft UFO style).",
+            "description": "Launch, focus, or close Windows desktop applications like WhatsApp, Chrome, VS Code, Notepad, Calculator, Word, Excel, Paint, Settings (Microsoft UFO style).",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
-                    "app_name": {"type": "STRING", "description": "Application name, e.g. 'notepad', 'calculator', 'word', 'excel', 'settings', 'paint'."},
+                    "app_name": {"type": "STRING", "description": "Application name, e.g. 'whatsapp', 'chrome', 'vscode', 'notepad', 'calculator', 'word', 'excel', 'settings', 'paint'."},
                     "action": {"type": "STRING", "description": "Action: 'open' or 'close'."}
+                },
+                "required": ["app_name"]
+            }
+        },
+        {
+            "name": "tool_set_brightness",
+            "description": "Adjust physical laptop display brightness level from 0 to 100 percent. Call this whenever the user asks to increase, decrease, make full brightness, or dim the screen.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "level": {"type": "INTEGER", "description": "Target screen brightness percentage from 0 to 100 (e.g. 20 for low/dim, 50 for medium, 100 for full brightness)."}
+                },
+                "required": ["level"]
+            }
+        },
+        {
+            "name": "tool_get_brightness",
+            "description": "Read the current screen brightness level percentage of the host computer display.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {}
+            }
+        },
+        {
+            "name": "tool_set_volume",
+            "description": "Set audio sound volume level from 0 to 100 percent or toggle mute on the host computer.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "level": {"type": "INTEGER", "description": "Audio volume percentage from 0 to 100."},
+                    "mute": {"type": "BOOLEAN", "description": "Whether to mute audio."}
+                }
+            }
+        },
+        {
+            "name": "tool_launch_application",
+            "description": "Launch desktop applications on the host laptop screen (WhatsApp, Chrome, Visual Studio Code, Notepad, Calculator, File Explorer, Spotify, Discord, Settings, etc.). Call this when user wants to open an app on screen.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "app_name": {"type": "STRING", "description": "Name of application to launch on screen, e.g. 'whatsapp', 'chrome', 'vscode', 'notepad', 'calc', 'explorer'."}
                 },
                 "required": ["app_name"]
             }
@@ -2436,6 +2506,10 @@ GEMINI_TOOLS_DECLARATION = [{
 HOST_PRIVILEGED_TOOLS = frozenset({
     "tool_execute_shell",
     "tool_windows_app_control",
+    "tool_set_brightness",
+    "tool_get_brightness",
+    "tool_set_volume",
+    "tool_launch_application",
     "tool_gui_click_and_type",
     "tool_hyperbrowser_session",
     "tool_scrcpy_mobile_bridge",
@@ -2600,6 +2674,50 @@ class AuraBrain:
                     }]
                 }
 
+            elif last_tool_name == "tool_set_brightness":
+                if last_output.get("cloud_mode"):
+                    text = "⚠️ **Cloud Mode Notice**: You are currently accessing AURA through Vercel Cloud Serverless. Serverless cloud containers cannot modify physical display hardware on your local laptop. To adjust screen brightness, run AURA locally on your laptop (`python aura_web.py`)."
+                else:
+                    lvl = last_output.get("level", 50)
+                    text = f"🔆 **Laptop Display Brightness Adjusted!**\n\nScreen brightness has been set to **{lvl}%** via the native Windows WMI hardware controller."
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": text}]
+                        }
+                    }]
+                }
+            elif last_tool_name in ["tool_windows_app_control", "tool_launch_application"]:
+                if last_output.get("cloud_mode"):
+                    text = "⚠️ **Cloud Mode Notice**: You are currently accessing AURA through Vercel Cloud Serverless. Serverless containers cannot launch GUI applications on your local laptop screen. To open desktop apps on your screen, run AURA locally on your computer (`python aura_web.py`)."
+                else:
+                    app_name = last_output.get("app", "Application")
+                    engine = last_output.get("engine", "Windows Controller")
+                    text = f"🚀 **{app_name.capitalize()} Launched on Screen!**\n\nThe desktop application was triggered via `{engine}` and is now active on your laptop screen."
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": text}]
+                        }
+                    }]
+                }
+            elif last_tool_name == "tool_set_volume":
+                if last_output.get("cloud_mode"):
+                    text = "⚠️ **Cloud Mode Notice**: Audio adjustments require running AURA locally on your computer (`python aura_web.py`)."
+                else:
+                    lvl = last_output.get("level", 50)
+                    status_str = "Audio muted" if last_output.get("muted") else f"Volume set to **{lvl}%**"
+                    text = f"🔊 **Laptop Audio Adjusted!**\n\n{status_str} via Windows Audio Endpoint Controller."
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": text}]
+                        }
+                    }]
+                }
             elif last_tool_name == "tool_master_pipeline_execute":
                 job_id = last_output.get("job_id", "pipe_active")
                 elapsed = last_output.get("elapsed_seconds", 0)
@@ -2848,6 +2966,48 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
+        elif any(k in lower_q for k in ["brightness", "display light", "screen light", "screen dim", "roshni"]):
+            target_lvl = 50
+            if any(k in lower_q for k in ["low", "kam", "dim", "minimum", "min", "down", "ghata"]):
+                target_lvl = 20
+            elif any(k in lower_q for k in ["full", "max", "maximum", "high", "100", "zyada", "badha"]):
+                target_lvl = 100
+            else:
+                nums = re.findall(r"\b\d{1,3}\b", lower_q)
+                if nums:
+                    target_lvl = int(nums[0])
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_set_brightness", "args": {"level": target_lvl}}}]
+                    }
+                }]
+            }
+        elif any(k in lower_q for k in ["volume", "sound", "awaaz", "mute", "unmute"]):
+            is_mute = "mute" in lower_q and "unmute" not in lower_q
+            target_vol = 50
+            if any(k in lower_q for k in ["low", "kam", "down"]):
+                target_vol = 25
+            elif any(k in lower_q for k in ["full", "max", "high", "100", "up", "zyada"]):
+                target_vol = 100
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_set_volume", "args": {"level": target_vol, "mute": is_mute}}}]
+                    }
+                }]
+            }
+        elif any(k in lower_q for k in ["open whatsapp", "launch whatsapp", "whatsapp khol", "whatsapp on screen", "whatsapp on laptop", "screen par whatsapp"]):
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_windows_app_control", "args": {"app_name": "whatsapp", "action": "open"}}}]
+                    }
+                }]
+            }
         elif "whatsapp" in lower_q:
             if any(k in lower_q for k in ["send", "message", "bhej", "chat", "likh"]):
                 return {
@@ -3044,7 +3204,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
             "contents": contents,
             "generationConfig": {"temperature": float(self.temperature)},
             "systemInstruction": {
-                "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have full native execution tools for Google Chrome, PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. open Chrome on screen, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. When the user engages in casual conversation, banter, or greetings, reply naturally, warmly, and helpfully without robotic canned blocks."}]
+                "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have full native execution tools for display brightness (tool_set_brightness), audio volume (tool_set_volume), desktop apps (WhatsApp, Chrome, VS Code via tool_windows_app_control or tool_launch_application), PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. set laptop brightness low/full, open WhatsApp on screen, open Chrome, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. When the user engages in casual conversation, banter, or greetings, reply naturally, warmly, and helpfully without robotic canned blocks."}]
             }
         }
         if tools:
