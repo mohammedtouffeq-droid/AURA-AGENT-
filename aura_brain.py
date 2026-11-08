@@ -102,6 +102,24 @@ def validate_safe_path(filepath: str, allow_create: bool = False, user_id: Optio
     if not filepath or not isinstance(filepath, str):
         raise PermissionError("Security Guard: Empty or invalid file path.")
 
+    norm_fp = filepath.replace("\\", "/")
+    if re.match(r"^[A-Za-z]:", norm_fp) or norm_fp.startswith(("/etc", "/bin", "/sbin", "/usr", "/root", "/var", "/proc", "/sys", "/dev")):
+        raw_path = Path(filepath)
+        is_safe = False
+        try:
+            resolved = raw_path.resolve()
+            for root in SAFE_WORKSPACE_ROOTS:
+                try:
+                    resolved.relative_to(root)
+                    is_safe = True
+                    break
+                except ValueError:
+                    pass
+        except Exception:
+            pass
+        if not is_safe:
+            raise PermissionError(f"Security Guard: System path blocked outside authorized workspaces: '{filepath}'")
+
     raw_path = Path(filepath)
     if user_id is not None:
         tenant_root = _resolve_workspace_dir(user_id).resolve()

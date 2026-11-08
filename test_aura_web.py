@@ -23,7 +23,11 @@ class AuraWebIntegrationTests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.server.shutdown()
+        try:
+            cls.server.shutdown()
+            cls.server.server_close()
+        except Exception:
+            pass
 
     def test_get_root_page(self):
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}/")

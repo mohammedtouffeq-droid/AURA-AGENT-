@@ -34,7 +34,7 @@ class TestAuraSecurityP0P1Hardening(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.port = 5052
+        cls.port = 5055
         cls.server = make_server("127.0.0.1", cls.port)
         cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.server_thread.start()
@@ -57,13 +57,19 @@ class TestAuraSecurityP0P1Hardening(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # Clean up test user
-        conn = aura_db.get_connection()
-        c = conn.cursor()
-        c.execute("DELETE FROM users WHERE username = ?", (cls.username,))
-        conn.commit()
-        conn.close()
-        cls.server.shutdown()
+        try:
+            conn = aura_db.get_connection()
+            c = conn.cursor()
+            c.execute("DELETE FROM users WHERE username = ?", (cls.username,))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+        try:
+            cls.server.shutdown()
+            cls.server.server_close()
+        except Exception:
+            pass
 
     def _post(self, path: str, data: dict, headers: dict = None):
         url = f"http://127.0.0.1:{self.port}{path}"

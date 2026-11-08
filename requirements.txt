@@ -11,4 +11,3 @@ pywinauto>=0.6.8; platform_system == "Windows"
 websockets>=17.1
 defusedxml>=0.7.1
 numpy>=1.26.4
-opencv-python-headless>=4.10.0.84
