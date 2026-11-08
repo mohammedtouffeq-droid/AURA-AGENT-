@@ -1449,7 +1449,8 @@
 
     <!-- ---------------- Enterprise Auth Modal (Instagram-Style Smooth Login & Signup) ---------------- -->
     <div class="auth-modal-overlay" id="authOverlay" style="display: none;">
-        <div class="auth-card" style="max-width: 410px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 64px rgba(0,0,0,0.75);">
+        <div class="auth-card" style="position: relative; max-width: 410px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 64px rgba(0,0,0,0.75);">
+            <button type="button" onclick="closeAuthModal()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 4px;">✕</button>
             <div class="auth-header">
                 <div class="auth-brand">
                     <div class="brand-logo-icon">⚡</div>
@@ -1461,6 +1462,16 @@
 
             <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; font-size: 12px;"></div>
 
+            <div style="margin-bottom: 14px;">
+                <button type="button" id="btnGuestInstant" onclick="continueAsGuest()" style="width: 100%; padding: 11px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.25)); border: 1px solid #10b981; border-radius: 8px; color: #6ee7b7; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                    ⚡ 1-Click Instant Guest Access (No Signup Needed)
+                </button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; opacity:0.6;">
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.2);"></div>
+                <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px;">or log in with password</span>
+                <div style="flex:1; height:1px; background:rgba(255,255,255,0.2);"></div>
+            </div>
             <div class="auth-tabs">
                 <button class="auth-tab active" id="tabSignIn" type="button" onclick="switchAuthTab('login')">Log In</button>
                 <button class="auth-tab" id="tabSignUp" type="button" onclick="switchAuthTab('register')">Create Account</button>
@@ -2369,6 +2380,44 @@
             }
         }
 
+        function closeAuthModal() {
+            authOverlay.style.display = 'none';
+        }
+
+        async function continueAsGuest() {
+            const guestUser = 'guest_' + Math.random().toString(36).substring(2, 7) + Date.now().toString(36).slice(-3);
+            const guestPass = 'AuraGuest' + Math.floor(1000 + Math.random() * 9000);
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: guestUser, password: guestPass })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success && (data.user || data.token)) {
+                    authToken = data.token || '';
+                    csrfToken = data.csrf_token || '';
+                    currentUser = data.user;
+                    if (authToken) {
+                        sessionStorage.setItem('aura_auth_token', authToken);
+                        localStorage.setItem('aura_auth_token', authToken);
+                    }
+                    sessionStorage.setItem('aura_auth_token', authToken);
+                    localStorage.setItem('aura_auth_token', authToken);
+                    updateUserUI(currentUser);
+                    authOverlay.style.display = 'none';
+                    await refreshActiveModelLabel();
+                    await loadThreads();
+                    startPermissionPolling();
+                    return true;
+                }
+            } catch (e) {
+                console.error('Guest access registration error:', e);
+            }
+            return false;
+        }
+
         function switchAuthTab(mode) {
             authMode = mode;
             authErrorMsg.style.display = 'none';
@@ -2417,6 +2466,10 @@
                     authToken = data.token || '';
                     csrfToken = data.csrf_token || '';
                     currentUser = data.user;
+                    if (authToken) {
+                        sessionStorage.setItem('aura_auth_token', authToken);
+                        localStorage.setItem('aura_auth_token', authToken);
+                    }
 
                     // Post-authentication vault history sync (never runs before password verification)
                     const savedVaultRaw = localStorage.getItem('aura_user_vault_' + u);
@@ -2477,6 +2530,10 @@
 
         async function verifyAuth() {
             try {
+                const storedToken = sessionStorage.getItem('aura_auth_token') || localStorage.getItem('aura_auth_token');
+                if (storedToken && !authToken) {
+                    authToken = storedToken;
+                }
                 const res = await apiFetch('/api/auth/me');
                 const data = await safeParseJson(res);
                 if (data.storage_status) {
@@ -2498,6 +2555,8 @@
             authToken = '';
             csrfToken = '';
             currentUser = null;
+            sessionStorage.removeItem('aura_auth_token');
+            localStorage.removeItem('aura_auth_token');
             authOverlay.style.display = 'flex';
             return false;
         }
@@ -2832,12 +2891,16 @@
             if ((!text && !hasAttachments) || isSending) return;
 
             if (!isAuthenticated()) {
-                authOverlay.style.display = 'flex';
-                if (authErrorMsg) {
-                    authErrorMsg.textContent = 'Please log in or register to message AURA.';
-                    authErrorMsg.style.display = 'block';
+                console.warn('Unauthenticated send: auto-initializing guest session for instant access...');
+                const ok = await continueAsGuest();
+                if (!ok) {
+                    authOverlay.style.display = 'flex';
+                    if (authErrorMsg) {
+                        authErrorMsg.textContent = 'Please log in or click 1-Click Guest Access to message AURA.';
+                        authErrorMsg.style.display = 'block';
+                    }
+                    return;
                 }
-                return;
             }
 
             isSending = true;
