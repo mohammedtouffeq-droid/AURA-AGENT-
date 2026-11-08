@@ -2771,9 +2771,23 @@
             btnSend.disabled = !this.value.trim() && currentAttachments.length === 0;
         });
 
+        let lastStreamActivity = 0;
+
         userPrompt.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (isSending) {
+                    isSending = false;
+                    btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
+                    console.warn('User pressed Escape: input lock reset.');
+                }
+            }
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                // Auto-recover lock if stuck for more than 7s without streaming chunks
+                if (isSending && (Date.now() - lastStreamActivity > 7000)) {
+                    console.warn('Auto-clearing stuck isSending lock on Enter press.');
+                    isSending = false;
+                }
                 sendMessage();
             }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -2807,16 +2821,27 @@
 
         // ---------------- Live Streaming Message Dispatcher ----------------
         async function sendMessage() {
+            // Auto-heal lock if stale
+            if (isSending && (Date.now() - lastStreamActivity > 8000)) {
+                console.warn('Auto-healing stale isSending lock before send.');
+                isSending = false;
+            }
+
             const text = userPrompt.value.trim();
             const hasAttachments = currentAttachments.length > 0;
             if ((!text && !hasAttachments) || isSending) return;
 
             if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
+                if (authErrorMsg) {
+                    authErrorMsg.textContent = 'Please log in or register to message AURA.';
+                    authErrorMsg.style.display = 'block';
+                }
                 return;
             }
 
             isSending = true;
+            lastStreamActivity = Date.now();
             btnSend.disabled = true;
 
             if (welcomeHero) {
@@ -2883,8 +2908,9 @@
                     let buffer = '';
                     let accumulatedMarkdown = '';
                     let streamErrored = false;
+                    let streamFinished = false;
 
-                    while (true) {
+                    while (!streamFinished) {
                         const { done, value } = await reader.read();
                         if (done) break;
 
@@ -2899,6 +2925,7 @@
                                 if (!jsonStr) continue;
                                 try {
                                     const eventData = JSON.parse(jsonStr);
+                                    lastStreamActivity = Date.now();
                                     if (eventData.type === 'tool') {
                                         const badge = document.createElement('div');
                                         badge.className = 'tool-badge-pill';
@@ -2914,11 +2941,15 @@
                                         accumulatedMarkdown = eventData.reply || accumulatedMarkdown;
                                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
                                         loadThreads();
+                                        streamFinished = true;
+                                        break;
                                     } else if (eventData.type === 'error') {
                                         streamErrored = true;
                                         turnData.thinking.style.display = 'none';
                                         const errMsg = eventData.error || eventData.message || 'An unexpected error occurred during generation.';
                                         turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ Stream Error: ${escapeHtml(errMsg)}</span>`;
+                                        streamFinished = true;
+                                        break;
                                     }
                                 } catch (e) {
                                     console.error('SSE JSON parse error:', e);
@@ -2926,6 +2957,7 @@
                             }
                         }
                     }
+                    try { await reader.cancel(); } catch(_) {}
 
                     turnData.thinking.style.display = 'none';
                     if (accumulatedMarkdown) {
