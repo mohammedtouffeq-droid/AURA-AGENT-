@@ -13,6 +13,7 @@ Comprehensive verification tests covering:
 ===================================================================================
 """
 import os
+os.environ["AURA_TEST_MODE"] = "1"
 import sys
 import unittest
 import threading

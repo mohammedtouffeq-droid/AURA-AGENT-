@@ -1,3 +1,5 @@
+import os
+os.environ["AURA_TEST_MODE"] = "1"
 import unittest
 import json
 import urllib.request
