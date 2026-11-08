@@ -215,15 +215,26 @@ class AuraMasterPipeline:
         cross_engine_bus = {
             "job_id": job_id,
             "domain": selected_domain.value,
-            "handoffs": []
+            "handoffs": [],
+            "security_gate_passed": False
         }
         try:
             from aura_10_systems import AURA_10_SYSTEMS
             sec_gate = AURA_10_SYSTEMS.sys10_security.evaluate_and_guard(goal)
+            allowed = bool(sec_gate.get("allowed", False))
+            cross_engine_bus["security_gate_passed"] = allowed
+            cross_engine_bus["openssf_score"] = sec_gate.get("openssf_scorecard", {}).get("overall_score_out_of_10", 0.0)
+            cross_engine_bus["security_decision"] = sec_gate.get("decision", "BLOCKED")
+            if not allowed:
+                run_record["status"] = "BLOCKED_BY_SECURITY_GATE"
+                run_record["cross_engine_bus"] = cross_engine_bus
+                self._log_stage(run_record, PipelineStage.FAILED, f"Master pipeline blocked by Security Core pre-dispatch gate: {sec_gate.get('decision')}")
+                run_record["finished_at"] = time.time()
+                run_record["duration_sec"] = run_record["finished_at"] - start_time
+                return run_record
+
             route_info = AURA_10_SYSTEMS.sys1_neural.estimate_task_difficulty(goal)
             mem_info = AURA_10_SYSTEMS.sys2_memory.record_and_consolidate(goal, user_tag="master_pipeline")
-            cross_engine_bus["security_gate_passed"] = sec_gate.get("allowed", True)
-            cross_engine_bus["openssf_score"] = sec_gate.get("openssf_scorecard", {}).get("overall_score_out_of_10", 10.0)
             cross_engine_bus["routed_model"] = route_info.get("selected_model", {}).get("model_id", "gemini-2.5-flash")
             cross_engine_bus["temporal_edge_id"] = (mem_info.get("temporal_knowledge_graph_edges") or [{}])[0].get("edge_id")
             cross_engine_bus["handoffs"].append({
@@ -231,8 +242,17 @@ class AuraMasterPipeline:
                 "routed_model": cross_engine_bus["routed_model"],
                 "temporal_edge_id": cross_engine_bus["temporal_edge_id"]
             })
-        except Exception:
-            pass
+        except Exception as gate_err:
+            # FAIL-CLOSED: Any exception in security gate halts execution
+            cross_engine_bus["security_gate_passed"] = False
+            cross_engine_bus["security_error"] = str(gate_err)
+            run_record["status"] = "BLOCKED_BY_SECURITY_GATE"
+            run_record["cross_engine_bus"] = cross_engine_bus
+            self._log_stage(run_record, PipelineStage.FAILED, f"Master pipeline fail-closed: security check error: {gate_err}")
+            run_record["finished_at"] = time.time()
+            run_record["duration_sec"] = run_record["finished_at"] - start_time
+            return run_record
+
         run_record["cross_engine_bus"] = cross_engine_bus
 
         self._log_stage(run_record, PipelineStage.ENGINE_DISPATCH, "Dispatching tasks across piped engines")

@@ -2,29 +2,30 @@
 ===================================================================================
                      AURA AGENT - MULTI-USER SECURE DATABASE
 ===================================================================================
-Enterprise-grade SQLite database supporting:
-- Multi-user authentication (password hashing with SHA-256 + salt)
+Enterprise-grade SQLite / LibSQL database supporting:
+- Multi-user authentication (scrypt password hashing + constant-time verification)
+- Per-connection SQLite foreign-key enforcement (PRAGMA foreign_keys = ON)
+- Database-backed distributed login rate limiting
 - Isolated user workspaces, conversation threads, pinned sessions
-- Per-user long-term memory vault
-- Cloud and LAN deployment ready
-Author: AURA Technologies Inc.
+- Per-user long-term memory vault & credential-free signed workspace backups
+- Account password rotation, account deletion, and token-gated admin bootstrap
 ===================================================================================
 """
 
-import os
 import datetime
-import time
-import sqlite3
 import hashlib
 import hmac
-import secrets
 import json
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
-
+import os
+import secrets
+import sqlite3
 import tempfile
-import urllib.request
+import time
 import urllib.error
+import urllib.request
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 
 def _resolve_db_path() -> Path:
     custom_path = os.environ.get("AURA_PERSISTENT_DB_PATH", "").strip()
@@ -35,7 +36,56 @@ def _resolve_db_path() -> Path:
         return Path(tempfile.gettempdir()) / "aura_workspace.db"
     return default_dir / "aura_workspace.db"
 
+
 DB_PATH = _resolve_db_path()
+
+
+def _resolve_projects_root() -> Path:
+    default_dir = Path(__file__).resolve().parent
+    if os.environ.get("VERCEL") or not os.access(default_dir, os.W_OK):
+        base = Path(tempfile.gettempdir()) / "aura_workspace" / "projects"
+    else:
+        base = default_dir / "workspace" / "projects"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+# Ephemeral / per-installation secret management (never falls back to a public constant)
+_RUNTIME_SECRETS_CACHE: Dict[str, str] = {}
+
+
+def _get_or_create_secret(env_name: str, key_name: str) -> str:
+    env_val = os.environ.get(env_name, "").strip()
+    if env_val:
+        return env_val
+    if key_name in _RUNTIME_SECRETS_CACHE:
+        return _RUNTIME_SECRETS_CACHE[key_name]
+
+    # On non-serverless local installations, persist random 256-bit secret next to DB_PATH
+    if not os.environ.get("VERCEL"):
+        secret_file = DB_PATH.parent / ".aura_local_secrets.json"
+        try:
+            data: Dict[str, str] = {}
+            if secret_file.exists():
+                data = json.loads(secret_file.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and data.get(key_name) and len(data[key_name]) >= 32:
+                _RUNTIME_SECRETS_CACHE[key_name] = data[key_name]
+                return data[key_name]
+            generated = secrets.token_hex(32)
+            data[key_name] = generated
+            secret_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            try:
+                os.chmod(secret_file, 0o600)
+            except OSError:
+                pass
+            _RUNTIME_SECRETS_CACHE[key_name] = generated
+            return generated
+        except OSError:
+            pass
+
+    generated = secrets.token_hex(32)
+    _RUNTIME_SECRETS_CACHE[key_name] = generated
+    return generated
 
 
 def is_persistent_storage_configured() -> bool:
@@ -77,13 +127,14 @@ def get_storage_status() -> Dict[str, Any]:
             "message": "Using configured persistent volume database."
         }
     if os.environ.get("VERCEL"):
+        vault_configured = bool(os.environ.get("AURA_VAULT_SECRET", "").strip())
         return {
             "persistent": False,
-            "mode": "serverless_sqlite_with_vault_sync",
-            "engine": "sqlite3_ephemeral_plus_signed_vault",
+            "mode": "serverless_ephemeral_sqlite",
+            "engine": "sqlite3_ephemeral",
             "production_accounts_available": True,
-            "vault_sync_enabled": True,
-            "message": "Serverless SQLite active with signed browser-vault synchronization (/tmp is ephemeral across cold starts; set TURSO_DATABASE_URL for dedicated cloud DB)."
+            "vault_sync_enabled": vault_configured,
+            "message": "Serverless SQLite (/tmp is ephemeral across cold starts; configure TURSO_DATABASE_URL for durable multi-instance persistence)."
         }
     return {
         "persistent": True,
@@ -96,19 +147,15 @@ def get_storage_status() -> Dict[str, Any]:
 
 class _RemoteLibSQLCursor:
     """DB-API 2.0 compatible cursor wrapper for Turso / LibSQL HTTP v2 pipeline API."""
-    def __init__(self, url: str, auth_token: str):
-        self.url = url.rstrip("/")
-        if self.url.startswith("libsql://"):
-            self.url = "https://" + self.url[len("libsql://"):]
-        if not self.url.endswith("/v2/pipeline"):
-            self.url = self.url + "/v2/pipeline"
-        self.auth_token = auth_token
+    def __init__(self, conn: "_RemoteLibSQLConnection"):
+        self.conn = conn
         self._rows: List[Dict[str, Any]] = []
         self._pos = 0
         self.lastrowid: Optional[int] = None
         self.rowcount: int = 0
 
-    def _convert_arg(self, val: Any) -> Dict[str, Any]:
+    @staticmethod
+    def _convert_arg(val: Any) -> Dict[str, Any]:
         if val is None:
             return {"type": "null"}
         if isinstance(val, bool):
@@ -123,25 +170,20 @@ class _RemoteLibSQLCursor:
         stmt: Dict[str, Any] = {"sql": sql}
         if params:
             stmt["args"] = [self._convert_arg(p) for p in params]
-        payload = json.dumps({
-            "requests": [
-                {"type": "execute", "stmt": stmt},
-                {"type": "close"}
-            ]
-        }).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
-        if self.auth_token:
-            headers["Authorization"] = f"Bearer {self.auth_token}"
-        req = urllib.request.Request(self.url, data=payload, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        first = data.get("results", [{}])[0]
-        if first.get("type") == "error":
-            err_msg = first.get("error", {}).get("message", "LibSQL execution error")
-            if "UNIQUE constraint failed" in err_msg:
-                raise sqlite3.IntegrityError(err_msg)
-            raise sqlite3.OperationalError(err_msg)
-        res = first.get("response", {}).get("result", {})
+
+        is_write = not sql.lstrip().upper().startswith(("SELECT", "PRAGMA"))
+        if is_write and self.conn.buffer_writes:
+            self.conn._pending_stmts.append(stmt)
+            # Flush immediately if lastrowid is needed on INSERT INTO users
+            if "INSERT INTO USERS" not in sql.upper():
+                self.rowcount = 1
+                return self
+            self.conn.commit()
+            self.lastrowid = self.conn._last_insert_id
+            self.rowcount = self.conn._last_rowcount
+            return self
+
+        res = self.conn._send_pipeline([stmt])
         cols = [c.get("name") for c in res.get("cols", [])]
         raw_rows = res.get("rows", [])
         self._rows = []
@@ -180,20 +222,69 @@ class _RemoteLibSQLCursor:
 
 
 class _RemoteLibSQLConnection:
+    """Supports atomic batched pipeline commits over LibSQL HTTP v2."""
     def __init__(self, url: str, auth_token: str):
-        self.url = url
+        clean = url.rstrip("/")
+        if clean.startswith("libsql://"):
+            clean = "https://" + clean[len("libsql://"):]
+        if not clean.endswith("/v2/pipeline"):
+            clean = clean + "/v2/pipeline"
+        self.url = clean
         self.auth_token = auth_token
+        self.buffer_writes = False
+        self._pending_stmts: List[Dict[str, Any]] = []
+        self._last_insert_id: Optional[int] = None
+        self._last_rowcount: int = 0
+
+    def _send_pipeline(self, stmts: List[Dict[str, Any]], transactional: bool = False) -> Dict[str, Any]:
+        reqs: List[Dict[str, Any]] = []
+        if transactional and len(stmts) > 1:
+            reqs.append({"type": "execute", "stmt": {"sql": "BEGIN IMMEDIATE"}})
+        for s in stmts:
+            reqs.append({"type": "execute", "stmt": s})
+        if transactional and len(stmts) > 1:
+            reqs.append({"type": "execute", "stmt": {"sql": "COMMIT"}})
+        reqs.append({"type": "close"})
+
+        payload = json.dumps({"requests": reqs}).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if self.auth_token:
+            headers["Authorization"] = f"Bearer {self.auth_token}"
+        req = urllib.request.Request(self.url, data=payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        last_res: Dict[str, Any] = {}
+        for item in data.get("results", []):
+            if item.get("type") == "error":
+                err_msg = item.get("error", {}).get("message", "LibSQL execution error")
+                if "UNIQUE constraint failed" in err_msg:
+                    raise sqlite3.IntegrityError(err_msg)
+                raise sqlite3.OperationalError(err_msg)
+            if item.get("type") == "ok" and "response" in item:
+                r = item["response"].get("result")
+                if isinstance(r, dict):
+                    last_res = r
+        return last_res
 
     def cursor(self):
-        return _RemoteLibSQLCursor(self.url, self.auth_token)
+        return _RemoteLibSQLCursor(self)
 
     def commit(self):
-        pass
+        if not self._pending_stmts:
+            return
+        stmts = list(self._pending_stmts)
+        self._pending_stmts.clear()
+        res = self._send_pipeline(stmts, transactional=True)
+        lid = res.get("last_insert_rowid")
+        self._last_insert_id = int(lid) if lid is not None else None
+        self._last_rowcount = int(res.get("affected_row_count", 0))
 
     def close(self):
-        pass
+        self._pending_stmts.clear()
 
-# Scrypt configuration (OWASP standard, ~20ms, zero third-party dependencies)
+
+# Scrypt configuration (OWASP standard, zero third-party dependencies)
 SCRYPT_N = 16384
 SCRYPT_R = 8
 SCRYPT_P = 1
@@ -205,8 +296,9 @@ def get_connection():
     if remote_url:
         auth_token = os.environ.get("AURA_DATABASE_AUTH_TOKEN", "").strip() or os.environ.get("TURSO_AUTH_TOKEN", "").strip()
         return _RemoteLibSQLConnection(remote_url, auth_token)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -231,7 +323,6 @@ def verify_password(password: str, stored_hash: str, salt: str) -> Tuple[bool, b
     """
     Verifies a password against stored hash using constant-time comparison.
     Returns (is_valid, needs_upgrade).
-    Seamlessly verifies legacy SHA-256 and flags it for automatic upgrade!
     """
     if stored_hash.startswith("scrypt$v1$"):
         parts = stored_hash.split("$")
@@ -250,49 +341,83 @@ def verify_password(password: str, stored_hash: str, salt: str) -> Tuple[bool, b
             return is_valid, False
         return False, False
     else:
-        # Legacy SHA-256 constant-time check
         legacy_hash = hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
         is_valid = hmac.compare_digest(legacy_hash, stored_hash)
         return is_valid, is_valid
 
 
-
+# Database-backed rate limiter (with in-memory fallback if DB table not yet initialized)
 _LOGIN_FAILURES: Dict[str, List[float]] = {}
 MAX_LOGIN_FAILURES = 5
 LOCKOUT_WINDOW_SECONDS = 300  # 5 minutes lockout
 
+
 def check_login_rate_limit(username: str) -> Tuple[bool, int]:
+    uname = username.strip().lower()
     now = time.time()
-    attempts = [t for t in _LOGIN_FAILURES.get(username, []) if now - t < LOCKOUT_WINDOW_SECONDS]
-    _LOGIN_FAILURES[username] = attempts
+    cutoff = now - LOCKOUT_WINDOW_SECONDS
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM login_attempts WHERE failed_at < ?", (cutoff,))
+        c.execute("SELECT failed_at FROM login_attempts WHERE username = ? ORDER BY failed_at ASC", (uname,))
+        rows = c.fetchall()
+        conn.commit()
+        conn.close()
+        attempts = [float(r["failed_at"] if isinstance(r, (dict, sqlite3.Row)) else r[0]) for r in rows]
+    except Exception:
+        attempts = [t for t in _LOGIN_FAILURES.get(uname, []) if now - t < LOCKOUT_WINDOW_SECONDS]
+        _LOGIN_FAILURES[uname] = attempts
+
     if len(attempts) >= MAX_LOGIN_FAILURES:
         wait_seconds = int(LOCKOUT_WINDOW_SECONDS - (now - attempts[0]))
         return False, max(1, wait_seconds)
     return True, 0
 
+
 def record_login_failure(username: str):
+    uname = username.strip().lower()
     now = time.time()
-    if username not in _LOGIN_FAILURES:
-        _LOGIN_FAILURES[username] = []
-    _LOGIN_FAILURES[username].append(now)
+    _LOGIN_FAILURES.setdefault(uname, []).append(now)
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("INSERT INTO login_attempts (username, failed_at) VALUES (?, ?)", (uname, now))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
 
 def clear_login_failures(username: str):
-    _LOGIN_FAILURES.pop(username, None)
+    uname = username.strip().lower()
+    _LOGIN_FAILURES.pop(uname, None)
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM login_attempts WHERE username = ?", (uname,))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
 
 def validate_password_strength(password: str) -> Tuple[bool, str]:
-    if len(password) < 6:
-        return False, "Password must be at least 6 characters long."
+    if not isinstance(password, str) or len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if len(password) > 256:
+        return False, "Password must not exceed 256 characters."
     has_letter = any(c.isalpha() for c in password)
     has_digit = any(c.isdigit() for c in password)
     if not (has_letter and has_digit):
         return False, "Password must contain both letters and numbers."
     return True, ""
 
+
 def init_database():
     conn = get_connection()
     c = conn.cursor()
 
-    # Users Table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -301,22 +426,29 @@ def init_database():
             salt TEXT NOT NULL,
             display_name TEXT,
             settings_json TEXT,
+            role TEXT DEFAULT 'user',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
-    # Active Auth Sessions Table
     c.execute("""
         CREATE TABLE IF NOT EXISTS auth_sessions (
             token TEXT PRIMARY KEY,
             user_id INTEGER NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME,
+            expires_at DATETIME NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     """)
 
-    # Conversation Threads Table (with Pinning & Rename)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            failed_at REAL NOT NULL
+        )
+    """)
+
     c.execute("""
         CREATE TABLE IF NOT EXISTS threads (
             id TEXT PRIMARY KEY,
@@ -329,7 +461,6 @@ def init_database():
         )
     """)
 
-    # Messages Table
     c.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -344,7 +475,6 @@ def init_database():
         )
     """)
 
-    # Per-user Persistent Memory
     c.execute("""
         CREATE TABLE IF NOT EXISTS user_memories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -357,7 +487,6 @@ def init_database():
         )
     """)
 
-    # Dedicated Coding Workspaces / Projects Table
     c.execute("""
         CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY,
@@ -374,8 +503,23 @@ def init_database():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS permission_requests (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER,
+            action_type TEXT NOT NULL,
+            target TEXT NOT NULL,
+            command TEXT,
+            details TEXT,
+            risk TEXT NOT NULL,
+            status TEXT DEFAULT 'PENDING',
+            decision TEXT,
+            created_at REAL NOT NULL,
+            expires_at REAL NOT NULL
+        )
+    """)
 
-    # Schema migration: ensure role exists in users table defaulting to 'user'
+    # Schema migrations for existing local SQLite files
     c.execute("PRAGMA table_info(users)")
     user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
     if "role" not in user_cols:
@@ -383,9 +527,7 @@ def init_database():
             c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
         except Exception:
             pass
-    conn.commit()
 
-    # Schema migration: ensure expires_at exists in auth_sessions
     c.execute("PRAGMA table_info(auth_sessions)")
     existing_cols = [(row["name"] if isinstance(row, dict) else row[1]) for row in c.fetchall()]
     if "expires_at" not in existing_cols:
@@ -402,13 +544,15 @@ init_database()
 
 
 # ===================================================================================
-# AUTHENTICATION API
+# AUTHENTICATION & ACCOUNT LIFECYCLE API
 # ===================================================================================
 
 def register_user(username: str, password: str) -> Dict[str, Any]:
+    if not isinstance(username, str) or not isinstance(password, str):
+        return {"success": False, "error": "Username and password must be strings."}
     username = username.strip().lower()
-    if len(username) < 3:
-        return {"success": False, "error": "Username must be at least 3 characters."}
+    if len(username) < 3 or len(username) > 64:
+        return {"success": False, "error": "Username must be between 3 and 64 characters."}
     if not all(ch.isalnum() or ch in ("_", ".", "-") for ch in username):
         return {"success": False, "error": "Username may only contain letters, numbers, underscores, dots, or hyphens."}
     valid_pass, pass_err = validate_password_strength(password)
@@ -427,12 +571,10 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
         """, (username, hashed, salt, display_name, json.dumps({})))
         user_id = c.lastrowid
 
-        # Generate session token with 30-day expiration
         token = secrets.token_hex(24)
         expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
         c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
 
-        # Create default initial thread
         default_thread_id = f"th_{secrets.token_hex(8)}"
         c.execute("""
             INSERT INTO threads (id, user_id, title, is_pinned)
@@ -446,7 +588,8 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
             "user": {
                 "id": user_id,
                 "username": username,
-                "display_name": display_name
+                "display_name": display_name,
+                "role": "user"
             },
             "default_thread_id": default_thread_id
         }
@@ -459,6 +602,8 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
 
 
 def login_user(username: str, password: str) -> Dict[str, Any]:
+    if not isinstance(username, str) or not isinstance(password, str):
+        return {"success": False, "error": "Invalid username or password."}
     username = username.strip().lower()
     allowed, wait_sec = check_login_rate_limit(username)
     if not allowed:
@@ -466,7 +611,10 @@ def login_user(username: str, password: str) -> Dict[str, Any]:
 
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, username, password_hash, salt, display_name, settings_json FROM users WHERE username = ?", (username,))
+    c.execute(
+        "SELECT id, username, password_hash, salt, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = ?",
+        (username,)
+    )
     row = c.fetchone()
     if not row:
         conn.close()
@@ -480,13 +628,11 @@ def login_user(username: str, password: str) -> Dict[str, Any]:
         record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
 
-    # Seamless automatic upgrade of legacy hashes to scrypt upon successful login
     if needs_upgrade:
         new_hash, new_salt = hash_password(password)
         c.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user_id))
         conn.commit()
 
-    # Successful authentication
     clear_login_failures(username)
     token = secrets.token_hex(24)
     expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
@@ -500,9 +646,70 @@ def login_user(username: str, password: str) -> Dict[str, Any]:
         "user": {
             "id": user_id,
             "username": row["username"],
-            "display_name": row["display_name"] or row["username"].capitalize()
+            "display_name": row["display_name"] or row["username"].capitalize(),
+            "role": row["role"] if "role" in row.keys() else "user"
         }
     }
+
+
+def change_user_password(user_id: int, current_password: str, new_password: str) -> Dict[str, Any]:
+    """Rotates a user's password after verifying current_password and revokes all prior sessions."""
+    valid_pass, pass_err = validate_password_strength(new_password)
+    if not valid_pass:
+        return {"success": False, "error": pass_err}
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT password_hash, salt FROM users WHERE id = ?", (user_id,))
+        row = c.fetchone()
+        if not row:
+            return {"success": False, "error": "Account not found."}
+        ok, _ = verify_password(current_password, row["password_hash"], row["salt"])
+        if not ok:
+            return {"success": False, "error": "Current password is incorrect."}
+        new_hash, new_salt = hash_password(new_password)
+        c.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user_id))
+        c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (user_id,))
+        fresh_token = secrets.token_hex(24)
+        expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+        c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (fresh_token, user_id, expires_at))
+        conn.commit()
+        return {"success": True, "token": fresh_token, "message": "Password updated and old sessions revoked."}
+    finally:
+        conn.close()
+
+
+def delete_user_account(user_id: int, password: str) -> Dict[str, Any]:
+    """Deletes a user's account and cascades removal of all sessions, threads, messages, memories, and projects."""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT password_hash, salt FROM users WHERE id = ?", (user_id,))
+        row = c.fetchone()
+        if not row:
+            return {"success": False, "error": "Account not found."}
+        ok, _ = verify_password(password, row["password_hash"], row["salt"])
+        if not ok:
+            return {"success": False, "error": "Incorrect password."}
+        c.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        return {"success": True, "message": "Account and all associated data permanently deleted."}
+    finally:
+        conn.close()
+
+
+def bootstrap_admin_user(user_id: int, provided_secret: str) -> Dict[str, Any]:
+    """
+    Promotes an authenticated user to 'admin' ONLY when AURA_ADMIN_BOOTSTRAP_TOKEN
+    is configured on the server and matches provided_secret in constant time.
+    """
+    configured = os.environ.get("AURA_ADMIN_BOOTSTRAP_TOKEN", "").strip()
+    if not configured or len(configured) < 16:
+        return {"success": False, "error": "Admin bootstrap is disabled (configure AURA_ADMIN_BOOTSTRAP_TOKEN >= 16 chars on server)."}
+    if not provided_secret or not hmac.compare_digest(configured, provided_secret.strip()):
+        return {"success": False, "error": "Invalid admin bootstrap token."}
+    set_user_role(user_id, "admin")
+    return {"success": True, "role": "admin"}
 
 
 def create_session_token(user_id: int) -> str:
@@ -518,7 +725,7 @@ def create_session_token(user_id: int) -> str:
 
 
 def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
-    if not token:
+    if not token or not isinstance(token, str):
         return None
     conn = get_connection()
     c = conn.cursor()
@@ -533,29 +740,40 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
         conn.close()
         return None
 
-    # Enforce session expiration check
+    # Fail-closed session expiration validation
     expires_at_str = row["expires_at"]
-    if expires_at_str:
-        try:
-            exp = datetime.datetime.fromisoformat(expires_at_str)
-            now = datetime.datetime.now(datetime.timezone.utc)
-            if exp.tzinfo is None:
-                exp = exp.replace(tzinfo=datetime.timezone.utc)
-            if exp < now:
-                c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
-                conn.commit()
-                conn.close()
-                return None
-        except Exception:
-            pass
+    if not expires_at_str:
+        c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+        conn.commit()
+        conn.close()
+        return None
+    try:
+        exp = datetime.datetime.fromisoformat(str(expires_at_str))
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=datetime.timezone.utc)
+        if exp < now:
+            c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+            conn.commit()
+            conn.close()
+            return None
+    except (ValueError, TypeError):
+        c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+        conn.commit()
+        conn.close()
+        return None
 
     conn.close()
+    try:
+        parsed_settings = json.loads(row["settings_json"] or "{}")
+    except Exception:
+        parsed_settings = {}
     return {
         "id": row["id"],
         "username": row["username"],
         "display_name": row["display_name"] or row["username"].capitalize(),
         "role": row["role"] if "role" in row.keys() else "user",
-        "settings": json.loads(row["settings_json"] or "{}")
+        "settings": parsed_settings
     }
 
 
@@ -590,23 +808,32 @@ def get_user_threads(user_id: int) -> List[Dict[str, Any]]:
 
 
 def create_user_thread(user_id: int, title: str = "New Session", thread_id: Optional[str] = None) -> Dict[str, Any]:
-    if not thread_id:
+    if not thread_id or not isinstance(thread_id, str):
         thread_id = f"th_{secrets.token_hex(8)}"
+    else:
+        # Sanitize client-supplied thread_id to safe alphanumeric/underscore/hyphen characters
+        safe_chars = "".join(ch for ch in thread_id if ch.isalnum() or ch in ("_", "-"))[:64]
+        thread_id = safe_chars if len(safe_chars) >= 4 else f"th_{secrets.token_hex(8)}"
+
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, title, is_pinned FROM threads WHERE id = ? AND user_id = ?", (thread_id, user_id))
+    c.execute("SELECT id, title, is_pinned, user_id FROM threads WHERE id = ?", (thread_id,))
     existing = c.fetchone()
     if existing:
-        conn.close()
-        return dict(existing)
+        if existing["user_id"] == user_id:
+            conn.close()
+            return {"id": existing["id"], "title": existing["title"], "is_pinned": existing["is_pinned"]}
+        # Never collide with another user's thread ID
+        thread_id = f"th_{secrets.token_hex(8)}"
 
+    clean_title = (title or "New Session").strip()[:120] or "New Session"
     c.execute("""
         INSERT INTO threads (id, user_id, title)
         VALUES (?, ?, ?)
-    """, (thread_id, user_id, title))
+    """, (thread_id, user_id, clean_title))
     conn.commit()
     conn.close()
-    return {"id": thread_id, "title": title, "is_pinned": 0}
+    return {"id": thread_id, "title": clean_title, "is_pinned": 0}
 
 
 def rename_user_thread(user_id: int, thread_id: str, new_title: str) -> bool:
@@ -616,7 +843,7 @@ def rename_user_thread(user_id: int, thread_id: str, new_title: str) -> bool:
         UPDATE threads
         SET title = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND user_id = ?
-    """, (new_title.strip(), thread_id, user_id))
+    """, (new_title.strip()[:120], thread_id, user_id))
     affected = c.rowcount > 0
     conn.commit()
     conn.close()
@@ -667,28 +894,38 @@ def get_thread_messages(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
 
 
 def save_message(user_id: int, thread_id: str, role: str, content: str, tools: Optional[List[Dict[str, Any]]] = None):
+    safe_tid = "".join(ch for ch in str(thread_id or "") if ch.isalnum() or ch in ("_", "-"))[:64] or f"th_{secrets.token_hex(8)}"
     conn = get_connection()
     c = conn.cursor()
-    # Ensure thread exists for this user
-    c.execute("SELECT id FROM threads WHERE id = ? AND user_id = ?", (thread_id, user_id))
-    if not c.fetchone():
+    c.execute("SELECT id, user_id FROM threads WHERE id = ?", (safe_tid,))
+    t_row = c.fetchone()
+    if not t_row:
         clean_first = content.strip().split("\n")[0].strip()
         title = (clean_first[:28] + "...") if len(clean_first) > 28 else (clean_first or "New Conversation")
         c.execute("""
             INSERT INTO threads (id, user_id, title)
             VALUES (?, ?, ?)
-        """, (thread_id, user_id, title))
+        """, (safe_tid, user_id, title))
+    elif t_row["user_id"] != user_id:
+        # Prevent cross-tenant thread ID collision
+        safe_tid = f"th_{user_id}_{secrets.token_hex(6)}"
+        clean_first = content.strip().split("\n")[0].strip()
+        title = (clean_first[:28] + "...") if len(clean_first) > 28 else (clean_first or "New Conversation")
+        c.execute("""
+            INSERT INTO threads (id, user_id, title)
+            VALUES (?, ?, ?)
+        """, (safe_tid, user_id, title))
 
     tools_str = json.dumps(tools) if tools else None
     c.execute("""
         INSERT INTO messages (thread_id, user_id, role, content, tools_json)
         VALUES (?, ?, ?, ?, ?)
-    """, (thread_id, user_id, role, content, tools_str))
+    """, (safe_tid, user_id, role, content, tools_str))
     c.execute("""
         UPDATE threads
         SET updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND user_id = ?
-    """, (thread_id, user_id))
+    """, (safe_tid, user_id))
     conn.commit()
     conn.close()
 
@@ -749,17 +986,28 @@ def save_user_settings(user_id: int, settings: Dict[str, Any]) -> bool:
 
 def create_user_project(user_id: int, name: str, company: str = "", stack: str = "Python", path: str = "", description: str = "") -> Dict[str, Any]:
     project_id = f"proj_{secrets.token_hex(8)}"
+    safe_slug = "".join(ch if ch.isalnum() or ch in ("_", "-") else "_" for ch in (name or "project").lower()).strip("_") or "project"
+    user_proj_root = (_resolve_projects_root() / f"user_{int(user_id)}").resolve()
+    user_proj_root.mkdir(parents=True, exist_ok=True)
+
     if not path:
-        # Default project directory
-        path = str(Path(r"c:\Users\hp\cyberheist") / name.replace(" ", "_").lower())
+        resolved_proj_path = (user_proj_root / safe_slug).resolve()
+    else:
+        # Keep backward-compatibility for explicit test paths when local, otherwise scope inside user_proj_root
+        cand = Path(path)
+        if not cand.is_absolute():
+            resolved_proj_path = (user_proj_root / safe_slug).resolve()
+        else:
+            resolved_proj_path = cand
+    path_str = str(resolved_proj_path)
+
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
         INSERT INTO projects (id, user_id, name, company, stack, path, description, is_pinned)
         VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    """, (project_id, user_id, name.strip(), company.strip(), stack.strip(), path.strip(), description.strip()))
-    
-    # Also create initial project thread
+    """, (project_id, user_id, name.strip(), company.strip(), stack.strip(), path_str, description.strip()))
+
     thread_id = f"th_p_{project_id}"
     c.execute("""
         INSERT INTO threads (id, user_id, title, is_pinned)
@@ -773,7 +1021,7 @@ def create_user_project(user_id: int, name: str, company: str = "", stack: str =
         "name": name,
         "company": company,
         "stack": stack,
-        "path": path,
+        "path": path_str,
         "description": description,
         "thread_id": thread_id
     }
@@ -796,8 +1044,10 @@ def get_user_projects(user_id: int) -> List[Dict[str, Any]]:
 def pin_user_project(user_id: int, project_id: str, is_pinned: bool) -> bool:
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE projects SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
-              (1 if is_pinned else 0, project_id, user_id))
+    c.execute(
+        "UPDATE projects SET is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+        (1 if is_pinned else 0, project_id, user_id)
+    )
     affected = c.rowcount > 0
     conn.commit()
     conn.close()
@@ -807,8 +1057,10 @@ def pin_user_project(user_id: int, project_id: str, is_pinned: bool) -> bool:
 def rename_user_project(user_id: int, project_id: str, new_name: str) -> bool:
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE projects SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
-              (new_name.strip(), project_id, user_id))
+    c.execute(
+        "UPDATE projects SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+        (new_name.strip(), project_id, user_id)
+    )
     affected = c.rowcount > 0
     conn.commit()
     conn.close()
@@ -826,7 +1078,7 @@ def delete_user_project(user_id: int, project_id: str) -> bool:
 
 
 def set_user_role(user_id: int, role: str) -> bool:
-    """Assigns a verified role ('admin', 'developer', 'user') to a user. Cannot be self-invoked via API."""
+    """Assigns a verified role ('admin', 'developer', 'user') to a user."""
     if role not in ("admin", "developer", "user"):
         return False
     conn = get_connection()
@@ -838,26 +1090,24 @@ def set_user_role(user_id: int, role: str) -> bool:
 
 
 # ===================================================================================
-# DATABASE BACKUP & MIGRATION API
+# DATABASE BACKUP & MIGRATION API (SERVER-SIDE ADMIN / CLI ONLY)
 # ===================================================================================
 
 def export_database_backup(backup_path: Optional[str] = None) -> Dict[str, Any]:
     """
-    Exports all users, threads, messages, user_memories, and projects into a
-    portable JSON backup snapshot so existing local SQLite data can be safely
-    migrated to a persistent cloud database (e.g., Turso/LibSQL) or restored.
+    Server-side administrative backup snapshot (never exposed to browser clients).
     """
     conn = get_connection()
     c = conn.cursor()
     table_queries = {
-        "users": "SELECT * FROM users",
+        "users": "SELECT id, username, display_name, settings_json, role, created_at FROM users",
         "threads": "SELECT * FROM threads",
         "messages": "SELECT * FROM messages",
         "user_memories": "SELECT * FROM user_memories",
         "projects": "SELECT * FROM projects",
     }
     snapshot: Dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "storage_status": get_storage_status(),
         "tables": {}
@@ -875,26 +1125,14 @@ def export_database_backup(backup_path: Optional[str] = None) -> Dict[str, Any]:
 
 
 def import_database_backup(snapshot: Dict[str, Any]) -> Dict[str, int]:
-    """
-    Idempotently imports a database backup snapshot into the active database
-    (local SQLite or remote cloud LibSQL/Turso) without overwriting existing conflicts.
-    """
+    """Idempotently imports non-credential workspace records from a backup snapshot."""
     tables = snapshot.get("tables", {})
-    counts: Dict[str, int] = {}
+    counts: Dict[str, int] = {"users": len(tables.get("users", []))}
     conn = get_connection()
+    if isinstance(conn, _RemoteLibSQLConnection):
+        conn.buffer_writes = True
     c = conn.cursor()
     try:
-        for u in tables.get("users", []):
-            c.execute("""
-                INSERT OR IGNORE INTO users (id, username, password_hash, salt, display_name, settings_json, role, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                u["id"], u["username"], u["password_hash"], u["salt"],
-                u.get("display_name"), u.get("settings_json", "{}"),
-                u.get("role", "user"), u.get("created_at")
-            ))
-        counts["users"] = len(tables.get("users", []))
-
         for t in tables.get("threads", []):
             c.execute("""
                 INSERT OR IGNORE INTO threads (id, user_id, title, is_pinned, created_at, updated_at)
@@ -941,9 +1179,13 @@ def import_database_backup(snapshot: Dict[str, Any]) -> Dict[str, int]:
     return counts
 
 
+# ===================================================================================
+# CSRF & CREDENTIAL-FREE SIGNED WORKSPACE VAULT
+# ===================================================================================
+
 def compute_csrf_token(session_token: str) -> str:
-    """Computes a deterministic per-session CSRF token bound to the session token."""
-    secret_seed = os.environ.get("AURA_CSRF_SECRET", "aura-csrf-hmac-key-v1")
+    """Computes a deterministic per-session CSRF token using a non-public installation secret."""
+    secret_seed = _get_or_create_secret("AURA_CSRF_SECRET", "csrf_secret")
     return hmac.new(
         secret_seed.encode("utf-8"),
         session_token.encode("utf-8"),
@@ -960,8 +1202,8 @@ def verify_csrf_token(session_token: str, csrf_token: str) -> bool:
 
 
 def compute_vault_signature(payload_json: str) -> str:
-    """Computes an HMAC-SHA256 signature for a serialized user vault snapshot."""
-    secret_seed = os.environ.get("AURA_VAULT_SECRET", "aura-signed-vault-hmac-v1")
+    """Computes an HMAC-SHA256 signature using a non-public installation/env secret."""
+    secret_seed = _get_or_create_secret("AURA_VAULT_SECRET", "vault_secret")
     return hmac.new(
         secret_seed.encode("utf-8"),
         payload_json.encode("utf-8"),
@@ -971,37 +1213,42 @@ def compute_vault_signature(payload_json: str) -> str:
 
 def export_user_vault(user_id: int) -> Optional[Dict[str, Any]]:
     """
-    Exports a cryptographically signed snapshot of a single user's account,
-    sessions, threads, messages, memories, and coding projects so their data
-    can survive serverless cold starts when synced with their browser vault.
+    Exports a signed, CREDENTIAL-FREE snapshot of a user's threads, messages,
+    memories, and projects.
+    SECURITY INVARIANT: NEVER includes password_hash, salt, or session tokens!
     """
     conn = get_connection()
     c = conn.cursor()
     try:
-        c.execute("SELECT id, username, password_hash, salt, display_name, settings_json, COALESCE(role, 'user') as role, created_at FROM users WHERE id = ?", (user_id,))
+        c.execute(
+            "SELECT id, username, display_name, settings_json, created_at FROM users WHERE id = ?",
+            (user_id,)
+        )
         u_row = c.fetchone()
         if not u_row:
             return None
-        user_dict = dict(u_row)
+        user_public = {
+            "id": u_row["id"],
+            "username": u_row["username"],
+            "display_name": u_row["display_name"],
+            "settings_json": u_row["settings_json"] or "{}",
+            "created_at": u_row["created_at"],
+        }
 
-        c.execute("SELECT token, user_id, created_at, expires_at FROM auth_sessions WHERE user_id = ?", (user_id,))
-        sessions = [dict(r) for r in c.fetchall()]
-
-        c.execute("SELECT id, user_id, title, is_pinned, created_at, updated_at FROM threads WHERE user_id = ?", (user_id,))
+        c.execute("SELECT id, title, is_pinned, created_at, updated_at FROM threads WHERE user_id = ?", (user_id,))
         threads = [dict(r) for r in c.fetchall()]
 
-        c.execute("SELECT id, thread_id, user_id, role, content, tools_json, created_at FROM messages WHERE user_id = ? ORDER BY id ASC", (user_id,))
+        c.execute("SELECT thread_id, role, content, tools_json, created_at FROM messages WHERE user_id = ? ORDER BY id ASC", (user_id,))
         messages = [dict(r) for r in c.fetchall()]
 
-        c.execute("SELECT id, user_id, key, value, created_at FROM user_memories WHERE user_id = ?", (user_id,))
+        c.execute("SELECT key, value, created_at FROM user_memories WHERE user_id = ?", (user_id,))
         memories = [dict(r) for r in c.fetchall()]
 
-        c.execute("SELECT id, user_id, name, company, stack, path, description, is_pinned, created_at, updated_at FROM projects WHERE user_id = ?", (user_id,))
+        c.execute("SELECT id, name, company, stack, path, description, is_pinned, created_at, updated_at FROM projects WHERE user_id = ?", (user_id,))
         projects = [dict(r) for r in c.fetchall()]
 
         payload = {
-            "user": user_dict,
-            "sessions": sessions,
+            "user": user_public,
             "threads": threads,
             "messages": messages,
             "user_memories": memories,
@@ -1010,8 +1257,9 @@ def export_user_vault(user_id: int) -> Optional[Dict[str, Any]]:
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         sig = compute_vault_signature(canonical)
         return {
-            "version": 1,
-            "username": user_dict["username"],
+            "version": 2,
+            "username": user_public["username"],
+            "credentials_excluded": True,
             "payload": payload,
             "signature": sig
         }
@@ -1019,12 +1267,18 @@ def export_user_vault(user_id: int) -> Optional[Dict[str, Any]]:
         conn.close()
 
 
-def restore_user_vault(vault_envelope: Any) -> bool:
+def restore_user_vault(vault_envelope: Any, authenticated_user_id: Optional[int] = None) -> bool:
     """
-    Verifies the HMAC-SHA256 signature of a user vault envelope and idempotently
-    restores the user's account, sessions, threads, messages, memories, and projects.
-    Never overwrites a different existing user's account.
+    Verifies the HMAC-SHA256 signature of a credential-free user vault envelope and
+    restores workspace threads, messages, memories, and projects ONLY for an ALREADY
+    EXISTING / AUTHENTICATED user account.
+    SECURITY INVARIANTS:
+    - NEVER creates user accounts or modifies password hashes / roles.
+    - NEVER imports or resurrects session tokens.
+    - In Vercel serverless, requires AURA_VAULT_SECRET to be explicitly configured.
     """
+    if os.environ.get("VERCEL") and not os.environ.get("AURA_VAULT_SECRET", "").strip():
+        return False
     if not vault_envelope:
         return False
     if isinstance(vault_envelope, str):
@@ -1040,6 +1294,13 @@ def restore_user_vault(vault_envelope: Any) -> bool:
     if not isinstance(payload, dict) or not sig or not isinstance(sig, str):
         return False
 
+    # Reject legacy/forged vaults that attempt to smuggle credentials or sessions
+    u = payload.get("user")
+    if not isinstance(u, dict) or not u.get("username"):
+        return False
+    if "password_hash" in u or "salt" in u or "sessions" in payload:
+        return False
+
     try:
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     except Exception:
@@ -1049,79 +1310,73 @@ def restore_user_vault(vault_envelope: Any) -> bool:
     if not hmac.compare_digest(expected_sig, sig):
         return False
 
-    u = payload.get("user")
-    if not isinstance(u, dict) or not u.get("username") or not u.get("password_hash") or not u.get("salt"):
-        return False
-
     username = str(u["username"]).strip().lower()
     conn = get_connection()
+    if isinstance(conn, _RemoteLibSQLConnection):
+        conn.buffer_writes = True
     c = conn.cursor()
     try:
-        c.execute("SELECT id, password_hash, salt FROM users WHERE username = ?", (username,))
-        existing = c.fetchone()
-        if existing:
-            if not hmac.compare_digest(str(existing["password_hash"]), str(u["password_hash"])):
+        if authenticated_user_id is not None:
+            c.execute("SELECT id, username FROM users WHERE id = ?", (authenticated_user_id,))
+            existing = c.fetchone()
+            if not existing or str(existing["username"]).lower() != username:
                 return False
-            target_user_id = existing["id"]
+            target_user_id = int(existing["id"])
         else:
-            c.execute("""
-                INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                username,
-                u["password_hash"],
-                u["salt"],
-                u.get("display_name") or username.capitalize(),
-                u.get("settings_json") or "{}",
-                "user"
-            ))
-            target_user_id = c.lastrowid
-
-        for s in payload.get("sessions", []):
-            if isinstance(s, dict) and s.get("token"):
-                c.execute("""
-                    INSERT OR IGNORE INTO auth_sessions (token, user_id, expires_at)
-                    VALUES (?, ?, ?)
-                """, (s["token"], target_user_id, s.get("expires_at")))
+            c.execute("SELECT id FROM users WHERE username = ?", (username,))
+            existing = c.fetchone()
+            if not existing:
+                # Never create unauthenticated accounts from vault payloads
+                return False
+            target_user_id = int(existing["id"])
 
         for t in payload.get("threads", []):
             if isinstance(t, dict) and t.get("id") and t.get("title"):
+                safe_tid = "".join(ch for ch in str(t["id"]) if ch.isalnum() or ch in ("_", "-"))[:64]
+                if not safe_tid:
+                    continue
+                c.execute("SELECT user_id FROM threads WHERE id = ?", (safe_tid,))
+                owner_row = c.fetchone()
+                if owner_row and owner_row["user_id"] != target_user_id:
+                    continue
                 c.execute("""
                     INSERT OR IGNORE INTO threads (id, user_id, title, is_pinned)
                     VALUES (?, ?, ?, ?)
-                """, (t["id"], target_user_id, t["title"], int(t.get("is_pinned", 0))))
+                """, (safe_tid, target_user_id, str(t["title"])[:120], int(t.get("is_pinned", 0))))
 
-        # Restore messages for threads owned by this user if thread currently has fewer messages
-        for t in payload.get("threads", []):
-            tid = t.get("id")
-            if not tid:
-                continue
-            c.execute("SELECT COUNT(*) as cnt FROM messages WHERE thread_id = ? AND user_id = ?", (tid, target_user_id))
-            cnt_row = c.fetchone()
-            existing_cnt = (cnt_row["cnt"] if isinstance(cnt_row, dict) else cnt_row[0]) if cnt_row else 0
-            t_msgs = [m for m in payload.get("messages", []) if isinstance(m, dict) and m.get("thread_id") == tid]
-            if existing_cnt == 0 and t_msgs:
-                for m in t_msgs:
-                    c.execute("""
-                        INSERT INTO messages (thread_id, user_id, role, content, tools_json)
-                        VALUES (?, ?, ?, ?, ?)
-                    """, (tid, target_user_id, m.get("role", "user"), m.get("content", ""), m.get("tools_json")))
+                c.execute("SELECT COUNT(*) as cnt FROM messages WHERE thread_id = ? AND user_id = ?", (safe_tid, target_user_id))
+                cnt_row = c.fetchone()
+                existing_cnt = (cnt_row["cnt"] if isinstance(cnt_row, (dict, sqlite3.Row)) else cnt_row[0]) if cnt_row else 0
+                t_msgs = [m for m in payload.get("messages", []) if isinstance(m, dict) and m.get("thread_id") == t.get("id")]
+                if existing_cnt == 0 and t_msgs:
+                    for m in t_msgs:
+                        c.execute("""
+                            INSERT INTO messages (thread_id, user_id, role, content, tools_json)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (safe_tid, target_user_id, str(m.get("role", "user")), str(m.get("content", "")), m.get("tools_json")))
 
         for mem in payload.get("user_memories", []):
             if isinstance(mem, dict) and mem.get("key"):
                 c.execute("""
                     INSERT OR IGNORE INTO user_memories (user_id, key, value)
                     VALUES (?, ?, ?)
-                """, (target_user_id, mem["key"], mem.get("value", "")))
+                """, (target_user_id, str(mem["key"]), str(mem.get("value", ""))))
 
         for p in payload.get("projects", []):
             if isinstance(p, dict) and p.get("id") and p.get("name"):
+                safe_pid = "".join(ch for ch in str(p["id"]) if ch.isalnum() or ch in ("_", "-"))[:64]
+                if not safe_pid:
+                    continue
+                c.execute("SELECT user_id FROM projects WHERE id = ?", (safe_pid,))
+                p_owner = c.fetchone()
+                if p_owner and p_owner["user_id"] != target_user_id:
+                    continue
                 c.execute("""
                     INSERT OR IGNORE INTO projects (id, user_id, name, company, stack, path, description, is_pinned)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    p["id"], target_user_id, p["name"], p.get("company", ""),
-                    p.get("stack", "Python"), p.get("path", ""), p.get("description", ""),
+                    safe_pid, target_user_id, str(p["name"]), str(p.get("company", "")),
+                    str(p.get("stack", "Python")), str(p.get("path", "")), str(p.get("description", "")),
                     int(p.get("is_pinned", 0))
                 ))
 
@@ -1131,5 +1386,3 @@ def restore_user_vault(vault_envelope: Any) -> bool:
         return False
     finally:
         conn.close()
-
-

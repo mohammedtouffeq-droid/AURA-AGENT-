@@ -6,4 +6,7 @@ __pycache__/
 workspace/
 current_screen.png
 engines/
+hyberhiest/
 hyberhiest_repo/
+.aura_local_secrets.json
+

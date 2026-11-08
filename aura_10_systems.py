@@ -245,6 +245,7 @@ class System2InfiniteContextualMemory:
         c.execute("""
             CREATE TABLE IF NOT EXISTS memory_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER DEFAULT 1,
                 memory_tier TEXT NOT NULL,
                 key TEXT NOT NULL,
                 value TEXT NOT NULL,
@@ -255,6 +256,7 @@ class System2InfiniteContextualMemory:
         c.execute("""
             CREATE TABLE IF NOT EXISTS temporal_knowledge_edges (
                 edge_id TEXT PRIMARY KEY,
+                user_id INTEGER DEFAULT 1,
                 subject TEXT NOT NULL,
                 predicate TEXT NOT NULL,
                 object TEXT NOT NULL,
@@ -263,6 +265,17 @@ class System2InfiniteContextualMemory:
                 provenance TEXT NOT NULL
             )
         """)
+        # Ensure user_id column exists if table was created in prior schema
+        c.execute("PRAGMA table_info(memory_records)")
+        mem_cols = [col[1] for col in c.fetchall()]
+        if "user_id" not in mem_cols:
+            c.execute("ALTER TABLE memory_records ADD COLUMN user_id INTEGER DEFAULT 1")
+
+        c.execute("PRAGMA table_info(temporal_knowledge_edges)")
+        edge_cols = [col[1] for col in c.fetchall()]
+        if "user_id" not in edge_cols:
+            c.execute("ALTER TABLE temporal_knowledge_edges ADD COLUMN user_id INTEGER DEFAULT 1")
+
         conn.commit()
         conn.close()
 
@@ -280,27 +293,39 @@ class System2InfiniteContextualMemory:
             ("procedural", "omni_pipeline_recipe", "SecurityGate -> RouteLLM -> TemporalMemory -> Research -> 7-AgentSwarm -> WorldModel -> SWE -> ComputerUse -> Blender3D -> SelfEvolve", "CogneePipeline"),
             ("project", "active_repository_state", f"AURA-Agent multi-engine workspace routed via {routed_model}", "GraphitiTracker")
         ]
+        user_id = 1
+        if context_bus and "user_id" in context_bus:
+            try:
+                user_id = int(context_bus["user_id"])
+            except (ValueError, TypeError):
+                user_id = 1
+        elif isinstance(user_tag, str) and user_tag.startswith("user_"):
+            try:
+                user_id = int(user_tag.split("_")[1])
+            except (ValueError, IndexError):
+                user_id = 1
+
         for tier, k, v, prov in tiers_written:
             c.execute(
-                "INSERT INTO memory_records (memory_tier, key, value, provenance, created_at) VALUES (?, ?, ?, ?, ?)",
-                (tier, k, v, prov, now)
+                "INSERT INTO memory_records (user_id, memory_tier, key, value, provenance, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, tier, k, v, prov, now)
             )
 
         # Invalidate older active_mission edges (temporal update tracking) and insert new temporal edge
         c.execute(
-            "UPDATE temporal_knowledge_edges SET valid_until = ? WHERE subject = ? AND predicate = 'executes_mission' AND valid_until IS NULL",
-            (now, user_tag)
+            "UPDATE temporal_knowledge_edges SET valid_until = ? WHERE user_id = ? AND subject = ? AND predicate = 'executes_mission' AND valid_until IS NULL",
+            (now, user_id, user_tag)
         )
         edge_id = f"edge_{secrets.token_hex(6)}"
         c.execute(
-            "INSERT INTO temporal_knowledge_edges (edge_id, subject, predicate, object, valid_from, valid_until, provenance) VALUES (?, ?, ?, ?, ?, NULL, ?)",
-            (edge_id, user_tag, "executes_mission", f"{goal[:90]} [{routed_model}]", now, f"GraphitiTemporalEngine:{routed_model}")
+            "INSERT INTO temporal_knowledge_edges (edge_id, user_id, subject, predicate, object, valid_from, valid_until, provenance) VALUES (?, ?, ?, ?, ?, ?, NULL, ?)",
+            (edge_id, user_id, user_tag, "executes_mission", f"{goal[:90]} [{routed_model}]", now, f"GraphitiTemporalEngine:{routed_model}")
         )
 
-        c.execute("SELECT memory_tier, COUNT(*) FROM memory_records GROUP BY memory_tier")
+        c.execute("SELECT memory_tier, COUNT(*) FROM memory_records WHERE user_id = ? GROUP BY memory_tier", (user_id,))
         tier_counts = {row[0]: row[1] for row in c.fetchall()}
 
-        c.execute("SELECT edge_id, subject, predicate, object, valid_from, valid_until, provenance FROM temporal_knowledge_edges ORDER BY valid_from DESC LIMIT 5")
+        c.execute("SELECT edge_id, subject, predicate, object, valid_from, valid_until, provenance FROM temporal_knowledge_edges WHERE user_id = ? ORDER BY valid_from DESC LIMIT 5", (user_id,))
         recent_edges = [
             {
                 "edge_id": r[0], "subject": r[1], "predicate": r[2],
@@ -1092,8 +1117,24 @@ class AuraTenSystemsController:
             f"[Sys 5 Computer] Agent-S + Stagehand audited {len(s5['swe_artifacts_inspected'])} SWE files & {s5['agent_s_vision_grounding']['ui_elements_grounded']} UI elements",
             f"[Sys 9 Blender 3D] Generated & compiled procedural Blender bpy script ({s9['scene_id']})",
             f"[Sys 7 Self-Evolve] OpenEvolve + Autoresearch benchmarked 3 candidates in isolated sandbox -> winner '{s7['selected_winner']['candidate_id']}'",
-            f"[Sys 10 Post-Gate] UK AISI Inspect AI verdict={s10['inspect_ai_assessment']['verdict']} ({s10['inspect_ai_assessment']['verified_artifact_count']} artifacts verified on disk)"
+            f"[Sys 10 Post-Gate] UK AISI Inspect AI verdict={s10.get('inspect_ai_assessment', {}).get('verdict', 'N/A')} ({s10.get('inspect_ai_assessment', {}).get('verified_artifact_count', 0)} artifacts verified on disk)"
         ]
+
+        post_gate_allowed = bool(s10.get("allowed", False))
+        if not post_gate_allowed:
+            return {
+                "success": False,
+                "run_id": run_id,
+                "pipeline_name": "AURA 10-System Unified Omni-Pipeline (One AURA = 100 AI)",
+                "blocked_by_system_10": True,
+                "error": s10.get("block_reason") or "Blocked by System 10 Trust & Security Post-Gate verification",
+                "system_10_security": s10,
+                "total_systems_executed": 10,
+                "pipeline_chain": pipeline_chain,
+                "data_handoff_graph": context_bus["handoff_log"],
+                "verified_artifacts_ledger": context_bus["artifacts"],
+                "total_latency_ms": round((time.time() - t0) * 1000, 2)
+            }
 
         return {
             "success": True,

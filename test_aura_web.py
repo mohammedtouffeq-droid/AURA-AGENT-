@@ -41,7 +41,7 @@ class AuraWebIntegrationTests(unittest.TestCase):
             data = json.loads(resp.read().decode())
             self.assertFalse(data.get("sandbox_active"))
             self.assertTrue(data.get("command_filter_active"))
-            self.assertIn("not process isolation", data.get("sandbox_note", ""))
+            self.assertIn("not OS-kernel container process isolation", data.get("sandbox_note", ""))
 
     def test_permission_requests_require_authentication(self):
         req = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/permission/pending")
@@ -138,12 +138,24 @@ class AuraWebIntegrationTests(unittest.TestCase):
         save_settings.assert_not_called()
 
     def test_get_projects_list(self):
-        req = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/projects")
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            self.assertEqual(resp.status, 200)
-            data = json.loads(resp.read().decode())
-            self.assertTrue(data.get("success"))
-            self.assertIsInstance(data.get("projects"), list)
+        # Unauthenticated returns 401
+        req_unauth = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/projects")
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(req_unauth, timeout=5)
+        self.assertEqual(ctx.exception.code, 401)
+
+        # Authenticated returns 200
+        req_auth = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/api/projects",
+            headers={"Authorization": "Bearer test-proj-token"}
+        )
+        with patch("aura_db.authenticate_token", return_value={"id": 42}):
+            with patch("aura_db.get_user_projects", return_value=[]):
+                with urllib.request.urlopen(req_auth, timeout=5) as resp:
+                    self.assertEqual(resp.status, 200)
+                    data = json.loads(resp.read().decode())
+                    self.assertTrue(data.get("success"))
+                    self.assertIsInstance(data.get("projects"), list)
 
     def test_chat_api_post_authenticated(self):
         payload = json.dumps({
@@ -408,7 +420,7 @@ class AuraWebIntegrationTests(unittest.TestCase):
         import secrets
 
         uname = f"vault_user_{secrets.token_hex(4)}"
-        with patch.dict(os.environ, {"VERCEL": "1", "AURA_DATABASE_URL": "", "TURSO_DATABASE_URL": "", "AURA_PERSISTENT_DB_PATH": ""}):
+        with patch.dict(os.environ, {"VERCEL": "1", "AURA_VAULT_SECRET": "serverless_vault_secret_test_key_32bytes", "AURA_DATABASE_URL": "", "TURSO_DATABASE_URL": "", "AURA_PERSISTENT_DB_PATH": ""}):
             status = aura_db.get_storage_status()
             self.assertFalse(status["persistent"])
             self.assertTrue(status["production_accounts_available"])
@@ -431,7 +443,7 @@ class AuraWebIntegrationTests(unittest.TestCase):
 
         # Verify database backup export & import across invocations
         snap = aura_db.export_database_backup()
-        self.assertEqual(snap["schema_version"], 1)
+        self.assertGreaterEqual(snap["schema_version"], 1)
         self.assertIn("users", snap["tables"])
         counts = aura_db.import_database_backup(snap)
         self.assertGreaterEqual(counts["users"], 1)
@@ -444,8 +456,13 @@ class AuraWebIntegrationTests(unittest.TestCase):
         import aura_db
         import secrets
 
-        # 1. Overview & 9-dimension comparison matrix
-        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/api/flagship/overview", timeout=10) as r:
+        # Register user for authenticated flagship execution
+        u = aura_db.register_user(f"flagship_{secrets.token_hex(4)}", "Flagship123!")
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {u['token']}"}
+
+        # 1. Overview & 9-dimension comparison matrix (authenticated)
+        req_ov = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/flagship/overview", headers=headers)
+        with urllib.request.urlopen(req_ov, timeout=10) as r:
             overview = json.loads(r.read().decode())
         self.assertTrue(overview["success"])
         self.assertIn("openhands", overview)
@@ -673,14 +690,7 @@ class AuraWebIntegrationTests(unittest.TestCase):
         uname = f"sys10_{int(time.time() * 1000) % 100000}"
         pwd = "Sys10User2026!"
 
-        # 1. Overview endpoint returns all 10 systems & 29 pillars
-        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/api/systems10/overview", timeout=5) as r:
-            ov = json.loads(r.read().decode())
-        self.assertTrue(ov["success"])
-        self.assertEqual(ov["total_systems"], 10)
-        self.assertEqual(len(ov["systems"]), 10)
-
-        # 2. Authenticate operator
+        # 1. Authenticate operator
         reg_req = urllib.request.Request(
             f"http://127.0.0.1:{self.port}/api/auth/register",
             data=json.dumps({"username": uname, "password": pwd}).encode("utf-8"),
@@ -691,6 +701,14 @@ class AuraWebIntegrationTests(unittest.TestCase):
             reg_data = json.loads(r.read().decode())
         token = reg_data["token"]
         auth_headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+
+        # 2. Overview endpoint returns all 10 systems & 29 pillars (authenticated)
+        req_ov = urllib.request.Request(f"http://127.0.0.1:{self.port}/api/systems10/overview", headers=auth_headers)
+        with urllib.request.urlopen(req_ov, timeout=5) as r:
+            ov = json.loads(r.read().decode())
+        self.assertTrue(ov["success"])
+        self.assertEqual(ov["total_systems"], 10)
+        self.assertEqual(len(ov["systems"]), 10)
 
         # 3. Test individual System 2 (Infinite Contextual Memory + Bi-Temporal Graphiti KG)
         s2_req = urllib.request.Request(

@@ -40,8 +40,11 @@ def load_env() -> Dict[str, str]:
 ENV = load_env()
 API_KEY = ENV.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")
 MODEL_NAME = ENV.get("GEMINI_MODEL", "gemini-flash-lite-latest")
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent?key={API_KEY}"
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
+import ipaddress
+import socket
 import tempfile
+import urllib.parse
 
 def _resolve_memory_db_path() -> Path:
     default_dir = Path(__file__).resolve().parent
@@ -51,24 +54,26 @@ def _resolve_memory_db_path() -> Path:
 
 DB_PATH = _resolve_memory_db_path()
 
-def _resolve_workspace_dir() -> Path:
+def _resolve_workspace_dir(user_id: Optional[int] = None) -> Path:
     default_dir = Path(__file__).resolve().parent
     if os.environ.get("VERCEL") or not os.access(default_dir, os.W_OK):
         ws = Path(tempfile.gettempdir()) / "aura_workspace"
     else:
         ws = default_dir / "workspace"
+    if user_id is not None:
+        ws = ws / f"user_{int(user_id)}"
     ws.mkdir(parents=True, exist_ok=True)
     return ws
 
 # ===================================================================================
-# PRODUCTION SAFETY SANDBOX & ACCESS CONTROL
+# WORKSPACE PATH CONTAINMENT & SSRF NETWORK GUARD
+# (Note: Path containment & command pattern checks enforce workspace boundaries;
+#  they are NOT an OS kernel container/VM sandbox.)
 # ===================================================================================
 SAFE_WORKSPACE_ROOTS = [
-    Path("c:/Users/hp/cyberheist").resolve(),
-    Path("c:/Users/hp/AURA-Agent").resolve(),
-    Path(__file__).resolve().parent,
-    Path(tempfile.gettempdir()).resolve(),
+    (Path(__file__).resolve().parent / "workspace").resolve(),
     (Path(tempfile.gettempdir()) / "aura_workspace").resolve(),
+    Path("c:/Users/hp/cyberheist").resolve(),
 ]
 
 STRICTLY_FORBIDDEN_PATHS = [
@@ -80,26 +85,57 @@ STRICTLY_FORBIDDEN_PATHS = [
 BANNED_SHELL_PATTERNS = [
     re.compile(r"\bformat\b", re.I),
     re.compile(r"rmdir\s+/[sS]", re.I),
+    re.compile(r"rm\s+-[rRfF]+\s+/", re.I),
     re.compile(r"Remove-Item\s+.*-Recurse\s+[Cc]:\\", re.I),
     re.compile(r"\bdel\s+/[fFqQsS]*\s+[Cc]:\\", re.I),
-    re.compile(r"reg\s+delete", re.I),
+    re.compile(r"reg\s+(delete|add)", re.I),
     re.compile(r"diskpart", re.I),
     re.compile(r"bcdedit", re.I),
     re.compile(r"Stop-Computer", re.I),
     re.compile(r"Restart-Computer", re.I),
+    re.compile(r"\bshutdown\b", re.I),
+    re.compile(r"Invoke-Expression|\biex\b|-EncodedCommand", re.I),
 ]
 
-def validate_safe_path(filepath: str, allow_create: bool = False) -> Path:
-    """Ensures file operations cannot escape into protected Windows system directories or outside authorized workspace roots."""
-    resolved = Path(filepath).resolve()
+def validate_safe_path(filepath: str, allow_create: bool = False, user_id: Optional[int] = None) -> Path:
+    """Confines file paths strictly to dedicated workspace roots (and to `user_<id>` when `user_id` is supplied)."""
+    if not filepath or not isinstance(filepath, str):
+        raise PermissionError("Security Guard: Empty or invalid file path.")
+
+    raw_path = Path(filepath)
+    if user_id is not None:
+        tenant_root = _resolve_workspace_dir(user_id).resolve()
+        if raw_path.is_absolute():
+            resolved = raw_path.resolve()
+        else:
+            # Strip leading 'workspace/' prefix if model wrote 'workspace/foo.py' so it lands in tenant_root/foo.py
+            parts = raw_path.parts
+            rel_sub = Path(*parts[1:]) if (len(parts) > 1 and parts[0].lower() == "workspace") else raw_path
+            resolved = (tenant_root / rel_sub).resolve()
+        try:
+            resolved.relative_to(tenant_root)
+        except ValueError:
+            raise PermissionError(f"Security Guard: Cross-tenant or outside-workspace path blocked: '{resolved}'")
+        return resolved
+
+    if not raw_path.is_absolute():
+        parts = raw_path.parts
+        if parts and parts[0].lower() == "workspace":
+            resolved = (Path(__file__).resolve().parent / raw_path).resolve()
+        elif parts and parts[0] == "..":
+            resolved = (Path(__file__).resolve().parent / "workspace" / raw_path).resolve()
+        else:
+            resolved = (_resolve_workspace_dir() / raw_path).resolve()
+    else:
+        resolved = raw_path.resolve()
+
     for forbidden in STRICTLY_FORBIDDEN_PATHS:
         try:
             resolved.relative_to(forbidden)
-            raise PermissionError(f"Security Sandbox: Target directory '{forbidden}' is strictly protected.")
+            raise PermissionError(f"Security Guard: Target directory '{forbidden}' is strictly protected.")
         except ValueError:
             pass
 
-    # Strict workspace boundary enforcement: all paths must reside within approved roots
     is_safe = False
     for root in SAFE_WORKSPACE_ROOTS:
         try:
@@ -110,9 +146,85 @@ def validate_safe_path(filepath: str, allow_create: bool = False) -> Path:
             pass
 
     if not is_safe:
-        raise PermissionError(f"Security Sandbox: Path traversal outside authorized workspaces is blocked: '{resolved}'")
+        raise PermissionError(f"Security Guard: Path traversal outside authorized workspaces is blocked: '{resolved}'")
 
     return resolved
+
+
+def is_safe_public_url(url: str) -> tuple[bool, str]:
+    """Blocks SSRF attempts against loopback, private RFC1918, link-local/cloud metadata, and non-HTTP(S) URLs."""
+    if not url or not isinstance(url, str):
+        return False, "Empty URL."
+    try:
+        parsed = urllib.parse.urlparse(url.strip())
+    except Exception:
+        return False, "Malformed URL."
+
+    if parsed.scheme.lower() not in ("http", "https"):
+        return False, f"Disallowed URL scheme '{parsed.scheme}'. Only http and https are permitted."
+
+    host = (parsed.hostname or "").strip().lower().rstrip(".")
+    if not host:
+        return False, "URL is missing a valid hostname."
+
+    blocked_hostnames = {
+        "localhost",
+        "localhost.localdomain",
+        "0.0.0.0",  # nosec B104
+        "::1",
+        "metadata.google.internal",
+        "metadata",
+        "instance-data",
+    }
+    if host in blocked_hostnames or host.endswith((".local", ".internal", ".localhost")):
+        return False, f"SSRF Guard: Hostname '{host}' is restricted."
+
+    # Check literal IP first if host is an IP literal
+    try:
+        literal_ip = ipaddress.ip_address(host)
+        ips_to_check = [literal_ip]
+    except ValueError:
+        port = parsed.port or (443 if parsed.scheme.lower() == "https" else 80)
+        try:
+            addr_infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+        except socket.gaierror as e:
+            return False, f"DNS resolution failed for '{host}': {e}"
+        ips_to_check = []
+        for info in addr_infos:
+            sockaddr = info[4]
+            if sockaddr:
+                try:
+                    ips_to_check.append(ipaddress.ip_address(sockaddr[0].split("%")[0]))
+                except ValueError:
+                    return False, f"Invalid resolved IP address for '{host}'."
+        if not ips_to_check:
+            return False, f"No IP addresses resolved for '{host}'."
+
+    for ip_obj in ips_to_check:
+        candidates = [ip_obj]
+        if isinstance(ip_obj, ipaddress.IPv6Address) and ip_obj.ipv4_mapped:
+            candidates.append(ip_obj.ipv4_mapped)
+        for cand in candidates:
+            if (
+                cand.is_loopback
+                or cand.is_private
+                or cand.is_link_local
+                or cand.is_multicast
+                or cand.is_reserved
+                or cand.is_unspecified
+            ):
+                return False, f"SSRF Guard: Target IP '{cand}' for host '{host}' is non-public/internal."
+
+    return True, ""
+
+
+class _SafePublicRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        resolved_url = urllib.parse.urljoin(req.full_url, newurl)
+        safe_ok, reason = is_safe_public_url(resolved_url)
+        if not safe_ok:
+            raise urllib.error.URLError(f"Blocked unsafe redirect: {reason}")
+        return super().redirect_request(req, fp, code, msg, headers, resolved_url)
 
 def is_safe_command(command: str) -> tuple[bool, str]:
     """Inspects shell commands for destructive operations."""
@@ -141,21 +253,31 @@ def init_memory():
 
 init_memory()
 
-def tool_remember_fact(key: str, value: str) -> Dict[str, Any]:
-    """Stores permanent memory about the user, projects, preferences or instructions."""
+def tool_remember_fact(key: str, value: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Stores permanent memory scoped strictly to `user_id` when authenticated."""
+    if not key or not isinstance(key, str):
+        return {"success": False, "error": "Memory key is required."}
     try:
+        if user_id is not None:
+            import aura_db
+            saved = aura_db.save_user_memory(int(user_id), key.strip(), str(value), category="fact")
+            return {"success": True, "action": "remembered", "key": saved["key"], "value": saved["value"], "user_id": int(user_id)}
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO memory (key, value) VALUES (?, ?)", (key, value))
+        c.execute("INSERT OR REPLACE INTO memory (key, value) VALUES (?, ?)", (key.strip(), str(value)))
         conn.commit()
         conn.close()
-        return {"success": True, "action": "remembered", "key": key, "value": value}
+        return {"success": True, "action": "remembered", "key": key.strip(), "value": str(value)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def tool_recall_memory(search_key: str = "") -> Dict[str, Any]:
-    """Recalls stored memory facts from the permanent database."""
+def tool_recall_memory(search_key: str = "", user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Recalls stored memory facts scoped strictly to `user_id` when authenticated."""
     try:
+        if user_id is not None:
+            import aura_db
+            items = aura_db.get_user_memories(int(user_id), search=search_key or "")
+            return {"success": True, "user_id": int(user_id), "facts": {m["key"]: m["value"] for m in items}}
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         if search_key:
@@ -521,9 +643,39 @@ def tool_browser_action(action: str = "open", url: str = "", query: str = "", ex
     except Exception as e:
         return {"success": False, "error": f"Browser action failed: {e}"}
 
-def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: str = "", category: str = "general", user_id: int = 1) -> Dict[str, Any]:
-    """Long-term human memory engine preserving user habits, coding preferences and workflow shortcuts (User-scoped Mem0 style)."""
+def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: str = "", category: str = "general", user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Long-term memory engine preserving user habits and coding preferences with strict per-user isolation."""
     try:
+        act = (action or "recall").lower().strip()
+        if user_id is not None:
+            import aura_db
+            uid = int(user_id)
+            if act in ["store", "save", "remember"]:
+                if not key or not value:
+                    return {"success": False, "error": "Both 'key' and 'value' are required to store memory."}
+                saved = aura_db.save_user_memory(uid, key, value, category=category or "general")
+                return {
+                    "success": True,
+                    "action": "stored",
+                    "key": saved["key"],
+                    "value": saved["value"],
+                    "category": saved["category"],
+                    "user_id": uid,
+                    "engine": "Mem0-Long-Term-Memory",
+                }
+            elif act in ["recall", "search", "get"]:
+                rows = aura_db.get_user_memories(uid, search=key or "")
+                return {
+                    "success": True,
+                    "action": "recalled",
+                    "total_facts": len(rows),
+                    "facts": rows,
+                    "user_id": uid,
+                    "engine": "Mem0-Long-Term-Memory",
+                }
+            return {"success": False, "error": f"Unsupported mem0 action: {action}"}
+
+        user_id = 0
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("""
@@ -550,9 +702,9 @@ def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: st
             if not key or not value:
                 return {"success": False, "error": "Both 'key' and 'value' are required to store memory."}
             c.execute("""
-                INSERT INTO mem0_store (user_id, key, value, category, updated_at)
+                INSERT OR REPLACE INTO mem0_store (user_id, key, value, category, updated_at)
                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id, key) DO UPDATE SET value=excluded.value, category=excluded.category, updated_at=CURRENT_TIMESTAMP
+                
             """, (user_id, key, value, category))
             conn.commit()
             conn.close()
@@ -575,8 +727,8 @@ def tool_mem0_persistent_memory(action: str = "recall", key: str = "", value: st
 # ===================================================================================
 # GROUP 1: REAL-WORLD SOCIAL & BROWSER SESSION AUTOMATION (SECURITY JAILED)
 # ===================================================================================
-def tool_hyperbrowser_session(action: str = "attach_profile", url: str = "https://web.whatsapp.com", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
-    """Attaches to or launches real user Chrome profile with persistent cookies and session logins (Hyperbrowser CDP style)."""
+def tool_hyperbrowser_session(action: str = "attach_profile", url: str = "https://example.com", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
+    """Launches an isolated sandboxed browser profile (never attaches to personal user Chrome cookies/profiles)."""
     if permission_mode == "request_review" and not approved:
         return {
             "success": False,
@@ -584,33 +736,52 @@ def tool_hyperbrowser_session(action: str = "attach_profile", url: str = "https:
             "action": "hyperbrowser_session",
             "target": url,
             "security_jail": True,
-            "message": f"🔒 SECURITY JAIL BLOCKED: AURA is attempting to attach to your personal Google Chrome user profile to open '{url}'. User approval required."
+            "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to launch an isolated browser session for '{url}'. User approval required."
+        }
+
+    safe_ok, safe_err = is_safe_public_url(url)
+    if not safe_ok:
+        return {"success": False, "blocked": True, "error": safe_err}
+
+    if os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI") or os.environ.get("AURA_ALLOW_PHYSICAL_GUI") != "1":
+        return {
+            "success": False,
+            "action": "headless_blocked",
+            "url": url,
+            "personal_profile_attached": False,
+            "headless_guard": True,
+            "error": "Interactive browser launch disabled unless AURA_ALLOW_PHYSICAL_GUI=1; personal Chrome profiles are never attached.",
         }
 
     try:
-        import subprocess
-        import os
-        chrome_exe = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-        user_data = os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\User Data")
-        
-        # Launch Chrome with remote debugging on port 9222 and user's profile
-        cmd_args = [chrome_exe, "--remote-debugging-port=9222", f"--user-data-dir={user_data}", url]
+        chrome_candidates = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        ]
+        chrome_exe = next((c for c in chrome_candidates if os.path.exists(c)), None)
+        if not chrome_exe:
+            return {"success": False, "error": "Chrome executable not found on host."}
+
+        # Always use a dedicated isolated profile directory inside workspace (never %LOCALAPPDATA%\Google\Chrome\User Data)
+        isolated_profile = _resolve_workspace_dir() / ".isolated_chrome_profile"
+        isolated_profile.mkdir(parents=True, exist_ok=True)
+        cmd_args = [chrome_exe, f"--user-data-dir={isolated_profile}", "--no-first-run", url]
         subprocess.Popen(cmd_args)  # nosec B603
         return {
             "success": True,
-            "action": "attached_cdp_session",
+            "action": "launched_isolated_browser_session",
             "url": url,
-            "port": 9222,
-            "user_data_attached": True,
-            "engine": "Hyperbrowser-CDP-Session-Bridge"
+            "personal_profile_attached": False,
+            "isolated_profile_dir": str(isolated_profile),
+            "engine": "Isolated-Browser-Session",
         }
     except Exception as e:
-        return {"success": False, "error": f"Hyperbrowser CDP session failed: {e}"}
+        return {"success": False, "error": f"Isolated browser session failed: {e}"}
 
 def tool_whatsapp_manager(action: str = "check_unread", contact: str = "", message: str = "", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
-    """Manages real WhatsApp Web chats, checks unread messages, or sends approved texts (WhatsApp-Web.js style)."""
-    act = action.lower().strip()
-    if act in ["send_message", "send", "chat", "message"]:
+    """Prepares a WhatsApp Web compose link without falsely claiming automated message delivery."""
+    act = (action or "").lower().strip()
+    if act in ["send_message", "send", "chat", "message", "prepare_draft"]:
         if permission_mode == "request_review" and not approved:
             return {
                 "success": False,
@@ -619,43 +790,43 @@ def tool_whatsapp_manager(action: str = "check_unread", contact: str = "", messa
                 "target": contact or "Unknown Contact",
                 "message_preview": message,
                 "security_jail": True,
-                "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to send WhatsApp message '{message}' to '{contact}'. User approval required before sending!"
+                "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to prepare WhatsApp message '{message}' to '{contact}'. User approval required before opening!"
             }
 
-        # Safe execution when approved or auto-pilot
-        import urllib.parse
-        clean_text = urllib.parse.quote(message)
+        clean_text = urllib.parse.quote(message or "")
         target_url = f"https://web.whatsapp.com/send?text={clean_text}"
         if contact:
             clean_contact = "".join(filter(str.isdigit, contact))
             if clean_contact:
                 target_url = f"https://web.whatsapp.com/send?phone={clean_contact}&text={clean_text}"
-        
-        tool_hyperbrowser_session(action="navigate", url=target_url, permission_mode="auto_pilot", approved=True)
+
+        browser_res = tool_open_browser(target_url)
         return {
-            "success": True,
-            "action": "sent_whatsapp_message",
+            "success": False if act in ["send_message", "send"] else bool(browser_res.get("success")),
+            "action": "draft_url_prepared",
+            "sent": False,
+            "delivery_verified": False,
             "contact": contact,
             "message": message,
-            "target_url": target_url,
-            "engine": "WhatsApp-Web.js-Live-Connector"
+            "compose_url": target_url,
+            "note": "WhatsApp Cloud API is not configured; prepared a pre-filled WhatsApp Web compose URL only (message was NOT automatically sent).",
         }
     elif act in ["check_unread", "read_chats", "check_messages", "read"]:
         target_url = "https://web.whatsapp.com"
-        tool_hyperbrowser_session(action="navigate", url=target_url, permission_mode="auto_pilot", approved=True)
         return {
-            "success": True,
-            "action": "opened_whatsapp_web",
+            "success": False,
+            "action": "manual_login_required",
+            "sent": False,
+            "unread_verified": False,
             "url": target_url,
-            "status": "active_session",
-            "note": "WhatsApp Web opened directly with your active Chrome profile to inspect unread messages."
+            "error": "Automated WhatsApp inbox reading is not connected to a live WhatsApp Business API token.",
         }
     else:
         return {"success": False, "error": f"Unsupported WhatsApp action: {action}"}
 
 def tool_instagram_manager(action: str = "check_replies", username: str = "", reply_text: str = "", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
-    """Checks Instagram notifications, story replies, and DMs with strict security approval (Instaloader style)."""
-    act = action.lower().strip()
+    """Checks or prepares Instagram Direct links honestly without claiming automated DM submission."""
+    act = (action or "").lower().strip()
     if act in ["send_dm", "reply", "post"]:
         if permission_mode == "request_review" and not approved:
             return {
@@ -669,29 +840,31 @@ def tool_instagram_manager(action: str = "check_replies", username: str = "", re
             }
 
         target_url = "https://www.instagram.com/direct/inbox/"
-        tool_hyperbrowser_session(action="navigate", url=target_url, permission_mode="auto_pilot", approved=True)
         return {
-            "success": True,
-            "action": "sent_instagram_reply",
+            "success": False,
+            "action": "dm_api_not_configured",
+            "sent": False,
+            "delivery_verified": False,
             "username": username,
             "reply_text": reply_text,
-            "engine": "Instaloader-Session-Automation"
+            "inbox_url": target_url,
+            "error": "Instagram Graph/Messaging API credentials are not configured; message was NOT automatically sent.",
         }
     elif act in ["check_replies", "check_story_replies", "check_dms", "read"]:
         target_url = "https://www.instagram.com/direct/inbox/"
-        tool_hyperbrowser_session(action="navigate", url=target_url, permission_mode="auto_pilot", approved=True)
         return {
-            "success": True,
-            "action": "checked_instagram_inbox",
+            "success": False,
+            "action": "dm_api_not_configured",
+            "unread_verified": False,
             "url": target_url,
-            "note": "Instagram Direct Inbox opened with your active logged-in profile to check incoming replies and story reactions."
+            "error": "Instagram Graph/Messaging API credentials are not configured; inbox cannot be read programmatically.",
         }
     else:
         return {"success": False, "error": f"Unsupported Instagram action: {action}"}
 
 def tool_github_manager(action: str = "inspect_my_repos", repo_name: str = "", user_login: str = "mohammedtouffeq-droid", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
-    """Inspects personal GitHub repositories, latest commits, issues, and PRs (PyGithub style)."""
-    act = action.lower().strip()
+    """Inspects public GitHub repositories via the GitHub REST API and reports failures honestly."""
+    act = (action or "").lower().strip()
     if act in ["delete_repo", "push_unauthorized"]:
         if permission_mode == "request_review" and not approved:
             return {
@@ -702,14 +875,25 @@ def tool_github_manager(action: str = "inspect_my_repos", repo_name: str = "", u
                 "security_jail": True,
                 "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to execute sensitive GitHub operation on '{repo_name}'. Approval required!"
             }
+        return {"success": False, "blocked": True, "error": "Destructive GitHub repository mutations are disabled in AURA."}
+
+    clean_login = re.sub(r"[^a-zA-Z0-9-]", "", (user_login or "mohammedtouffeq-droid").strip())
+    if not clean_login:
+        return {"success": False, "error": "Invalid GitHub username."}
 
     try:
-        import urllib.request
-        api_url = f"https://api.github.com/users/{user_login}/repos?sort=updated&per_page=10"
-        req = urllib.request.Request(api_url, headers={"User-Agent": "AURA-Agent/2.0"})
+        api_url = f"https://api.github.com/users/{clean_login}/repos?sort=updated&per_page=10"
+        headers = {
+            "User-Agent": "AURA-Agent/2.0",
+            "Accept": "application/vnd.github+json",
+        }
+        gh_tok = os.environ.get("GITHUB_TOKEN", "").strip()
+        if gh_tok:
+            headers["Authorization"] = f"Bearer {gh_tok}"
+        req = urllib.request.Request(api_url, headers=headers)
         with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode())
-        
+            data = json.loads(resp.read().decode("utf-8"))
+
         repos_summary = []
         for r in data[:8]:
             repos_summary.append({
@@ -718,26 +902,26 @@ def tool_github_manager(action: str = "inspect_my_repos", repo_name: str = "", u
                 "html_url": r.get("html_url"),
                 "stars": r.get("stargazers_count", 0),
                 "open_issues": r.get("open_issues_count", 0),
-                "updated_at": r.get("updated_at")
+                "updated_at": r.get("updated_at"),
             })
         return {
             "success": True,
             "action": "inspected_github_repos",
-            "user": user_login,
+            "api_verified": True,
+            "user": clean_login,
             "total_fetched": len(repos_summary),
             "repositories": repos_summary,
-            "engine": "PyGithub-Enterprise-API"
+            "engine": "GitHub-REST-API-v3",
         }
     except Exception as e:
-        # Fallback to direct web browser navigation
-        target_url = f"https://github.com/{user_login}?tab=repositories"
-        tool_open_browser(target_url)
+        target_url = f"https://github.com/{clean_login}?tab=repositories"
         return {
-            "success": True,
-            "action": "opened_github_in_browser",
-            "user": user_login,
-            "url": target_url,
-            "note": f"Opened GitHub repositories page directly in your browser: {e}"
+            "success": False,
+            "action": "github_api_error",
+            "api_verified": False,
+            "user": clean_login,
+            "fallback_url": target_url,
+            "error": f"GitHub API request failed: {e}",
         }
 
 def tool_get_weather(location: str = "Telangana") -> Dict[str, Any]:
@@ -778,21 +962,34 @@ def tool_get_weather(location: str = "Telangana") -> Dict[str, Any]:
             "source": "AURA Local Telemetry"
         }
 
+MAX_WEBPAGE_READ_BYTES = 512 * 1024
+
 def tool_read_webpage(url: str) -> Dict[str, Any]:
-    """Fetches and reads text content from a webpage URL so AURA can summarize it."""
+    """Fetches and reads text content from a verified public HTTP(S) URL with SSRF & size protection."""
+    safe_ok, safe_err = is_safe_public_url(url)
+    if not safe_ok:
+        return {"success": False, "blocked": True, "error": safe_err}
+
     try:
+        opener = urllib.request.build_opener(_SafePublicRedirectHandler())
         req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AURA-Agent/2.0"}
+            url.strip(),
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AURA-Agent/2.0"},
         )
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
-        # Clean HTML tags and scripts
-        cleaned = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL)
-        cleaned = re.sub(r"<style.*?</style>", "", cleaned, flags=re.DOTALL)
+        with opener.open(req, timeout=10) as resp:
+            raw_bytes = resp.read(MAX_WEBPAGE_READ_BYTES + 1)
+            truncated = len(raw_bytes) > MAX_WEBPAGE_READ_BYTES
+            html = raw_bytes[:MAX_WEBPAGE_READ_BYTES].decode("utf-8", errors="ignore")
+        cleaned = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
+        cleaned = re.sub(r"<style.*?</style>", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
         cleaned = re.sub(r"<.*?>", " ", cleaned)
         cleaned = " ".join(cleaned.split())
-        return {"success": True, "url": url, "content_summary": cleaned[:3000]}
+        return {
+            "success": True,
+            "url": url.strip(),
+            "truncated": truncated,
+            "content_summary": cleaned[:3000],
+        }
     except Exception as e:
         return {"success": False, "error": f"Could not read webpage: {e}"}
 
@@ -877,23 +1074,23 @@ def tool_execute_shell(command: str, permission_mode: str = "auto_pilot", approv
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def tool_write_file(filepath: str, content: str) -> Dict[str, Any]:
-    """Creates or overwrites a file on disk within the validated workspace."""
+def tool_write_file(filepath: str, content: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Creates or overwrites a file atomically within the validated (user-scoped) workspace."""
     try:
-        p = validate_safe_path(filepath, allow_create=True)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content, encoding="utf-8")
-        return {"success": True, "file": str(p), "bytes_written": len(content)}
+        p = validate_safe_path(filepath, allow_create=True, user_id=user_id)
+        from coderx_engine import _atomic_write_text
+        _atomic_write_text(p, content or "", encoding="utf-8")
+        return {"success": True, "file": str(p), "bytes_written": len(content or "")}
     except PermissionError as pe:
         return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def tool_read_file(filepath: str) -> Dict[str, Any]:
-    """Reads content of a file from disk within the validated workspace."""
+def tool_read_file(filepath: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Reads content of a file from disk within the validated (user-scoped) workspace."""
     try:
-        p = validate_safe_path(filepath)
-        if not p.exists():
+        p = validate_safe_path(filepath, user_id=user_id)
+        if not p.exists() or not p.is_file():
             return {"success": False, "error": f"File {filepath} not found"}
         content = p.read_text(encoding="utf-8", errors="ignore")
         return {"success": True, "file": str(p), "content": content[:3000]}
@@ -902,11 +1099,16 @@ def tool_read_file(filepath: str) -> Dict[str, Any]:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio: str = "1:1") -> Dict[str, Any]:
-    """Generates an ultra-photorealistic image using AURA Cinema Studio with AAA camera physics."""
+def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio: str = "1:1", user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Generates an image inside the user's isolated workspace via AURA Cinema Studio."""
     try:
         from aura_media_engine import AURA_CINEMA
-        res = AURA_CINEMA.create_cinematic_image(prompt=prompt, camera_style=style, aspect_ratio=aspect_ratio)
+        res = AURA_CINEMA.create_cinematic_image(
+            prompt=prompt,
+            camera_style=style,
+            aspect_ratio=aspect_ratio,
+            workspace_dir=_resolve_workspace_dir(user_id),
+        )
         res["action"] = "generated_image"
         res["prompt"] = prompt
         return res
@@ -921,7 +1123,7 @@ def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio
             w, h = (1280, 720) if aspect_ratio == "16:9" else ((720, 1280) if aspect_ratio == "9:16" else (1024, 1024))
             seed = int(time.time() * 1000) % 999999
             image_url = f"https://image.pollinations.ai/prompt/{encoded}?width={w}&height={h}&seed={seed}&nologo=true&enhance=true"
-            output_dir = _resolve_workspace_dir() / "generated_images"
+            output_dir = _resolve_workspace_dir(user_id) / "generated_images"
             output_dir.mkdir(parents=True, exist_ok=True)
             img_id = hashlib.sha256(f"{clean_prompt}_{seed}".encode()).hexdigest()[:12]
             file_path = output_dir / f"aura_img_{img_id}.png"
@@ -941,33 +1143,40 @@ def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio
             return {"success": False, "error": f"Image generation failed: {e} (Fallback: {fallback_err})"}
 
 
-def tool_transform_image(image_path: str, instruction: str) -> Dict[str, Any]:
-    """Transforms an uploaded photo into iPhone 16 Pro RAW, 85mm f/1.4 Portrait Bokeh, or 2.39:1 Cinema."""
+def tool_transform_image(image_path: str, instruction: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Transforms an image inside the validated workspace using OpenCV optical curves."""
     try:
+        inp = validate_safe_path(image_path, user_id=user_id)
         from aura_media_engine import AURA_CINEMA
-        return AURA_CINEMA.transform_existing_image(image_path, instruction)
+        return AURA_CINEMA.transform_existing_image(str(inp), instruction)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
         return {"success": False, "error": f"Image transformation failed: {e}"}
 
 
-def tool_remove_background(image_path: str) -> Dict[str, Any]:
-    """Removes background from an image creating a transparent PNG (SAM2 / Rembg engine)."""
+def tool_remove_background(image_path: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Removes background from a workspace image using GrabCut alpha extraction."""
     try:
+        inp = validate_safe_path(image_path, user_id=user_id)
         from aura_media_engine import NativeSegmentationEngine
-        inp = Path(image_path)
         out = inp.parent / f"{inp.stem}_nobg.png"
         return NativeSegmentationEngine.remove_background(inp, out)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
         return {"success": False, "error": f"Background removal failed: {e}"}
 
 
-def tool_segment_objects(image_path: str) -> Dict[str, Any]:
-    """Segments objects in an image with bounding boxes and contour masks (SAM2 engine)."""
+def tool_segment_objects(image_path: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Detects primary object contours and bounding boxes on a workspace image."""
     try:
+        inp = validate_safe_path(image_path, user_id=user_id)
         from aura_media_engine import NativeSegmentationEngine
-        inp = Path(image_path)
         out = inp.parent / f"{inp.stem}_segmented.png"
         return NativeSegmentationEngine.segment_objects(inp, out)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
         return {"success": False, "error": f"Object segmentation failed: {e}"}
 
@@ -1170,14 +1379,30 @@ def tool_flagship_trinity_pipeline(
     except Exception as e:
         return {"success": False, "error": f"Trinity pipeline failed: {e}"}
 
-def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24) -> Dict[str, Any]:
-    """Generates an animated video simulation sequence or multimedia player from text prompts."""
+def tool_generate_video(prompt: str, duration_sec: int = 5, fps: int = 24, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Generates a verified 24fps MP4 video (or interactive canvas animation fallback) inside the user's workspace."""
+    try:
+        from aura_media_engine import AURA_CINEMA
+        mp4_res = AURA_CINEMA.create_cinematic_video(
+            prompt=prompt,
+            duration_sec=duration_sec,
+            fps=fps,
+            workspace_dir=_resolve_workspace_dir(user_id),
+        )
+        if mp4_res.get("success"):
+            mp4_res["action"] = "generated_video"
+            mp4_res["prompt"] = prompt.strip()
+            mp4_res["video_player_path"] = mp4_res.get("video_path")
+            mp4_res["video_meta_path"] = mp4_res.get("remotion_spec_path")
+            return mp4_res
+    except Exception:
+        pass
     try:
         import hashlib
         import time
 
         clean_prompt = prompt.strip()
-        output_dir = _resolve_workspace_dir() / "generated_videos"
+        output_dir = _resolve_workspace_dir(user_id) / "generated_videos"
         output_dir.mkdir(parents=True, exist_ok=True)
         vid_id = hashlib.sha256(f"{clean_prompt}_{time.time()}".encode()).hexdigest()[:12]
         
@@ -1255,10 +1480,12 @@ draw();
         return {"success": False, "error": f"Video generation failed: {e}"}
 
 def tool_take_screenshot() -> Dict[str, Any]:
-    """Takes a screenshot of the user's desktop."""
+    """Takes a screenshot of the desktop when interactive GUI mode is explicitly enabled."""
+    if os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI") or os.environ.get("AURA_ALLOW_PHYSICAL_GUI") != "1":
+        return {"success": False, "headless_guard": True, "note": "Interactive desktop capture requires AURA_ALLOW_PHYSICAL_GUI=1."}
     try:
         from PIL import ImageGrab
-        img_path = Path(__file__).resolve().parent / "current_screen.png"
+        img_path = _resolve_workspace_dir() / "current_screen.png"
         img = ImageGrab.grab()
         img.save(str(img_path))
         return {"success": True, "screenshot_path": str(img_path)}
@@ -1266,23 +1493,16 @@ def tool_take_screenshot() -> Dict[str, Any]:
         return {"success": False, "note": f"Interactive desktop session required: {e}"}
 
 
-def tool_markitdown_convert(filepath: str, format_type: str = "markdown") -> Dict[str, Any]:
-    """Converts PDFs, Word (.docx), Excel (.xlsx), PowerPoint (.pptx), CSV, and HTML files into clean Markdown (Microsoft MarkItDown style)."""
+def tool_markitdown_convert(filepath: str, format_type: str = "markdown", user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Converts text/CSV/HTML/JSON/Markdown documents inside workspace into Markdown; fails honestly for unparsed binary formats."""
     try:
-        p = Path(filepath)
-        if not p.is_absolute():
-            p = (Path(__file__).resolve().parent / filepath).resolve()
-        
-        if not p.exists():
-            ws_candidate = Path(__file__).resolve().parent / "workspace" / filepath
-            if ws_candidate.exists():
-                p = ws_candidate
-            else:
-                return {"success": False, "error": f"Document not found at '{filepath}'"}
+        p = validate_safe_path(filepath, user_id=user_id)
+        if not p.exists() or not p.is_file():
+            return {"success": False, "error": f"Document not found at '{filepath}'"}
 
         ext = p.suffix.lower()
         title = p.stem.replace("_", " ").title()
-        
+
         if ext in [".txt", ".md", ".json", ".csv", ".html", ".py", ".log"]:
             raw_text = p.read_text(encoding="utf-8", errors="ignore")
             if ext == ".csv":
@@ -1293,38 +1513,30 @@ def tool_markitdown_convert(filepath: str, format_type: str = "markdown") -> Dic
                     table_md += "| " + " | ".join(["---"] * len(header)) + " |\n"
                     for row in lines[1:25]:
                         table_md += "| " + " | ".join(row.split(",")) + " |\n"
-                    md_text = f"# 📄 {title}\n\n*Converted from CSV via MarkItDown engine*\n\n" + table_md
+                    md_text = f"# {title}\n\n*Converted from CSV*\n\n" + table_md
                 else:
-                    md_text = f"# 📄 {title}\n\n*(Empty CSV)*"
+                    md_text = f"# {title}\n\n*(Empty CSV)*"
+            elif ext == ".html":
+                stripped = re.sub(r"<script.*?</script>", "", raw_text, flags=re.DOTALL | re.I)
+                stripped = re.sub(r"<style.*?</style>", "", stripped, flags=re.DOTALL | re.I)
+                stripped = " ".join(re.sub(r"<.*?>", " ", stripped).split())
+                md_text = f"# {title}\n\n" + stripped
             else:
-                md_text = f"# 📄 {title}\n\n" + raw_text
+                md_text = f"# {title}\n\n" + raw_text
         else:
-            extracted_text = ""
-            try:
-                import subprocess
-                cmd = ["python", "-m", "markitdown", str(p)]
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-                if res.returncode == 0 and res.stdout.strip():
-                    extracted_text = res.stdout
-            except Exception:
-                pass
-            
-            if not extracted_text:
-                file_size_kb = round(p.stat().st_size / 1024, 2)
-                extracted_text = (f"# 📄 Document: {title}\n\n"
-                                  f"- **File**: `{p.name}`\n"
-                                  f"- **Type**: `{ext.upper()}` Document\n"
-                                  f"- **Size**: `{file_size_kb} KB`\n"
-                                  f"- **Engine**: `microsoft/markitdown` (~1.92L Stars)\n\n"
-                                  f"### Document Structure\n"
-                                  f"Document successfully parsed into clean Markdown representation for AI summarization.")
-            md_text = extracted_text
+            res = subprocess.run([sys.executable, "-m", "markitdown", str(p)], capture_output=True, text=True, timeout=15)
+            if res.returncode != 0 or not res.stdout.strip():
+                return {
+                    "success": False,
+                    "engine": "microsoft/markitdown",
+                    "file": str(p),
+                    "error": f"Binary format '{ext}' requires the markitdown package ({(res.stderr or 'parser unavailable').strip()[:160]}).",
+                }
+            md_text = res.stdout
 
-        out_md_path = p.with_suffix(".md")
-        try:
-            out_md_path.write_text(md_text, encoding="utf-8")
-        except Exception:
-            pass
+        out_md_path = p.with_suffix(".converted.md") if ext == ".md" else p.with_suffix(".md")
+        from coderx_engine import _atomic_write_text
+        _atomic_write_text(out_md_path, md_text, encoding="utf-8")
 
         return {
             "success": True,
@@ -1333,107 +1545,131 @@ def tool_markitdown_convert(filepath: str, format_type: str = "markdown") -> Dic
             "format": format_type,
             "markdown_preview": md_text[:500],
             "total_chars": len(md_text),
-            "output_path": str(out_md_path) if out_md_path.exists() else None
+            "output_path": str(out_md_path),
         }
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
         return {"success": False, "error": f"MarkItDown conversion error: {e}"}
 
-def tool_media_extract_ytdlp(url: str, extract_audio: bool = False, format_spec: str = "best", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
-    """Universal multimedia & audio stream extractor for YouTube, Instagram Reels, TikTok, and web video (yt-dlp style)."""
-    try:
-        if not url:
-            return {"success": False, "error": "Media URL is required."}
+def tool_media_extract_ytdlp(url: str, extract_audio: bool = False, format_spec: str = "best", permission_mode: str = "auto_pilot", approved: bool = False, download: bool = False) -> Dict[str, Any]:
+    """Probes or downloads public web media via yt_dlp and reports real verification status (never fakes success)."""
+    if not url:
+        return {"success": False, "error": "Media URL is required."}
 
-        if permission_mode == "request_review" and not approved:
-            return {
-                "success": False,
-                "requires_approval": True,
-                "action": "media_extract_ytdlp",
-                "url": url,
-                "extract_audio": extract_audio,
-                "security_jail": True,
-                "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to download/extract media from '{url}'. User approval required before processing!"
-            }
-
-        clean_url = url.strip()
-        media_type = "Audio (MP3)" if extract_audio else "Video (MP4)"
-        domain = "YouTube" if "youtu" in clean_url else ("Instagram" if "instagram" in clean_url else "Web Video")
-        
+    if permission_mode == "request_review" and not approved:
         return {
-            "success": True,
-            "engine": "yt-dlp/yt-dlp",
-            "stars": "~2.0 Lakh",
-            "source": domain,
-            "url": clean_url,
-            "media_type": media_type,
-            "format": format_spec,
-            "status": "ready_for_transcription",
-            "note": "Media extracted successfully via yt-dlp engine. Ready for Whisper transcription and AI video summarization."
+            "success": False,
+            "requires_approval": True,
+            "action": "media_extract_ytdlp",
+            "url": url,
+            "extract_audio": extract_audio,
+            "security_jail": True,
+            "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to extract media from '{url}'. User approval required before processing!"
         }
+
+    clean_url = url.strip()
+    safe_ok, safe_err = is_safe_public_url(clean_url)
+    if not safe_ok:
+        return {"success": False, "blocked": True, "engine": "yt-dlp/yt-dlp", "error": safe_err}
+
+    try:
+        import yt_dlp  # type: ignore
+    except ImportError:
+        return {
+            "success": False,
+            "engine": "yt-dlp/yt-dlp",
+            "url": clean_url,
+            "downloaded": False,
+            "metadata_verified": False,
+            "error": "yt_dlp Python package is not installed in the current runtime.",
+        }
+
+    try:
+        out_dir = _resolve_workspace_dir() / "downloaded_media"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ydl_opts = {
+            "format": "bestaudio/best" if extract_audio else format_spec,
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": not bool(download),
+            "outtmpl": str(out_dir / "%(id)s.%(ext)s"),
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(clean_url, download=bool(download))
+            if not info:
+                return {"success": False, "engine": "yt-dlp/yt-dlp", "url": clean_url, "error": "No media metadata returned."}
+            return {
+                "success": True,
+                "engine": "yt-dlp/yt-dlp",
+                "url": clean_url,
+                "title": info.get("title", "Unknown"),
+                "duration": info.get("duration", 0),
+                "uploader": info.get("uploader", "Unknown"),
+                "downloaded": bool(download),
+                "metadata_verified": True,
+                "mode": "downloaded" if download else "metadata_probe_only",
+            }
     except Exception as e:
-        return {"success": False, "error": f"yt-dlp extraction error: {e}"}
+        return {
+            "success": False,
+            "engine": "yt-dlp/yt-dlp",
+            "url": clean_url,
+            "downloaded": False,
+            "metadata_verified": False,
+            "error": f"yt-dlp extraction failed: {e}",
+        }
 
 def tool_scrcpy_mobile_bridge(action: str = "device_status", device_id: str = "", command: str = "", permission_mode: str = "auto_pilot", approved: bool = False) -> Dict[str, Any]:
-    """Mirrors and controls connected Android smartphones via USB/Wi-Fi without root (Genymobile/scrcpy style)."""
-    try:
-        act = action.lower().strip()
-        if act in ["send_key", "tap", "install_apk", "swipe", "shell"] and permission_mode == "request_review" and not approved:
-            return {
-                "success": False,
-                "requires_approval": True,
-                "action": f"scrcpy_mobile_{act}",
-                "target_device": device_id or "Default Android Phone",
-                "command": command,
-                "security_jail": True,
-                "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to execute mobile hardware action '{act}' on phone. User approval required!"
-            }
+    """Checks local ADB/scrcpy availability honestly; personal mobile hardware control is disabled by security policy."""
+    import shutil
+    act = (action or "").lower().strip()
+    if act in ["send_key", "tap", "install_apk", "swipe", "shell"] and permission_mode == "request_review" and not approved:
+        return {
+            "success": False,
+            "requires_approval": True,
+            "action": f"scrcpy_mobile_{act}",
+            "target_device": device_id or "Default Android Phone",
+            "command": command,
+            "security_jail": True,
+            "message": f"🔒 SECURITY JAIL BLOCKED: AURA wants to execute mobile hardware action '{act}' on phone. User approval required!"
+        }
 
-        if act in ["device_status", "status", "list_devices"]:
-            import subprocess
-            adb_out = ""
+    adb_bin = shutil.which("adb")
+    scrcpy_bin = shutil.which("scrcpy")
+
+    if act in ["device_status", "status", "list_devices"]:
+        connected_devices: List[str] = []
+        adb_out = "adb binary not installed"
+        if adb_bin:
             try:
-                r = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=3)
-                adb_out = r.stdout.strip()
-            except Exception:
-                adb_out = "List of devices attached (ADB offline or device in USB debugging discovery mode)"
+                r = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=3)
+                adb_out = (r.stdout or "").strip()
+                for line in adb_out.splitlines()[1:]:
+                    parts = line.strip().split()
+                    if len(parts) >= 2 and parts[1] == "device":
+                        connected_devices.append(parts[0])
+            except Exception as e:
+                adb_out = f"adb check error: {e}"
+        return {
+            "success": True,
+            "engine": "Genymobile/scrcpy",
+            "action": "device_status",
+            "adb_installed": bool(adb_bin),
+            "scrcpy_installed": bool(scrcpy_bin),
+            "connected_devices": connected_devices,
+            "device_connected": len(connected_devices) > 0,
+            "adb_output": adb_out,
+            "mirror_status": "ready" if (scrcpy_bin and connected_devices) else "unavailable",
+        }
 
-            return {
-                "success": True,
-                "engine": "Genymobile/scrcpy",
-                "action": "device_status",
-                "adb_output": adb_out,
-                "mirror_status": "standby",
-                "supported_features": ["Low-latency H.264/H.265 mirror", "Physical keyboard & mouse forward", "Audio streaming", "Seamless clipboard sync"]
-            }
-        elif act in ["mirror_screen", "mirror", "launch"]:
-            return {
-                "success": True,
-                "engine": "Genymobile/scrcpy",
-                "action": "mirror_screen",
-                "device": device_id or "auto-detected",
-                "status": "scrcpy_session_initialized",
-                "note": "Android screen mirrored to desktop. Keyboard and mouse inputs forwarded directly."
-            }
-        elif act in ["open_whatsapp_mobile", "open_instagram_mobile"]:
-            app_pkg = "com.whatsapp" if "whatsapp" in act else "com.instagram.android"
-            return {
-                "success": True,
-                "engine": "Genymobile/scrcpy",
-                "action": act,
-                "package": app_pkg,
-                "status": "launched_on_device",
-                "note": f"Triggered intent to launch {app_pkg} on mirrored phone."
-            }
-        else:
-            return {
-                "success": True,
-                "engine": "Genymobile/scrcpy",
-                "action": act,
-                "command": command,
-                "status": "command_dispatched"
-            }
-    except Exception as e:
-        return {"success": False, "error": f"scrcpy bridge error: {e}"}
+    return {
+        "success": False,
+        "engine": "Genymobile/scrcpy",
+        "action": act,
+        "dispatched": False,
+        "error": "Mobile hardware control is disabled in AURA Web/Desktop workspace mode (and no verified scrcpy session is active).",
+    }
 
 def tool_autogpt_recursive_planner(goal: str, subtask_depth: int = 3, auto_execute: bool = False) -> Dict[str, Any]:
     """Decomposes complex, multi-day user goals into recursive subtasks, self-critique loops, and milestones (Significant-Gravitas/AutoGPT style)."""
@@ -1480,34 +1716,82 @@ def tool_autogpt_recursive_planner(goal: str, subtask_depth: int = 3, auto_execu
     except Exception as e:
         return {"success": False, "error": f"AutoGPT planner error: {e}"}
 
-def tool_powertoys_ocr(image_path: str = "", screen_crop: bool = False) -> Dict[str, Any]:
-    """Extracts on-screen or document text instantly using Windows Native Text Extractor OCR (microsoft/PowerToys style)."""
+def tool_powertoys_ocr(image_path: str = "", screen_crop: bool = False, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Runs real OCR against a validated workspace image via Windows WinRT OCR or pytesseract; never returns placeholder text."""
     try:
-        img_p = Path(image_path) if image_path else (Path(__file__).resolve().parent / "current_screen.png")
-        if not img_p.is_absolute():
-            img_p = (Path(__file__).resolve().parent / image_path).resolve()
+        if not image_path and not screen_crop:
+            return {
+                "success": False,
+                "engine": "microsoft/PowerToys",
+                "ocr_executed": False,
+                "error": "Provide a valid workspace image_path for OCR.",
+            }
 
-        if screen_crop or not img_p.exists():
-            tool_take_screenshot()
-            img_p = Path(__file__).resolve().parent / "current_screen.png"
-
-        if img_p.exists():
-            file_size_kb = round(img_p.stat().st_size / 1024, 2)
-            extracted_text = f"PowerToys Native OCR extracted text from {img_p.name} ({file_size_kb} KB).\nTarget UI text successfully recognized."
+        if image_path:
+            img_p = validate_safe_path(image_path, user_id=user_id)
         else:
-            extracted_text = "Desktop screen buffer analyzed. Text regions identified."
+            shot = tool_take_screenshot()
+            if not shot.get("success") or not shot.get("screenshot_path"):
+                return {"success": False, "engine": "microsoft/PowerToys", "ocr_executed": False, "error": "Screen capture unavailable."}
+            img_p = Path(shot["screenshot_path"])
+
+        if not img_p.exists() or not img_p.is_file():
+            return {"success": False, "engine": "microsoft/PowerToys", "ocr_executed": False, "error": f"Image not found: {img_p}"}
+
+        # 1. Try pytesseract if available
+        try:
+            import pytesseract  # type: ignore
+            from PIL import Image
+            text_out = pytesseract.image_to_string(Image.open(img_p)).strip()
+            return {
+                "success": True,
+                "engine": "pytesseract",
+                "ocr_executed": True,
+                "image_analyzed": str(img_p),
+                "text": text_out,
+            }
+        except Exception:
+            pass
+
+        # 2. Try native Windows WinRT Windows.Media.Ocr on win32
+        if sys.platform == "win32":
+            ps_ocr = (
+                "$ErrorActionPreference='Stop'; "
+                "Add-Type -AssemblyName System.Runtime.WindowsRuntime; "
+                "$null = [Windows.Storage.StorageFile,Windows.Storage,ContentType=WindowsRuntime]; "
+                "$null = [Windows.Media.Ocr.OcrEngine,Windows.Foundation,ContentType=WindowsRuntime]; "
+                "$null = [Windows.Graphics.Imaging.BitmapDecoder,Windows.Foundation,ContentType=WindowsRuntime]; "
+                "$asTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]; "
+                "function Await($op, $t) { $m = $asTask.MakeGenericMethod($t); $n = $m.Invoke($null, @($op)); $n.Wait(); return $n.Result }; "
+                f"$file = Await ([Windows.Storage.StorageFile]::GetFileFromPathAsync({json.dumps(str(img_p))})) ([Windows.Storage.StorageFile]); "
+                "$stream = Await ($file.OpenAsync([Windows.Storage.FileAccessMode]::Read)) ([Windows.Storage.Streams.IRandomAccessStream]); "
+                "$dec = Await ([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream)) ([Windows.Graphics.Imaging.BitmapDecoder]); "
+                "$bmp = Await ($dec.GetSoftwareBitmapAsync()) ([Windows.Graphics.Imaging.SoftwareBitmap]); "
+                "$eng = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages(); "
+                "$res = Await ($eng.RecognizeAsync($bmp)) ([Windows.Media.Ocr.OcrResult]); "
+                "Write-Output $res.Text"
+            )
+            r = subprocess.run(["powershell", "-NoProfile", "-Command", ps_ocr], capture_output=True, text=True, timeout=15)
+            if r.returncode == 0:
+                return {
+                    "success": True,
+                    "engine": "Windows.Media.Ocr",
+                    "ocr_executed": True,
+                    "image_analyzed": str(img_p),
+                    "text": (r.stdout or "").strip(),
+                }
 
         return {
-            "success": True,
+            "success": False,
             "engine": "microsoft/PowerToys",
-            "stars": "~1.40 Lakh",
-            "utility": "PowerToys TextExtractor (Native Windows OCR)",
+            "ocr_executed": False,
             "image_analyzed": str(img_p),
-            "text": extracted_text,
-            "confidence": 0.98
+            "error": "No local OCR runtime (Windows.Media.Ocr or Tesseract) available in this environment.",
         }
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
-        return {"success": False, "error": f"PowerToys OCR error: {e}"}
+        return {"success": False, "error": f"OCR error: {e}"}
 
 def tool_hermes_structured_agent(prompt: str, schema_type: str = "json_function_call") -> Dict[str, Any]:
     """Generates structured reasoning, tool calls, and high-precision agent decisions (NousResearch/hermes-agent style)."""
@@ -1533,11 +1817,19 @@ def tool_hermes_structured_agent(prompt: str, schema_type: str = "json_function_
         return {"success": False, "error": f"Hermes agent error: {e}"}
 
 
-def tool_autonomous_code_loop(goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5) -> Dict[str, Any]:
-    """Relentless self-healing autonomous coding loop: writes code, runs terminal validation, intercepts errors, and iterates until 0 errors."""
+def tool_autonomous_code_loop(goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Workspace-scoped self-healing coding loop with automatic rollback on failure."""
     try:
-        from coderx_engine import CODERX
-        res = CODERX.run(goal=goal, target_filename=target_filename, test_command=test_command, max_iterations=max_iterations)
+        from coderx_engine import CoderXStateGraph
+        ws = _resolve_workspace_dir(user_id)
+        engine = CoderXStateGraph(workspace=ws)
+        res = engine.run(
+            goal=goal,
+            target_filename=target_filename,
+            test_command=test_command,
+            max_iterations=max_iterations,
+            allow_custom_command=(user_id is None),
+        )
         if "loop_records" not in res and "history" in res:
             res["loop_records"] = res["history"]
         return res
@@ -1545,26 +1837,39 @@ def tool_autonomous_code_loop(goal: str, target_filename: str, test_command: str
         return {"success": False, "error": f"Autonomous loop execution error: {e}"}
 
 
-def tool_coderx_build(goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5) -> Dict[str, Any]:
-    """CoderX Enterprise Autonomous Code Generator and Self-Healing Loop."""
-    from coderx_engine import CODERX
-    return CODERX.run(goal=goal, target_filename=target_filename, test_command=test_command, max_iterations=max_iterations)
+def tool_coderx_build(goal: str, target_filename: str, test_command: str = "", max_iterations: int = 5, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """CoderX workspace-isolated code generator and validator."""
+    from coderx_engine import CoderXStateGraph
+    ws = _resolve_workspace_dir(user_id)
+    engine = CoderXStateGraph(workspace=ws)
+    return engine.run(
+        goal=goal,
+        target_filename=target_filename,
+        test_command=test_command,
+        max_iterations=max_iterations,
+        allow_custom_command=(user_id is None),
+    )
 
 
-def tool_coderx_patch(file_path: str, patch_text: str) -> Dict[str, Any]:
-    """Surgically patches code using Aider-style SEARCH / REPLACE blocks."""
-    from coderx_engine import AiderDiffPatcher
-    from pathlib import Path
-    return AiderDiffPatcher.apply_patch_string(Path(file_path), patch_text)
+def tool_coderx_patch(file_path: str, patch_text: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Surgically patches code within the validated workspace using atomic SEARCH/REPLACE blocks."""
+    try:
+        safe_p = validate_safe_path(file_path, user_id=user_id)
+        from coderx_engine import AiderDiffPatcher
+        return AiderDiffPatcher.apply_patch_string(safe_p, patch_text, workspace_root=_resolve_workspace_dir(user_id))
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
 
 
-def tool_coderx_ast_map(path: str = ".") -> Dict[str, Any]:
-    """Extracts Tree-Sitter style codebase symbol map (classes, methods, functions) from workspace."""
-    from coderx_engine import CodebaseAstMapper
-    from pathlib import Path
-    target_p = Path(path).resolve()
-    repo_map = CodebaseAstMapper.generate_repo_map(target_p)
-    return {"success": True, "path": str(target_p), "repo_map": repo_map}
+def tool_coderx_ast_map(path: str = ".", user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Extracts codebase symbol map strictly inside the validated workspace."""
+    try:
+        target_p = _resolve_workspace_dir(user_id) if path in ("", ".") else validate_safe_path(path, user_id=user_id)
+        from coderx_engine import CodebaseAstMapper
+        repo_map = CodebaseAstMapper.generate_repo_map(target_p)
+        return {"success": True, "path": str(target_p), "repo_map": repo_map}
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
 
 
 def tool_coderx_status() -> Dict[str, Any]:
@@ -2110,11 +2415,27 @@ GEMINI_TOOLS_DECLARATION = [{
 # ===================================================================================
 # 4. MASTER AURA BRAIN CLASS
 # ===================================================================================
+HOST_PRIVILEGED_TOOLS = frozenset({
+    "tool_execute_shell",
+    "tool_windows_app_control",
+    "tool_gui_click_and_type",
+    "tool_hyperbrowser_session",
+    "tool_scrcpy_mobile_bridge",
+    "tool_take_screenshot",
+    "tool_parse_screen_ui",
+    "tool_powertoys_ocr",
+    "tool_open_browser",
+})
+
+
 class AuraBrain:
     def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
         self.api_key = API_KEY
         self.provider = provider or "gemini"
         self.model = model or MODEL_NAME
+        self.temperature: float = 0.3
+        self.user_id: Optional[int] = None
+        self.user_role: str = "admin"  # Overridden to tenant role ('user'/'admin') by aura_web._create_user_brain
         self.history: List[Dict[str, Any]] = []
         self.last_tools: List[Dict[str, Any]] = []
 
@@ -2174,7 +2495,12 @@ class AuraBrain:
             "role": "system",
             "content": "You are AURA Core, a helpful coding and game-development assistant. Use available tools when needed and be clear about actions and limitations.",
         })
-        payload = {"model": self.model, "messages": messages, "stream": False}
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": False,
+            "options": {"temperature": float(self.temperature)},
+        }
         if tools:
             declarations = tools[0].get("functionDeclarations", [])
             payload["tools"] = [{
@@ -2241,8 +2567,10 @@ class AuraBrain:
                 lines = ["### 📰 Today's Real-Time Breaking News Headlines:\n"]
                 for i, a in enumerate(arts, 1):
                     lines.append(f"{i}. **[{a.get('title', 'News')}]({a.get('link', 'https://news.google.com')})**")
-                lines.append("\n🌐 **Google Chrome has also been opened directly on your screen with the live Google News feed!**")
-                tool_open_browser("https://news.google.com")
+                if self.user_id is None and os.environ.get("AURA_ALLOW_PHYSICAL_GUI") == "1":
+                    open_res = tool_open_browser("https://news.google.com")
+                    if open_res.get("success"):
+                        lines.append("\n🌐 **Google News feed opened in your local browser.**")
                 return {
                     "candidates": [{
                         "content": {
@@ -2683,9 +3011,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     vpath = out.get("video_path") or out.get("mp4_path") or out.get("video_player_path")
                     if vpath:
                         fname = Path(vpath).name
-                        web_url = f"/media/generated_videos/{fname}"
+                        web_url = out.get("web_url") or f"/media/generated_videos/{fname}"
                         if web_url not in reply and fname not in reply:
-                            reply += f"\n\n<video controls src='{web_url}' style='max-width:100%; border-radius:12px; margin-top:8px;'></video>\n"
+                            reply += f"\n\n![Generated Video]({web_url})\n"
         return reply
 
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
@@ -2696,6 +3024,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         payload = {
             "contents": contents,
+            "generationConfig": {"temperature": float(self.temperature)},
             "systemInstruction": {
                 "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have full native execution tools for Google Chrome, PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. open Chrome on screen, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. When the user engages in casual conversation, banter, or greetings, reply naturally, warmly, and helpfully without robotic canned blocks."}]
             }
@@ -2710,12 +3039,15 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 models_to_try.append(m)
 
         for mod in models_to_try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent?key={self.api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent"
             try:
                 req = urllib.request.Request(
                     url,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": self.api_key,
+                    },
                     method="POST"
                 )
                 with urllib.request.urlopen(req, timeout=12) as resp:
@@ -2760,9 +3092,21 @@ The unified pipeline processed your instruction across all core engines (**Time:
         self.history = list(conversation_history) if conversation_history else []
         self.history.append({"role": "user", "parts": user_parts})
 
+        is_restricted_web_user = (
+            self.user_id is not None and str(self.user_role).lower() not in ("admin", "superuser")
+        )
+        if is_restricted_web_user:
+            filtered_decls = [
+                d for d in GEMINI_TOOLS_DECLARATION[0]["functionDeclarations"]
+                if d.get("name") not in HOST_PRIVILEGED_TOOLS
+            ]
+            active_tools_decl = [{"functionDeclarations": filtered_decls}]
+        else:
+            active_tools_decl = GEMINI_TOOLS_DECLARATION
+
         for turn in range(max_turns):
             try:
-                data = self._call_api(self.history, GEMINI_TOOLS_DECLARATION)
+                data = self._call_api(self.history, active_tools_decl)
             except Exception as e:
                 if self.provider == "ollama":
                     return f"Ollama request failed: {e}. Check that Ollama is running locally and the selected model is installed."
@@ -2795,15 +3139,41 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 print(f"[*] AURA Runtime: Executing {func_name} with {args}")
 
                 tool_func = AVAILABLE_TOOLS.get(func_name)
-                if tool_func:
+                if func_name in HOST_PRIVILEGED_TOOLS and is_restricted_web_user:
+                    result = {
+                        "success": False,
+                        "blocked": True,
+                        "error": f"Permission denied: '{func_name}' requires administrator privileges and is disabled for standard user accounts.",
+                    }
+                elif tool_func:
                     import inspect
                     tool_sig = inspect.signature(tool_func)
-                    kwargs = dict(args)
+                    kwargs = dict(args) if isinstance(args, dict) else {}
                     if "permission_mode" in tool_sig.parameters:
                         kwargs["permission_mode"] = permission_mode
                     if "approved" in tool_sig.parameters:
                         kwargs["approved"] = approved
-                    result = tool_func(**kwargs)
+                    if "user_id" in tool_sig.parameters and self.user_id is not None:
+                        kwargs["user_id"] = int(self.user_id)
+                    if func_name == "tool_execute_shell" and self.user_id is not None:
+                        from aura_permission_system import permission_manager
+                        perm = permission_manager.request_permission(
+                            "powershell_exec",
+                            "PowerShell",
+                            command=str(kwargs.get("command", "")),
+                            details="Chat tool_execute_shell invocation",
+                            user_id=int(self.user_id),
+                        )
+                        if not perm.get("granted"):
+                            result = {
+                                "success": False,
+                                "blocked": True,
+                                "error": f"Permission denied by gatekeeper ({perm.get('decision', perm.get('reason', 'DENIED'))}).",
+                            }
+                        else:
+                            result = tool_func(**kwargs)
+                    else:
+                        result = tool_func(**kwargs)
                 else:
                     result = {"error": f"Tool not available: {func_name}"}
 

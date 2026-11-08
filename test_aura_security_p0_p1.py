@@ -141,10 +141,9 @@ class TestAuraSecurityP0P1Hardening(unittest.TestCase):
         memories = get_body.get("memories", [])
         self.assertTrue(any(m["key"] == "audit_test_key" for m in memories))
 
-        # Another user or unauthenticated request cannot see this memory
+        # Another user or unauthenticated request cannot see this memory (401 unauthenticated)
         status, anon_body = self._get("/api/memory")
-        self.assertEqual(status, 200)
-        self.assertEqual(anon_body.get("memories"), [])
+        self.assertEqual(status, 401)
 
     # =========================================================================
     # 2. P0 — FILE SANDBOX BOUNDARY ENFORCEMENT
@@ -170,20 +169,23 @@ class TestAuraSecurityP0P1Hardening(unittest.TestCase):
     # =========================================================================
     def test_sec_12_terminal_blocks_format_command(self):
         """POST /api/terminal/exec must block dangerous format command with HTTP 403."""
-        status, body = self._post("/api/terminal/exec", {"command": "format C: /fs:ntfs"})
+        aura_db.set_user_role(self.user_id, "admin")
+        status, body = self._post("/api/terminal/exec", {"command": "format C: /fs:ntfs"}, headers={"Authorization": f"Bearer {self.token}"})
         self.assertEqual(status, 403)
         self.assertFalse(body.get("success"))
         self.assertIn("Security Sandbox", body.get("error", ""))
 
     def test_sec_13_terminal_blocks_recursive_deletion(self):
         """POST /api/terminal/exec must block Remove-Item -Recurse C:\\."""
-        status, body = self._post("/api/terminal/exec", {"command": "Remove-Item -Recurse C:\\"})
+        aura_db.set_user_role(self.user_id, "admin")
+        status, body = self._post("/api/terminal/exec", {"command": "Remove-Item -Recurse C:\\"}, headers={"Authorization": f"Bearer {self.token}"})
         self.assertEqual(status, 403)
         self.assertFalse(body.get("success"))
 
     def test_sec_14_os_execute_blocks_destructive_command(self):
         """POST /api/os/execute must intercept destructive shell operations."""
-        status, body = self._post("/api/os/execute", {"command": "Stop-Computer -Force"})
+        aura_db.set_user_role(self.user_id, "admin")
+        status, body = self._post("/api/os/execute", {"command": "Stop-Computer -Force"}, headers={"Authorization": f"Bearer {self.token}"})
         self.assertEqual(status, 403)
         self.assertFalse(body.get("success"))
 
@@ -191,11 +193,11 @@ class TestAuraSecurityP0P1Hardening(unittest.TestCase):
     # 4. P1 — SESSION EXPIRATION, REVOCATION & RATE LIMITING
     # =========================================================================
     def test_sec_15_password_policy_enforcement(self):
-        """Password complexity enforces minimum 6 chars and mixed character set."""
+        """Password complexity enforces minimum 8 chars and mixed character set."""
         # Short
         res1 = aura_db.register_user("weak1", "abc")
         self.assertFalse(res1.get("success"))
-        self.assertIn("at least 6 characters", res1.get("error", ""))
+        self.assertIn("at least 8 characters", res1.get("error", ""))
 
         # Only digits
         res2 = aura_db.register_user("weak2", "12345678")

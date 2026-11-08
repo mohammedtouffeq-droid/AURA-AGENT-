@@ -110,12 +110,20 @@ class AuraEngineMeshBus:
 
                 total_files_counted += actual_files
 
+            implemented_adapters = {
+                "aider", "yt-dlp", "markitdown", "scrcpy", "AutoGPT",
+                "PowerToys", "OpenHands", "open-interpreter",
+                "ShowUI", "OmniParser", "UI-TARS-desktop",
+                "browser-use", "midscene", "hyperbrowser", "mem0",
+            }
             self.awakened_engines[key] = {
                 "key": key,
                 "name": name,
                 "category": category,
                 "description": desc,
                 "mounted": is_mounted,
+                "has_adapter": key in implemented_adapters,
+                "upstream_runtime_verified": False,
                 "status": "MOUNTED" if is_mounted else "NOT_MOUNTED",
                 "path": str(eng_path),
                 "files_available": actual_files,
@@ -245,96 +253,33 @@ class AuraEngineMeshBus:
             "note": "Aider engine active on disk. Codebase AST mapped into live context."
         }
 
-    # 2. yt-dlp Universal Media Dispatcher
+    # 2. yt-dlp Universal Media Dispatcher (strictly verified; never fakes success on exception)
     def _dispatch_ytdlp(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """Invokes the actual yt_dlp Python package directly from engines/yt-dlp."""
-        url = kwargs.get("url", "")
-        extract_audio = kwargs.get("extract_audio", False)
-        
-        try:
-            import yt_dlp
-            ydl_opts = {
-                "format": "bestaudio/best" if extract_audio else "best",
-                "quiet": True,
-                "no_warnings": True,
-                "skip_download": True
-            }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                return {
-                    "success": True,
-                    "engine": "yt-dlp",
-                    "title": info.get("title", "Unknown Media"),
-                    "duration": info.get("duration", 0),
-                    "uploader": info.get("uploader", "Unknown"),
-                    "url": url,
-                    "status": "metadata_extracted_live"
-                }
-        except Exception as e:
-            domain = "YouTube" if "youtu" in url else "Web Media"
-            return {
-                "success": True,
-                "engine": "yt-dlp",
-                "url": url,
-                "source": domain,
-                "media_type": "Audio (MP3)" if extract_audio else "Video (MP4)",
-                "note": f"yt-dlp live stream handler parsed URL ({e or 'clean stream'}). Ready for playback/transcription."
-            }
+        from aura_brain import tool_media_extract_ytdlp
+        return tool_media_extract_ytdlp(
+            url=str(kwargs.get("url", "")),
+            extract_audio=bool(kwargs.get("extract_audio", False)),
+            download=bool(kwargs.get("download", False)),
+        )
 
-    # 3. MarkItDown Document Intelligence Dispatcher
+    # 3. MarkItDown Document Dispatcher (strictly verified; never fakes binary parsing)
     def _dispatch_markitdown(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        filepath = kwargs.get("filepath", "")
-        p = Path(filepath)
-        if not p.is_absolute():
-            p = ROOT_DIR / filepath
-        
-        if not p.exists():
-            return {"success": False, "error": f"File '{filepath}' not found."}
+        from aura_brain import tool_markitdown_convert
+        res = tool_markitdown_convert(filepath=str(kwargs.get("filepath", "")))
+        res["engine"] = "markitdown"
+        return res
 
-        ext = p.suffix.lower()
-        title = p.stem.replace("_", " ").title()
-
-        if ext in [".txt", ".md", ".json", ".csv", ".py", ".html"]:
-            raw_text = p.read_text(encoding="utf-8", errors="ignore")
-            md_text = f"# 📄 {title}\n\n" + raw_text
-        else:
-            size_kb = round(p.stat().st_size / 1024, 2)
-            md_text = (f"# 📄 Document: {title}\n\n"
-                       f"- **File**: `{p.name}`\n"
-                       f"- **Type**: `{ext.upper()}` Document\n"
-                       f"- **Size**: `{size_kb} KB`\n"
-                       f"- **Engine**: `microsoft/markitdown`\n\n"
-                       f"### Document Structure\n"
-                       f"Document successfully parsed into clean Markdown representation for AI summarization.")
-
-        out_md = p.with_suffix(".md")
-        try:
-            out_md.write_text(md_text, encoding="utf-8")
-        except Exception:
-            pass
-
-        return {
-            "success": True,
-            "engine": "markitdown",
-            "file": str(p),
-            "markdown_preview": md_text[:500],
-            "total_chars": len(md_text),
-            "output_path": str(out_md)
-        }
-
-    # 4. scrcpy Mobile Hardware Controller Dispatcher
+    # 4. scrcpy Mobile Hardware Controller Dispatcher (honest ADB/scrcpy probe)
     def _dispatch_scrcpy(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        device_id = kwargs.get("device_id", "")
-        return {
-            "success": True,
-            "engine": "scrcpy",
-            "action": action,
-            "device": device_id or "auto_detected",
-            "status": "connected_to_adb_bridge",
-            "supported": ["Screen Mirror", "Keyboard Forwarding", "Direct App Launch"]
-        }
+        from aura_brain import tool_scrcpy_mobile_bridge
+        res = tool_scrcpy_mobile_bridge(
+            action=action or "device_status",
+            device_id=str(kwargs.get("device_id", "")),
+        )
+        res["engine"] = "scrcpy"
+        return res
 
-    # 5. AutoGPT Recursive Planner & 4-Surface Workflow Dispatcher
+    # 5. AutoGPT Workflow Dispatcher (propagates real workflow success/error)
     def _dispatch_autogpt(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         goal = kwargs.get("goal", "Execute autonomous mission")
         try:
@@ -342,40 +287,39 @@ class AuraEngineMeshBus:
             wf_res = AUTOGPT_HUB.build_and_run_workflow(
                 goal=goal,
                 surface=kwargs.get("surface", "autopilot"),
-                template_id=kwargs.get("template_id")
+                template_id=kwargs.get("template_id"),
             )
+            wf_ok = bool(wf_res.get("success", False))
         except Exception as e:
-            wf_res = {"error": str(e)}
+            wf_res = {"success": False, "error": str(e)}
+            wf_ok = False
         return {
-            "success": True,
+            "success": wf_ok,
             "engine": "AutoGPT",
             "goal": goal,
-            "milestones": [
-                {"step": 1, "phase": "Environment Reconnaissance & AST Map"},
-                {"step": 2, "phase": "Autonomous Code Synthesis & File Scaffolding"},
-                {"step": 3, "phase": "Recursive Self-Correction & Unit Verification"},
-                {"step": 4, "phase": "Final Artifact Deployment & Database Commit"}
-            ],
             "workflow_run": wf_res,
-            "status": "mission_orchestration_active"
+            "status": "completed" if wf_ok else "failed",
         }
 
-    # 6. PowerToys Native OCR Dispatcher
+    # 6. PowerToys Native OCR Dispatcher (delegates to real OCR execution)
     def _dispatch_powertoys(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        image_path = kwargs.get("image_path", "")
-        return {
-            "success": True,
-            "engine": "PowerToys",
-            "utility": "PowerToys TextExtractor (Native Windows OCR)",
-            "status": "ocr_engine_ready",
-            "confidence": 0.98
-        }
+        from aura_brain import tool_powertoys_ocr
+        res = tool_powertoys_ocr(
+            image_path=str(kwargs.get("image_path", "")),
+            screen_crop=bool(kwargs.get("screen_crop", False)),
+        )
+        res["engine"] = "PowerToys"
+        return res
 
     # 7. OpenHands Terminal, Agent Canvas & SWE SDK Dispatcher
     def _dispatch_openhands(self, action: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         import tempfile
         import shutil
-        cmd = kwargs.get("command", "echo 'OpenHands live'")
+        cmd = str(kwargs.get("command", "echo 'OpenHands live'"))
+        from aura_brain import is_safe_command
+        safe_ok, safe_err = is_safe_command(cmd)
+        if not safe_ok:
+            return {"success": False, "engine": "OpenHands", "blocked": True, "error": safe_err}
         default_ws = Path(tempfile.gettempdir()) / "aura_workspace" if (os.environ.get("VERCEL") or not os.access(ROOT_DIR, os.W_OK)) else (ROOT_DIR / "workspace")
         workspace = kwargs.get("workspace", str(default_ws))
         Path(workspace).mkdir(parents=True, exist_ok=True)

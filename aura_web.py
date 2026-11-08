@@ -2,42 +2,86 @@
 ===================================================================================
                      AURA AGENT - MULTI-USER WORKSPACE SERVER
 ===================================================================================
-Enterprise-grade HTTP Server supporting:
-- Multi-user authentication & token sessions (SQLite aura_workspace.db)
-- Isolated threads, renaming, pinning, and message history
-- Per-user memory vault & settings management
-- Per-user Gemini or local Ollama ReAct execution with tools
-- 0.0.0.0 cloud / LAN host binding for universal deployment
-Author: AURA Technologies Inc.
+Multi-tenant HTTP Workspace Server supporting:
+- Authenticated sessions (Bearer header or HttpOnly SameSite=Strict cookie + CSRF)
+- Per-user isolated workspaces (`workspace/user_<id>`) with strict path containment
+- Per-user threads, renaming, pinning, projects, memory vault & model settings
+- Role-based access control separating standard accounts from administrator OS tools
 ===================================================================================
 """
 
-import os
-import sys
 import json
+import os
+import shutil
+import sys
 import tempfile
 import urllib.parse
 from http.cookies import SimpleCookie
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
-# Add root folder to sys.path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
+MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024  # 10 MB strict ceiling
 
-def _resolve_workspace_dir() -> Path:
+
+def _resolve_workspace_dir(user_id: Optional[int] = None) -> Path:
     if os.environ.get("VERCEL") or not os.access(ROOT, os.W_OK):
         ws = Path(tempfile.gettempdir()) / "aura_workspace"
     else:
         ws = ROOT / "workspace"
+    if user_id is not None:
+        ws = ws / f"user_{int(user_id)}"
     ws.mkdir(parents=True, exist_ok=True)
     return ws
+
+
+def _safe_resolve_under(base_dir: Path, rel_path: str, allow_root: bool = False) -> Optional[Path]:
+    """Resolves `rel_path` strictly inside `base_dir` using `Path.relative_to` (immune to sibling-prefix bypass)."""
+    if not isinstance(rel_path, str):
+        return None
+    cleaned = rel_path.strip()
+    if not cleaned and not allow_root:
+        return None
+    try:
+        base_resolved = base_dir.resolve()
+        candidate = (base_resolved / cleaned).resolve()
+        candidate.relative_to(base_resolved)
+        if not allow_root and candidate == base_resolved:
+            return None
+        return candidate
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _clamp_int(value: Any, default: int, minimum: int, maximum: int) -> int:
+    try:
+        if isinstance(value, bool):
+            return default
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(maximum, parsed))
+
+
+def _clamp_float(value: Any, default: float, minimum: float, maximum: float) -> float:
+    try:
+        if isinstance(value, bool):
+            return default
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return default
+    if parsed != parsed:  # NaN check
+        return default
+    return max(minimum, min(maximum, parsed))
+
 
 import aura_db
 from aura_brain import AuraBrain
 from aura_settings import AuraSettingsManager
+from coderx_engine import _atomic_write_text
 
 BRAIN = AuraBrain()
 SETTINGS = AuraSettingsManager()
@@ -50,11 +94,11 @@ def _selected_brain_settings(user: Dict[str, Any]) -> Dict[str, str]:
     user_brain = user_settings.get("brain_settings", {}) if isinstance(user_settings, dict) else {}
     provider = user_brain.get(
         "active_provider",
-        SETTINGS.config.get("brain_settings", {}).get("active_provider", "gemini")
+        SETTINGS.config.get("brain_settings", {}).get("active_provider", "gemini"),
     )
     model = user_brain.get(
         "active_model",
-        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-flash-lite-latest")
+        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-flash-lite-latest"),
     )
     if not AuraSettingsManager.validate_model_selection(provider, model):
         provider, model = "gemini", "gemini-flash-lite-latest"
@@ -63,7 +107,17 @@ def _selected_brain_settings(user: Dict[str, Any]) -> Dict[str, str]:
 
 def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
     selected = _selected_brain_settings(user)
-    return AuraBrain(provider=selected["active_provider"], model=selected["active_model"])
+    brain = AuraBrain(provider=selected["active_provider"], model=selected["active_model"])
+    if isinstance(user, dict) and user.get("id") is not None:
+        try:
+            brain.user_id = int(user["id"])
+        except (ValueError, TypeError):
+            brain.user_id = None
+        brain.user_role = str(user.get("role") or "user")
+        prefs = (user.get("settings") or {}).get("preferences") or {}
+        if "temperature" in prefs:
+            brain.temperature = _clamp_float(prefs.get("temperature"), 0.3, 0.0, 1.0)
+    return brain
 
 
 DEFAULT_ALLOWED_ORIGINS = {
@@ -91,25 +145,54 @@ def _get_allowed_origins() -> set:
     return origins
 
 
-class AuraWebHandler(BaseHTTPRequestHandler):
-    def _resolve_cors_origin(self) -> str:
-        req_origin = (self.headers.get("Origin") or "").strip().rstrip("/")
-        allowed = _get_allowed_origins()
-        if req_origin and req_origin in allowed:
-            return req_origin
-        return "http://127.0.0.1:5050"
+CSP_HEADER_VALUE = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "img-src 'self' data: blob: https:; "
+    "media-src 'self' blob: data:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "object-src 'none'"
+)
 
-    def _send_json(self, data: Dict[str, Any], status: int = 200, extra_headers: Optional[List[tuple]] = None):
+
+class AuraWebHandler(BaseHTTPRequestHandler):
+    def _resolve_cors_origin(self) -> Optional[str]:
+        req_origin = (self.headers.get("Origin") or "").strip().rstrip("/")
+        if req_origin and req_origin in _get_allowed_origins():
+            return req_origin
+        return None
+
+    def _apply_security_and_cors_headers(self) -> None:
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+        self.send_header("Permissions-Policy", "camera=(), geolocation=(), usb=(), bluetooth=()")
+        self.send_header("Content-Security-Policy", CSP_HEADER_VALUE)
+        self.send_header("Vary", "Origin")
+        cors_origin = self._resolve_cors_origin()
+        if cors_origin:
+            self.send_header("Access-Control-Allow-Origin", cors_origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
+
+    def _send_json(
+        self,
+        data: Dict[str, Any],
+        status: int = 200,
+        extra_headers: Optional[List[tuple]] = None,
+    ) -> None:
         encoded = json.dumps(data).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Connection", "close")
-        self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
-        self.send_header("Access-Control-Allow-Credentials", "true")
-        self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
+        self._apply_security_and_cors_headers()
         if extra_headers:
             for h_name, h_val in extra_headers:
                 self.send_header(h_name, h_val)
@@ -139,20 +222,23 @@ class AuraWebHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self._apply_security_and_cors_headers()
         self.end_headers()
 
     def do_OPTIONS(self):
-        self.send_response(200)
+        cors_origin = self._resolve_cors_origin()
+        self.send_response(204 if cors_origin else 403)
         self.send_header("Content-Length", "0")
         self.send_header("Connection", "close")
-        self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
-        self.send_header("Access-Control-Allow-Credentials", "true")
-        self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
+        self._apply_security_and_cors_headers()
         self.end_headers()
 
     def _get_auth_user(self, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """
+        Authenticates via `Authorization: Bearer <token>`, `X-Auth-Token`, or
+        `HttpOnly` `aura_session` cookie (with mandatory CSRF verification on POST).
+        URL query-string tokens (`?token=...`) are intentionally rejected to prevent token leakage.
+        """
         auth_header = self.headers.get("Authorization", "")
         token = ""
         used_cookie = False
@@ -160,13 +246,6 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             token = auth_header[7:].strip()
         if not token:
             token = self.headers.get("X-Auth-Token", "").strip()
-        if not token and body and isinstance(body, dict):
-            token = body.get("session_token", "") or body.get("token", "")
-        if not token:
-            # Query param fallback
-            parsed = urllib.parse.urlparse(self.path)
-            qs = urllib.parse.parse_qs(parsed.query)
-            token = qs.get("token", [""])[0]
         if not token:
             token = self._extract_cookie_token()
             if token:
@@ -175,7 +254,6 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         if not token:
             return None
 
-        # Enforce CSRF token check on state-changing requests authenticated solely via cookie
         if used_cookie and getattr(self, "command", "GET").upper() == "POST":
             csrf_token = self.headers.get("X-CSRF-Token", "").strip()
             if not csrf_token and body and isinstance(body, dict):
@@ -191,7 +269,6 @@ class AuraWebHandler(BaseHTTPRequestHandler):
     def _is_authorized_admin(self, body: Optional[Dict[str, Any]] = None) -> bool:
         user = self._get_auth_user(body)
         if user:
-            # Strictly database-backed role enforcement. No username bypasses, no self-promotion via settings.
             role = user.get("role", "user")
             if role in ("admin", "superuser"):
                 return True
@@ -208,7 +285,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         path = parsed_url.path
         query = urllib.parse.parse_qs(parsed_url.query)
 
-        if path == "/" or path == "/index.html" or path == "":
+        if path in ("/", "/index.html", ""):
             html_file = ROOT / "index.html"
             if html_file.exists():
                 data = html_file.read_bytes()
@@ -216,10 +293,26 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(data)))
                 self.send_header("Connection", "close")
+                self._apply_security_and_cors_headers()
                 self.end_headers()
                 self.wfile.write(data)
             else:
-                self.send_error(404, "index.html not found")
+                self._send_json({"success": False, "error": "index.html not found"}, status=404)
+
+        elif path in ("/manifest.json", "/sw.js"):
+            asset_file = ROOT / path.lstrip("/")
+            if asset_file.exists() and asset_file.is_file():
+                data = asset_file.read_bytes()
+                ctype = "application/manifest+json" if path.endswith(".json") else "application/javascript"
+                self.send_response(200)
+                self.send_header("Content-Type", f"{ctype}; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Connection", "close")
+                self._apply_security_and_cors_headers()
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self._send_json({"success": False, "error": "Not found"}, status=404)
 
         elif path == "/api/auth/me":
             user = self._get_auth_user()
@@ -232,40 +325,42 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     "user": user,
                     "csrf_token": user.get("csrf_token"),
                     "storage_status": storage_status,
-                    "user_vault": aura_db.export_user_vault(user["id"])
+                    "user_vault": aura_db.export_user_vault(user["id"]),
                 })
 
         elif path.startswith("/media/"):
-            # Serve generated media securely from workspace
-            media_rel = path[7:] # strip "/media/"
-            ws = _resolve_workspace_dir()
-            target_file = (ws / media_rel).resolve()
-            if str(target_file).startswith(str(ws)) and target_file.exists() and target_file.is_file():
-                ext = target_file.suffix.lower()
-                mime_map = {
-                    ".png": "image/png",
-                    ".jpg": "image/jpeg",
-                    ".jpeg": "image/jpeg",
-                    ".webp": "image/webp",
-                    ".gif": "image/gif",
-                    ".mp4": "video/mp4",
-                    ".webm": "video/webm",
-                    ".svg": "image/svg+xml"
-                }
-                content_type = mime_map.get(ext, "application/octet-stream")
-                data = target_file.read_bytes()
-                self.send_response(200)
-                self.send_header("Content-Type", content_type)
-                self.send_header("Content-Length", str(len(data)))
-                self.send_header("Cache-Control", "public, max-age=86400")
-                self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
-                self.send_header("Connection", "close")
-                self.end_headers()
-                self.wfile.write(data)
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            else:
-                self.send_error(404, "Media file not found")
+            media_rel = urllib.parse.unquote(path[7:]).lstrip("/")
+            user_ws = _resolve_workspace_dir(user["id"])
+            target_file = _safe_resolve_under(user_ws, media_rel)
+            if target_file is None or not target_file.exists() or not target_file.is_file():
+                self._send_json({"success": False, "error": "Media file not found"}, status=404)
                 return
+
+            ext = target_file.suffix.lower()
+            mime_map = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+                ".gif": "image/gif",
+                ".mp4": "video/mp4",
+                ".webm": "video/webm",
+            }
+            content_type = mime_map.get(ext, "application/octet-stream")
+            data = target_file.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "private, no-store")
+            self.send_header("Connection", "close")
+            self._apply_security_and_cors_headers()
+            self.end_headers()
+            self.wfile.write(data)
+            return
 
         elif path == "/api/threads":
             user = self._get_auth_user()
@@ -300,9 +395,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
+            from aura_permission_system import permission_manager
             self._send_json({
                 "success": True,
                 "brain_settings": _selected_brain_settings(user),
+                "security_mode": permission_manager.get_security_mode(user["id"]).value,
+                "user_preferences": (user.get("settings") or {}).get("preferences", {}),
                 "providers": AuraSettingsManager.public_model_catalog(),
                 "gemini_key_configured": bool(BRAIN.api_key and not BRAIN.api_key.startswith("YOUR_")),
             })
@@ -310,7 +408,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/projects":
             user = self._get_auth_user()
             if not user:
-                self._send_json({"success": True, "projects": [], "authenticated": False})
+                self._send_json({"success": False, "error": "Authentication required", "projects": [], "authenticated": False}, status=401)
                 return
             projects = aura_db.get_user_projects(user["id"])
             self._send_json({"success": True, "projects": projects})
@@ -324,198 +422,269 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res)
 
         elif path == "/api/system/safety_status":
-            from aura_brain import SAFE_WORKSPACE_ROOTS, STRICTLY_FORBIDDEN_PATHS
-            self._send_json({
+            is_admin = self._is_authorized_admin()
+            storage_info = aura_db.get_storage_status()
+            public_storage = {
+                "backend": storage_info.get("backend"),
+                "persistent": storage_info.get("persistent"),
+                "serverless": storage_info.get("serverless"),
+            }
+            payload: Dict[str, Any] = {
                 "success": True,
                 "sandbox_active": False,
                 "command_filter_active": True,
-                "sandbox_note": "Command-pattern checks are not process isolation.",
-                "safe_workspaces": [str(p) for p in SAFE_WORKSPACE_ROOTS],
-                "strictly_forbidden_paths": [str(p) for p in STRICTLY_FORBIDDEN_PATHS],
-                "hardware_control": "Legacy tools are not all routed through the master-pipeline approval gate.",
-                "powershell_sandbox": "Command-pattern filter only; no OS-level isolation",
+                "per_user_workspace_isolation": True,
+                "sandbox_note": "Workspace path containment and command-pattern checks are active; they are not OS-kernel container process isolation.",
+                "powershell_sandbox": "Admin-only + command-pattern filter; disabled for standard chat accounts.",
                 "multimodal_tools": ["tool_generate_image", "tool_generate_video", "tool_get_weather", "tool_open_browser"],
-                "storage_status": aura_db.get_storage_status()
-            })
+                "storage_status": storage_info if is_admin else public_storage,
+            }
+            if is_admin:
+                from aura_brain import SAFE_WORKSPACE_ROOTS, STRICTLY_FORBIDDEN_PATHS
+                payload["safe_workspaces"] = [str(p) for p in SAFE_WORKSPACE_ROOTS]
+                payload["strictly_forbidden_paths"] = [str(p) for p in STRICTLY_FORBIDDEN_PATHS]
+            self._send_json(payload)
 
         elif path == "/api/engines":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_engine_mesh import AURA_ENGINE_MESH
             mesh_status = AURA_ENGINE_MESH.get_mesh_status()
+            is_admin = self._is_authorized_admin()
+            sanitized_engines = []
+            for eng in mesh_status["engines"]:
+                item = dict(eng)
+                if not is_admin:
+                    item.pop("path", None)
+                sanitized_engines.append(item)
             self._send_json({
                 "success": True,
                 "status": mesh_status["status"],
+                "catalog_note": "Catalogue of 63 upstream AI ecosystems; 'mounted' indicates local checkout presence, while 'has_adapter' indicates an implemented Python adapter.",
                 "total_engines": mesh_status["total_engines"],
                 "awakened_engines": mesh_status["awakened_engines"],
                 "total_files": mesh_status["total_files"],
                 "file_count_scope": mesh_status["file_count_scope"],
                 "supervisor_alive": mesh_status["supervisor_alive"],
                 "timestamp": mesh_status["timestamp"],
-                "engines": mesh_status["engines"]
+                "engines": sanitized_engines,
             })
 
         elif path == "/favicon.ico":
             self.send_response(204)
+            self._apply_security_and_cors_headers()
             self.end_headers()
+
         elif path == "/api/engines/search":
             if not self._get_auth_user():
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
-            keyword = query.get("keyword", [""])[0]
+            keyword = query.get("keyword", [""])[0][:120]
             target_engine = query.get("engine", [None])[0]
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 
         elif path == "/api/workspace/tree":
-            if not self._get_auth_user():
+            user = self._get_auth_user()
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            ws = _resolve_workspace_dir()
+            ws = _resolve_workspace_dir(user["id"])
             files = []
             for f in ws.rglob("*"):
                 if f.is_file() and not f.name.startswith("."):
                     files.append({
                         "name": f.name,
-                        "rel_path": str(f.relative_to(ws)),
+                        "rel_path": f.relative_to(ws).as_posix(),
                         "size_kb": round(f.stat().st_size / 1024, 2),
-                        "ext": f.suffix.lower()
+                        "ext": f.suffix.lower(),
                     })
-            self._send_json({"success": True, "workspace": str(ws), "total_files": len(files), "files": files})
+            self._send_json({
+                "success": True,
+                "workspace_scope": f"user_{user['id']}",
+                "total_files": len(files),
+                "files": files,
+            })
 
         elif path == "/api/workspace/file":
-            if not self._get_auth_user():
+            user = self._get_auth_user()
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             file_rel = query.get("path", [""])[0]
-            ws = _resolve_workspace_dir()
-            target_p = (ws / file_rel).resolve()
-            if ws in target_p.parents or target_p == ws or str(target_p).startswith(str(ws)):
-                if target_p.exists() and target_p.is_file():
-                    try:
-                        content = target_p.read_text(encoding="utf-8", errors="ignore")
-                        self._send_json({"success": True, "path": file_rel, "content": content})
-                    except Exception as e:
-                        self._send_json({"success": False, "error": str(e)}, status=500)
-                else:
-                    self._send_json({"success": False, "error": "File not found"}, status=404)
-            else:
+            ws = _resolve_workspace_dir(user["id"])
+            target_p = _safe_resolve_under(ws, file_rel)
+            if target_p is None:
                 self._send_json({"success": False, "error": "Path traversal restricted"}, status=403)
+                return
+            if target_p.exists() and target_p.is_file():
+                try:
+                    content = target_p.read_text(encoding="utf-8", errors="ignore")
+                    self._send_json({"success": True, "path": target_p.relative_to(ws).as_posix(), "content": content})
+                except Exception as e:
+                    self._send_json({"success": False, "error": str(e)}, status=500)
+            else:
+                self._send_json({"success": False, "error": "File not found"}, status=404)
 
         elif path == "/api/cyberheist/status":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             ch_dir = Path(r"C:\Users\hp\cyberheist")
             if not ch_dir.exists():
-                ch_dir = ROOT / "cyberheist" if (ROOT / "cyberheist").exists() else (ROOT / "workspace")
-            status = {"success": True, "mounted": ch_dir.exists(), "path": str(ch_dir)}
+                ch_dir = ROOT / "cyberheist" if (ROOT / "cyberheist").exists() else _resolve_workspace_dir(user["id"])
+            status_payload: Dict[str, Any] = {"success": True, "mounted": ch_dir.exists()}
+            if self._is_authorized_admin():
+                status_payload["path"] = str(ch_dir)
             if ch_dir.exists():
                 try:
-                    sims = json.loads((ch_dir / "simulations.json").read_text(encoding="utf-8"))
-                    missions = json.loads((ch_dir / "missions.json").read_text(encoding="utf-8"))
-                    status["missions_count"] = len(missions.get("missions", []))
-                    status["labs_count"] = len(sims.get("labs", []))
-                    status["tabletops_count"] = len(sims.get("tabletops", []))
-                    status["glossary_count"] = len(sims.get("glossary", []))
+                    sims_file = ch_dir / "simulations.json"
+                    missions_file = ch_dir / "missions.json"
+                    if sims_file.exists() and missions_file.exists():
+                        sims = json.loads(sims_file.read_text(encoding="utf-8"))
+                        missions = json.loads(missions_file.read_text(encoding="utf-8"))
+                        status_payload["missions_count"] = len(missions.get("missions", []))
+                        status_payload["labs_count"] = len(sims.get("labs", []))
+                        status_payload["tabletops_count"] = len(sims.get("tabletops", []))
+                        status_payload["glossary_count"] = len(sims.get("glossary", []))
                 except Exception as e:
-                    status["error"] = str(e)
-            self._send_json(status)
+                    status_payload["error"] = str(e)
+            self._send_json(status_payload)
+
         elif path == "/api/permission/pending":
-            if not self._get_auth_user():
+            user = self._get_auth_user()
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_permission_system import permission_manager
-            pending = permission_manager.get_pending()
+            pending = permission_manager.get_pending(user_id=user["id"])
             self._send_json({"success": True, "pending": pending, "count": len(pending)})
 
         elif path == "/api/permission/history":
-            if not self._get_auth_user():
+            user = self._get_auth_user()
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_permission_system import permission_manager
-            self._send_json({"success": True, "history": permission_manager.history})
+            self._send_json({"success": True, "history": permission_manager.get_history(user_id=user["id"])})
 
         elif path == "/api/os/telemetry":
-            if not self._get_auth_user():
-                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+            if not self._is_authorized_admin():
+                self._send_json({"success": False, "error": "Admin authentication required"}, status=401)
                 return
             from aura_os_controller import laptop_controller
             self._send_json({"success": True, "telemetry": laptop_controller.get_system_telemetry()})
 
         elif path == "/api/game/status":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_game_engine import AURA_GAME_STUDIO
             self._send_json({"success": True, "status": AURA_GAME_STUDIO.get_status()})
 
         elif path == "/api/godot/status":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from godot_engine_manager import AURA_GODOT_MANAGER
-            self._send_json({
+            resp_data: Dict[str, Any] = {
                 "success": True,
                 "installed": AURA_GODOT_MANAGER.is_installed(),
                 "version": AURA_GODOT_MANAGER.get_version(),
                 "binary_size_mb": AURA_GODOT_MANAGER.get_binary_size_mb(),
-                "binary_path": str(AURA_GODOT_MANAGER.exe_path)
-            })
+            }
+            if self._is_authorized_admin():
+                resp_data["binary_path"] = str(AURA_GODOT_MANAGER.exe_path)
+            self._send_json(resp_data)
 
         elif path == "/api/godot/projects":
-            from godot_engine_manager import GAMES_WORKSPACE
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            user_games_dir = _resolve_workspace_dir(user["id"]) / "godot_projects"
+            user_games_dir.mkdir(parents=True, exist_ok=True)
             projects = []
-            for item in GAMES_WORKSPACE.iterdir():
+            for item in user_games_dir.iterdir():
                 if item.is_dir() and (item / "project.godot").exists():
                     projects.append({
                         "name": item.name,
-                        "path": str(item),
-                        "has_web_mirror": (item / "play_crafting_car.html").exists()
+                        "has_web_mirror": (item / "play_crafting_car.html").exists(),
                     })
             self._send_json({"success": True, "projects": projects})
 
         elif path == "/api/media/status":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_media_engine import AURA_CINEMA
             self._send_json({"success": True, "status": AURA_CINEMA.get_status()})
 
         elif path == "/api/coderx/status":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from coderx_engine import ROUTER
             self._send_json({
                 "success": True,
                 "engine": "CoderX Enterprise v2.0",
                 "gemini_active": bool(ROUTER.gemini_key),
                 "ollama_active": ROUTER.is_ollama_available(),
-                "ollama_models": ROUTER.list_ollama_models() if ROUTER.is_ollama_available() else []
+                "ollama_models": ROUTER.list_ollama_models() if ROUTER.is_ollama_available() else [],
             })
 
         elif path == "/api/coderx/ast":
-            if not self._get_auth_user():
+            user = self._get_auth_user()
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from coderx_engine import CodebaseAstMapper
-            ws = _resolve_workspace_dir()
+            ws = _resolve_workspace_dir(user["id"])
             repo_map = CodebaseAstMapper.generate_repo_map(ws)
             self._send_json({"success": True, "repo_map": repo_map})
 
         elif path == "/api/flagship/overview":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_flagship_repos import get_all_flagship_status
             self._send_json(get_all_flagship_status())
 
         elif path == "/api/systems10/overview":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_10_systems import AURA_10_SYSTEMS
             self._send_json(AURA_10_SYSTEMS.get_overview())
 
         elif path == "/api/pipeline/status":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
             from aura_master_pipeline import AURA_PIPELINE
             self._send_json({"success": True, "pipeline": AURA_PIPELINE.get_pipeline_topology()})
 
         elif path == "/api/pipeline/runs":
-            if not self._get_auth_user():
+            user = self._get_auth_user()
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            from aura_master_pipeline import PIPELINE_RUNS_DIR
+            user_runs_dir = _resolve_workspace_dir(user["id"]) / "pipeline_runs"
             runs = []
-            for f in sorted(PIPELINE_RUNS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
-                try:
-                    import json
-                    runs.append(json.loads(f.read_text(encoding="utf-8")))
-                except Exception:
-                    pass
+            if user_runs_dir.exists():
+                for f in sorted(user_runs_dir.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
+                    try:
+                        runs.append(json.loads(f.read_text(encoding="utf-8")))
+                    except Exception:
+                        pass
             self._send_json({"success": True, "runs": runs})
+
         else:
-            self.send_error(404, "Not Found")
+            self._send_json({"success": False, "error": "Not Found"}, status=404)
 
     def do_POST(self):
         try:
@@ -524,31 +693,59 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
 
     def _handle_post(self):
-        content_length = int(self.headers.get("Content-Length", 0))
-        post_data = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else "{}"
+        raw_len = self.headers.get("Content-Length", "0")
         try:
-            body = json.loads(post_data) if post_data else {}
-        except Exception:
+            content_length = int(raw_len)
+        except (TypeError, ValueError):
+            self._send_json({"success": False, "error": "Invalid Content-Length header"}, status=400)
+            return
+
+        if content_length < 0:
+            self._send_json({"success": False, "error": "Negative Content-Length is invalid"}, status=400)
+            return
+        if content_length > MAX_REQUEST_BODY_BYTES:
+            self._send_json(
+                {"success": False, "error": f"Request payload exceeds {MAX_REQUEST_BODY_BYTES // (1024 * 1024)} MB limit"},
+                status=413,
+            )
+            return
+
+        if content_length > 0:
+            raw_bytes = self.rfile.read(content_length)
+            try:
+                post_data = raw_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                self._send_json({"success": False, "error": "Request body must be valid UTF-8 JSON"}, status=400)
+                return
+            if post_data.strip():
+                try:
+                    body = json.loads(post_data)
+                except json.JSONDecodeError:
+                    self._send_json({"success": False, "error": "Malformed JSON request body"}, status=400)
+                    return
+                if not isinstance(body, dict):
+                    self._send_json({"success": False, "error": "JSON request body must be an object"}, status=400)
+                    return
+            else:
+                body = {}
+        else:
             body = {}
 
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         query = urllib.parse.parse_qs(parsed_url.query)
 
-        # 1. AUTH ROUTES
+        # 1. AUTH ROUTES (Vault restore NEVER runs prior to credential verification)
         if path == "/api/auth/register":
-            username = body.get("username", "")
-            password = body.get("password", "")
-            if body.get("vault_backup"):
-                aura_db.restore_user_vault(body.get("vault_backup"))
-            if isinstance(body.get("vault_backups"), list):
-                for vb in body.get("vault_backups"):
-                    aura_db.restore_user_vault(vb)
+            username = str(body.get("username", ""))
+            password = str(body.get("password", ""))
             res = aura_db.register_user(username, password)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
+                uid = int(res["user"]["id"])
+                _resolve_workspace_dir(uid)
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
-                res["user_vault"] = aura_db.export_user_vault(res["user"]["id"])
+                res["user_vault"] = aura_db.export_user_vault(uid)
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
                 self._send_json(res, status=200, extra_headers=extra)
             else:
@@ -556,39 +753,100 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json(res, status=status)
 
         elif path == "/api/auth/login":
-            username = body.get("username", "")
-            password = body.get("password", "")
-            if body.get("vault_backup"):
-                aura_db.restore_user_vault(body.get("vault_backup"))
-            if isinstance(body.get("vault_backups"), list):
-                for vb in body.get("vault_backups"):
-                    aura_db.restore_user_vault(vb)
+            username = str(body.get("username", ""))
+            password = str(body.get("password", ""))
             res = aura_db.login_user(username, password)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
+                uid = int(res["user"]["id"])
+                _resolve_workspace_dir(uid)
+                # Only AFTER password authentication succeeds may the user sync their non-credential vault
+                if isinstance(body.get("vault_backup"), dict):
+                    aura_db.restore_user_vault(body["vault_backup"], authenticated_user_id=uid)
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
-                res["user_vault"] = aura_db.export_user_vault(res["user"]["id"])
+                res["user_vault"] = aura_db.export_user_vault(uid)
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
                 self._send_json(res, status=200, extra_headers=extra)
             else:
-                status = 503 if res.get("storage_unavailable") else 401
+                status = 429 if "Too many failed" in str(res.get("error", "")) else (503 if res.get("storage_unavailable") else 401)
                 self._send_json(res, status=status)
 
         elif path == "/api/auth/restore_vault":
-            vb = body.get("vault_backup")
-            restored = aura_db.restore_user_vault(vb)
             user = self._get_auth_user(body)
-            if restored and user:
+            if not user:
+                self._send_json({"success": False, "authenticated": False, "restored": False, "error": "Authentication required before vault sync"}, status=401)
+                return
+            vb = body.get("vault_backup")
+            restored = aura_db.restore_user_vault(vb, authenticated_user_id=int(user["id"])) if isinstance(vb, dict) else False
+            if restored:
                 self._send_json({
                     "success": True,
                     "authenticated": True,
+                    "restored": True,
                     "user": user,
                     "csrf_token": user.get("csrf_token"),
                     "storage_status": aura_db.get_storage_status(),
-                    "user_vault": aura_db.export_user_vault(user["id"])
+                    "user_vault": aura_db.export_user_vault(user["id"]),
                 })
             else:
-                self._send_json({"success": False, "authenticated": False, "restored": restored}, status=401)
+                self._send_json({"success": False, "authenticated": True, "restored": False, "error": "Invalid or unauthorized vault backup"}, status=400)
+
+        elif path == "/api/auth/change_password":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            current_pw = str(body.get("current_password", ""))
+            new_pw = str(body.get("new_password", ""))
+            res = aura_db.change_user_password(user["id"], current_pw, new_pw)
+            if not res.get("success"):
+                self._send_json(res, status=400)
+                return
+            # Issue a fresh session for the user after revoking all prior sessions
+            relogin = aura_db.login_user(user["username"], new_pw)
+            extra = []
+            if relogin.get("success") and relogin.get("token"):
+                res["token"] = relogin["token"]
+                res["csrf_token"] = aura_db.compute_csrf_token(relogin["token"])
+                extra.append(("Set-Cookie", self._build_session_cookie(relogin["token"])))
+            self._send_json(res, status=200, extra_headers=extra)
+
+        elif path == "/api/auth/delete_account":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            pw = str(body.get("password", ""))
+            uid = int(user["id"])
+            res = aura_db.delete_user_account(uid, pw)
+            if not res.get("success"):
+                self._send_json(res, status=400)
+                return
+            user_ws = _resolve_workspace_dir(uid)
+            shutil.rmtree(user_ws, ignore_errors=True)
+            extra = [("Set-Cookie", self._build_session_cookie("", clear=True))]
+            self._send_json(res, status=200, extra_headers=extra)
+
+        elif path == "/api/auth/bootstrap_admin":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            bootstrap_token = str(body.get("bootstrap_token", ""))
+            res = aura_db.bootstrap_admin_user(user["id"], bootstrap_token)
+            self._send_json(res, status=200 if res.get("success") else 403)
+
+        elif path == "/api/admin/set_role":
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Admin authentication required"}, status=401)
+                return
+            target_uid = _clamp_int(body.get("user_id"), -1, 1, 10**9)
+            role = str(body.get("role", "user")).strip()
+            if target_uid < 1 or role not in ("user", "admin"):
+                self._send_json({"success": False, "error": "Valid user_id and role ('user' or 'admin') required"}, status=400)
+                return
+            ok = aura_db.set_user_role(target_uid, role)
+            self._send_json({"success": ok, "user_id": target_uid, "role": role}, status=200 if ok else 404)
 
         elif path == "/api/auth/logout":
             token = ""
@@ -597,10 +855,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 token = auth_header[7:].strip()
             if not token:
                 token = self.headers.get("X-Auth-Token", "").strip()
-            if not token and body and isinstance(body, dict):
-                token = body.get("token", "")
             if not token:
                 token = self._extract_cookie_token()
+            if not token and isinstance(body.get("token"), str):
+                token = body["token"].strip()
             if token:
                 aura_db.revoke_session(token)
             extra = [("Set-Cookie", self._build_session_cookie("", clear=True))]
@@ -613,8 +871,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Unauthorized"}, status=401)
                 return
             user_id = user["id"]
-            title = body.get("title", "New Session")
+            title = str(body.get("title", "New Session"))[:120]
             thread_id = body.get("id") or body.get("thread_id")
+            if thread_id is not None:
+                thread_id = str(thread_id)[:64]
             thread = aura_db.create_user_thread(user_id, title, thread_id=thread_id)
             self._send_json({"success": True, "thread": thread})
 
@@ -623,13 +883,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            thread_id = body.get("thread_id", "")
-            new_title = body.get("title", "").strip()
+            thread_id = str(body.get("thread_id", "")).strip()
+            new_title = str(body.get("title", "")).strip()[:120]
             if not thread_id or not new_title:
                 self._send_json({"success": False, "error": "thread_id and title required"}, status=400)
                 return
-            ok = aura_db.rename_user_thread(user_id, thread_id, new_title)
+            ok = aura_db.rename_user_thread(user["id"], thread_id, new_title)
             self._send_json({"success": ok})
 
         elif path == "/api/threads/pin":
@@ -637,10 +896,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            thread_id = body.get("thread_id", "")
-            is_pinned = body.get("is_pinned", False)
-            ok = aura_db.pin_user_thread(user_id, thread_id, is_pinned)
+            thread_id = str(body.get("thread_id", "")).strip()
+            is_pinned = bool(body.get("is_pinned", False))
+            if not thread_id:
+                self._send_json({"success": False, "error": "thread_id required"}, status=400)
+                return
+            ok = aura_db.pin_user_thread(user["id"], thread_id, is_pinned)
             self._send_json({"success": ok})
 
         elif path == "/api/threads/delete":
@@ -648,9 +909,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            thread_id = body.get("thread_id", "")
-            ok = aura_db.delete_user_thread(user_id, thread_id)
+            thread_id = str(body.get("thread_id", "")).strip()
+            ok = aura_db.delete_user_thread(user["id"], thread_id)
             self._send_json({"success": ok})
 
         # 2B. CODING PROJECTS ROUTES
@@ -660,11 +920,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             user_id = user["id"]
-            name = body.get("name", "New Project")
-            company = body.get("company", "")
-            stack = body.get("stack", "Python")
-            proj_path = body.get("path", "")
-            description = body.get("description", "")
+            name = str(body.get("name", "New Project"))[:100]
+            company = str(body.get("company", ""))[:100]
+            stack = str(body.get("stack", "Python"))[:80]
+            proj_path = str(body.get("path", ""))[:260]
+            description = str(body.get("description", ""))[:500]
             proj = aura_db.create_user_project(user_id, name, company, stack, proj_path, description)
             self._send_json({"success": True, "project": proj})
 
@@ -673,10 +933,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            proj_id = body.get("project_id", "")
-            is_pinned = body.get("is_pinned", False)
-            ok = aura_db.pin_user_project(user_id, proj_id, is_pinned)
+            proj_id = str(body.get("project_id", ""))
+            is_pinned = bool(body.get("is_pinned", False))
+            ok = aura_db.pin_user_project(user["id"], proj_id, is_pinned)
             self._send_json({"success": ok})
 
         elif path == "/api/projects/rename":
@@ -684,10 +943,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            proj_id = body.get("project_id", "")
-            new_name = body.get("name", "").strip()
-            ok = aura_db.rename_user_project(user_id, proj_id, new_name)
+            proj_id = str(body.get("project_id", ""))
+            new_name = str(body.get("name", "")).strip()[:100]
+            if not proj_id or not new_name:
+                self._send_json({"success": False, "error": "project_id and name required"}, status=400)
+                return
+            ok = aura_db.rename_user_project(user["id"], proj_id, new_name)
             self._send_json({"success": ok})
 
         elif path == "/api/projects/delete":
@@ -695,37 +956,41 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            proj_id = body.get("project_id", "")
-            ok = aura_db.delete_user_project(user_id, proj_id)
+            proj_id = str(body.get("project_id", ""))
+            ok = aura_db.delete_user_project(user["id"], proj_id)
             self._send_json({"success": ok})
 
         # 3. CHAT DISPATCH
         elif path == "/api/chat":
             user = self._get_auth_user(body)
             if not user:
-                self._send_json({"reply": "Session expired or not logged in. Please sign in to save your conversation and execute tasks.", "error": "unauthorized"}, status=401)
+                self._send_json(
+                    {"reply": "Session expired or not logged in. Please sign in to save your conversation and execute tasks.", "error": "unauthorized"},
+                    status=401,
+                )
                 return
             user_id = user["id"]
-            prompt = body.get("prompt", "").strip()
-            thread_id = body.get("thread_id", "default")
-            attachments = body.get("attachments", [])
-            permission_mode = body.get("mode", "auto_pilot")
-            approved = body.get("approved", False)
+            prompt = str(body.get("prompt", "")).strip()
+            thread_id = str(body.get("thread_id", "default"))[:64]
+            raw_attachments = body.get("attachments", [])
+            attachments = raw_attachments if isinstance(raw_attachments, list) else []
+            if len(attachments) > 5:
+                self._send_json({"error": "Maximum 5 attachments allowed per message"}, status=400)
+                return
+            permission_mode = str(body.get("mode", "auto_pilot"))
+            approved = bool(body.get("approved", False))
 
             if not prompt and not attachments:
                 self._send_json({"reply": "Please enter an instruction or attach a file."}, status=400)
                 return
 
-            # Save user turn with attachment summary
             display_prompt = prompt
             if attachments:
-                att_names = [a.get("name", "attachment") for a in attachments]
-                display_prompt += f"\n[📎 {len(attachments)} Attachment(s): {', '.join(att_names)}]"
+                att_names = [str(a.get("name", "attachment"))[:80] for a in attachments if isinstance(a, dict)]
+                display_prompt += f"\n[📎 {len(att_names)} Attachment(s): {', '.join(att_names)}]"
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
 
-            # Retrieve prior thread messages for multi-turn conversational memory
             prior_messages = aura_db.get_thread_messages(user_id, thread_id)
             conv_history = []
             for m in prior_messages[:-1]:
@@ -734,19 +999,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 if txt:
                     conv_history.append({"role": role, "parts": [{"text": txt}]})
 
-            print(f"[*] AURA Runtime: User {user_id} in thread '{thread_id}' -> '{prompt}' (Mode: {permission_mode}, Attachments: {len(attachments)}, History: {len(conv_history)})")
             brain = _create_user_brain(user)
-            reply = brain.think_and_act(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, conversation_history=conv_history)
+            reply = brain.think_and_act(
+                prompt,
+                attachments=attachments,
+                permission_mode=permission_mode,
+                approved=approved,
+                conversation_history=conv_history,
+            )
             tools_used = getattr(brain, "last_tools", [])
-
-            # Save assistant response
             aura_db.save_message(user_id, thread_id, "assistant", reply, tools_used)
 
             self._send_json({
                 "reply": reply,
                 "tools": tools_used,
                 "status": "completed",
-                "user_vault": aura_db.export_user_vault(user_id)
+                "user_vault": aura_db.export_user_vault(user_id),
             })
 
         # 3B. STREAMING CHAT DISPATCH (SSE)
@@ -756,11 +1024,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"reply": "Session expired or not logged in.", "error": "unauthorized"}, status=401)
                 return
             user_id = user["id"]
-            prompt = body.get("prompt", "").strip()
-            thread_id = body.get("thread_id", "default")
-            attachments = body.get("attachments", [])
-            permission_mode = body.get("mode", "auto_pilot")
-            approved = body.get("approved", False)
+            prompt = str(body.get("prompt", "")).strip()
+            thread_id = str(body.get("thread_id", "default"))[:64]
+            raw_attachments = body.get("attachments", [])
+            attachments = raw_attachments if isinstance(raw_attachments, list) else []
+            if len(attachments) > 5:
+                self._send_json({"error": "Maximum 5 attachments allowed per message"}, status=400)
+                return
+            permission_mode = str(body.get("mode", "auto_pilot"))
+            approved = bool(body.get("approved", False))
 
             if not prompt and not attachments:
                 self._send_json({"error": "Prompt or attachments required"}, status=400)
@@ -768,12 +1040,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
             display_prompt = prompt
             if attachments:
-                att_names = [a.get("name", "attachment") for a in attachments]
-                display_prompt += f"\n[📎 {len(attachments)} Attachment(s): {', '.join(att_names)}]"
+                att_names = [str(a.get("name", "attachment"))[:80] for a in attachments if isinstance(a, dict)]
+                display_prompt += f"\n[📎 {len(att_names)} Attachment(s): {', '.join(att_names)}]"
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
 
-            # Retrieve prior thread messages for multi-turn conversational memory
             prior_messages = aura_db.get_thread_messages(user_id, thread_id)
             conv_history = []
             for m in prior_messages[:-1]:
@@ -784,10 +1055,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Cache-Control", "no-cache, no-store")
             self.send_header("Connection", "keep-alive")
-            self.send_header("Access-Control-Allow-Origin", self._resolve_cors_origin())
-            self.send_header("Access-Control-Allow-Credentials", "true")
+            self._apply_security_and_cors_headers()
             self.end_headers()
 
             brain = _create_user_brain(user)
@@ -795,7 +1065,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             tools_used = []
 
             try:
-                for chunk in brain.think_and_act_stream(prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, conversation_history=conv_history):
+                for chunk in brain.think_and_act_stream(
+                    prompt,
+                    attachments=attachments,
+                    permission_mode=permission_mode,
+                    approved=approved,
+                    conversation_history=conv_history,
+                ):
                     chunk_type = chunk.get("type")
                     if chunk_type == "token":
                         accumulated_text += chunk.get("delta", "")
@@ -832,28 +1108,26 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            key = body.get("key", "").strip()
-            val = body.get("value", "").strip()
+            key = str(body.get("key", "")).strip()[:120]
+            val = str(body.get("value", "")).strip()[:4000]
             if not key or not val:
                 self._send_json({"success": False, "error": "Key and value required"}, status=400)
                 return
-            ok = aura_db.save_user_memory(user_id, key, val)
-            self._send_json({"success": ok, "key": key, "value": val})
+            saved = aura_db.save_user_memory(user["id"], key, val)
+            self._send_json({"success": bool(saved), "key": key, "value": val})
 
         elif path == "/api/memory/delete":
             user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            user_id = user["id"]
-            key = body.get("key", "").strip()
-            ok = aura_db.delete_user_memory(user_id, key)
+            key = str(body.get("key", "")).strip()
+            ok = aura_db.delete_user_memory(user["id"], key)
             self._send_json({"success": ok, "deleted": key})
 
         # 5. SETTINGS ROUTE
         elif path == "/api/settings":
-            user = self._get_auth_user()
+            user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
@@ -871,6 +1145,20 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "active_provider": provider,
                 "active_model": model.strip(),
             }
+            if isinstance(body.get("preferences"), dict):
+                prefs = dict(saved.get("preferences") or {})
+                if "temperature" in body["preferences"]:
+                    prefs["temperature"] = _clamp_float(body["preferences"]["temperature"], 0.3, 0.0, 1.0)
+                if "theme" in body["preferences"]:
+                    prefs["theme"] = str(body["preferences"]["theme"])[:40]
+                if "execution_mode" in body["preferences"]:
+                    exec_mode = str(body["preferences"]["execution_mode"]).strip().lower()
+                    if exec_mode in ("ask_first", "auto_pilot"):
+                        prefs["execution_mode"] = exec_mode
+                        from aura_permission_system import SecurityMode, permission_manager
+                        sec_target = SecurityMode.STRICT_APPROVAL if exec_mode == "ask_first" else SecurityMode.WORKSPACE_SAFE
+                        permission_manager.set_security_mode(sec_target, user_id=user["id"], is_admin=(user.get("role") in ("admin", "superuser")))
+                saved["preferences"] = prefs
             if not aura_db.save_user_settings(user["id"], saved):
                 self._send_json({"success": False, "error": "Could not save model settings"}, status=500)
                 return
@@ -878,6 +1166,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({
                 "success": True,
                 "brain_settings": _selected_brain_settings(user),
+                "preferences": saved.get("preferences", {}),
             })
 
         elif path == "/api/engines/search":
@@ -886,32 +1175,37 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             from aura_agent import AuraAgent
             agent_inst = AuraAgent()
-            keyword = body.get("keyword") or query.get("keyword", [""])[0]
+            keyword = str(body.get("keyword") or query.get("keyword", [""])[0])[:120]
             target_engine = body.get("engine") or query.get("engine", [None])[0]
             res = agent_inst.search_mesh_code(keyword, target_engine=target_engine)
             self._send_json({"success": True, "results": res})
 
         elif path == "/api/workspace/save":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            file_rel = body.get("path", "")
-            file_content = body.get("content", "")
-            ws = _resolve_workspace_dir()
-            target_p = (ws / file_rel).resolve()
-            if str(target_p).startswith(str(ws)):
-                target_p.parent.mkdir(parents=True, exist_ok=True)
-                target_p.write_text(file_content, encoding="utf-8")
-                self._send_json({"success": True, "saved_path": str(target_p), "bytes": len(file_content)})
-            else:
+            file_rel = str(body.get("path", ""))
+            file_content = str(body.get("content", ""))
+            ws = _resolve_workspace_dir(user["id"])
+            target_p = _safe_resolve_under(ws, file_rel)
+            if target_p is None:
                 self._send_json({"success": False, "error": "Save path outside workspace is forbidden"}, status=403)
+                return
+            _atomic_write_text(target_p, file_content, encoding="utf-8")
+            self._send_json({
+                "success": True,
+                "saved_path": target_p.relative_to(ws).as_posix(),
+                "bytes": len(file_content),
+            })
 
         elif path == "/api/terminal/exec":
             if not self._is_authorized_admin(body):
                 self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for terminal execution"}, status=401)
                 return
-            cmd = body.get("command", "")
-            ws = _resolve_workspace_dir()
+            user = self._get_auth_user(body)
+            cmd = str(body.get("command", ""))
+            ws = _resolve_workspace_dir(user["id"] if user else None)
             if not cmd:
                 self._send_json({"success": False, "error": "Command is required"}, status=400)
                 return
@@ -921,21 +1215,19 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}", "exit_code": 1}, status=403)
                 return
             import subprocess
-            import shutil
             try:
                 if sys.platform == "win32":
                     shell_args = ["powershell", "-NoProfile", "-Command", cmd]
                 else:
                     pwsh_bin = shutil.which("pwsh") or shutil.which("powershell")
                     shell_args = [pwsh_bin, "-NoProfile", "-Command", cmd] if pwsh_bin else ["/bin/sh", "-c", cmd]
-                proc = subprocess.run(shell_args,
-                                      cwd=str(ws), capture_output=True, text=True, timeout=30)
+                proc = subprocess.run(shell_args, cwd=str(ws), capture_output=True, text=True, timeout=30)
                 self._send_json({
-                    "success": True,
+                    "success": proc.returncode == 0,
                     "command": cmd,
                     "exit_code": proc.returncode,
-                    "stdout": proc.stdout,
-                    "stderr": proc.stderr
+                    "stdout": proc.stdout[:32768],
+                    "stderr": proc.stderr[:32768],
                 })
             except Exception as e:
                 self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})
@@ -944,9 +1236,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            theme = body.get("theme", "gta_city")
-            chunks = body.get("chunks", 4)
-            seed = body.get("seed", 42)
+            theme = str(body.get("theme", "gta_city"))[:40]
+            chunks = _clamp_int(body.get("chunks"), 4, 1, 16)
+            seed = _clamp_int(body.get("seed"), 42, 0, 10**9)
             from aura_game_engine import OpenWorldProceduralGenerator
             res = OpenWorldProceduralGenerator.generate_world(theme=theme, chunks=chunks, seed=seed)
             self._send_json(res)
@@ -955,10 +1247,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            steps = body.get("steps", 60)
-            name = body.get("name", "car")
-            mass = body.get("mass", 1200.0)
-            pos_y = body.get("pos_y", 3.0)
+            steps = _clamp_int(body.get("steps"), 60, 1, 600)
+            name = str(body.get("name", "car"))[:40]
+            mass = _clamp_float(body.get("mass"), 1200.0, 0.1, 100000.0)
+            pos_y = _clamp_float(body.get("pos_y"), 3.0, -1000.0, 1000.0)
             from aura_game_engine import JoltPhysicsEngine
             jolt = JoltPhysicsEngine()
             jolt.add_body(name, mass=mass, pos=(0, pos_y, 0), restitution=0.3)
@@ -968,19 +1260,19 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            sx = body.get("start_x", 0)
-            sy = body.get("start_y", 0)
-            gx = body.get("goal_x", 10)
-            gy = body.get("goal_y", 10)
+            sx = _clamp_int(body.get("start_x"), 0, 0, 99)
+            sy = _clamp_int(body.get("start_y"), 0, 0, 99)
+            gx = _clamp_int(body.get("goal_x"), 10, 0, 99)
+            gy = _clamp_int(body.get("goal_y"), 10, 0, 99)
             from aura_game_engine import RecastNavMeshRouter
-            res = RecastNavMeshRouter.find_path(start=(sx, sy), goal=(gx, gy))
+            res = RecastNavMeshRouter.find_path(start=(sx, sy), goal=(gx, gy), grid_size=max(30, gx + 1, gy + 1, sx + 1, sy + 1))
             self._send_json(res)
 
         elif path == "/api/game/agent/train":
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            episodes = body.get("episodes", 5)
+            episodes = _clamp_int(body.get("episodes"), 5, 1, 50)
             from aura_game_engine import MLAgentsCarlaTrainer
             res = MLAgentsCarlaTrainer.train_driving_agent(episodes=episodes)
             self._send_json(res)
@@ -989,179 +1281,258 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            count = body.get("player_count", 100)
+            count = _clamp_int(body.get("player_count"), 100, 2, 500)
             from aura_game_engine import AgonesNetcodeSynchronizer
             res = AgonesNetcodeSynchronizer.simulate_100_player_tick(player_count=count)
             self._send_json(res)
 
         elif path == "/api/game/project/export":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            proj = body.get("project_name", "open_world_demo")
+            proj = str(body.get("project_name", "open_world_demo"))[:64]
             from aura_game_engine import EngineProjectExporter
-            res = EngineProjectExporter.export_project(project_name=proj)
-            self._send_json(res)
+            res = EngineProjectExporter.export_project(project_name=proj, workspace_dir=_resolve_workspace_dir(user["id"]))
+            self._send_json(res, status=200 if res.get("success") else 400)
 
         elif path == "/api/godot/build":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            proj = body.get("project_name", "CyberCraft3D")
+            proj = str(body.get("project_name", "CyberCraft3D"))[:64]
             from godot_engine_manager import GodotCarCraftingProjectBuilder
-            res = GodotCarCraftingProjectBuilder.build_project(project_name=proj)
-            self._send_json(res)
+            try:
+                res = GodotCarCraftingProjectBuilder.build_project(project_name=proj)
+                self._send_json(res)
+            except ValueError as ve:
+                self._send_json({"success": False, "error": str(ve)}, status=400)
 
         elif path == "/api/godot/verify":
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            proj = body.get("project_name", "CyberCraft3D")
+            proj = str(body.get("project_name", "CyberCraft3D"))[:64]
             from godot_engine_manager import AURA_GODOT_TRAINER
-            res = AURA_GODOT_TRAINER.train_and_verify(project_name=proj)
-            self._send_json(res)
+            try:
+                res = AURA_GODOT_TRAINER.train_and_verify(project_name=proj)
+                self._send_json(res)
+            except ValueError as ve:
+                self._send_json({"success": False, "error": str(ve)}, status=400)
 
         elif path == "/api/godot/launch":
-            if not self._get_auth_user(body):
-                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+            if not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": "Admin authentication required to launch desktop game window"}, status=401)
                 return
-            proj = body.get("project_name", "CyberCraft3D")
+            proj = str(body.get("project_name", "CyberCraft3D"))[:64]
             from godot_engine_manager import AURA_GODOT_MANAGER, GAMES_WORKSPACE
-            proj_dir = GAMES_WORKSPACE / proj
+            proj_dir = _safe_resolve_under(GAMES_WORKSPACE, proj)
+            if proj_dir is None:
+                self._send_json({"success": False, "error": "Invalid project_name"}, status=400)
+                return
             res = AURA_GODOT_MANAGER.launch_windowed_game(proj_dir)
             self._send_json(res)
 
         elif path == "/api/pipeline/run":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            goal = body.get("goal", "Create a coding task")
+            goal = str(body.get("goal", "Create a coding task"))[:1000]
             domain = body.get("domain")
-            params = body.get("params", {})
+            params = body.get("params", {}) if isinstance(body.get("params"), dict) else {}
             from aura_master_pipeline import AURA_PIPELINE
             res = AURA_PIPELINE.execute(goal=goal, domain=domain, params=params)
             self._send_json(res)
 
         elif path == "/api/media/image/generate":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            prompt = body.get("prompt", "")
-            style = body.get("style", "auto")
-            aspect_ratio = body.get("aspect_ratio", "1:1")
+            prompt = str(body.get("prompt", ""))[:1000]
+            style = str(body.get("style", "auto"))[:40]
+            aspect_ratio = str(body.get("aspect_ratio", "1:1"))[:10]
             from aura_media_engine import AURA_CINEMA
-            res = AURA_CINEMA.create_cinematic_image(prompt, camera_style=style, aspect_ratio=aspect_ratio)
+            res = AURA_CINEMA.create_cinematic_image(
+                prompt,
+                camera_style=style,
+                aspect_ratio=aspect_ratio,
+                workspace_dir=_resolve_workspace_dir(user["id"]),
+            )
             self._send_json(res)
 
         elif path == "/api/media/image/transform":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            img_path = body.get("image_path", "")
-            instruction = body.get("instruction", "iPhone portrait")
+            img_rel = str(body.get("image_path", ""))
+            instruction = str(body.get("instruction", "iPhone portrait"))[:300]
+            user_ws = _resolve_workspace_dir(user["id"])
+            safe_inp = _safe_resolve_under(user_ws, img_rel)
+            if safe_inp is None:
+                self._send_json({"success": False, "error": "Image path must stay inside your workspace"}, status=403)
+                return
             from aura_media_engine import AURA_CINEMA
-            res = AURA_CINEMA.transform_existing_image(img_path, instruction)
-            self._send_json(res)
+            res = AURA_CINEMA.transform_existing_image(str(safe_inp), instruction, workspace_dir=user_ws)
+            self._send_json(res, status=200 if res.get("success") else 400)
 
         elif path == "/api/media/image/remove_bg":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            img_path = body.get("image_path", "")
+            img_rel = str(body.get("image_path", ""))
+            user_ws = _resolve_workspace_dir(user["id"])
+            safe_inp = _safe_resolve_under(user_ws, img_rel)
+            if safe_inp is None:
+                self._send_json({"success": False, "error": "Image path must stay inside your workspace"}, status=403)
+                return
             from aura_media_engine import NativeSegmentationEngine
-            inp = Path(img_path)
-            out = inp.parent / f"{inp.stem}_nobg.png"
-            res = NativeSegmentationEngine.remove_background(inp, out)
-            self._send_json(res)
+            out = safe_inp.parent / f"{safe_inp.stem}_nobg.png"
+            res = NativeSegmentationEngine.remove_background(safe_inp, out)
+            self._send_json(res, status=200 if res.get("success") else 400)
 
         elif path == "/api/media/video/generate":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            prompt = body.get("prompt", "")
-            duration = body.get("duration_sec", 5)
-            fps = body.get("fps", 24)
-            motion = body.get("camera_motion", "dolly_zoom")
-            aspect = body.get("aspect_ratio", "16:9")
+            prompt = str(body.get("prompt", ""))[:1000]
+            duration = _clamp_int(body.get("duration_sec"), 5, 1, 15)
+            fps = _clamp_int(body.get("fps"), 24, 8, 30)
+            motion = str(body.get("camera_motion", "dolly_zoom"))[:40]
+            aspect = str(body.get("aspect_ratio", "16:9"))[:10]
             from aura_media_engine import AURA_CINEMA
-            res = AURA_CINEMA.create_cinematic_video(prompt, duration_sec=duration, fps=fps, camera_motion=motion, aspect_ratio=aspect)
-            self._send_json(res)
+            res = AURA_CINEMA.create_cinematic_video(
+                prompt,
+                duration_sec=duration,
+                fps=fps,
+                camera_motion=motion,
+                aspect_ratio=aspect,
+                workspace_dir=_resolve_workspace_dir(user["id"]),
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
 
         elif path == "/api/coderx/execute":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            goal = body.get("goal", "")
-            filename = body.get("filename", "coderx_script.py")
-            cmd = body.get("test_command", "")
-            max_iter = body.get("max_iterations", 5)
-            from coderx_engine import CODERX
-            res = CODERX.run(goal=goal, target_filename=filename, test_command=cmd, max_iterations=max_iter)
+            goal = str(body.get("goal", ""))[:2000]
+            filename = str(body.get("filename", "coderx_script.py"))[:200]
+            cmd = str(body.get("test_command", "")).strip()
+            max_iter = _clamp_int(body.get("max_iterations"), 5, 1, 10)
+            is_admin = self._is_authorized_admin(body)
+            if cmd and not is_admin:
+                self._send_json(
+                    {"success": False, "error": "Custom shell test_command requires administrator privileges"},
+                    status=403,
+                )
+                return
+            user_ws = _resolve_workspace_dir(user["id"])
+            if _safe_resolve_under(user_ws, filename) is None:
+                self._send_json({"success": False, "error": "Target filename must stay inside your workspace"}, status=403)
+                return
+            from coderx_engine import CoderXStateGraph
+            engine = CoderXStateGraph(workspace=user_ws)
+            res = engine.run(
+                goal=goal,
+                target_filename=filename,
+                test_command=cmd,
+                max_iterations=max_iter,
+                allow_custom_command=is_admin,
+            )
             self._send_json(res)
 
         elif path == "/api/coderx/patch":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            file_rel = body.get("path", "")
-            patch_text = body.get("patch", "")
-            ws = ROOT / "workspace"
-            target_p = (ws / file_rel).resolve()
+            file_rel = str(body.get("path", ""))
+            patch_text = str(body.get("patch", ""))
+            user_ws = _resolve_workspace_dir(user["id"])
+            target_p = _safe_resolve_under(user_ws, file_rel)
+            if target_p is None:
+                self._send_json({"success": False, "error": "Patch target escapes workspace boundary"}, status=403)
+                return
             from coderx_engine import AiderDiffPatcher
-            res = AiderDiffPatcher.apply_patch_string(target_p, patch_text)
-            self._send_json(res)
+            res = AiderDiffPatcher.apply_patch_string(target_p, patch_text, workspace_root=user_ws)
+            self._send_json(res, status=200 if res.get("success") else 400)
 
         elif path == "/api/autonomous/mission":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            goal = body.get("goal", "")
-            filename = body.get("filename", "mission_script.py")
-            from aura_autonomous_loop import AURA_LOOP
+            goal = str(body.get("goal", ""))[:2000]
+            filename = str(body.get("filename", "mission_script.py"))[:200]
+            user_ws = _resolve_workspace_dir(user["id"])
+            if _safe_resolve_under(user_ws, filename) is None:
+                self._send_json({"success": False, "error": "Filename escapes workspace boundary"}, status=403)
+                return
             from aura_brain import tool_autonomous_code_loop
-            res = tool_autonomous_code_loop(goal=goal, target_filename=filename)
+            res = tool_autonomous_code_loop(goal=goal, target_filename=filename, user_id=user["id"])
             self._send_json(res)
 
         elif path == "/api/engines/invoke":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            engine_key = body.get("engine", "")
-            action = body.get("action", "run")
-            params = body.get("params", {})
+            engine_key = str(body.get("engine", ""))[:80]
+            action = str(body.get("action", "run"))[:80]
+            params = dict(body.get("params") or {}) if isinstance(body.get("params"), dict) else {}
+            if engine_key in ("OpenHands", "open-interpreter") and not self._is_authorized_admin(body):
+                self._send_json({"success": False, "error": f"Engine '{engine_key}' command execution requires administrator privileges"}, status=403)
+                return
+            params.setdefault("workspace", str(_resolve_workspace_dir(user["id"])))
             from aura_engine_mesh import AURA_ENGINE_MESH
             res = AURA_ENGINE_MESH.invoke(engine_key, action=action, **params)
             self._send_json(res)
+
         elif path == "/api/permission/respond":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            req_id = body.get("id", "")
-            decision = body.get("decision", "DENY")
+            req_id = str(body.get("id", "")).strip()
+            decision = str(body.get("decision", "DENY")).strip()
             from aura_permission_system import permission_manager
-            ok = permission_manager.respond_request(req_id, decision)
-            self._send_json({"success": ok, "id": req_id, "decision": decision})
+            ok = permission_manager.respond_request(req_id, decision, user_id=user["id"])
+            self._send_json({"success": ok, "id": req_id, "decision": decision}, status=200 if ok else 403)
 
         elif path == "/api/permission/mode":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            mode = body.get("mode", "PROMPT_HIGH_RISK")
+            mode = str(body.get("mode", "PROMPT_HIGH_RISK")).strip()
             from aura_permission_system import permission_manager
-            ok = permission_manager.set_security_mode(mode)
-            self._send_json({"success": ok, "mode": mode})
+            ok = permission_manager.set_security_mode(
+                mode,
+                user_id=user["id"],
+                is_admin=self._is_authorized_admin(body),
+            )
+            self._send_json(
+                {"success": ok, "mode": permission_manager.get_security_mode(user["id"]).value},
+                status=200 if ok else 403,
+            )
 
         elif path == "/api/os/execute":
             if not self._is_authorized_admin(body):
                 self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for OS execution"}, status=401)
                 return
-            cmd = body.get("command", "")
+            cmd = str(body.get("command", ""))
             from aura_brain import is_safe_command
             is_safe, reason = is_safe_command(cmd)
             if not is_safe:
                 self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}"}, status=403)
                 return
-            as_admin = body.get("as_admin", False)
+            as_admin = bool(body.get("as_admin", False))
             from aura_os_controller import laptop_controller
             res = laptop_controller.execute_powershell(cmd, as_admin=as_admin)
             self._send_json(res)
@@ -1170,7 +1541,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._is_authorized_admin(body):
                 self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for file read"}, status=401)
                 return
-            filepath = body.get("path", "")
+            filepath = str(body.get("path", ""))
             from aura_brain import validate_safe_path
             try:
                 validated_p = validate_safe_path(filepath)
@@ -1185,14 +1556,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not self._is_authorized_admin(body):
                 self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for file write"}, status=401)
                 return
-            filepath = body.get("path", "")
+            filepath = str(body.get("path", ""))
             from aura_brain import validate_safe_path
             try:
                 validated_p = validate_safe_path(filepath, allow_create=True)
             except PermissionError as pe:
                 self._send_json({"success": False, "error": str(pe)}, status=403)
                 return
-            file_content = body.get("content", "")
+            file_content = str(body.get("content", ""))
             from aura_os_controller import laptop_controller
             res = laptop_controller.write_file(str(validated_p), file_content)
             self._send_json(res)
@@ -1205,32 +1576,43 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = laptop_controller.capture_screenshot()
             self._send_json(res)
 
-        # 8. FLAGSHIP REPOSITORIES HUB ROUTES (OpenHands • Open Interpreter • AutoGPT • Trinity Pipeline)
+        # 8. FLAGSHIP REPOSITORIES HUB ROUTES
         elif path == "/api/flagship/openhands":
             if not self._get_auth_user(body):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_flagship_repos import OPENHANDS_HUB
             res = OPENHANDS_HUB.execute_swe_task(
-                task_prompt=body.get("task_prompt") or body.get("goal") or "Inspect project, fix login/auth bug, and run unit tests",
-                project_name=body.get("project_name", "openhands_workspace"),
-                canvas_agent=body.get("canvas_agent", "openhands_codeact"),
+                task_prompt=str(body.get("task_prompt") or body.get("goal") or "Inspect project, fix login/auth bug, and run unit tests")[:1000],
+                project_name=str(body.get("project_name", "openhands_workspace"))[:64],
+                canvas_agent=str(body.get("canvas_agent", "openhands_codeact"))[:64],
                 target_file=body.get("target_file"),
-                schedule_cron=body.get("schedule_cron")
+                schedule_cron=body.get("schedule_cron"),
             )
             self._send_json(res)
 
         elif path == "/api/flagship/open_interpreter":
-            if not self._get_auth_user(body):
+            user = self._get_auth_user(body)
+            if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
+            user_ws = _resolve_workspace_dir(user["id"])
+            req_dir = body.get("target_dir")
+            if req_dir:
+                safe_dir = _safe_resolve_under(user_ws, str(req_dir), allow_root=True)
+                if safe_dir is None:
+                    self._send_json({"success": False, "error": "target_dir must remain inside your workspace"}, status=403)
+                    return
+                resolved_dir = str(safe_dir)
+            else:
+                resolved_dir = str(user_ws)
             from aura_flagship_repos import OPEN_INTERPRETER_HUB
             res = OPEN_INTERPRETER_HUB.execute_computer_use_task(
-                prompt=body.get("prompt") or body.get("goal") or "Mere workspace folder me sabse badi files kaunsi hain? Unka size dikhao aur summary banao.",
-                skill=body.get("skill", "auto"),
-                harness=body.get("harness", "rust_codex_fast"),
-                model=body.get("model", "gemini-flash-lite-latest"),
-                target_dir=body.get("target_dir")
+                prompt=str(body.get("prompt") or body.get("goal") or "Inspect workspace largest files and summarize.")[:1000],
+                skill=str(body.get("skill", "auto"))[:40],
+                harness=str(body.get("harness", "rust_codex_fast"))[:40],
+                model=str(body.get("model", "gemini-flash-lite-latest"))[:60],
+                target_dir=resolved_dir,
             )
             self._send_json(res)
 
@@ -1240,10 +1622,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             from aura_flagship_repos import AUTOGPT_HUB
             res = AUTOGPT_HUB.build_and_run_workflow(
-                goal=body.get("goal") or "Mere liye potential customers research karo, website analyze karo, aur outreach email draft ready karo.",
-                surface=body.get("surface", "autopilot"),
+                goal=str(body.get("goal") or "Research potential customers, analyze website, and prepare outreach draft.")[:1000],
+                surface=str(body.get("surface", "autopilot"))[:40],
                 template_id=body.get("template_id"),
-                trigger_type=body.get("trigger_type", "manual_or_api")
+                trigger_type=str(body.get("trigger_type", "manual_or_api"))[:40],
             )
             self._send_json(res)
 
@@ -1253,25 +1635,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             from aura_flagship_repos import run_flagship_trinity_pipeline
             res = run_flagship_trinity_pipeline(
-                goal=body.get("goal") or "Build, test, and QA an enterprise authentication & customer workflow module end-to-end",
-                project_name=body.get("project_name", "aura_trinity_mission"),
-                canvas_agent=body.get("canvas_agent", "openhands_codeact"),
-                oi_harness=body.get("harness", "rust_codex_fast")
+                goal=str(body.get("goal") or "Build, test, and QA an enterprise authentication & customer workflow module end-to-end")[:1000],
+                project_name=str(body.get("project_name", "aura_trinity_mission"))[:64],
+                canvas_agent=str(body.get("canvas_agent", "openhands_codeact"))[:64],
+                oi_harness=str(body.get("harness", "rust_codex_fast"))[:40],
             )
             self._send_json(res)
 
-        # 9. AURA 10-SYSTEM OMNI-CORE ROUTES ("One AURA = 100 AI")
+        # 9. AURA 10-SYSTEM OMNI-CORE ROUTES
         elif path == "/api/systems10/execute":
             user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_10_systems import AURA_10_SYSTEMS
-            try:
-                sys_id = int(body.get("system_id", 1))
-            except (TypeError, ValueError):
-                sys_id = 1
-            goal = body.get("goal") or body.get("prompt") or "Architect, verify, and benchmark an enterprise AI system module"
+            sys_id = _clamp_int(body.get("system_id"), 1, 1, 10)
+            goal = str(body.get("goal") or body.get("prompt") or "Architect, verify, and benchmark an enterprise AI system module")[:1000]
             res = AURA_10_SYSTEMS.execute_single_system(system_id=sys_id, goal=goal)
             self._send_json(res)
 
@@ -1281,12 +1660,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_10_systems import AURA_10_SYSTEMS
-            goal = body.get("goal") or body.get("prompt") or "Design, simulate, engineer, verify, and audit a full-stack autonomous system across all 10 AI cores"
+            goal = str(body.get("goal") or body.get("prompt") or "Design, simulate, engineer, verify, and audit a full-stack autonomous system across all 10 AI cores")[:1000]
             res = AURA_10_SYSTEMS.run_10_system_omnipipeline(goal=goal, user_tag=user.get("username", "aura_operator"))
             self._send_json(res)
 
         else:
-            self.send_error(404, "Not Found")
+            self._send_json({"success": False, "error": "Not Found"}, status=404)
 
 
 def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
@@ -1294,8 +1673,6 @@ def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
 
 
 # Top-level serverless function entrypoint for Vercel (@vercel/python)
-# IMPORTANT: Only export `handler` (subclass of BaseHTTPRequestHandler). Do NOT export `app = AuraWebHandler`
-# because @vercel/python treats `app` as a 2-arg WSGI callable `(environ, start_response)`.
 handler = AuraWebHandler
 
 
@@ -1309,8 +1686,7 @@ def run():
     print(f"[*] Workspace Server Binding : {HOST}:{PORT}")
     print(f"[*] Local Access URL         : {url}")
     print("[*] Multi-User Auth SQLite   : ACTIVE (aura_workspace.db)")
-    print("[*] Security Sandbox Guard   : ACTIVE (PathGuard & CommandGuard)")
-    print("[*] ReAct Gemini Brain       : READY (Multimodal & 63 Engines)")
+    print("[*] Per-User Isolation Guard : ACTIVE (workspace/user_<id>)")
     print("-" * 65)
 
     try:

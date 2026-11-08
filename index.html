@@ -1254,7 +1254,10 @@
                         <div class="user-status-pill">● Online</div>
                     </div>
                 </div>
-                <button class="btn-logout-small" id="btnSignOut" onclick="logoutUser()" title="Sign Out">Sign Out</button>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="btn-logout-small" id="btnAccountSettings" onclick="openModelSettings()" title="Model & Account Settings">⚙️</button>
+                    <button class="btn-logout-small" id="btnSignOut" onclick="logoutUser()" title="Sign Out">Sign Out</button>
+                </div>
             </div>
         </div>
     </aside>
@@ -1306,7 +1309,7 @@
                             <div class="starter-card-title">🏎️ Godot 4.3 3D Engine</div>
                             <div class="starter-card-desc">Inspect VehicleBody3D physics, vehicle tuning presets, and web simulator.</div>
                         </div>
-                        <div class="starter-card" onclick="sendQuickPrompt('Fetch today's breaking technology news.')">
+                        <div class="starter-card" onclick="sendQuickPrompt('Fetch today\'s breaking technology news.')">
                             <div class="starter-card-title">📰 Real-Time Tech News</div>
                             <div class="starter-card-desc">Search and summarize the latest updates from Google News.</div>
                         </div>
@@ -1379,11 +1382,11 @@
         </div>
     </main>
 
-    <!-- ---------------- Model Settings & Permission Modals ---------------- -->
+    <!-- ---------------- Model, Workspace & Account Settings Modal ---------------- -->
     <div class="model-settings-overlay" id="modelSettingsOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modelSettingsTitle">
-        <section class="model-settings-card">
-            <h2 id="modelSettingsTitle">Model settings</h2>
-            <p>Choose the model AURA uses for your conversations. Provider credentials stay on the server; Ollama runs locally on this computer.</p>
+        <section class="model-settings-card" style="max-height:88vh; overflow-y:auto; max-width:520px;">
+            <h2 id="modelSettingsTitle">Model, Security & Account Settings</h2>
+            <p>Configure your model, temperature, execution policy, saved memories, and account credentials.</p>
             <label for="modelProvider">Provider</label>
             <select id="modelProvider">
                 <option value="gemini">Google Gemini</option>
@@ -1394,11 +1397,43 @@
             <label for="ollamaModel" id="ollamaModelLabel" style="display:none;">Installed Ollama model name</label>
             <input id="ollamaModel" type="text" maxlength="128" placeholder="e.g. qwen2.5-coder:7b" style="display:none;">
             <p id="modelProviderHint"></p>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                <div>
+                    <label for="modelTemperature">Temperature (0.0 – 1.0)</label>
+                    <input id="modelTemperature" type="number" min="0" max="1" step="0.1" value="0.3">
+                </div>
+                <div>
+                    <label for="executionPolicySelect">Execution Policy</label>
+                    <select id="executionPolicySelect">
+                        <option value="auto_pilot">Workspace Safe (Auto)</option>
+                        <option value="ask_first">Strict Approval (Ask First)</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
             <div class="model-settings-actions">
-                <button type="button" onclick="closeModelSettings()">Cancel</button>
-                <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save model</button>
+                <button type="button" onclick="closeModelSettings()">Close</button>
+                <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save settings</button>
             </div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
+            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">🧠 Scoped User Memories</h3>
+            <div id="userMemoriesInspector" style="font-size:12px; color:#94a3b8; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.28); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Loading memories...</div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
+            <h3 style="margin:0 0 8px 0; font-size:14px; color:#f8fafc;">🔐 Account Security</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center;">
+                <input id="acctCurrentPwd" type="password" placeholder="Current password" autocomplete="current-password">
+                <input id="acctNewPwd" type="password" minlength="8" placeholder="New password (8+ chars)" autocomplete="new-password">
+                <button type="button" onclick="changeAccountPassword()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(52,211,153,0.45); background:rgba(16,185,129,0.18); color:#a7f3d0; cursor:pointer; font-size:12px; font-weight:600;">Update</button>
+            </div>
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <span style="font-size:11.5px; color:#94a3b8;">Permanently delete account, threads & memories:</span>
+                <button type="button" onclick="deleteMyAccount()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.15); color:#fca5a5; cursor:pointer; font-size:11.5px; font-weight:600;">Delete Account</button>
+            </div>
+            <div id="accountSecurityStatus" style="font-size:12px; margin-top:6px; color:#cbd5e1;"></div>
         </section>
     </div>
 
@@ -1443,7 +1478,7 @@
                         <span>Password</span>
                         <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#34d399; font-size:11.5px; cursor:pointer; padding:0;">Show</button>
                     </label>
-                    <input type="password" id="authPassword" class="auth-input" placeholder="Password (min 6 chars, letters + numbers)" autocomplete="current-password" required minlength="6">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password (min 8 chars, letters + numbers)" autocomplete="current-password" required minlength="8">
                 </div>
                 <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Log In</button>
             </form>
@@ -1755,17 +1790,46 @@
     </div>
 
     <script>
-        // State
+        // Security Initialization: Purge any legacy bearer/CSRF tokens from localStorage.
+        // Session authentication relies on HttpOnly; SameSite=Strict cookies + in-memory CSRF tokens.
+        try {
+            localStorage.removeItem('aura_auth_token');
+            localStorage.removeItem('aura_csrf_token');
+        } catch (e) {}
+
+        // State (tokens held strictly in JS memory, never persisted to localStorage)
         let authMode = 'login';
         let currentUser = null;
-        let authToken = localStorage.getItem('aura_auth_token') || '';
-        let csrfToken = localStorage.getItem('aura_csrf_token') || '';
+        let authToken = '';
+        let csrfToken = '';
+        let activeExecutionMode = 'auto_pilot';
         let currentThreadId = localStorage.getItem('aura_active_thread_id') || ('th_' + Date.now());
         let isSending = false;
         let currentAttachments = [];
         let activePermissionId = null;
         let permissionPollTimer = null;
         let permissionPollInFlight = false;
+
+        const MAX_ATTACHMENTS = 5;
+        const MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MB per file
+        const MAX_TOTAL_ATTACHMENT_BYTES = 6 * 1024 * 1024; // 6 MB combined
+
+        function isAuthenticated() {
+            return Boolean(currentUser || authToken);
+        }
+
+        async function apiFetch(url, options = {}) {
+            const opts = Object.assign({ credentials: 'same-origin' }, options);
+            const headers = Object.assign({}, opts.headers || {});
+            if (authToken && !headers['Authorization']) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            if (csrfToken && !headers['X-CSRF-Token']) {
+                headers['X-CSRF-Token'] = csrfToken;
+            }
+            opts.headers = headers;
+            return fetch(url, opts);
+        }
 
         // DOM elements
         const userPrompt = document.getElementById('userPrompt');
@@ -1800,6 +1864,10 @@
         const modelProviderHint = document.getElementById('modelProviderHint');
         const modelSettingsStatus = document.getElementById('modelSettingsStatus');
         const activeModelLabel = document.getElementById('activeModelLabel');
+        const modelTemperature = document.getElementById('modelTemperature');
+        const executionPolicySelect = document.getElementById('executionPolicySelect');
+        const userMemoriesInspector = document.getElementById('userMemoriesInspector');
+        const accountSecurityStatus = document.getElementById('accountSecurityStatus');
 
         function updateModelSettingsFields() {
             const local = modelProvider.value === 'ollama';
@@ -1812,14 +1880,16 @@
         }
 
         async function refreshActiveModelLabel() {
-            if (!authToken) return;
+            if (!isAuthenticated()) return;
             try {
-                const response = await fetch('/api/settings', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const response = await apiFetch('/api/settings');
                 if (!response.ok) return;
                 const data = await response.json();
                 const settings = data.brain_settings || {};
+                const prefs = data.user_preferences || {};
+                if (prefs.execution_mode) {
+                    activeExecutionMode = prefs.execution_mode;
+                }
                 const labels = { gemini: 'Gemini', ollama: 'Ollama' };
                 if (labels[settings.active_provider] && settings.active_model) {
                     activeModelLabel.textContent = `• ${labels[settings.active_provider]} · ${settings.active_model}`;
@@ -1829,17 +1899,54 @@
             }
         }
 
+        async function loadUserMemoriesInspector() {
+            if (!userMemoriesInspector || !isAuthenticated()) return;
+            try {
+                const res = await apiFetch('/api/memory');
+                const data = await safeParseJson(res);
+                userMemoriesInspector.innerHTML = '';
+                const mems = Array.isArray(data.memories) ? data.memories : [];
+                if (mems.length === 0) {
+                    userMemoriesInspector.textContent = 'No saved memories for your account yet.';
+                    return;
+                }
+                mems.forEach(mem => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.06);';
+                    const txt = document.createElement('span');
+                    txt.textContent = `${mem.key}: ${mem.value}`;
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.textContent = '✕';
+                    delBtn.title = 'Delete memory';
+                    delBtn.style.cssText = 'background:transparent; border:none; color:#fca5a5; cursor:pointer; font-size:12px;';
+                    delBtn.addEventListener('click', async () => {
+                        await apiFetch('/api/memory/delete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ key: mem.key })
+                        });
+                        await loadUserMemoriesInspector();
+                    });
+                    row.appendChild(txt);
+                    row.appendChild(delBtn);
+                    userMemoriesInspector.appendChild(row);
+                });
+            } catch (err) {
+                userMemoriesInspector.textContent = 'Could not load memories.';
+            }
+        }
+
         async function openModelSettings() {
-            if (!authToken) {
+            if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
             }
-            modelSettingsStatus.textContent = 'Loading saved model settings…';
+            modelSettingsStatus.textContent = 'Loading saved settings…';
+            if (accountSecurityStatus) accountSecurityStatus.textContent = '';
             modelSettingsOverlay.style.display = 'flex';
             try {
-                const response = await fetch('/api/settings', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const response = await apiFetch('/api/settings');
                 const data = await response.json();
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not load settings.');
                 modelChoice.innerHTML = '';
@@ -1850,15 +1957,23 @@
                     modelChoice.appendChild(option);
                 });
                 const settings = data.brain_settings || {};
+                const prefs = data.user_preferences || {};
                 modelProvider.value = settings.active_provider || 'gemini';
                 if (modelProvider.value === 'ollama') ollamaModel.value = settings.active_model || '';
                 else modelChoice.value = settings.active_model || 'gemini-flash-lite-latest';
+                if (modelTemperature) {
+                    modelTemperature.value = (prefs.temperature !== undefined) ? prefs.temperature : 0.3;
+                }
+                if (executionPolicySelect) {
+                    executionPolicySelect.value = prefs.execution_mode || 'auto_pilot';
+                }
                 if (modelProvider.value === 'gemini' && !data.gemini_key_configured) {
                     modelSettingsStatus.textContent = 'Gemini is selected, but no server-side API key is configured.';
                 } else {
                     modelSettingsStatus.textContent = '';
                 }
                 updateModelSettingsFields();
+                await loadUserMemoriesInspector();
             } catch (error) {
                 modelSettingsStatus.textContent = error.message;
             }
@@ -1871,25 +1986,89 @@
         async function saveModelSettings() {
             const provider = modelProvider.value;
             const model = provider === 'ollama' ? ollamaModel.value.trim() : modelChoice.value;
+            const tempVal = modelTemperature ? parseFloat(modelTemperature.value || '0.3') : 0.3;
+            const execPolicy = executionPolicySelect ? executionPolicySelect.value : 'auto_pilot';
             modelSettingsStatus.textContent = 'Saving…';
             try {
-                const response = await fetch('/api/settings', {
+                const response = await apiFetch('/api/settings', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
-                    body: JSON.stringify({ active_provider: provider, active_model: model })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        active_provider: provider,
+                        active_model: model,
+                        preferences: {
+                            temperature: isNaN(tempVal) ? 0.3 : Math.max(0, Math.min(1, tempVal)),
+                            execution_mode: execPolicy
+                        }
+                    })
                 });
                 const data = await response.json();
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not save model settings.');
+                activeExecutionMode = execPolicy;
                 const labels = { gemini: 'Gemini', ollama: 'Ollama' };
                 activeModelLabel.textContent = `• ${labels[provider]} · ${model}`;
-                modelSettingsStatus.textContent = 'Saved. Your next message will use this model.';
+                modelSettingsStatus.textContent = 'Saved. Your next message will use these settings.';
                 setTimeout(closeModelSettings, 700);
             } catch (error) {
                 modelSettingsStatus.textContent = error.message;
+            }
+        }
+
+        async function changeAccountPassword() {
+            const curInput = document.getElementById('acctCurrentPwd');
+            const newInput = document.getElementById('acctNewPwd');
+            if (!curInput || !newInput || !accountSecurityStatus) return;
+            const current_password = curInput.value;
+            const new_password = newInput.value;
+            if (!current_password || !new_password) {
+                accountSecurityStatus.textContent = 'Enter both current and new password.';
+                return;
+            }
+            accountSecurityStatus.textContent = 'Updating password...';
+            try {
+                const res = await apiFetch('/api/auth/change_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_password, new_password })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    accountSecurityStatus.textContent = data.error || 'Password update failed.';
+                    return;
+                }
+                if (data.token) authToken = data.token;
+                if (data.csrf_token) csrfToken = data.csrf_token;
+                curInput.value = '';
+                newInput.value = '';
+                accountSecurityStatus.textContent = '✅ Password updated and prior sessions rotated.';
+            } catch (err) {
+                accountSecurityStatus.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function deleteMyAccount() {
+            const password = prompt('Enter your current password to permanently delete your account and all data:');
+            if (!password) return;
+            try {
+                const res = await apiFetch('/api/auth/delete_account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    if (accountSecurityStatus) accountSecurityStatus.textContent = data.error || 'Account deletion failed.';
+                    return;
+                }
+                closeModelSettings();
+                purgeLocalVaultStorage();
+                authToken = '';
+                csrfToken = '';
+                currentUser = null;
+                authOverlay.style.display = 'flex';
+                switchAuthTab('login');
+            } catch (err) {
+                if (accountSecurityStatus) accountSecurityStatus.textContent = 'Error: ' + err.message;
             }
         }
 
@@ -1909,7 +2088,7 @@
             sidebarBackdrop.classList.remove('mobile-open');
         }
 
-        // ---------------- File Attachments & Drag-and-Drop ----------------
+        // ---------------- File Attachments & Drag-and-Drop (With Size/Count Caps) ----------------
         function handleFileSelect(e) {
             const files = e.target.files;
             if (files && files.length > 0) {
@@ -1919,10 +2098,27 @@
         }
 
         function processFiles(files) {
-            Array.from(files).forEach(file => {
+            const incoming = Array.from(files || []);
+            let runningBytes = currentAttachments.reduce((acc, item) => acc + (item.size || 0), 0);
+
+            for (const file of incoming) {
+                if (currentAttachments.length >= MAX_ATTACHMENTS) {
+                    alert(`Maximum ${MAX_ATTACHMENTS} attachments allowed per message.`);
+                    break;
+                }
+                if (file.size > MAX_FILE_BYTES) {
+                    alert(`"${file.name}" exceeds the 4 MB per-file upload limit.`);
+                    continue;
+                }
+                if (runningBytes + file.size > MAX_TOTAL_ATTACHMENT_BYTES) {
+                    alert('Total attachments exceed the 6 MB message limit.');
+                    break;
+                }
+                runningBytes += file.size;
                 const reader = new FileReader();
-                const isImage = file.type.startsWith('image/');
+                const isImage = Boolean(file.type && file.type.startsWith('image/'));
                 reader.onload = (event) => {
+                    if (currentAttachments.length >= MAX_ATTACHMENTS) return;
                     const dataUri = event.target.result;
                     currentAttachments.push({
                         name: file.name,
@@ -1932,14 +2128,16 @@
                         is_image: isImage
                     });
                     renderAttachmentChips();
+                    btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
                 };
                 reader.readAsDataURL(file);
-            });
+            }
         }
 
         function removeAttachment(index) {
             currentAttachments.splice(index, 1);
             renderAttachmentChips();
+            btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
         }
 
         function renderAttachmentChips() {
@@ -1954,26 +2152,45 @@
             currentAttachments.forEach((att, idx) => {
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
-                const sizeKb = Math.round(att.size / 1024);
-                let visual = '';
-                if (att.is_image) {
-                    visual = `<img src="${att.data}" class="attachment-chip-thumb" alt="preview">`;
+                const sizeKb = Math.max(1, Math.round(att.size / 1024));
+
+                if (att.is_image && typeof att.data === 'string' && att.data.startsWith('data:image/')) {
+                    const img = document.createElement('img');
+                    img.src = att.data;
+                    img.className = 'attachment-chip-thumb';
+                    img.alt = 'preview';
+                    chip.appendChild(img);
                 } else {
-                    visual = `<span class="attachment-chip-icon">📄</span>`;
+                    const icon = document.createElement('span');
+                    icon.className = 'attachment-chip-icon';
+                    icon.textContent = '📄';
+                    chip.appendChild(icon);
                 }
 
-                chip.innerHTML = `
-                    ${visual}
-                    <div class="attachment-chip-info">
-                        <span class="attachment-chip-name" title="${escapeHtml(att.name)}">${escapeHtml(att.name)}</span>
-                        <span class="attachment-chip-size">${sizeKb} KB</span>
-                    </div>
-                    <button class="attachment-chip-del" onclick="removeAttachment(${idx})" title="Remove file">✕</button>
-                `;
+                const info = document.createElement('div');
+                info.className = 'attachment-chip-info';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'attachment-chip-name';
+                nameSpan.title = att.name;
+                nameSpan.textContent = att.name;
+                const sizeSpan = document.createElement('span');
+                sizeSpan.className = 'attachment-chip-size';
+                sizeSpan.textContent = `${sizeKb} KB`;
+                info.appendChild(nameSpan);
+                info.appendChild(sizeSpan);
+                chip.appendChild(info);
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'attachment-chip-del';
+                delBtn.title = 'Remove file';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', () => removeAttachment(idx));
+                chip.appendChild(delBtn);
+
                 attachmentChips.appendChild(chip);
             });
         }
-
 
         // ---------------- Speech Recognition (Voice-to-Text) ----------------
         let recognition = null;
@@ -2064,7 +2281,6 @@
             }
         });
 
-        // Drag & Drop Setup
         ['dragenter', 'dragover'].forEach(name => {
             chatContainer.addEventListener(name, (e) => {
                 e.preventDefault();
@@ -2085,7 +2301,7 @@
             }
         });
 
-        // ---------------- Safe JSON Parser & Signed Vault Persistence ----------------
+        // ---------------- Safe JSON Parser & Non-Credential History Vault ----------------
         async function safeParseJson(res) {
             const rawText = await res.text();
             try {
@@ -2100,7 +2316,11 @@
         }
 
         function saveUserVault(vaultObj) {
+            // Only accept v2 credential-free vaults (never store password_hash, salt, or session tokens)
             if (!vaultObj || !vaultObj.username || !vaultObj.signature) return;
+            if (vaultObj.payload && (vaultObj.payload.sessions || (vaultObj.payload.user && (vaultObj.payload.user.password_hash || vaultObj.payload.user.salt)))) {
+                return;
+            }
             try {
                 const uname = String(vaultObj.username).toLowerCase();
                 localStorage.setItem('aura_user_vault_' + uname, JSON.stringify(vaultObj));
@@ -2108,18 +2328,21 @@
             } catch (e) {}
         }
 
-        function getAllSavedVaults() {
-            const vaults = [];
+        function purgeLocalVaultStorage() {
             try {
+                localStorage.removeItem('aura_active_vault');
+                localStorage.removeItem('aura_active_thread_id');
+                localStorage.removeItem('aura_auth_token');
+                localStorage.removeItem('aura_csrf_token');
+                const keysToDelete = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const k = localStorage.key(i);
                     if (k && k.startsWith('aura_user_vault_')) {
-                        const parsed = JSON.parse(localStorage.getItem(k));
-                        if (parsed && parsed.signature) vaults.push(parsed);
+                        keysToDelete.push(k);
                     }
                 }
+                keysToDelete.forEach(k => localStorage.removeItem(k));
             } catch (e) {}
-            return vaults;
         }
 
         function togglePasswordVisibility() {
@@ -2139,7 +2362,7 @@
             const warnEl = document.getElementById('authStorageWarning');
             if (!storageStatus || !warnEl) return;
             if (storageStatus.vault_sync_enabled) {
-                warnEl.innerText = '🔒 Signed Account & History Vault Sync Active — Your username, password, and chats are protected.';
+                warnEl.innerText = '🔒 Signed History Sync Active — Credentials & sessions are excluded from browser storage.';
                 warnEl.style.display = 'block';
             } else {
                 warnEl.style.display = 'none';
@@ -2178,34 +2401,41 @@
             authErrorMsg.style.display = 'none';
 
             const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
-            const specificVault = localStorage.getItem('aura_user_vault_' + u);
-            let parsedSpecificVault = null;
-            try { if (specificVault) parsedSpecificVault = JSON.parse(specificVault); } catch (err) {}
 
             try {
                 const res = await fetch(endpoint, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: u,
-                        password: p,
-                        vault_backup: parsedSpecificVault,
-                        vault_backups: getAllSavedVaults()
-                    })
+                    body: JSON.stringify({ username: u, password: p })
                 });
                 const data = await safeParseJson(res);
                 if (data.storage_status) {
                     applyStorageStatusUI(data.storage_status);
                 }
-                if (data.success && data.token) {
-                    authToken = data.token;
+                if (res.ok && data.success && (data.user || data.token)) {
+                    authToken = data.token || '';
                     csrfToken = data.csrf_token || '';
-                    localStorage.setItem('aura_auth_token', authToken);
-                    localStorage.setItem('aura_csrf_token', csrfToken);
+                    currentUser = data.user;
+
+                    // Post-authentication vault history sync (never runs before password verification)
+                    const savedVaultRaw = localStorage.getItem('aura_user_vault_' + u);
+                    if (authMode === 'login' && savedVaultRaw && (!data.threads_count || data.threads_count === 0)) {
+                        try {
+                            const parsedVault = JSON.parse(savedVaultRaw);
+                            if (parsedVault && parsedVault.version === 2) {
+                                await apiFetch('/api/auth/restore_vault', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ vault_backup: parsedVault })
+                                });
+                            }
+                        } catch (syncErr) {}
+                    }
+
                     if (data.user_vault) {
                         saveUserVault(data.user_vault);
                     }
-                    currentUser = data.user;
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
                     await refreshActiveModelLabel();
@@ -2214,12 +2444,12 @@
 
                     await loadThreads();
                     if (data.default_thread_id) {
-                        selectThread(data.default_thread_id);
+                        await selectThread(data.default_thread_id);
                     } else {
-                        const threadsRes = await fetch('/api/threads', { headers: { 'Authorization': `Bearer ${authToken}` } });
+                        const threadsRes = await apiFetch('/api/threads');
                         const threadsData = await safeParseJson(threadsRes);
                         if (threadsData.threads && threadsData.threads.length > 0) {
-                            selectThread(threadsData.threads[0].id);
+                            await selectThread(threadsData.threads[0].id);
                         } else {
                             createNewChatSession();
                         }
@@ -2247,8 +2477,7 @@
 
         async function verifyAuth() {
             try {
-                const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-                const res = await fetch('/api/auth/me', { headers });
+                const res = await apiFetch('/api/auth/me');
                 const data = await safeParseJson(res);
                 if (data.storage_status) {
                     applyStorageStatusUI(data.storage_status);
@@ -2257,7 +2486,6 @@
                     currentUser = data.user;
                     if (data.csrf_token) {
                         csrfToken = data.csrf_token;
-                        localStorage.setItem('aura_csrf_token', csrfToken);
                     }
                     if (data.user_vault) {
                         saveUserVault(data.user_vault);
@@ -2266,35 +2494,7 @@
                     authOverlay.style.display = 'none';
                     return true;
                 }
-                // Cold-start recovery: if we have an active token + signed browser vault, restore seamlessly
-                const activeVaultRaw = localStorage.getItem('aura_active_vault');
-                if (authToken && activeVaultRaw) {
-                    const restoreRes = await fetch('/api/auth/restore_vault', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${authToken}`
-                        },
-                        body: JSON.stringify({ vault_backup: JSON.parse(activeVaultRaw) })
-                    });
-                    const restoreData = await safeParseJson(restoreRes);
-                    if (restoreRes.ok && restoreData.authenticated && restoreData.user) {
-                        currentUser = restoreData.user;
-                        if (restoreData.csrf_token) {
-                            csrfToken = restoreData.csrf_token;
-                            localStorage.setItem('aura_csrf_token', csrfToken);
-                        }
-                        if (restoreData.user_vault) {
-                            saveUserVault(restoreData.user_vault);
-                        }
-                        updateUserUI(currentUser);
-                        authOverlay.style.display = 'none';
-                        return true;
-                    }
-                }
             } catch (e) {}
-            localStorage.removeItem('aura_auth_token');
-            localStorage.removeItem('aura_csrf_token');
             authToken = '';
             csrfToken = '';
             currentUser = null;
@@ -2304,7 +2504,7 @@
 
         // ---------------- Flagship Repositories Hub Controller ----------------
         function openFlagshipHub(tab = 'openhands') {
-            if (!authToken) {
+            if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
             }
@@ -2347,13 +2547,9 @@
             const project_name = document.getElementById('ohProjectName').value.trim() || 'aura_swe_task';
             box.textContent = '⏳ Running OpenHands 7-Step SWE SDK (Inspect ➔ AST ➔ Edit ➔ Terminal ➔ Unit Tests ➔ Self-Heal ➔ Report)...';
             try {
-                const res = await fetch('/api/flagship/openhands', {
+                const res = await apiFetch('/api/flagship/openhands', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ task_prompt, canvas_agent, project_name })
                 });
                 const data = await safeParseJson(res);
@@ -2370,13 +2566,9 @@
             const harness = document.getElementById('oiHarness').value;
             box.textContent = '⏳ Running Open Interpreter Computer-Use Harness (Pre-Hook ➔ Skill Execution ➔ Post-Hook QA ➔ ACP/1.0 Envelope)...';
             try {
-                const res = await fetch('/api/flagship/open_interpreter', {
+                const res = await apiFetch('/api/flagship/open_interpreter', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt, skill, harness })
                 });
                 const data = await safeParseJson(res);
@@ -2393,13 +2585,9 @@
             const template_id = document.getElementById('agTemplate').value;
             box.textContent = '⏳ Building & Executing AutoGPT 5-Node Visual Workflow Graph across AutoPilot, Agents, Marketplace & Build...';
             try {
-                const res = await fetch('/api/flagship/autogpt', {
+                const res = await apiFetch('/api/flagship/autogpt', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ goal, surface, template_id })
                 });
                 const data = await safeParseJson(res);
@@ -2414,13 +2602,9 @@
             const goal = document.getElementById('trinityGoalInput').value.trim();
             box.textContent = '⏳ Executing Connected A-to-Z Flagship Trinity Pipeline (Stage 1: AutoGPT ➔ Stage 2: OpenHands ➔ Stage 3: Open Interpreter)...';
             try {
-                const res = await fetch('/api/flagship/pipeline', {
+                const res = await apiFetch('/api/flagship/pipeline', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ goal, project_name: 'trinity_a_to_z_workspace' })
                 });
                 const data = await safeParseJson(res);
@@ -2436,13 +2620,9 @@
             const system_id = parseInt(document.getElementById('sys10Selector').value || '1', 10);
             box.textContent = `⏳ Executing System ${system_id} on AURA 10-System Omni-Core...`;
             try {
-                const res = await fetch('/api/systems10/execute', {
+                const res = await apiFetch('/api/systems10/execute', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ system_id, goal })
                 });
                 const data = await safeParseJson(res);
@@ -2457,13 +2637,9 @@
             const goal = document.getElementById('sys10GoalInput').value.trim();
             box.textContent = '⏳ Executing Complete 10-System A-to-Z Omni-Pipeline (System 10 Entry Gate ➔ Systems 1..9 ➔ System 10 Exit Audit)...';
             try {
-                const res = await fetch('/api/systems10/omnipipeline', {
+                const res = await apiFetch('/api/systems10/omnipipeline', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ goal })
                 });
                 const data = await safeParseJson(res);
@@ -2475,20 +2651,18 @@
 
         async function logoutUser() {
             if (!confirm('Are you sure you want to sign out?')) return;
+            if (permissionPollTimer) {
+                clearInterval(permissionPollTimer);
+                permissionPollTimer = null;
+            }
             try {
-                await fetch('/api/auth/logout', {
+                await apiFetch('/api/auth/logout', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
-                    body: JSON.stringify({ token: authToken })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
                 });
             } catch (e) {}
-            localStorage.removeItem('aura_auth_token');
-            localStorage.removeItem('aura_csrf_token');
-            localStorage.removeItem('aura_active_thread_id');
+            purgeLocalVaultStorage();
             authToken = '';
             csrfToken = '';
             currentUser = null;
@@ -2504,7 +2678,6 @@
 
         // ---------------- Initialization ----------------
         window.addEventListener('DOMContentLoaded', async () => {
-            // Dismiss shining splash after 1.4s
             setTimeout(() => {
                 const splash = document.getElementById('auraSplash');
                 if (splash) {
@@ -2525,6 +2698,14 @@
             }
         });
 
+        // Delegated click handler for code copy buttons (avoids inline onclick in Markdown HTML)
+        document.addEventListener('click', (e) => {
+            const btn = e.target && e.target.closest ? e.target.closest('.btn-copy-code') : null;
+            if (btn) {
+                copyCode(btn);
+            }
+        });
+
         function startPermissionPolling() {
             if (permissionPollTimer) return;
             refreshPermissionRequests();
@@ -2532,12 +2713,10 @@
         }
 
         async function refreshPermissionRequests() {
-            if (!authToken || permissionPollInFlight) return;
+            if (!isAuthenticated() || permissionPollInFlight) return;
             permissionPollInFlight = true;
             try {
-                const res = await fetch('/api/permission/pending', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const res = await apiFetch('/api/permission/pending');
                 if (!res.ok) return;
                 const data = await res.json();
                 const request = data.pending && data.pending[0];
@@ -2562,12 +2741,9 @@
             permissionAllow.disabled = true;
             permissionDeny.disabled = true;
             try {
-                const res = await fetch('/api/permission/respond', {
+                const res = await apiFetch('/api/permission/respond', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: activePermissionId, decision })
                 });
                 const data = await res.json();
@@ -2589,14 +2765,12 @@
         permissionAllow.addEventListener('click', () => respondToPermission('ALLOW_ONCE'));
         permissionDeny.addEventListener('click', () => respondToPermission('DENY'));
 
-        // Auto-expand textarea
         userPrompt.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 200) + 'px';
             btnSend.disabled = !this.value.trim() && currentAttachments.length === 0;
         });
 
-        // Enter key to send (Shift+Enter for newline)
         userPrompt.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -2637,7 +2811,7 @@
             const hasAttachments = currentAttachments.length > 0;
             if ((!text && !hasAttachments) || isSending) return;
 
-            if (!authToken) {
+            if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
             }
@@ -2649,51 +2823,66 @@
                 welcomeHero.style.display = 'none';
             }
 
-            // Copy attachments and clear current
+            // Preserve draft in case of 401 or server failure
+            const draftText = text;
             const attachedToSend = [...currentAttachments];
             currentAttachments = [];
             renderAttachmentChips();
 
-            // Append User Message to UI
-            appendUserMessage(text, attachedToSend);
+            const userTurnEl = appendUserMessage(text, attachedToSend);
             userPrompt.value = '';
             userPrompt.style.height = 'auto';
             scrollChatToBottom();
 
-            // Create Agent Message Turn with Thinking Indicator
             const turnData = createAgentStreamingTurn();
             scrollChatToBottom();
 
+            const restoreDraftOnFailure = () => {
+                userPrompt.value = draftText;
+                currentAttachments = attachedToSend;
+                renderAttachmentChips();
+                if (userTurnEl && userTurnEl.parentNode) {
+                    userTurnEl.parentNode.removeChild(userTurnEl);
+                }
+            };
+
             try {
-                // Connect to AURA Streaming SSE Endpoint
-                const res = await fetch('/api/chat/stream', {
+                const res = await apiFetch('/api/chat/stream', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`,
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: text,
                         thread_id: currentThreadId,
-                        session_token: authToken,
                         attachments: attachedToSend,
-                        mode: 'auto_pilot'
+                        mode: activeExecutionMode || 'auto_pilot'
                     })
                 });
 
                 if (res.status === 401) {
-                    turnData.bubble.innerHTML = 'Your session has expired. Please sign in again.';
+                    restoreDraftOnFailure();
+                    turnData.thinking.style.display = 'none';
+                    turnData.bubble.textContent = 'Your session has expired. Your draft and attachments were preserved — please sign in again.';
+                    authToken = '';
+                    csrfToken = '';
+                    currentUser = null;
                     authOverlay.style.display = 'flex';
                     return;
                 }
 
-                // If SSE is supported and active
+                if (!res.ok) {
+                    restoreDraftOnFailure();
+                    const errBody = await safeParseJson(res);
+                    turnData.thinking.style.display = 'none';
+                    turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ Request failed (HTTP ${res.status}): ${escapeHtml(errBody.error || 'Unable to process message.')}</span>`;
+                    return;
+                }
+
                 if (res.body && res.body.getReader) {
                     const reader = res.body.getReader();
                     const decoder = new TextDecoder('utf-8');
                     let buffer = '';
                     let accumulatedMarkdown = '';
+                    let streamErrored = false;
 
                     while (true) {
                         const { done, value } = await reader.read();
@@ -2701,7 +2890,7 @@
 
                         buffer += decoder.decode(value, { stream: true });
                         const lines = buffer.split('\n');
-                        buffer = lines.pop(); // keep remainder
+                        buffer = lines.pop();
 
                         for (const line of lines) {
                             const trimmed = line.trim();
@@ -2711,14 +2900,13 @@
                                 try {
                                     const eventData = JSON.parse(jsonStr);
                                     if (eventData.type === 'tool') {
-                                        // Append tool badge
                                         const badge = document.createElement('div');
                                         badge.className = 'tool-badge-pill';
-                                        badge.innerHTML = `⚙️ Executed ${escapeHtml(eventData.name || 'tool')}`;
+                                        badge.textContent = `⚙️ Executed ${eventData.name || 'tool'}`;
                                         turnData.toolsContainer.appendChild(badge);
                                     } else if (eventData.type === 'token') {
                                         turnData.thinking.style.display = 'none';
-                                        accumulatedMarkdown += eventData.delta;
+                                        accumulatedMarkdown += (eventData.delta || '');
                                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown) + '<span class="streaming-cursor"></span>';
                                         scrollChatToBottom();
                                     } else if (eventData.type === 'done') {
@@ -2726,6 +2914,11 @@
                                         accumulatedMarkdown = eventData.reply || accumulatedMarkdown;
                                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
                                         loadThreads();
+                                    } else if (eventData.type === 'error') {
+                                        streamErrored = true;
+                                        turnData.thinking.style.display = 'none';
+                                        const errMsg = eventData.error || eventData.message || 'An unexpected error occurred during generation.';
+                                        turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ Stream Error: ${escapeHtml(errMsg)}</span>`;
                                     }
                                 } catch (e) {
                                     console.error('SSE JSON parse error:', e);
@@ -2734,23 +2927,28 @@
                         }
                     }
 
-                    // Remove blinking cursor on completion
                     turnData.thinking.style.display = 'none';
                     if (accumulatedMarkdown) {
                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
+                    } else if (!streamErrored) {
+                        turnData.bubble.textContent = 'No response returned by the model.';
                     }
                 } else {
-                    // Standard fallback
-                    const data = await res.json();
+                    const data = await safeParseJson(res);
                     turnData.thinking.style.display = 'none';
-                    turnData.bubble.innerHTML = renderMarkdown(data.reply || 'Completed.');
+                    if (data.error) {
+                        turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ ${escapeHtml(data.error)}</span>`;
+                    } else {
+                        turnData.bubble.innerHTML = renderMarkdown(data.reply || 'Completed.');
+                    }
                 }
             } catch (err) {
+                restoreDraftOnFailure();
                 turnData.thinking.style.display = 'none';
                 turnData.bubble.innerHTML = '<span style="color: #fca5a5;">Connection Error: ' + escapeHtml(err.message) + '</span>';
             } finally {
                 isSending = false;
-                btnSend.disabled = false;
+                btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
                 userPrompt.focus();
                 scrollChatToBottom();
             }
@@ -2760,25 +2958,32 @@
             const turn = document.createElement('div');
             turn.className = 'msg-turn user';
 
-            let attachmentsHtml = '';
             if (attachments.length > 0) {
-                attachmentsHtml = '<div class="user-turn-attachments">';
+                const wrap = document.createElement('div');
+                wrap.className = 'user-turn-attachments';
                 attachments.forEach(att => {
-                    attachmentsHtml += `
-                        <div class="user-attached-pill">
-                            <span>${att.is_image ? '🖼️' : '📄'}</span>
-                            <span>${escapeHtml(att.name)}</span>
-                        </div>
-                    `;
+                    const pill = document.createElement('div');
+                    pill.className = 'user-attached-pill';
+                    const iconSpan = document.createElement('span');
+                    iconSpan.textContent = att.is_image ? '🖼️' : '📄';
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = att.name;
+                    pill.appendChild(iconSpan);
+                    pill.appendChild(nameSpan);
+                    wrap.appendChild(pill);
                 });
-                attachmentsHtml += '</div>';
+                turn.appendChild(wrap);
             }
 
-            turn.innerHTML = `
-                ${attachmentsHtml}
-                ${text ? `<div class="msg-bubble-user">${escapeHtml(text)}</div>` : ''}
-            `;
+            if (text) {
+                const bubble = document.createElement('div');
+                bubble.className = 'msg-bubble-user';
+                bubble.textContent = text;
+                turn.appendChild(bubble);
+            }
+
             chatStream.appendChild(turn);
+            return turn;
         }
 
         function createAgentStreamingTurn() {
@@ -2818,13 +3023,11 @@
             }, 30);
         }
 
-        // ---------------- Sidebar Threads Management ----------------
+        // ---------------- Sidebar Threads Management (Safe DOM + Pin/Rename/Delete) ----------------
         async function loadThreads() {
-            if (!authToken) return;
+            if (!isAuthenticated()) return;
             try {
-                const res = await fetch('/api/threads', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const res = await apiFetch('/api/threads');
                 const data = await res.json();
                 if (data.success && data.threads) {
                     renderThreads(data.threads);
@@ -2842,18 +3045,60 @@
 
             threadsList.innerHTML = '';
             threads.forEach(t => {
-                const item = document.createElement('div');
-                item.className = 'thread-item' + (t.id === currentThreadId ? ' active' : '');
-                item.onclick = (e) => {
-                    if (e.target.classList.contains('thread-del-btn')) return;
-                    selectThread(t.id);
-                    closeMobileSidebar();
-                };
+                const threadId = String(t.id || '');
+                const threadTitle = String(t.title || 'Conversation');
+                const isPinned = Boolean(t.is_pinned);
 
-                item.innerHTML = `
-                    <span class="thread-title" title="${escapeHtml(t.title)}">${escapeHtml(t.title || 'Conversation')}</span>
-                    <button class="thread-del-btn" title="Delete conversation" onclick="deleteThread('${t.id}', event)">✕</button>
-                `;
+                const item = document.createElement('div');
+                item.className = 'thread-item' + (threadId === currentThreadId ? ' active' : '');
+                item.addEventListener('click', () => {
+                    selectThread(threadId);
+                    closeMobileSidebar();
+                });
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'thread-title';
+                titleSpan.title = threadTitle;
+                titleSpan.textContent = (isPinned ? '📌 ' : '') + threadTitle;
+                item.appendChild(titleSpan);
+
+                const actionsWrap = document.createElement('div');
+                actionsWrap.style.cssText = 'display:flex; align-items:center; gap:2px; flex-shrink:0;';
+
+                const pinBtn = document.createElement('button');
+                pinBtn.type = 'button';
+                pinBtn.className = 'thread-del-btn';
+                pinBtn.title = isPinned ? 'Unpin conversation' : 'Pin conversation';
+                pinBtn.textContent = isPinned ? '📍' : '📌';
+                pinBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    togglePinThread(threadId, !isPinned);
+                });
+                actionsWrap.appendChild(pinBtn);
+
+                const renBtn = document.createElement('button');
+                renBtn.type = 'button';
+                renBtn.className = 'thread-del-btn';
+                renBtn.title = 'Rename conversation';
+                renBtn.textContent = '✏️';
+                renBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    renameThreadPrompt(threadId, threadTitle);
+                });
+                actionsWrap.appendChild(renBtn);
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'thread-del-btn';
+                delBtn.title = 'Delete conversation';
+                delBtn.textContent = '✕';
+                delBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    deleteThread(threadId);
+                });
+                actionsWrap.appendChild(delBtn);
+
+                item.appendChild(actionsWrap);
                 threadsList.appendChild(item);
             });
         }
@@ -2869,17 +3114,43 @@
             await loadThreads();
         }
 
-        async function deleteThread(id, event) {
-            event.stopPropagation();
+        async function togglePinThread(id, nextPinnedState) {
+            try {
+                await apiFetch('/api/threads/pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thread_id: id, is_pinned: Boolean(nextPinnedState) })
+                });
+                await loadThreads();
+            } catch (e) {
+                console.error('Pin thread error:', e);
+            }
+        }
+
+        async function renameThreadPrompt(id, currentTitle) {
+            const nextTitle = prompt('Rename conversation:', currentTitle || '');
+            if (nextTitle === null) return;
+            const trimmed = nextTitle.trim();
+            if (!trimmed) return;
+            try {
+                await apiFetch('/api/threads/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thread_id: id, title: trimmed })
+                });
+                await loadThreads();
+            } catch (e) {
+                console.error('Rename thread error:', e);
+            }
+        }
+
+        async function deleteThread(id) {
             if (!confirm('Delete this conversation?')) return;
             try {
-                await fetch('/api/threads/delete', {
+                await apiFetch('/api/threads/delete', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ thread_id: id, session_token: authToken })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ thread_id: id })
                 });
                 if (currentThreadId === id) {
                     createNewChatSession();
@@ -2891,11 +3162,9 @@
         }
 
         async function loadThreadMessages(threadId) {
-            if (!authToken) return;
+            if (!isAuthenticated()) return;
             try {
-                const res = await fetch(`/api/threads/messages?thread_id=${encodeURIComponent(threadId)}`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
+                const res = await apiFetch(`/api/threads/messages?thread_id=${encodeURIComponent(threadId)}`);
                 const data = await res.json();
                 if (data.success && data.messages && data.messages.length > 0) {
                     welcomeHero.style.display = 'none';
@@ -2906,20 +3175,27 @@
                         } else {
                             let tools = [];
                             try { tools = m.tools_used ? JSON.parse(m.tools_used) : (m.tools || []); } catch(e){}
-                            
+
                             const turn = document.createElement('div');
                             turn.className = 'msg-turn agent';
-                            let toolsHtml = '';
-                            if (tools.length > 0) {
+                            const hdr = document.createElement('div');
+                            hdr.className = 'msg-header';
+                            hdr.innerHTML = '<span style="color: var(--accent-primary);">⚡ AURA Core</span>';
+                            turn.appendChild(hdr);
+
+                            if (Array.isArray(tools) && tools.length > 0) {
                                 tools.forEach(t => {
-                                    toolsHtml += `<div class="tool-badge-pill">⚙️ Executed ${escapeHtml(t.name || 'tool')}</div>`;
+                                    const badge = document.createElement('div');
+                                    badge.className = 'tool-badge-pill';
+                                    badge.textContent = `⚙️ Executed ${(t && t.name) ? t.name : 'tool'}`;
+                                    turn.appendChild(badge);
                                 });
                             }
-                            turn.innerHTML = `
-                                <div class="msg-header"><span style="color: var(--accent-primary);">⚡ AURA Core</span></div>
-                                ${toolsHtml}
-                                <div class="msg-bubble-agent">${renderMarkdown(m.content)}</div>
-                            `;
+
+                            const bubble = document.createElement('div');
+                            bubble.className = 'msg-bubble-agent';
+                            bubble.innerHTML = renderMarkdown(m.content);
+                            turn.appendChild(bubble);
                             chatStream.appendChild(turn);
                         }
                     });
@@ -2934,7 +3210,7 @@
             }
         }
 
-        // ---------------- Helpers & Markdown Parser ----------------
+        // ---------------- XSS-Hardened Helpers & Markdown Renderer ----------------
         function escapeHtml(str) {
             return String(str || '')
                 .replace(/&/g, '&amp;')
@@ -2944,70 +3220,142 @@
                 .replace(/'/g, '&#039;');
         }
 
+        function sanitizeSafeUrl(rawUrl) {
+            if (!rawUrl) return '';
+            const cleaned = String(rawUrl)
+                .replace(/[\x00-\x20\x7f]/g, '')
+                .trim();
+            if (!cleaned) return '';
+            // Block quotes, angle brackets, backticks, or protocol-relative URLs
+            if (/["'<>`\\]/.test(cleaned) || cleaned.startsWith('//')) {
+                return '';
+            }
+            // Allow strict local workspace media routes without traversal
+            if (cleaned.startsWith('/media/')) {
+                if (cleaned.includes('..') || !/^\/media\/[A-Za-z0-9._\/-]+$/.test(cleaned)) {
+                    return '';
+                }
+                return cleaned;
+            }
+            // Allow only http:// and https:// URLs
+            try {
+                const parsed = new URL(cleaned);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return parsed.href;
+                }
+            } catch (e) {
+                return '';
+            }
+            return '';
+        }
+
         function renderMarkdown(md) {
             if (!md) return '';
-            let html = md;
+            // Strip NUL bytes so placeholder tokens can never be forged by untrusted input
+            let text = String(md).replace(/\x00/g, '');
 
-            // Code blocks
-            html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                const langLabel = lang || 'code';
+            const codeBlocks = [];
+            const inlineCodes = [];
+            const safeEmbeds = [];
+
+            // 1. Extract fenced code blocks first (contents strictly HTML-escaped)
+            text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                const langLabel = escapeHtml(lang || 'code');
                 const escapedCode = escapeHtml(code.trim());
-                return `
-                    <div class="code-container">
-                        <div class="code-header">
-                            <span>${langLabel}</span>
-                            <button class="btn-copy-code" onclick="copyCode(this)">Copy</button>
-                        </div>
-                        <pre class="code-pre"><code>${escapedCode}</code></pre>
-                    </div>
-                `;
+                const idx = codeBlocks.length;
+                codeBlocks.push(
+                    `<div class="code-container">` +
+                        `<div class="code-header">` +
+                            `<span>${langLabel}</span>` +
+                            `<button type="button" class="btn-copy-code">Copy</button>` +
+                        `</div>` +
+                        `<pre class="code-pre"><code>${escapedCode}</code></pre>` +
+                    `</div>`
+                );
+                return `\x00AURA_CB_${idx}\x00`;
             });
 
-            // Inline code
-            html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; font-family:var(--font-code); font-size:12.5px;">$1</code>');
+            // 2. Extract inline code spans (contents strictly HTML-escaped)
+            text = text.replace(/`([^`\n]+)`/g, (match, code) => {
+                const idx = inlineCodes.length;
+                inlineCodes.push(
+                    `<code style="background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px; font-family:var(--font-code); font-size:12.5px;">${escapeHtml(code)}</code>`
+                );
+                return `\x00AURA_IC_${idx}\x00`;
+            });
 
-            // Headers
+            // 3. Extract Markdown media ![alt](url) only when URL passes strict scheme & attribute check
+            text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, rawSrc) => {
+                const safeSrc = sanitizeSafeUrl(rawSrc);
+                if (!safeSrc) {
+                    return escapeHtml(match);
+                }
+                const escapedSrc = escapeHtml(safeSrc);
+                const escapedAlt = escapeHtml(alt || 'Generated Media');
+                const idx = safeEmbeds.length;
+                if (/\.(mp4|webm)$/i.test(safeSrc) && safeSrc.startsWith('/media/')) {
+                    safeEmbeds.push(
+                        `<video controls src="${escapedSrc}" style="max-width:100%; border-radius:12px; margin-top:8px;"></video>`
+                    );
+                } else {
+                    safeEmbeds.push(
+                        `<div class="chat-image-card">` +
+                            `<a href="${escapedSrc}" target="_blank" rel="noopener noreferrer">` +
+                                `<img src="${escapedSrc}" alt="${escapedAlt}" class="chat-generated-image" loading="lazy">` +
+                            `</a>` +
+                            `<div class="chat-image-caption">` +
+                                `<span>✨ ${escapedAlt}</span>` +
+                                `<span style="font-size:11px; opacity:0.7;">(Click to view full size)</span>` +
+                            `</div>` +
+                        `</div>`
+                    );
+                }
+                return `\x00AURA_EM_${idx}\x00`;
+            });
+
+            // 4. Extract Markdown links [label](url) only when URL passes strict http(s)/media validation
+            text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label, rawHref) => {
+                const safeHref = sanitizeSafeUrl(rawHref);
+                if (!safeHref) {
+                    return escapeHtml(match);
+                }
+                const idx = safeEmbeds.length;
+                safeEmbeds.push(
+                    `<a href="${escapeHtml(safeHref)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`
+                );
+                return `\x00AURA_EM_${idx}\x00`;
+            });
+
+            // 5. Escape ALL remaining raw HTML (<script>, <img onerror=...>, <svg onload=...>, etc.)
+            let html = escapeHtml(text);
+
+            // 6. Safe structural Markdown transformations on already-escaped text
             html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
 
-            // Bold & Italics
             html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
-            // Lists
             html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
             html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+            html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
 
-            // Wrap bullet lists
-            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-
-            // Markdown Images: ![alt](url)
-            html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-                return `
-                    <div class="chat-image-card">
-                        <img src="${src}" alt="${escapeHtml(alt)}" class="chat-generated-image" loading="lazy" onclick="window.open('${src}', '_blank')">
-                        <div class="chat-image-caption">
-                            <span>✨ ${escapeHtml(alt || 'Generated Media')}</span>
-                            <span style="font-size:11px; opacity:0.7;">(Click to view full size)</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Markdown Links: [text](url)
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-            // Paragraphs / line breaks
             html = html.replace(/\n\n/g, '<p></p>');
             html = html.replace(/\n/g, '<br>');
+
+            // 7. Restore verified safe embeds, inline code, and code blocks
+            html = html.replace(/\x00AURA_EM_(\d+)\x00/g, (_, i) => safeEmbeds[Number(i)] || '');
+            html = html.replace(/\x00AURA_IC_(\d+)\x00/g, (_, i) => inlineCodes[Number(i)] || '');
+            html = html.replace(/\x00AURA_CB_(\d+)\x00/g, (_, i) => codeBlocks[Number(i)] || '');
 
             return html;
         }
 
         function copyCode(btn) {
-            const pre = btn.closest('.code-container').querySelector('code');
-            if (pre) {
+            const container = btn.closest('.code-container');
+            const pre = container ? container.querySelector('code') : null;
+            if (pre && navigator.clipboard) {
                 navigator.clipboard.writeText(pre.innerText).then(() => {
                     btn.innerText = 'Copied!';
                     setTimeout(() => { btn.innerText = 'Copy'; }, 1500);

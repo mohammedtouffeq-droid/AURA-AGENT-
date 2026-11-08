@@ -160,6 +160,43 @@ class CloudFluxDiffusionEngine:
     Direct high-speed neural diffusion image generator with multi-endpoint fallback.
     Fetches genuine high-resolution PNGs with zero stucking or timeouts.
     """
+    @classmethod
+    def generate_with_source(cls, prompt: str, width: int = 1024, height: int = 1024) -> Tuple[Optional[bytes], str]:
+        clean = re.sub(r"^(make|generate|draw|create|show|give me)\s+(an?\s+)?(image|picture|photo|illustration|drawing|art)\s+(of\s+)?", "", prompt.strip(), flags=re.I).strip()
+        if not clean:
+            clean = prompt.strip()
+
+        seed = int(time.time() * 1000) % 999999
+        candidate_urls = [
+            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean)}?nologo=true",
+            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean)}?width={width}&height={height}&seed={seed}&nologo=true",
+        ]
+        for url in candidate_urls:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    if resp.status == 200:
+                        data = resp.read(15 * 1024 * 1024)
+                        if len(data) > 2000:
+                            return data, "pollinations_cloud_diffusion"
+            except Exception:
+                continue
+
+        try:
+            from PIL import Image as _PILImage, ImageDraw
+            import io
+            img = _PILImage.new("RGB", (width, height), color=(15, 23, 42))
+            draw = ImageDraw.Draw(img)
+            for r in range(min(width, height) // 2, 0, -10):
+                alpha = int(255 * (1 - r / max(1, (min(width, height) // 2))))
+                draw.ellipse([width // 2 - r, height // 2 - r, width // 2 + r, height // 2 + r], outline=(30 + alpha // 4, 58 + alpha // 3, 138 + alpha // 2))
+            draw.text((width // 4, height // 2 - 20), f"AURA Studio: {clean[:40]}", fill=(240, 240, 255))
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue(), "pillow_procedural_fallback"
+        except Exception:
+            return None, "unavailable"
+
     @staticmethod
     def generate(prompt: str, width: int = 1024, height: int = 1024) -> Optional[bytes]:
         # Clean filler words for reliable prompt synthesis
@@ -279,7 +316,9 @@ class NativeSegmentationEngine:
     """
     @staticmethod
     def remove_background(input_path: Path, output_path: Path) -> Dict[str, Any]:
-        """Generates a transparent background PNG."""
+        """Generates a transparent background PNG via OpenCV GrabCut alpha extraction."""
+        if cv2 is None or np is None:
+            return {"success": False, "error": "opencv-python-headless and numpy are required for background removal."}
         if not input_path.exists():
             return {"success": False, "error": f"File not found: {input_path}"}
 
@@ -315,14 +354,17 @@ class NativeSegmentationEngine:
                 "success": True,
                 "output_path": str(output_path),
                 "resolution": f"{w}x{h}",
-                "transparent_alpha": True
+                "transparent_alpha": True,
+                "segmentation_method": "opencv_grabcut_alpha",
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
 
     @staticmethod
     def segment_objects(input_path: Path, output_path: Path) -> Dict[str, Any]:
-        """Detects primary object contours and draws SAM2-style segmentation masks."""
+        """Detects primary object contours using OpenCV Canny edges + contour bounding boxes."""
+        if cv2 is None or np is None:
+            return {"success": False, "error": "opencv-python-headless and numpy are required for object segmentation."}
         if not input_path.exists():
             return {"success": False, "error": f"File not found: {input_path}"}
 
@@ -375,38 +417,48 @@ class NativeVideoSynthesisEngine:
                        duration_sec: int = 5,
                        fps: int = 24,
                        camera_motion: str = "dolly_zoom",
-                       aspect_ratio: str = "16:9") -> Dict[str, Any]:
+                       aspect_ratio: str = "16:9",
+                       workspace_dir: Optional[Path] = None) -> Dict[str, Any]:
+        if cv2 is None or np is None:
+            return {"success": False, "error": "opencv-python-headless and numpy are required for MP4 video synthesis."}
         start_time = time.time()
+        duration_sec = max(1, min(int(duration_sec or 5), 15))
+        fps = max(8, min(int(fps or 24), 30))
         w, h = 1280, 720
         if aspect_ratio == "9:16":
             w, h = 720, 1280
         elif aspect_ratio == "1:1":
             w, h = 1024, 1024
 
+        target_videos_dir = ((Path(workspace_dir) / "generated_videos") if workspace_dir is not None else VIDEOS_DIR)
+        target_videos_dir.mkdir(parents=True, exist_ok=True)
         total_frames = duration_sec * fps
-        vid_id = hashlib.md5(f"{prompt}_{time.time()}".encode()).hexdigest()[:10]
-        output_mp4 = VIDEOS_DIR / f"aura_video_{vid_id}.mp4"
-        output_json = VIDEOS_DIR / f"aura_video_{vid_id}_remotion.json"
+        vid_id = hashlib.sha256(f"{prompt}_{time.time()}".encode()).hexdigest()[:10]
+        output_mp4 = target_videos_dir / f"aura_video_{vid_id}.mp4"
+        output_json = target_videos_dir / f"aura_video_{vid_id}_remotion.json"
 
-        # 1. Generate base keyframe image using Photoreal FLUX Prompt
         cinematic_prompt, neg_prompt = PhotorealCameraEngine.compose_photoreal_prompt(prompt, camera_style="cinematic")
-        keyframe_bytes = CloudFluxDiffusionEngine.generate(cinematic_prompt, width=w, height=h)
+        keyframe_bytes, keyframe_source = CloudFluxDiffusionEngine.generate_with_source(cinematic_prompt, width=w, height=h)
 
+        base_frame = None
         if keyframe_bytes:
             nparr = np.frombuffer(keyframe_bytes, np.uint8)
             base_frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        else:
-            # Fallback high-contrast procedural gradient keyframe
+            if base_frame is not None and base_frame.shape[:2] != (h, w):
+                base_frame = cv2.resize(base_frame, (w, h))
+        if base_frame is None:
+            keyframe_source = "procedural_gradient_keyframe"
             base_frame = np.zeros((h, w, 3), dtype=np.uint8)
             for y in range(h):
                 val = int((y / h) * 180)
                 base_frame[y, :] = (val // 2, val // 3, val)
-            cv2.putText(base_frame, f"AURA AI CINEMA: {prompt[:40]}", (50, h // 2),
+            cv2.putText(base_frame, f"AURA CINEMA: {prompt[:40]}", (50, h // 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2, cv2.LINE_AA)
 
-        # 2. Write 24fps MP4 video with smooth camera motion dynamics
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(str(output_mp4), fourcc, float(fps), (w, h))
+        if not writer.isOpened():
+            return {"success": False, "error": "OpenCV VideoWriter failed to open MP4 codec stream."}
 
         for frame_idx in range(total_frames):
             progress = frame_idx / total_frames  # 0.0 to 1.0
@@ -451,15 +503,21 @@ class NativeVideoSynthesisEngine:
         }
         output_json.write_text(json.dumps(remotion_spec, indent=2), encoding="utf-8")
 
+        file_size = output_mp4.stat().st_size if output_mp4.exists() else 0
+        if file_size <= 0:
+            return {"success": False, "error": "Rendered MP4 video file was empty."}
         return {
             "success": True,
             "video_path": str(output_mp4),
+            "web_url": f"/media/generated_videos/{output_mp4.name}",
             "remotion_spec_path": str(output_json),
+            "video_synthesis_method": "opencv_keyframe_camera_motion",
+            "keyframe_generator": keyframe_source,
             "duration_sec": duration_sec,
             "fps": fps,
             "total_frames": total_frames,
             "resolution": f"{w}x{h}",
-            "file_size_bytes": output_mp4.stat().st_size if output_mp4.exists() else 0,
+            "file_size_bytes": file_size,
             "render_time_sec": round(time.time() - start_time, 2)
         }
 
@@ -479,12 +537,20 @@ class AuraCinemaStudio:
         self.video_engine = NativeVideoSynthesisEngine()
 
     def get_status(self) -> Dict[str, Any]:
+        comfy_live = self.comfy.is_available()
+        cv2_ok = cv2 is not None
+        np_ok = np is not None
+        pil_ok = Image is not None
         return {
-            "studio": "AURA Cinema Studio AAA v2.0",
-            "comfyui_local_connected": self.comfy.is_available(),
+            "studio": "AURA Cinema Studio v2.0",
+            "comfyui_local_connected": comfy_live,
             "cloud_flux_ready": True,
-            "native_video_mp4_ready": True,
-            "opencv_cv2_installed": True,
+            "image_generator_backend": "comfyui_local" if comfy_live else "pollinations_cloud_with_pillow_fallback",
+            "native_video_mp4_ready": bool(cv2_ok and np_ok),
+            "video_generator_backend": "opencv_keyframe_camera_motion" if (cv2_ok and np_ok) else "unavailable",
+            "opencv_cv2_installed": cv2_ok,
+            "numpy_installed": np_ok,
+            "pillow_installed": pil_ok,
             "supported_cameras": list(PhotorealCameraEngine.PRESETS.keys())
         }
 
@@ -492,8 +558,9 @@ class AuraCinemaStudio:
                                prompt: str,
                                camera_style: str = "auto",
                                aspect_ratio: str = "1:1",
-                               reference_image_path: Optional[str] = None) -> Dict[str, Any]:
-        """Generates an ultra-photorealistic image according to human camera instructions."""
+                               reference_image_path: Optional[str] = None,
+                               workspace_dir: Optional[Path] = None) -> Dict[str, Any]:
+        """Generates an image and labels the actual generator backend used."""
         start = time.time()
         w, h = 1024, 1024
         if aspect_ratio == "16:9":
@@ -501,20 +568,20 @@ class AuraCinemaStudio:
         elif aspect_ratio == "9:16":
             w, h = 720, 1280
 
-        # Compose full AAA photoreal prompt
+        target_images_dir = ((Path(workspace_dir) / "generated_images") if workspace_dir is not None else IMAGES_DIR)
+        target_images_dir.mkdir(parents=True, exist_ok=True)
+
         full_prompt, neg = PhotorealCameraEngine.compose_photoreal_prompt(prompt, camera_style)
-        
-        # Cloud FLUX.1 rendering with prompt fallback
-        img_bytes = CloudFluxDiffusionEngine.generate(full_prompt, width=w, height=h)
+        img_bytes, generator_used = CloudFluxDiffusionEngine.generate_with_source(full_prompt, width=w, height=h)
         if not img_bytes:
-            img_bytes = CloudFluxDiffusionEngine.generate(prompt, width=w, height=h)
-        img_id = hashlib.md5(f"{full_prompt}_{time.time()}".encode()).hexdigest()[:10]
-        out_path = IMAGES_DIR / f"aura_cinema_{img_id}.png"
+            img_bytes, generator_used = CloudFluxDiffusionEngine.generate_with_source(prompt, width=w, height=h)
+
+        img_id = hashlib.sha256(f"{full_prompt}_{time.time()}".encode()).hexdigest()[:10]
+        out_path = target_images_dir / f"aura_cinema_{img_id}.png"
 
         if img_bytes:
             out_path.write_bytes(img_bytes)
-            # If camera style specified, apply subtle native optical tuning
-            if camera_style in ("iphone", "portrait", "cinematic"):
+            if cv2 is not None and np is not None and camera_style in ("iphone", "portrait", "cinematic"):
                 img_cv = cv2.imread(str(out_path))
                 if img_cv is not None:
                     if camera_style == "iphone":
@@ -524,27 +591,40 @@ class AuraCinemaStudio:
                     elif camera_style == "cinematic":
                         img_cv = self.styler.apply_cinematic_film(img_cv)
                     cv2.imwrite(str(out_path), img_cv)
-        else:
-            # Fallback procedural generation
+        elif cv2 is not None and np is not None:
+            generator_used = "opencv_procedural_fallback"
             blank = np.zeros((h, w, 3), dtype=np.uint8)
             cv2.putText(blank, f"AURA Cinema Image: {prompt[:30]}", (50, h // 2),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
             cv2.imwrite(str(out_path), blank)
+        else:
+            return {"success": False, "error": "Image generation failed: cloud endpoint unreachable and local Pillow/OpenCV unavailable."}
+
+        if not out_path.exists() or out_path.stat().st_size == 0:
+            return {"success": False, "error": "Generated image file was not written."}
 
         return {
             "success": True,
             "file_path": str(out_path),
             "web_url": f"/media/generated_images/{out_path.name}",
+            "generator_used": generator_used,
             "camera_style_applied": camera_style,
             "resolution": f"{w}x{h}",
             "full_prompt_used": full_prompt,
             "render_time_sec": round(time.time() - start, 2)
         }
 
-    def transform_existing_image(self, input_image_path: str, instruction: str) -> Dict[str, Any]:
-        """Transforms an existing user photo based on instructions (e.g. iPhone look, bokeh portrait)."""
+    def transform_existing_image(
+        self,
+        input_image_path: str,
+        instruction: str,
+        workspace_dir: Optional[Path] = None,
+    ) -> Dict[str, Any]:
+        """Transforms an existing workspace image using OpenCV grading curves."""
+        if cv2 is None or np is None:
+            return {"success": False, "error": "opencv-python-headless and numpy are required for image transformation."}
         inp_p = Path(input_image_path)
-        if not inp_p.exists():
+        if not inp_p.exists() or not inp_p.is_file():
             return {"success": False, "error": f"Image not found: {input_image_path}"}
 
         img_bgr = cv2.imread(str(inp_p))
@@ -565,15 +645,21 @@ class AuraCinemaStudio:
             styled = self.styler.apply_iphone_raw_look(img_bgr)
             style_name = "Natural Enhanced"
 
+        target_images_dir = ((Path(workspace_dir) / "generated_images") if workspace_dir is not None else IMAGES_DIR)
+        target_images_dir.mkdir(parents=True, exist_ok=True)
         out_name = f"transformed_{inp_p.stem}_{int(time.time())}.png"
-        out_path = IMAGES_DIR / out_name
-        cv2.imwrite(str(out_path), styled)
+        out_path = target_images_dir / out_name
+        ok = cv2.imwrite(str(out_path), styled)
+        if not ok or not out_path.exists():
+            return {"success": False, "error": "Failed to write transformed image"}
 
         return {
             "success": True,
             "original_path": str(inp_p),
             "output_path": str(out_path),
+            "web_url": f"/media/generated_images/{out_path.name}",
             "style_applied": style_name,
+            "transform_method": "opencv_optical_grading",
             "resolution": f"{styled.shape[1]}x{styled.shape[0]}"
         }
 
@@ -582,14 +668,16 @@ class AuraCinemaStudio:
                                duration_sec: int = 5,
                                fps: int = 24,
                                camera_motion: str = "dolly_zoom",
-                               aspect_ratio: str = "16:9") -> Dict[str, Any]:
-        """Renders an authentic, playable MP4 video file with camera dynamics."""
+                               aspect_ratio: str = "16:9",
+                               workspace_dir: Optional[Path] = None) -> Dict[str, Any]:
+        """Renders a 24fps MP4 video file with OpenCV camera motion dynamics."""
         return self.video_engine.generate_video(
             prompt=prompt,
             duration_sec=duration_sec,
             fps=fps,
             camera_motion=camera_motion,
-            aspect_ratio=aspect_ratio
+            aspect_ratio=aspect_ratio,
+            workspace_dir=workspace_dir,
         )
 
 

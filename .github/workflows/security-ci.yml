@@ -51,7 +51,7 @@ jobs:
 
       - name: Run Bandit Python AST Security Audit
         run: |
-          bandit -r aura_brain.py aura_web.py aura_agent.py aura_db.py -ll --skip B310,B314
+          bandit -r aura_brain.py aura_web.py aura_agent.py aura_db.py coderx_engine.py aura_permission_system.py aura_master_pipeline.py aura_10_systems.py -ll --skip B310,B314
 
       - name: Run pip-audit Dependency Vulnerability Scan
         run: |
@@ -77,11 +77,11 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
 
       - name: Run Web Server & API Security Suite
         run: |
-          python -m unittest test_aura_web.py
+          python -m unittest test_aura_web.py test_aura_security_p0_p1.py test_aura_audit_fixes.py test_endpoints_live.py test_aura_pipeline.py test_aura_adapters.py test_aura_agent.py test_aura_models.py
 
   certified-tests-windows:
     name: AURA Certified Integration Tests (Windows)
@@ -98,7 +98,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
 
       - name: Setup Portable Godot 4.3 Engine
         run: |
@@ -123,7 +123,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
 
       - name: Install Ubuntu 24.04 Headless GUI & Godot
         run: |

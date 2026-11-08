@@ -4,8 +4,19 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: python aura_web.py
+    disk:
+      name: aura-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: AURA_HOST
         value: 0.0.0.0
       - key: AURA_PORT
         value: 10000
+      - key: AURA_PERSISTENT_DB_PATH
+        value: /var/data/aura_workspace.db
+      - key: AURA_VAULT_SECRET
+        generateValue: true
+      - key: AURA_CSRF_SECRET
+        generateValue: true
+

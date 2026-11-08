@@ -114,6 +114,7 @@ class JoltPhysicsEngine:
         return {
             "success": True,
             "engine": "JoltPhysics-PhysX Architecture",
+            "implementation_mode": "python_reference_simulation",
             "total_steps": steps,
             "dt": dt,
             "bodies": {k: b.position.to_dict() for k, b in self.bodies.items()},
@@ -158,6 +159,7 @@ class RecastNavMeshRouter:
                 return {
                     "success": True,
                     "engine": "RecastNavigation-Detour",
+                    "implementation_mode": "grid_astar_router",
                     "path_found": True,
                     "waypoints_count": len(path),
                     "path": path,
@@ -283,6 +285,7 @@ class AgonesNetcodeSynchronizer:
         return {
             "success": True,
             "engine": "Google Agones + Netcode Quadtree",
+            "implementation_mode": "spatial_interest_simulation",
             "active_players": player_count,
             "tick_rate_hz": 60,
             "server_status": "DEDICATED_SERVER_HEALTHY",
@@ -340,6 +343,7 @@ class MLAgentsCarlaTrainer:
         return {
             "success": True,
             "engine": "Unity ML-Agents / CARLA Autonomous RL",
+            "implementation_mode": "kinematic_reward_simulation",
             "total_episodes": episodes,
             "best_reward": round(best_reward, 2),
             "convergence_status": "POLICY_IMPROVING",
@@ -358,8 +362,24 @@ class EngineProjectExporter:
     - WebGL 3D: High-tech self-contained browser 3D simulator HTML
     """
     @staticmethod
-    def export_project(project_name: str = "open_world_demo", target_engine: str = "all") -> Dict[str, Any]:
-        proj_dir = GAMES_DIR / project_name
+    def export_project(
+        project_name: str = "open_world_demo",
+        target_engine: str = "all",
+        workspace_dir: Optional[Path] = None,
+    ) -> Dict[str, Any]:
+        import html as _html
+        import re as _re
+        clean_name = (project_name or "").strip()
+        if not clean_name or not _re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", clean_name) or ".." in clean_name:
+            return {"success": False, "error": "Invalid project_name: only alphanumeric, '.', '_', '-' allowed (no path traversal)."}
+        base_games_dir = ((Path(workspace_dir) / "game_projects") if workspace_dir is not None else GAMES_DIR).resolve()
+        base_games_dir.mkdir(parents=True, exist_ok=True)
+        proj_dir = (base_games_dir / clean_name).resolve()
+        try:
+            proj_dir.relative_to(base_games_dir)
+        except ValueError:
+            return {"success": False, "error": "Project path escapes game_projects directory."}
+        project_name = _html.escape(clean_name)
         proj_dir.mkdir(parents=True, exist_ok=True)
         created_files = []
 
@@ -540,27 +560,28 @@ class AuraGameEngineStudio:
     def get_status(self) -> Dict[str, Any]:
         return {
             "studio": "AURA Game Engine Studio v2.0",
-            "ue5_production_bridge": "EpicGames LyraStarterGame + CitySample + Nakama",
-            "physics_engine": "JoltPhysics & PhysX Native Bus",
-            "navigation_engine": "Recast & Detour A* Router",
-            "open_world_engine": "Cesium & GTA City Generator",
-            "multiplayer_engine": "Google Agones + zpl-c/librg 100-Player Netcode",
-            "ai_training_engine": "Unity ML-Agents & CARLA Simulator",
+            "implementation_mode": "python_simulation_and_project_scaffolder",
+            "ue5_production_bridge": "Unreal 5 Python Level Script Scaffolder",
+            "physics_engine": "Python Rigid-Body Reference Simulator (Jolt/PhysX-inspired)",
+            "navigation_engine": "2D Grid A* Router (Recast-inspired)",
+            "open_world_engine": "Procedural City Block & Road Grid Generator",
+            "multiplayer_engine": "Spatial Area-of-Interest Simulation (100-player tick model)",
+            "ai_training_engine": "Kinematic Driving Policy Reward Simulator",
             "playable_3d_game": "workspace/game_projects/play_3d_gta_city.html",
-            "supported_exporters": ["Godot 4", "Unreal Engine 5", "Playable WebGL 3D"]
+            "supported_exporters": ["Godot 4 Scaffold", "Unreal Engine 5 Script", "Three.js WebGL Preview"]
         }
 
     def launch_playable_game(self) -> Dict[str, Any]:
-        import os
         game_html = GAMES_DIR / "play_3d_gta_city.html"
         if not game_html.exists():
-            from pathlib import Path
             src = Path("workspace/game_projects/play_3d_gta_city.html")
             if src.exists():
                 game_html.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-        if sys.platform == "win32":
+        launched = False
+        if sys.platform == "win32" and os.environ.get("AURA_ALLOW_PHYSICAL_GUI") == "1" and game_html.exists():
             os.startfile(str(game_html.resolve()))
-        return {"success": True, "launched": True, "path": str(game_html)}
+            launched = True
+        return {"success": game_html.exists(), "launched": launched, "path": str(game_html)}
 
 
 # Global Singleton Instance
