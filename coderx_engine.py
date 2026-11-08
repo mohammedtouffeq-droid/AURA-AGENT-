@@ -266,8 +266,7 @@ class CodebaseAstMapper:
 # ---------------------------------------------------------------------------------
 class AiderDiffPatcher:
     BLOCK_REGEX = re.compile(
-        r"<<<<<<< SEARCH\r?\n(.*?)\r?\n=======\r?\n(.*?)\r?\n>>>>>>> REPLACE",
-        re.DOTALL,
+        r"<<<<<<< SEARCH\r?\n((?:(?!=======\r?\n)[\s\S])*)\r?\n=======\r?\n((?:(?!>>>>>>> REPLACE)[\s\S])*)\r?\n>>>>>>> REPLACE"
     )
 
     @classmethod

@@ -12,6 +12,7 @@ Multi-tenant HTTP Workspace Server supporting:
 
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -161,7 +162,8 @@ CSP_HEADER_VALUE = (
 
 class AuraWebHandler(BaseHTTPRequestHandler):
     def _resolve_cors_origin(self) -> Optional[str]:
-        req_origin = (self.headers.get("Origin") or "").strip().rstrip("/")
+        raw_origin = self.headers.get("Origin") or ""
+        req_origin = re.sub(r"[\r\n]", "", raw_origin).strip().rstrip("/")
         if req_origin and req_origin in _get_allowed_origins():
             return req_origin
         return None

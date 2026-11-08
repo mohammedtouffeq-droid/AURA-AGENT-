@@ -998,8 +998,8 @@ def tool_read_webpage(url: str) -> Dict[str, Any]:
             raw_bytes = resp.read(MAX_WEBPAGE_READ_BYTES + 1)
             truncated = len(raw_bytes) > MAX_WEBPAGE_READ_BYTES
             html = raw_bytes[:MAX_WEBPAGE_READ_BYTES].decode("utf-8", errors="ignore")
-        cleaned = re.sub(r"<script.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-        cleaned = re.sub(r"<style.*?</style>", "", cleaned, flags=re.DOTALL | re.IGNORECASE)
+        cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?</script\s*>", "", html, flags=re.IGNORECASE)
+        cleaned = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>", "", cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r"<.*?>", " ", cleaned)
         cleaned = " ".join(cleaned.split())
         return {
@@ -1535,8 +1535,8 @@ def tool_markitdown_convert(filepath: str, format_type: str = "markdown", user_i
                 else:
                     md_text = f"# {title}\n\n*(Empty CSV)*"
             elif ext == ".html":
-                stripped = re.sub(r"<script.*?</script>", "", raw_text, flags=re.DOTALL | re.I)
-                stripped = re.sub(r"<style.*?</style>", "", stripped, flags=re.DOTALL | re.I)
+                stripped = re.sub(r"<script\b[^>]*>[\s\S]*?</script\s*>", "", raw_text, flags=re.I)
+                stripped = re.sub(r"<style\b[^>]*>[\s\S]*?</style\s*>", "", stripped, flags=re.I)
                 stripped = " ".join(re.sub(r"<.*?>", " ", stripped).split())
                 md_text = f"# {title}\n\n" + stripped
             else:

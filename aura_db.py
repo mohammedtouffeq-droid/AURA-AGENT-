@@ -340,10 +340,7 @@ def verify_password(password: str, stored_hash: str, salt: str) -> Tuple[bool, b
             is_valid = hmac.compare_digest(actual_derived.hex(), expected_hex)
             return is_valid, False
         return False, False
-    else:
-        legacy_hash = hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
-        is_valid = hmac.compare_digest(legacy_hash, stored_hash)
-        return is_valid, is_valid
+    return False, False
 
 
 # Database-backed rate limiter (with in-memory fallback if DB table not yet initialized)
