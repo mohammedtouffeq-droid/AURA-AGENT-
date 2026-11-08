@@ -784,14 +784,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/auth/login":
             username = str(body.get("username", ""))
             password = str(body.get("password", ""))
-            res = aura_db.login_user(username, password)
+            vault_backup = body.get("vault_backup") if isinstance(body.get("vault_backup"), dict) else None
+            res = aura_db.login_user(username, password, vault_backup=vault_backup)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
                 uid = int(res["user"]["id"])
                 _resolve_workspace_dir(uid)
                 # Only AFTER password authentication succeeds may the user sync their non-credential vault
-                if isinstance(body.get("vault_backup"), dict):
-                    aura_db.restore_user_vault(body["vault_backup"], authenticated_user_id=uid)
+                if vault_backup and not res.get("vault_restored"):
+                    aura_db.restore_user_vault(vault_backup, authenticated_user_id=uid)
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
                 res["user_vault"] = aura_db.export_user_vault(uid)
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]

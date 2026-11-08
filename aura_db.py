@@ -598,7 +598,7 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
         conn.close()
 
 
-def login_user(username: str, password: str) -> Dict[str, Any]:
+def login_user(username: str, password: str, vault_backup: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Invalid username or password."}
     username = username.strip().lower()
@@ -614,6 +614,23 @@ def login_user(username: str, password: str) -> Dict[str, Any]:
     )
     row = c.fetchone()
     if not row:
+        # Resilient multi-instance / serverless cold-start account restoration:
+        # If user is not yet present in this ephemeral container, but client presents a valid vault backup
+        if vault_backup and isinstance(vault_backup, dict):
+            vault_username = str(vault_backup.get("username", "")).strip().lower()
+            if vault_username == username:
+                conn.close()
+                reg_res = register_user(username, password)
+                if reg_res.get("success"):
+                    new_uid = reg_res["user"]["id"]
+                    restore_user_vault(vault_backup, authenticated_user_id=new_uid)
+                    clear_login_failures(username)
+                    return {
+                        "success": True,
+                        "token": reg_res["token"],
+                        "user": reg_res["user"],
+                        "vault_restored": True
+                    }
         conn.close()
         record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}

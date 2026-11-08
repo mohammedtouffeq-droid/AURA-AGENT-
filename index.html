@@ -2451,12 +2451,23 @@
 
             const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
 
+            const savedVaultRaw = localStorage.getItem('aura_user_vault_' + u);
+            let parsedVault = null;
+            if (savedVaultRaw) {
+                try { parsedVault = JSON.parse(savedVaultRaw); } catch(e) {}
+            }
+
+            const loginPayload = { username: u, password: p };
+            if (parsedVault && parsedVault.username === u) {
+                loginPayload.vault_backup = parsedVault;
+            }
+
             try {
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
+                    body: JSON.stringify(loginPayload)
                 });
                 const data = await safeParseJson(res);
                 if (data.storage_status) {
@@ -2600,6 +2611,9 @@
         }
 
         async function runOpenHandsTask() {
+            if (!isAuthenticated()) {
+                await continueAsGuest();
+            }
             const box = document.getElementById('ohResultBox');
             const task_prompt = document.getElementById('ohTaskPrompt').value.trim();
             const canvas_agent = document.getElementById('ohCanvasAgent').value;
@@ -2619,6 +2633,9 @@
         }
 
         async function runOpenInterpreterTask() {
+            if (!isAuthenticated()) {
+                await continueAsGuest();
+            }
             const box = document.getElementById('oiResultBox');
             const prompt = document.getElementById('oiPrompt').value.trim();
             const skill = document.getElementById('oiSkill').value;
@@ -2638,6 +2655,9 @@
         }
 
         async function runAutoGPTTask() {
+            if (!isAuthenticated()) {
+                await continueAsGuest();
+            }
             const box = document.getElementById('agResultBox');
             const goal = document.getElementById('agGoal').value.trim();
             const surface = document.getElementById('agSurface').value;
@@ -2657,6 +2677,9 @@
         }
 
         async function runTrinityPipeline() {
+            if (!isAuthenticated()) {
+                await continueAsGuest();
+            }
             const box = document.getElementById('trinityResultBox');
             const goal = document.getElementById('trinityGoalInput').value.trim();
             box.textContent = '⏳ Executing Connected A-to-Z Flagship Trinity Pipeline (Stage 1: AutoGPT ➔ Stage 2: OpenHands ➔ Stage 3: Open Interpreter)...';

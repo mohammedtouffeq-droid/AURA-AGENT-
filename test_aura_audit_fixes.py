@@ -311,5 +311,39 @@ class TestAuditRemediationP0P1(unittest.TestCase):
         r2 = brain.think_and_act("Open WhatsApp on laptop on my screen")
         self.assertTrue("whatsapp" in r2.lower())
 
+    def test_20_relogin_with_client_vault_on_cold_start(self):
+        # Multi-instance / Vercel ephemeral cold-start user restoration
+        import aura_db
+        reg = aura_db.register_user("cold_restore_tester", "SecretPass123!")
+        self.assertTrue(reg.get("success"))
+        uid = reg["user"]["id"]
+        vault = aura_db.export_user_vault(uid)
+
+        # Simulate ephemeral container reset (wipe user from SQLite)
+        conn = aura_db.get_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM users WHERE id = ?", (uid,))
+        c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (uid,))
+        conn.commit()
+        conn.close()
+
+        # Login without vault fails as user is wiped
+        fail_res = aura_db.login_user("cold_restore_tester", "SecretPass123!")
+        self.assertFalse(fail_res.get("success"))
+
+        # Login WITH vault automatically re-seeds and restores user
+        success_res = aura_db.login_user("cold_restore_tester", "SecretPass123!", vault_backup=vault)
+        self.assertTrue(success_res.get("success"))
+        self.assertTrue(success_res.get("vault_restored"))
+        self.assertEqual(success_res["user"]["username"], "cold_restore_tester")
+
+    def test_21_flagship_hub_endpoints_with_auth(self):
+        # Flagship hub endpoints accept authorized users
+        status, body, _ = self._api_call("/api/flagship/overview", "GET", token=self.token_a)
+        self.assertEqual(status, 200)
+        self.assertTrue(body.get("success"))
+        self.assertIn("openhands", body)
+        self.assertIn("autogpt", body)
+
 if __name__ == "__main__":
     unittest.main()
