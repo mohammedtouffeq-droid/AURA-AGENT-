@@ -19,7 +19,7 @@ import urllib.parse
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
@@ -166,6 +166,24 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             return req_origin
         return None
 
+    def _extract_request_path(self) -> Tuple[str, Dict[str, List[str]]]:
+        matched = (
+            self.headers.get("x-matched-path")
+            or self.headers.get("x-vercel-matched-path")
+            or self.headers.get("x-forwarded-uri")
+            or self.headers.get("x-original-url")
+            or ""
+        )
+        parsed_url = urllib.parse.urlparse(self.path)
+        query = urllib.parse.parse_qs(parsed_url.query)
+        if matched and matched.startswith("/api"):
+            path = urllib.parse.urlparse(matched).path
+        elif "__route__" in query:
+            path = query["__route__"][0]
+        else:
+            path = parsed_url.path
+        return path, query
+
     def _apply_security_and_cors_headers(self) -> None:
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
@@ -281,9 +299,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
 
     def _handle_get(self):
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
-        query = urllib.parse.parse_qs(parsed_url.query)
+        path, query = self._extract_request_path()
 
         if path in ("/", "/index.html", ""):
             html_file = ROOT / "index.html"
@@ -731,9 +747,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         else:
             body = {}
 
-        parsed_url = urllib.parse.urlparse(self.path)
-        path = parsed_url.path
-        query = urllib.parse.parse_qs(parsed_url.query)
+        path, query = self._extract_request_path()
 
         # 1. AUTH ROUTES (Vault restore NEVER runs prior to credential verification)
         if path == "/api/auth/register":
@@ -1673,7 +1687,10 @@ def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
 
 
 # Top-level serverless function entrypoint for Vercel (@vercel/python)
-handler = AuraWebHandler
+class handler(AuraWebHandler):
+    pass
+
+app = handler
 
 
 def run():

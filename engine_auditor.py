@@ -81,13 +81,27 @@ def _validate_github_url(url: str) -> str:
 def load_engine_specs(root: Path) -> tuple[EngineSpec, ...]:
     """Read and validate all entries from the submodule registry."""
     config_path = root / ".gitmodules"
-    if not config_path.is_file():
+    registry_text = ""
+    if config_path.is_file():
+        try:
+            registry_text = config_path.read_text(encoding="utf-8")
+        except (UnicodeError, OSError) as error:
+            raise ValueError(f"could not parse {config_path.name}: {error}") from error
+    elif root == PROJECT_ROOT:
+        from aura_agent import ALL_63_ENGINES
+        specs: list[EngineSpec] = []
+        for item in ALL_63_ENGINES:
+            key = item[0]
+            specs.append(EngineSpec(name=f"engines/{key}", path=f"engines/{key}", url=f"https://github.com/mohammedtouffeq-droid/{key}.git"))
+        return tuple(specs)
+    else:
         raise FileNotFoundError(f"missing submodule registry: {config_path}")
+
     parser = configparser.ConfigParser(interpolation=None, strict=True)
     parser.optionxform = str.lower
     try:
-        parser.read_string(config_path.read_text(encoding="utf-8"))
-    except (configparser.Error, UnicodeError) as error:
+        parser.read_string(registry_text)
+    except configparser.Error as error:
         raise ValueError(f"could not parse {config_path.name}: {error}") from error
     specs: list[EngineSpec] = []
     seen_paths: set[str] = set()

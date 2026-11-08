@@ -1884,7 +1884,7 @@
             try {
                 const response = await apiFetch('/api/settings');
                 if (!response.ok) return;
-                const data = await response.json();
+                const data = await safeParseJson(response);
                 const settings = data.brain_settings || {};
                 const prefs = data.user_preferences || {};
                 if (prefs.execution_mode) {
@@ -1947,7 +1947,7 @@
             modelSettingsOverlay.style.display = 'flex';
             try {
                 const response = await apiFetch('/api/settings');
-                const data = await response.json();
+                const data = await safeParseJson(response);
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not load settings.');
                 modelChoice.innerHTML = '';
                 (data.providers.gemini.models || []).forEach(model => {
@@ -2002,7 +2002,7 @@
                         }
                     })
                 });
-                const data = await response.json();
+                const data = await safeParseJson(response);
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not save model settings.');
                 activeExecutionMode = execPolicy;
                 const labels = { gemini: 'Gemini', ollama: 'Ollama' };
