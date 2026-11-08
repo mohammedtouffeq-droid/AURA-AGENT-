@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "git": {
-    "submodules": false
-  },
   "builds": [
     {
       "src": "aura_web.py",
