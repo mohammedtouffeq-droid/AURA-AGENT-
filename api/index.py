@@ -10,5 +10,3 @@ from aura_web import AuraWebHandler
 
 class handler(AuraWebHandler):
     pass
-
-app = handler

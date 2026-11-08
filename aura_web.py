@@ -161,6 +161,12 @@ CSP_HEADER_VALUE = (
 
 
 class AuraWebHandler(BaseHTTPRequestHandler):
+    def log_message(self, format: str, *args: Any) -> None:
+        first_arg = str(args[0]) if args else ""
+        if any(noisy in first_arg for noisy in ("/api/permission/pending", "/favicon.ico")):
+            return
+        super().log_message(format, *args)
+
     def _resolve_cors_origin(self) -> Optional[str]:
         raw_origin = self.headers.get("Origin") or ""
         req_origin = re.sub(r"[\r\n]", "", raw_origin).strip().rstrip("/")
