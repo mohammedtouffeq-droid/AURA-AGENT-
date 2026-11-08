@@ -2,8 +2,8 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/index"
+      "source": "/api/(.*)",
+      "destination": "/api/index?__aura_path__=/api/$1"
     },
     {
       "source": "/((?!api/).*)",

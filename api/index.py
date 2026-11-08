@@ -1,6 +1,7 @@
 import io
 import sys
 import traceback
+import urllib.parse
 from pathlib import Path
 
 # Add project root directory to path so aura modules resolve cleanly
@@ -25,10 +26,24 @@ def app(environ, start_response):
         query = environ.get("QUERY_STRING", "")
         full_path = f"{path}?{query}" if query else path
 
-        # If Vercel rewrote the path, prefer the original matched path
-        matched = environ.get("HTTP_X_MATCHED_PATH") or environ.get("HTTP_X_FORWARDED_URI") or environ.get("HTTP_X_ORIGINAL_URL")
-        if matched and matched.startswith("/api"):
-            full_path = matched
+        # 1. Check __aura_path__ query param from vercel.json rewrite
+        parsed = urllib.parse.parse_qs(query)
+        if "__aura_path__" in parsed:
+            real_path = parsed["__aura_path__"][0]
+            remaining = [f"{k}={v}" for k, vals in parsed.items() if k != "__aura_path__" for v in vals]
+            clean_q = "&".join(remaining)
+            full_path = f"{real_path}?{clean_q}" if clean_q else real_path
+        # 2. Check HTTP_X_FORWARDED_URI or REQUEST_URI or RAW_URI
+        elif environ.get("HTTP_X_FORWARDED_URI") and environ["HTTP_X_FORWARDED_URI"].startswith("/api"):
+            full_path = environ["HTTP_X_FORWARDED_URI"]
+        elif environ.get("REQUEST_URI") and environ["REQUEST_URI"].startswith("/api"):
+            full_path = environ["REQUEST_URI"]
+        elif environ.get("RAW_URI") and environ["RAW_URI"].startswith("/api"):
+            full_path = environ["RAW_URI"]
+        elif environ.get("HTTP_X_ORIGINAL_URL") and environ["HTTP_X_ORIGINAL_URL"].startswith("/api"):
+            full_path = environ["HTTP_X_ORIGINAL_URL"]
+        elif path.startswith("/api") and path not in ("/api/index", "/api/index.py"):
+            full_path = f"{path}?{query}" if query else path
 
         lines = [f"{method} {full_path} HTTP/1.1"]
         for key, val in environ.items():
