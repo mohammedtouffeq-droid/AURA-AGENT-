@@ -99,10 +99,10 @@ def _selected_brain_settings(user: Dict[str, Any]) -> Dict[str, str]:
     )
     model = user_brain.get(
         "active_model",
-        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-flash-lite-latest"),
+        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-3.5-flash-lite"),
     )
     if not AuraSettingsManager.validate_model_selection(provider, model):
-        provider, model = "gemini", "gemini-flash-lite-latest"
+        provider, model = "gemini", "gemini-3.5-flash-lite"
     return {"active_provider": provider, "active_model": model}
 
 
@@ -115,6 +115,9 @@ def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
         except (ValueError, TypeError):
             brain.user_id = None
         brain.user_role = str(user.get("role") or "user")
+        user_brain = (user.get("settings") or {}).get("brain_settings") or {}
+        if user_brain.get("api_key"):
+            brain.api_key = str(user_brain["api_key"]).strip()
         prefs = (user.get("settings") or {}).get("preferences") or {}
         if "temperature" in prefs:
             brain.temperature = _clamp_float(prefs.get("temperature"), 0.3, 0.0, 1.0)

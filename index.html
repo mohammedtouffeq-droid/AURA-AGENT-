@@ -1971,7 +1971,7 @@
                 const prefs = data.user_preferences || {};
                 modelProvider.value = settings.active_provider || 'gemini';
                 if (modelProvider.value === 'ollama') ollamaModel.value = settings.active_model || '';
-                else modelChoice.value = settings.active_model || 'gemini-flash-lite-latest';
+                else modelChoice.value = settings.active_model || 'gemini-3.5-flash-lite';
                 if (modelTemperature) {
                     modelTemperature.value = (prefs.temperature !== undefined) ? prefs.temperature : 0.3;
                 }
