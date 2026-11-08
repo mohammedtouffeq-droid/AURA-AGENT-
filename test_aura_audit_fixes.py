@@ -314,7 +314,8 @@ class TestAuditRemediationP0P1(unittest.TestCase):
     def test_20_relogin_with_client_vault_on_cold_start(self):
         # Multi-instance / Vercel ephemeral cold-start user restoration
         import aura_db
-        reg = aura_db.register_user("cold_restore_tester", "SecretPass123!")
+        uname = f"cold_res_{secrets.token_hex(4)}"
+        reg = aura_db.register_user(uname, "SecretPass123!")
         self.assertTrue(reg.get("success"))
         uid = reg["user"]["id"]
         vault = aura_db.export_user_vault(uid)
@@ -328,14 +329,14 @@ class TestAuditRemediationP0P1(unittest.TestCase):
         conn.close()
 
         # Login without vault fails as user is wiped
-        fail_res = aura_db.login_user("cold_restore_tester", "SecretPass123!")
+        fail_res = aura_db.login_user(uname, "SecretPass123!")
         self.assertFalse(fail_res.get("success"))
 
         # Login WITH vault automatically re-seeds and restores user
-        success_res = aura_db.login_user("cold_restore_tester", "SecretPass123!", vault_backup=vault)
+        success_res = aura_db.login_user(uname, "SecretPass123!", vault_backup=vault)
         self.assertTrue(success_res.get("success"))
         self.assertTrue(success_res.get("vault_restored"))
-        self.assertEqual(success_res["user"]["username"], "cold_restore_tester")
+        self.assertEqual(success_res["user"]["username"], uname)
 
     def test_21_flagship_hub_endpoints_with_auth(self):
         # Flagship hub endpoints accept authorized users
