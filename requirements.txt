@@ -1,7 +1,7 @@
 # AURA AI Agent Core Dependencies
 fastapi>=0.115.0
 uvicorn>=0.30.6
-pydantic>=2.9.2
+pydantic>=2.14.3
 requests>=2.32.3
 python-dotenv>=1.2.3
 pillow>=10.4.0
