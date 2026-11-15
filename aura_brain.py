@@ -43,6 +43,30 @@ import base64
 ENV = load_env()
 _DEFAULT_GEMINI_KEY = base64.b64decode("QVEuQWI4Uk42S2pFTi04cjBpWlRVdzl1dktwLTI2MFhvbG9sd01oX2JOeE94VTlPUE1vTmc=").decode("utf-8")
 API_KEY = ENV.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "") or _DEFAULT_GEMINI_KEY
+
+
+def _build_api_key_pool() -> List[str]:
+    """Collects comma-separated Gemini keys (GEMINI_API_KEYS / AURA_GEMINI_KEYS) + primary fallback keys."""
+    raw_multi = (
+        ENV.get("GEMINI_API_KEYS", "")
+        or os.environ.get("GEMINI_API_KEYS", "")
+        or ENV.get("AURA_GEMINI_KEYS", "")
+        or os.environ.get("AURA_GEMINI_KEYS", "")
+    )
+    candidates: List[str] = []
+    if API_KEY:
+        candidates.append(API_KEY.strip())
+    if raw_multi:
+        for item in raw_multi.split(","):
+            k = item.strip()
+            if k and k not in candidates:
+                candidates.append(k)
+    if _DEFAULT_GEMINI_KEY and _DEFAULT_GEMINI_KEY not in candidates:
+        candidates.append(_DEFAULT_GEMINI_KEY)
+    return candidates
+
+
+API_KEY_POOL = _build_api_key_pool()
 MODEL_NAME = ENV.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
 import ipaddress
@@ -3470,30 +3494,38 @@ The unified pipeline processed your instruction across all core engines (**Time:
             lower = lower_q.strip()
             turn_count = len([c for c in contents if c.get("role") == "user"])
             has_prior_replies = any(c.get("role") == "model" for c in contents)
-            if turn_count > 1 or has_prior_replies:
-                if any(w in lower for w in ["hi", "hello", "hey", "sup", "wassup"]):
-                    reply = "Hello! I heard you. What's on your mind or what would you like to work on next?"
-                elif any(w in lower for w in ["sad", "upset", "angry", "frustrated", "depressed", "problem"]):
-                    reply = "I'm really sorry if things felt frustrating. I'm right here with you—tell me what you need fixed and I will get straight to work."
-                elif any(w in lower for w in ["thanks", "thank you", "shukriya", "dhanyawad"]):
-                    reply = "You're very welcome! I'm here whenever you need anything."
-                elif any(w in lower for w in ["bye", "goodbye"]):
-                    reply = "See you soon! Your workspace and progress are completely saved."
-                else:
-                    reply = f"Understood. You said: '{user_text.strip()}'. I am online and ready to assist with code, tasks, or answers."
+            is_short_greeting = len(lower.split()) <= 5 and bool(
+                re.search(r"\b(hi|hello|hey|yoo|yo|sup|wassup|namaste|salam)\b", lower)
+            )
+            is_creator_query = bool(
+                re.search(r"\b(mohd ahmed|ahmed|lyberty|creator|founder|kisne banaya|developer ka naam|built you)\b", lower)
+            )
+            if is_creator_query:
+                reply = "AURA Core was architected and built by **Mohd Ahmed** (Founder of **Lyberty** / AURA Technologies Inc.). Main poori tarah aapke current session ke context par synced hoon — bataiye bhai, abhi kya banana ya fix karna hai?"
+            elif is_short_greeting and not (turn_count > 1 or has_prior_replies):
+                reply = "Hey! What's up? I'm AURA, your AI workspace copilot. How can I help you today?"
+            elif is_short_greeting:
+                reply = "Haan bhai, online hoon! Batao pichli baat par aage kya karna hai?"
+            elif re.search(r"\b(sad|upset|angry|frustrated|depressed|problem|bigad|maza)\b", lower):
+                reply = "Sorry bhai agar abhi flow tuta! Ab main seedha aapke topic aur workspace context par focus kar raha hoon — batao agla step kya lena hai?"
+            elif re.search(r"\b(thanks|thank you|shukriya|dhanyawad)\b", lower):
+                reply = "You're very welcome! Batao aur kya build ya debug karna hai?"
+            elif re.search(r"\b(bye|goodbye|cya|see you)\b", lower):
+                reply = "Catch you later! Your chat history and workspace are saved cleanly."
+            elif re.search(r"\b(who are you|what are you|who r u|kaun ho)\b", lower):
+                reply = "I am AURA Core, created by Mohd Ahmed (Lyberty / AURA Technologies Inc.) — your autonomous coding, game engine, and developer workspace copilot."
             else:
-                if any(w in lower for w in ["hi", "hello", "hey", "yoo", "yo", "sup", "wassup", "whats up", "what's up", "namaste", "salam"]):
-                    reply = "Hey! What's up? I'm AURA, your AI workspace copilot. How can I help you today?"
-                elif any(w in lower for w in ["how are you", "kaise ho", "kaisa hai", "how r u"]):
-                    reply = "I'm doing great and running at peak performance! All systems are online and ready. What are we building or exploring today?"
-                elif any(w in lower for w in ["who are you", "what are you", "who r u", "kaun ho"]):
-                    reply = "I am AURA, your full-stack AI developer assistant and workspace copilot. I can write and debug code, browse the web, execute terminal tasks, generate media, build 3D games, and help you automate your work."
-                elif any(w in lower for w in ["bye", "goodbye", "cya", "see you"]):
-                    reply = "Catch you later! Reach out whenever you need anything built or solved."
-                elif any(w in lower for w in ["thanks", "thank you", "shukriya", "dhanyawad"]):
-                    reply = "You're very welcome! Let me know if you need anything else."
-                else:
-                    reply = "I'm ready to assist with coding, debugging, browser automation, 3D game engines, or system operations. What would you like to build or run?" 
+                recent_topics = []
+                for item in contents[-6:]:
+                    for part in item.get("parts", []):
+                        txt = str(part.get("text", "") or "").strip()
+                        if txt and not txt.startswith("Notice:"):
+                            recent_topics.append(txt[:90].replace("\n", " "))
+                topic_hint = f" (Current thread topic: *\"{recent_topics[-2][:70]}\"*)" if len(recent_topics) >= 2 else ""
+                reply = (
+                    f"Abhi live Gemini model request temporarily slow/rate-limited ho gayi thi{topic_hint}, lekin aapka session aur chat history 100% intact hai. "
+                    "Ek baar message phir bhej do ya direct commands (`/help`, `/files`, `/code`, `/calc`, `/nexus`) turant chala sakte ho!"
+                )
 
             return {
                 "candidates": [{
@@ -3530,53 +3562,168 @@ The unified pipeline processed your instruction across all core engines (**Time:
                             reply += f"\n\n![Generated Video]({web_url})\n"
         return reply
 
+    @staticmethod
+    def _compact_contents_for_api(contents: List[Dict[str, Any]], strip_tools_history: bool = False) -> List[Dict[str, Any]]:
+        """Keeps Gemini multi-turn payloads fast, alternating-role, and within latency budget."""
+        trimmed = list(contents[-18:]) if len(contents) > 18 else list(contents)
+        cleaned: List[Dict[str, Any]] = []
+        total = len(trimmed)
+        for idx, item in enumerate(trimmed):
+            role = item.get("role", "user")
+            raw_parts = item.get("parts", []) if isinstance(item.get("parts"), list) else []
+            parts_out = []
+            max_chars = 3500 if idx >= total - 4 else 1100
+            for p in raw_parts:
+                if not isinstance(p, dict):
+                    continue
+                if "text" in p:
+                    txt = str(p.get("text") or "").strip()
+                    if not txt:
+                        continue
+                    if role == "model" and (txt.startswith("Understood. You said:") or txt.startswith("Hello! I heard you.")):
+                        continue
+                    if len(txt) > max_chars:
+                        txt = txt[:max_chars] + "\n...[trimmed]"
+                    parts_out.append({"text": txt})
+                elif not strip_tools_history:
+                    parts_out.append(p)
+            if not parts_out:
+                continue
+            can_merge_text = (
+                cleaned
+                and cleaned[-1]["role"] == role
+                and all("text" in x for x in cleaned[-1]["parts"])
+                and all("text" in x for x in parts_out)
+            )
+            if can_merge_text:
+                cleaned[-1]["parts"][0]["text"] += "\n" + "\n".join(x["text"] for x in parts_out)
+            else:
+                cleaned.append({"role": role, "parts": parts_out})
+        if not cleaned:
+            return [{"role": "user", "parts": [{"text": "Hello"}]}]
+        return cleaned
+
+    @staticmethod
+    def _should_include_tools_for_contents(contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]]) -> bool:
+        """
+        Attaching 30+ JSON tool schemas slows multi-turn Gemini calls from ~1.3s to ~11s.
+        Include full tools only when the latest turn involves an action/tool workflow or an
+        active tool-response loop; run pure conversational turns cleanly at ~1.3s.
+        """
+        if not tools:
+            return False
+        if contents:
+            last_parts = contents[-1].get("parts", [])
+            if any("functionResponse" in p or "functionCall" in p for p in last_parts if isinstance(p, dict)):
+                return True
+            last_text = " ".join(str(p.get("text", "")) for p in last_parts if isinstance(p, dict)).lower()
+        else:
+            last_text = ""
+
+        action_pattern = re.compile(
+            r"\b(brightness|dim|volume|mute|open|launch|khol|kholo|kholdo|whatsapp|chatgpt|chat\s*gpt|chart\s*gpt|"
+            r"youtube|chrome|spotify|gmail|github|weather|temperature|forecast|news|headline|game|cyberarena|"
+            r"cybercraft|godot|arena|banao|bana|file|folder|workspace|read|write|create|save|delete|list|"
+            r"memory|remember|recall|search|browse|scrape|url|http|ram|storage|disk|ssd|cpu|health|specs|"
+            r"terminal|shell|command|powershell|run|execute|code|script|python|bug|fix|patch|refactor|nexus|"
+            r"trinetra|gitkitty|ashby|learnos|form2fact|orvyn|spare-gpu|payguard|anonymous|image|picture|photo|"
+            r"draw|generate|poster|video|screen|screenshot|click|scroll|adb|phone|pipeline|omnipipeline|"
+            r"openhands|autogpt|interpreter|calculat|report)\b"
+        )
+        return bool(action_pattern.search(last_text))
+
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         if self.provider == "ollama":
             return self._call_ollama(contents, tools)
-        if not self.api_key or self.api_key.startswith("YOUR_"):
+        key_pool: List[str] = []
+        for candidate_key in [self.api_key] + API_KEY_POOL:
+            k = (candidate_key or "").strip()
+            if k and not k.startswith("YOUR_") and k not in key_pool:
+                key_pool.append(k)
+        if not key_pool:
             return self._offline_autonomous_dispatch(contents, tools)
 
-        payload = {
-            "contents": contents,
-            "generationConfig": {"temperature": float(self.temperature)},
-            "systemInstruction": {
-                "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have native tools including tool_client_bridge_action (adjust browser display brightness, audio volume/mute, or open WhatsApp Web, YouTube, Gmail, GitHub, VS Code, Calculator, or URLs without permission errors), workspace file tools (tool_write_file, tool_read_file, tool_workspace_list, tool_coderx_build), live news, live weather, memory vault, and Sovereign 10-Nexus engines. Never claim permission denied when tool_client_bridge_action can fulfill the user's request cleanly. When the user engages in casual conversation or questions, reply naturally, clearly, and helpfully."}]
-            }
+        compacted = self._compact_contents_for_api(contents, strip_tools_history=False)
+        include_tools = self._should_include_tools_for_contents(compacted, tools)
+
+        sys_instruction = {
+            "parts": [{
+                "text": (
+                    "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant "
+                    "created and architected by Mohd Ahmed (Founder of Lyberty / AURA Technologies Inc.). "
+                    "When asked who built, coded, or created you, proudly credit Mohd Ahmed (Lyberty). "
+                    "You communicate with natural warmth, intelligence, and conversational continuity in English or Hinglish as appropriate. "
+                    "Always read the full conversation history carefully and stay directly on topic—never parrot the user or repeat generic greetings. "
+                    "You have native tools including tool_client_bridge_action (display brightness, audio volume/mute, or opening apps/URLs cleanly), "
+                    "workspace file tools (tool_write_file, tool_read_file, tool_workspace_list, tool_coderx_build), live news/weather, memory vault, "
+                    "Godot 4 game builder, and Sovereign 10-Nexus engines."
+                )
+            }]
         }
-        if tools:
-            payload["tools"] = tools
+
+        def _make_payload(use_contents: List[Dict[str, Any]], use_tools: bool) -> Dict[str, Any]:
+            pl: Dict[str, Any] = {
+                "contents": use_contents,
+                "generationConfig": {"temperature": float(self.temperature)},
+                "systemInstruction": sys_instruction,
+            }
+            if use_tools and tools:
+                pl["tools"] = tools
+            return pl
 
         deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite"}
         primary_model = "gemini-3.5-flash-lite" if self.model in deprecated_or_slow else self.model
-        candidate_models = [primary_model, "gemini-3.5-flash-lite", "gemini-flash-lite-latest"]
-        models_to_try = []
-        for m in candidate_models:
+        models_to_try: List[str] = []
+        for m in (primary_model, "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
             if m and m not in models_to_try:
                 models_to_try.append(m)
         models_to_try = models_to_try[:2]
 
-        deadline = time.monotonic() + 6.5
-        for mod in models_to_try:
-            remaining = deadline - time.monotonic()
-            if remaining < 1.8:
-                break
-            attempt_timeout = max(2.0, min(4.8, remaining))
+        def _post_gemini(mod: str, api_key_val: str, pl: Dict[str, Any], timeout_s: float) -> Dict[str, Any]:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent"
-            try:
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={
-                        "Content-Type": "application/json",
-                        "x-goog-api-key": self.api_key,
-                    },
-                    method="POST"
-                )
-                with urllib.request.urlopen(req, timeout=attempt_timeout) as resp:
-                    return json.loads(resp.read().decode())
-            except Exception as e:
-                print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
-                continue
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(pl).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": api_key_val,
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+                return json.loads(resp.read().decode())
+
+        total_budget = 11.5 if include_tools else 8.0
+        deadline = time.monotonic() + total_budget
+        primary_payload = _make_payload(compacted, use_tools=include_tools)
+
+        for mod in models_to_try:
+            for k_val in key_pool:
+                remaining = deadline - time.monotonic()
+                if remaining < 1.8:
+                    break
+                attempt_timeout = max(2.2, min(9.5 if include_tools else 6.0, remaining))
+                try:
+                    return _post_gemini(mod, k_val, primary_payload, attempt_timeout)
+                except urllib.error.HTTPError as e:
+                    print(f"[*] AURA Gemini live HTTP {e.code} fallback for {mod}: {e}")
+                    if e.code in (429, 403):
+                        continue  # Immediately try next API key in pool
+                    break  # Non-quota error -> try next model
+                except Exception as e:
+                    print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
+                    break  # Timeout/network -> move to next model or fast salvage
+
+        # Fast tool-free conversational salvage call (~1.3s) so multi-turn memory chats NEVER degrade into robotic offline lines
+        if include_tools:
+            salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
+            salvage_payload = _make_payload(salvage_contents, use_tools=False)
+            for mod in ("gemini-flash-lite-latest", "gemini-3.5-flash-lite"):
+                for k_val in key_pool[:2]:
+                    try:
+                        return _post_gemini(mod, k_val, salvage_payload, 4.5)
+                    except Exception:
+                        continue
 
         return self._offline_autonomous_dispatch(contents, tools)
 

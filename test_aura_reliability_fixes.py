@@ -350,3 +350,80 @@ def test_vercel_wsgi_strips_hop_by_hop_headers_and_sets_content_length_on_stream
     assert int(captured["headers"]["content-length"]) == len(payload)
     assert b'"type": "done"' in payload
     assert b"81" in payload
+
+
+def test_no_robotic_understood_or_substring_hi_regression_and_key_rotation(tmp_path: Path, monkeypatch):
+    import io
+    import urllib.error
+    from unittest.mock import patch
+
+    brain = aura_brain.AuraBrain()
+    history = [
+        {"role": "user", "parts": [{"text": "CyberArena3D game banao"}]},
+        {"role": "model", "parts": [{"text": "CyberArena3D ready!"}]},
+    ]
+    for msg in [
+        "bhai mai hi hu mohd ahmed maine tere ko banaya hai",
+        "yo kya hua ?",
+        "bhai ram aur storage chahiye batao",
+        "ham kis cheez par baat kar rahe the topic change kar diya",
+    ]:
+        out = brain._offline_autonomous_dispatch(
+            history + [{"role": "user", "parts": [{"text": msg}]}],
+            aura_brain.GEMINI_TOOLS_DECLARATION,
+        )
+        txt = out["candidates"][0]["content"]["parts"][0]["text"]
+        assert "Understood. You said:" not in txt
+        assert "Hello! I heard you." not in txt
+
+    # Pure conversational turns skip 30+ tool schemas (~1.3s fast Gemini path) while action prompts keep tools
+    assert brain._should_include_tools_for_contents(
+        [{"role": "user", "parts": [{"text": "yo kya hua bhai mai hi hu mohd ahmed"}]}],
+        aura_brain.GEMINI_TOOLS_DECLARATION,
+    ) is False
+    assert brain._should_include_tools_for_contents(
+        [{"role": "user", "parts": [{"text": "chat gpt khol aur brightness bada"}]}],
+        aura_brain.GEMINI_TOOLS_DECLARATION,
+    ) is True
+
+    # Verify multi-key failover rotates cleanly when first API key returns HTTP 429
+    monkeypatch.setattr(aura_brain, "API_KEY_POOL", ["key-quota-hit", "key-healthy-2"])
+    brain.api_key = "key-quota-hit"
+    calls = []
+
+    class _MockResp:
+        def __init__(self, payload_dict):
+            self._b = json.dumps(payload_dict).encode("utf-8")
+        def read(self):
+            return self._b
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+
+    def fake_urlopen(req, timeout=10):
+        used_key = req.headers.get("X-goog-api-key") or req.headers.get("x-goog-api-key")
+        calls.append(used_key)
+        if used_key == "key-quota-hit":
+            raise urllib.error.HTTPError(req.full_url, 429, "Quota exceeded", {}, io.BytesIO(b"quota"))
+        return _MockResp({"candidates": [{"content": {"role": "model", "parts": [{"text": "Rotated OK!"}]}}]})
+
+    with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        res = brain._call_api([{"role": "user", "parts": [{"text": "bhai kya haal"}]}], aura_brain.GEMINI_TOOLS_DECLARATION)
+    assert res["candidates"][0]["content"]["parts"][0]["text"] == "Rotated OK!"
+    assert "key-quota-hit" in calls and "key-healthy-2" in calls
+
+    # _build_conversation_history compacts & strips poisoned canned strings
+    monkeypatch.setattr(aura_db, "DB_PATH", tmp_path / "hist_clean.db")
+    aura_db.init_database()
+    reg = aura_db.register_user("hist_clean_" + os.urandom(3).hex(), "HistPass!999")
+    uid = reg["user"]["id"]
+    tid = "th_clean_1"
+    aura_db.save_message(uid, tid, "user", "Hello creator")
+    aura_db.save_message(uid, tid, "assistant", "Understood. You said: 'Hello creator'. I am online.")
+    aura_db.save_message(uid, tid, "user", "Second question")
+    aura_db.save_message(uid, tid, "user", "Latest question")
+    conv = aura_web._build_conversation_history(uid, tid)
+    assert all("Understood. You said:" not in str(c) for c in conv)
+    assert len(conv) == 1 and conv[0]["role"] == "user"
+    assert "Hello creator" in conv[0]["parts"][0]["text"] and "Second question" in conv[0]["parts"][0]["text"]

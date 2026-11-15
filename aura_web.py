@@ -126,6 +126,31 @@ def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
     return brain
 
 
+def _build_conversation_history(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
+    """Builds a compacted, alternating-role Gemini history slice (last 16 messages)."""
+    prior_messages = aura_db.get_thread_messages(user_id, thread_id)[:-1]
+    if not prior_messages:
+        return []
+    window = prior_messages[-16:]
+    conv_history: List[Dict[str, Any]] = []
+    total = len(window)
+    for idx, m in enumerate(window):
+        role = "user" if m.get("role") == "user" else "model"
+        txt = str(m.get("content", "") or "").strip()
+        if not txt:
+            continue
+        if role == "model" and (txt.startswith("Understood. You said:") or txt.startswith("Hello! I heard you.")):
+            continue
+        max_chars = 3500 if idx >= total - 4 else 1200
+        if len(txt) > max_chars:
+            txt = txt[:max_chars] + "\n...[trimmed for speed]"
+        if conv_history and conv_history[-1]["role"] == role:
+            conv_history[-1]["parts"][0]["text"] += "\n" + txt
+        else:
+            conv_history.append({"role": role, "parts": [{"text": txt}]})
+    return conv_history
+
+
 DEFAULT_ALLOWED_ORIGINS = {
     "http://127.0.0.1:5050",
     "http://localhost:5050",
@@ -1082,14 +1107,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 display_prompt += f"\n[📎 {len(att_names)} Attachment(s): {', '.join(att_names)}]"
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
-
-            prior_messages = aura_db.get_thread_messages(user_id, thread_id)
-            conv_history = []
-            for m in prior_messages[:-1]:
-                role = "user" if m.get("role") == "user" else "model"
-                txt = m.get("content", "")
-                if txt:
-                    conv_history.append({"role": role, "parts": [{"text": txt}]})
+            conv_history = _build_conversation_history(user_id, thread_id)
 
             brain = _create_user_brain(user)
             reply = brain.think_and_act(
@@ -1136,14 +1154,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 display_prompt += f"\n[📎 {len(att_names)} Attachment(s): {', '.join(att_names)}]"
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
-
-            prior_messages = aura_db.get_thread_messages(user_id, thread_id)
-            conv_history = []
-            for m in prior_messages[:-1]:
-                role = "user" if m.get("role") == "user" else "model"
-                txt = m.get("content", "")
-                if txt:
-                    conv_history.append({"role": role, "parts": [{"text": txt}]})
+            conv_history = _build_conversation_history(user_id, thread_id)
 
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
