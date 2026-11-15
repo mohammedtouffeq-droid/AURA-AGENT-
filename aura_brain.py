@@ -3635,13 +3635,14 @@ The unified pipeline processed your instruction across all core engines (**Time:
     def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         if self.provider == "ollama":
             return self._call_ollama(contents, tools)
-        key_pool: List[str] = []
-        for candidate_key in [self.api_key] + API_KEY_POOL:
+        primary_key = (self.api_key or "").strip()
+        if not primary_key or primary_key.startswith("YOUR_"):
+            return self._offline_autonomous_dispatch(contents, tools)
+        key_pool: List[str] = [primary_key]
+        for candidate_key in API_KEY_POOL:
             k = (candidate_key or "").strip()
             if k and not k.startswith("YOUR_") and k not in key_pool:
                 key_pool.append(k)
-        if not key_pool:
-            return self._offline_autonomous_dispatch(contents, tools)
 
         compacted = self._compact_contents_for_api(contents, strip_tools_history=False)
         include_tools = self._should_include_tools_for_contents(compacted, tools)
