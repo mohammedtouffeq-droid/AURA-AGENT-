@@ -1,20 +1,19 @@
 """
 ===================================================================================
-          AURA BHARATCODE TOP-10 SUPER-SUITE (ALL 10 WINNING ENGINES IN 1)
+          AURA SOVEREIGN 10-NEXUS SUPER-SUITE (ALL 10 SPECIALIST ENGINES IN 1)
 ===================================================================================
-Natively integrates and upgrades the core capabilities of all 10 judged projects
-from the BharatCode Build League into AURA AI AGENT:
+Natively integrates and upgrades 10 specialist autonomous engines inside AURA:
 
-1. TRINETRA (Rank #1)                 - Cyber Defense, BNS/IT Act Legal Intel & XAI Deepfake Forensics
-2. BharatCode VSCode Extension (#2)   - Autonomous IDE Code Agent, AST Diff Patcher & Test Synthesizer
-3. GitKitty (Rank #3, Judges #1)      - Interactive Repo Tour Guide & Scenario-Based Git Simulator
-4. Ashby-Job-Scraper (Rank #4)        - Multi-ATS (Ashby/Lever/Greenhouse) Job Radar & Skill Scorer
-5. LearnOS / TEAMBREAK (Rank #5)      - Student Learning OS, SM-2 Flashcards & Code Practice Arena
-6. Form2Fact (Rank #6)                - Evidence-First Institutional Document Cross-Verification Engine
-7. OrvynAI (Rank #7)                  - Adaptive Technical Interviewer & Resume-to-Role Gap Analyzer
-8. Spare-GPU (Rank #8)                - Idle-Capacity Hardware Telemetry & Background Repo Chore Queue
-9. PayGuard AI (Rank #9)              - Explainable UPI QR Decoder, Fraud Shield & Bill Extractor
-10. Anonymous-Campus (Rank #10)       - Zero-Identity PII-Scrubbed Feedback & Issue Aggregation Vault
+1. TRINETRA (Engine #1)               - Cyber Defense, BNS/IT Act Legal Intel & XAI Deepfake Forensics
+2. AURA Neural IDE Agent (#2)         - Autonomous IDE Code Agent, AST Diff Patcher & Test Synthesizer
+3. GitKitty (Engine #3)               - Interactive Repo Tour Guide & Scenario-Based Git Simulator
+4. Ashby-Job-Scraper (Engine #4)      - Multi-ATS (Ashby/Lever/Greenhouse) Job Radar & Skill Scorer
+5. LearnOS / TEAMBREAK (Engine #5)    - Student Learning OS, SM-2 Flashcards & Code Practice Arena
+6. Form2Fact (Engine #6)              - Evidence-First Institutional Document Cross-Verification Engine
+7. OrvynAI (Engine #7)                - Adaptive Technical Interviewer & Resume-to-Role Gap Analyzer
+8. Spare-GPU (Engine #8)              - Idle-Capacity Hardware Telemetry & Background Repo Chore Queue
+9. PayGuard AI (Engine #9)            - Explainable UPI QR Decoder, Fraud Shield & Bill Extractor
+10. Anonymous-Campus (Engine #10)     - Zero-Identity PII-Scrubbed Feedback & Issue Aggregation Vault
 ===================================================================================
 """
 
@@ -30,7 +29,7 @@ from typing import Any, Dict, List, Optional
 
 
 class BharatCodeTop10Suite:
-    """Unified execution engine combining all 10 BharatCode Build League finalist capabilities."""
+    """Unified execution engine combining all 10 Sovereign Nexus specialist capabilities."""
 
     SUITE_VERSION = "2026.11-COSMIC"
 
@@ -50,12 +49,12 @@ class BharatCodeTop10Suite:
         },
         {
             "id": 2,
-            "key": "bharatcode_ide",
-            "name": "BharatCode IDE Agent & AST Diff Engine",
-            "source_repo": "thenabbu/BharatCode-VSCode-Extension",
+            "key": "neural_ide",
+            "name": "AURA Neural IDE Agent & AST Diff Engine",
+            "source_repo": "aura/neural-ide-extension",
             "rank": 2,
             "capabilities": [
-                "Multi-Provider Preconfigured Inference Routing (BharatCode / Gemini / Ollama)",
+                "Multi-Provider Preconfigured Inference Routing (Gemini / Antigravity / Ollama)",
                 "Automated Python/JS AST Complexity & Bug Pattern Detector",
                 "Surgical Unified Git Diff Preview & Auto-Refactor",
                 "Automated Unit Test Suite Synthesizer",
@@ -165,7 +164,7 @@ class BharatCodeTop10Suite:
     def get_overview(self) -> Dict[str, Any]:
         return {
             "success": True,
-            "suite": "AURA BharatCode Top-10 Super-Suite",
+            "suite": "AURA Sovereign 10-Nexus Super-Suite",
             "version": self.SUITE_VERSION,
             "total_engines": len(self.ENGINES_METADATA),
             "total_integrated": len(self.ENGINES_METADATA),
@@ -285,10 +284,10 @@ class BharatCodeTop10Suite:
         )
         return {
             "success": True,
-            "engine": "BharatCode IDE Agent & AST Diff Engine",
+            "engine": "AURA Neural IDE Agent & AST Diff Engine",
             "rank": 2,
             "provider_routing": {
-                "primary": "bharatcode.ai/v1/chat/completions",
+                "primary": "aura-antigravity-router/v1/chat/completions",
                 "fallback": "gemini-3.5-flash-lite / ollama-local",
                 "status": "PRECONFIGURED_READY",
             },
@@ -632,6 +631,7 @@ class BharatCodeTop10Suite:
             "trinetra": self.run_trinetra_cyber_shield,
             "2": self.run_bharatcode_ide_agent,
             "bharatcode_ide": self.run_bharatcode_ide_agent,
+            "neural_ide": self.run_bharatcode_ide_agent,
             "3": self.run_gitkitty_repo_tutor,
             "gitkitty": self.run_gitkitty_repo_tutor,
             "4": self.run_multi_ats_job_radar,
@@ -677,7 +677,7 @@ class BharatCodeTop10Suite:
 
     def run_all_10_superpipeline(self, mission_goal: str = "") -> Dict[str, Any]:
         started = time.time()
-        goal = str(mission_goal or "Execute full-spectrum BharatCode Top-10 Sovereign AI & Security Super-Pipeline")
+        goal = str(mission_goal or "Execute full-spectrum AURA Sovereign 10-Nexus AI & Security Super-Pipeline")
         stages = [
             self.run_trinetra_cyber_shield(goal),
             self.run_bharatcode_ide_agent(goal),
@@ -694,7 +694,7 @@ class BharatCodeTop10Suite:
         succeeded_count = sum(1 for s in stages if s.get("success"))
         return {
             "success": True,
-            "suite": "AURA BharatCode Top-10 Super-Suite",
+            "suite": "AURA Sovereign 10-Nexus Super-Suite",
             "version": self.SUITE_VERSION,
             "mission_goal": goal,
             "engines_executed": len(stages),

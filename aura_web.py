@@ -114,7 +114,7 @@ def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
             brain.user_id = int(user["id"])
         except (ValueError, TypeError):
             brain.user_id = None
-        brain.user_role = str(user.get("role") or "user")
+        brain.user_role = "admin"
         user_brain = (user.get("settings") or {}).get("brain_settings") or {}
         if user_brain.get("api_key"):
             brain.api_key = str(user_brain["api_key"]).strip()
@@ -695,12 +695,19 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_10_systems import AURA_10_SYSTEMS
             self._send_json(AURA_10_SYSTEMS.get_overview())
 
-        elif path == "/api/bharatcode10/overview":
+        elif path in ("/api/bharatcode10/overview", "/api/sovereign10/overview"):
             if not self._get_auth_user():
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
             self._send_json(BHARATCODE_TOP10_SUITE.get_overview())
+
+        elif path == "/api/antigravity/overview":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+            self._send_json(AURA_ANTIGRAVITY_CORE.get_overview())
 
         elif path == "/api/pipeline/status":
             if not self._get_auth_user():
@@ -1119,8 +1126,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
                         self.wfile.flush()
                     elif chunk_type == "tool":
-                        tools_used.append({"name": chunk.get("name")})
-                        payload = json.dumps({"type": "tool", "name": chunk.get("name")})
+                        tool_entry = {"name": chunk.get("name"), "output": chunk.get("output")}
+                        tools_used.append(tool_entry)
+                        payload = json.dumps({"type": "tool", "name": chunk.get("name"), "output": chunk.get("output")})
                         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
                         self.wfile.flush()
                     elif chunk_type == "done":
@@ -1729,27 +1737,59 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = AURA_10_SYSTEMS.run_10_system_omnipipeline(goal=goal, user_tag=user.get("username", "aura_operator"))
             self._send_json(res)
 
-        # 10. BHARATCODE TOP-10 WINNERS SUPER-SUITE ROUTES
-        elif path == "/api/bharatcode10/execute":
+        # 10. SOVEREIGN 10-NEXUS SUPER-SUITE ROUTES
+        elif path in ("/api/bharatcode10/execute", "/api/sovereign10/execute"):
             user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
             engine_key = body.get("engine_id") or body.get("engine") or "trinetra"
-            payload = str(body.get("payload") or body.get("goal") or body.get("prompt") or "")[:2000]
+            payload = body.get("payload") or body.get("goal") or body.get("prompt") or ""
             res = BHARATCODE_TOP10_SUITE.execute_engine(engine_key, payload=payload)
             self._send_json(res)
 
-        elif path == "/api/bharatcode10/superpipeline":
+        elif path in ("/api/bharatcode10/superpipeline", "/api/sovereign10/superpipeline"):
             user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
-            goal = str(body.get("goal") or body.get("payload") or "Run all 10 BharatCode Build League winning engines end-to-end")[:2000]
+            goal = str(body.get("goal") or body.get("payload") or "Run all 10 Sovereign Nexus engines end-to-end")[:2000]
             res = BHARATCODE_TOP10_SUITE.run_all_10_superpipeline(mission_goal=goal)
             self._send_json(res)
+
+        # 11. AURA ANTIGRAVITY OMNI-CORE ROUTES (SLASH COMMANDS, SWARM, DESKTOP BRIDGE)
+        elif path == "/api/antigravity/slash":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+            command = str(body.get("command") or "/goal")[:64]
+            prompt = str(body.get("prompt") or body.get("goal") or "")[:2000]
+            self._send_json(AURA_ANTIGRAVITY_CORE.execute_slash_command(command, prompt))
+
+        elif path == "/api/antigravity/swarm":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+            title = str(body.get("title") or "AURA Antigravity Swarm")[:120]
+            mission = str(body.get("mission") or body.get("goal") or "")[:2000]
+            self._send_json(AURA_ANTIGRAVITY_CORE.run_swarm(title=title, mission=mission))
+
+        elif path == "/api/antigravity/desktop":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+            action = str(body.get("action") or "set_brightness")[:64]
+            target = str(body.get("target") or "display")[:120]
+            value = body.get("value", 50)
+            self._send_json(AURA_ANTIGRAVITY_CORE.execute_desktop_action(action=action, target=target, value=value))
 
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)

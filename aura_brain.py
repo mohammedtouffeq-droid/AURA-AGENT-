@@ -2848,7 +2848,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 }
 
             elif last_tool_name in ["tool_bharatcode_top10_execute", "tool_bharatcode_top10_superpipeline"]:
-                eng = last_output.get("engine") or last_output.get("suite") or "BharatCode Top-10 Super-Suite"
+                eng = last_output.get("engine") or last_output.get("suite") or "AURA Sovereign 10-Nexus Super-Suite"
                 text = f"### 🏆 {eng} Executed!\n\n```json\n{json.dumps(last_output, indent=2)}\n```"
                 return {
                     "candidates": [{
@@ -3327,6 +3327,17 @@ The unified pipeline processed your instruction across all core engines (**Time:
     def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15, conversation_history: Optional[List[Dict[str, Any]]] = None) -> str:
         """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response with full Multimodal support."""
         self.last_tools = []
+        raw_trim = (user_prompt or "").strip()
+        if raw_trim.startswith("/"):
+            parts_cmd = raw_trim.split(maxsplit=1)
+            cmd_token = parts_cmd[0].lower()
+            cmd_arg = parts_cmd[1] if len(parts_cmd) > 1 else ""
+            if cmd_token in ("/goal", "/plan", "/boost", "/teamwork", "/browser", "/schedule", "/compact", "/learn", "/grill-me"):
+                from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+                slash_res = AURA_ANTIGRAVITY_CORE.execute_slash_command(cmd_token, cmd_arg)
+                self.last_tools.append({"name": f"antigravity_{cmd_token[1:]}", "args": {"prompt": cmd_arg}, "output": slash_res})
+                return f"### ⚡ AURA Antigravity `{cmd_token}` Executed\n\n```json\n{json.dumps(slash_res, indent=2)}\n```"
+
         user_parts = [{"text": user_prompt}] if user_prompt else []
 
         if attachments:
@@ -3489,7 +3500,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
         full_reply = self.think_and_act(user_prompt, attachments=attachments, permission_mode=permission_mode, approved=approved, max_turns=max_turns, conversation_history=conversation_history)
 
         for t in self.last_tools:
-            yield {"type": "tool", "name": t.get("name", "tool")}
+            yield {"type": "tool", "name": t.get("name", "tool"), "output": t.get("output")}
 
         lines = full_reply.split("\n")
         for line_idx, line in enumerate(lines):

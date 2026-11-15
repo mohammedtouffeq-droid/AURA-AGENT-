@@ -124,7 +124,7 @@ def test_bharatcode_top10_http_endpoints_end_to_end():
 
         req_sp = urllib.request.Request(
             f"http://127.0.0.1:{port}/api/bharatcode10/superpipeline",
-            data=json.dumps({"goal": "End-to-end HTTP verification of all 10 BharatCode winners"}).encode("utf-8"),
+            data=json.dumps({"goal": "End-to-end HTTP verification of all 10 Sovereign engines"}).encode("utf-8"),
             headers=headers,
             method="POST",
         )
@@ -133,6 +133,53 @@ def test_bharatcode_top10_http_endpoints_end_to_end():
             assert sp_data["success"] is True
             assert sp_data["engines_executed"] == 10
             assert sp_data["all_succeeded"] is True
+
+        req_ag_ov = urllib.request.Request(f"http://127.0.0.1:{port}/api/antigravity/overview", headers=headers, method="GET")
+        with urllib.request.urlopen(req_ag_ov, timeout=5) as resp:
+            ag_ov = json.loads(resp.read().decode("utf-8"))
+            assert ag_ov["success"] is True
+            assert len(ag_ov["slash_commands"]) == 9
+
+        req_ag_slash = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/antigravity/slash",
+            data=json.dumps({"command": "/goal", "prompt": "Verify Antigravity slash command"}).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(req_ag_slash, timeout=5) as resp:
+            ag_slash = json.loads(resp.read().decode("utf-8"))
+            assert ag_slash["success"] is True
+            assert ag_slash["slash_command"] == "/goal"
+
+        req_ag_desk = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/antigravity/desktop",
+            data=json.dumps({"action": "set_brightness", "value": 55}).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(req_ag_desk, timeout=5) as resp:
+            ag_desk = json.loads(resp.read().decode("utf-8"))
+            assert ag_desk["success"] is True
+            assert ag_desk["level"] == 55
+            assert ag_desk["client_bridge_command"]["level"] == 55
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_zero_visible_bharatcode_branding_and_antigravity_core_active():
+    import re
+    from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+
+    html = (Path(__file__).resolve().parent / "index.html").read_text(encoding="utf-8")
+    no_scripts = re.sub(r"<script\b[^>]*>.*?</script>", "", html, flags=re.S | re.I)
+    no_styles = re.sub(r"<style\b[^>]*>.*?</style>", "", no_scripts, flags=re.S | re.I)
+    visible_text = re.sub(r"<[^>]+>", " ", no_styles)
+    assert len(re.findall(r"BharatCode|Build League", visible_text, flags=re.I)) == 0
+    assert 'id="fTab_antigravity"' in html
+    assert 'id="fSection_antigravity"' in html
+    assert "executeClientBridgeCommand" in html
+
+    for cmd in ["/goal", "/plan", "/boost", "/teamwork", "/browser", "/schedule", "/compact", "/learn", "/grill-me"]:
+        res = AURA_ANTIGRAVITY_CORE.execute_slash_command(cmd, "Test mission")
+        assert res["success"] is True

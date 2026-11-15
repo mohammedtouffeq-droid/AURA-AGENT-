@@ -28,12 +28,12 @@ Run the focused offline pipeline tests with:
 python -m unittest test_aura_pipeline -v
 ```
 
-## BharatCode Top-10 Super-Suite (All 10 Judged Winners Integrated)
+## AURA Sovereign 10-Nexus Super-Suite (All 10 Specialist Engines Integrated)
 
-`aura_bharatcode_top10.py` natively integrates the core capabilities of all 10 judged winners from the BharatCode Build League into a unified, 100% deterministic and verified execution suite (`/api/bharatcode10/overview`, `/api/bharatcode10/execute`, `/api/bharatcode10/superpipeline`):
+`aura_bharatcode_top10.py` natively integrates the core capabilities of all 10 specialist engines into a unified, 100% deterministic and verified execution suite (`/api/sovereign10/overview`, `/api/sovereign10/execute`, `/api/sovereign10/superpipeline`):
 
 1. **#1 TRINETRA (`trinetra`)** — Sovereign Cyber Defense, IOC/SIEM extraction, MITRE ATT&CK + CERT-In Playbooks, Indian Statutory Legal Intelligence (`BNS 2023`, `IT Act 2000`, `DPDP Act 2023`), and Explainable AI (XAI) Deepfake Forensics.
-2. **#2 BharatCode IDE Agent (`bharatcode_ide`)** — Autonomous IDE Code Agent, Python/JS AST bug & anti-pattern detector, unified diff refactorer, and unit test synthesizer.
+2. **#2 AURA Neural IDE Agent (`neural_ide` / `bharatcode_ide`)** — Autonomous IDE Code Agent, Python/JS AST bug & anti-pattern detector, unified diff refactorer, and unit test synthesizer.
 3. **#3 GitKitty (`gitkitty`)** — Automated codebase architecture tour and interactive Git recovery simulator (`rebase_conflict`, `detached_head`, `accidental_hard_reset`).
 4. **#4 Ashby Multi-ATS Job Radar (`ashby_job_radar`)** — Multi-ATS (`Ashby`, `Greenhouse`, `Lever`, `Workday`) engineering role radar with deterministic `0-100` skill-match scoring.
 5. **#5 LearnOS (`learnos`)** — Student Learning OS with 4-stage mastery roadmaps, SM-2 spaced-repetition flashcards, and coding arena challenges.
@@ -42,6 +42,14 @@ python -m unittest test_aura_pipeline -v
 8. **#8 Spare-GPU (`spare_gpu`)** — Idle-capacity hardware telemetry gate and automated background repository maintenance chore scheduler.
 9. **#9 PayGuard AI (`payguard_upi`)** — Explainable UPI QR (`upi://pay?...`) decoder, collect-request scam shield, and itemized bill risk auditor.
 10. **#10 Anonymous-Campus (`anonymous_campus`)** — Zero-identity PII-scrubbed feedback vault with cryptographic SHA-256 receipts and issue routing.
+
+## AURA Antigravity Omni-Core & Client-OS Hardware Bridge
+
+`aura_antigravity_core.py` implements Google DeepMind's Antigravity agentic platform architecture inside AURA (`/api/antigravity/overview`, `/api/antigravity/slash`, `/api/antigravity/swarm`, `/api/antigravity/desktop`):
+- **4 Unified Surfaces:** Antigravity IDE, Antigravity 2.0 Mission Control Desktop App, `agy` Headless CLI, and `google-antigravity` Python SDK.
+- **9 Native Slash Commands:** `/goal`, `/plan`, `/boost`, `/teamwork`, `/browser`, `/schedule`, `/compact`, `/learn`, and `/grill-me`.
+- **Multi-Agent Swarm & Subagents:** Parallel execution across `architect-1`, `engineer-1`, and `verifier-1` plus specialized subagents (`self`, `research`, `browser`, `desktop-operator`, `image-generator`, `security-auditor`).
+- **Live Client-OS Hardware Bridge:** Cloud-compatible display brightness filter, WebAudio volume gain, native URI protocol launchers (`whatsapp`, `vscode`, `calculator`, `settings`), and local daemon sync.
 
 ## Deep-Space Scroll-Driven 3D UI
 
