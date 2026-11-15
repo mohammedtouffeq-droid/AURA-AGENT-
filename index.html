@@ -1200,9 +1200,96 @@
             0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
             50% { transform: scale(1.1); box-shadow: 0 0 12px 4px rgba(239, 68, 68, 0.3); }
         }
+
+        /* ---------------- Deep-Space Scroll-Driven Animation Architecture ---------------- */
+        :root {
+            --space-scroll-progress: 0;
+            --space-warp-speed: 1;
+            --space-orbital-angle: 0deg;
+        }
+        #spaceCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(ellipse at 50% 20%, #0d152c 0%, #060812 55%, #020308 100%);
+        }
+        #spaceOrbitalRingOverlay {
+            position: fixed;
+            top: 50%;
+            left: 58%;
+            width: 780px;
+            height: 780px;
+            margin-left: -390px;
+            margin-top: -390px;
+            border-radius: 50%;
+            border: 1px dashed rgba(56, 189, 248, 0.14);
+            box-shadow: 0 0 90px rgba(0, 102, 255, 0.08), inset 0 0 70px rgba(139, 92, 246, 0.06);
+            pointer-events: none;
+            z-index: 1;
+            transform: perspective(1000px) rotateX(64deg) rotateZ(var(--space-orbital-angle, 0deg));
+            transition: transform 0.08s linear;
+        }
+        .sidebar {
+            background-color: rgba(13, 16, 26, 0.82) !important;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+        .main-chat-viewport {
+            position: relative;
+            z-index: 5;
+            background: transparent !important;
+        }
+        .top-navbar {
+            background: rgba(10, 13, 22, 0.72) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.14) !important;
+        }
+        .starter-card, .bharatcode-winner-card {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg, rgba(20, 25, 40, 0.82), rgba(12, 15, 26, 0.9)) !important;
+            border: 1px solid rgba(56, 189, 248, 0.22) !important;
+            backdrop-filter: blur(10px);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease !important;
+            transform-style: preserve-3d;
+        }
+        .starter-card:hover, .bharatcode-winner-card:hover {
+            transform: perspective(800px) translateY(-5px) rotateX(3deg) scale(1.015) !important;
+            border-color: rgba(56, 189, 248, 0.65) !important;
+            box-shadow: 0 14px 34px rgba(0, 102, 255, 0.22), 0 0 20px rgba(56, 189, 248, 0.18) !important;
+        }
+        .space-scroll-reveal {
+            opacity: 0;
+            transform: perspective(900px) translateY(24px) rotateX(8deg) scale(0.97);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .space-scroll-reveal.space-visible {
+            opacity: 1;
+            transform: perspective(900px) translateY(0) rotateX(0deg) scale(1);
+        }
+        #spaceScrollProgressBar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: calc(var(--space-scroll-progress, 0) * 100%);
+            background: linear-gradient(90deg, #0066ff, #00d4ff, #a855f7, #10b981);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.8);
+            z-index: 99999;
+            transition: width 0.08s linear;
+        }
     </style>
 </head>
 <body>
+    <!-- Deep-Space Scroll-Driven Interactive Starfield & Orbital Ring -->
+    <div id="spaceScrollProgressBar"></div>
+    <canvas id="spaceCanvas" aria-hidden="true"></canvas>
+    <div id="spaceOrbitalRingOverlay" aria-hidden="true"></div>
+
     <!-- Antigravity-Style Shining Splash Screen -->
     <div id="auraSplash">
         <div class="splash-logo-container">
@@ -1236,6 +1323,11 @@
         <button class="btn-new-chat" id="btnSidebarFlagship" onclick="openFlagshipHub('trinity'); closeMobileSidebar();" style="margin-top: -4px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(59, 130, 246, 0.16)); border-color: rgba(16, 185, 129, 0.4);">
             <span>🚀 Flagship Repos Hub</span>
             <span style="font-size: 10px; color: #34d399;">3 Engines A-Z</span>
+        </button>
+
+        <button class="btn-new-chat" id="btnSidebarBharatCode10" onclick="openFlagshipHub('bharatcode10'); closeMobileSidebar();" style="margin-top: -4px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(168, 85, 247, 0.2)); border-color: rgba(245, 158, 11, 0.55);">
+            <span>🏆 BharatCode Top-10</span>
+            <span style="font-size: 10px; color: #fde68a;">All 10 Active</span>
         </button>
 
         <div class="threads-scroll" id="threadsContainer">
@@ -1284,10 +1376,19 @@
                     <span>🧠 10-System Omni-Core</span>
                     <span style="font-size: 10.5px; opacity: 0.9;">1 AURA = 100 AI</span>
                 </button>
+                <button type="button" id="btnNavbarBharatCode10" onclick="openFlagshipHub('bharatcode10')" style="margin-left: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(245, 158, 11, 0.65); background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(168, 85, 247, 0.2)); color: #fde68a; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
+                    <span>🏆 BharatCode Top-10</span>
+                    <span style="font-size: 10.5px; opacity: 0.95;">TRINETRA • GitKitty • All 10</span>
+                </button>
             </div>
-            <div class="mode-toggle-chip">
-                <span>●</span>
-                <span>Auto-Pilot (Direct Execution)</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div id="spaceWarpBadge" style="font-family: var(--font-code); font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(0, 102, 255, 0.14); border: 1px solid rgba(56, 189, 248, 0.35); color: #93c5fd;">
+                    🌌 SPACE WARP: 1.0x • ORBIT 0°
+                </div>
+                <div class="mode-toggle-chip">
+                    <span>●</span>
+                    <span>Auto-Pilot (Direct Execution)</span>
+                </div>
             </div>
         </header>
 
@@ -1298,9 +1399,13 @@
                 <!-- Welcome Hero (ChatGPT style) -->
                 <div class="welcome-hero" id="welcomeHero">
                     <h1 class="hero-title">What can I build for you today?</h1>
-                    <p class="hero-subtitle">AURA is connected to your local system with full PowerShell, Godot 4.3 3D engine, code synthesis, and live telemetry tools.</p>
+                    <p class="hero-subtitle">AURA Deep-Space Command Center • Integrated with all 10 BharatCode Build League Winners, 10-System Omni-Core, Godot 4.3 3D Engine & Native OS Telemetry.</p>
                     
                     <div class="starter-cards-grid">
+                        <div class="starter-card" onclick="openFlagshipHub('bharatcode10')" style="border-color: rgba(245, 158, 11, 0.6) !important; background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(168, 85, 247, 0.14)) !important;">
+                            <div class="starter-card-title" style="color: #fde68a;">🏆 BharatCode Top-10 Super-Suite (100% Active)</div>
+                            <div class="starter-card-desc">TRINETRA Cyber & Legal BNS Shield • BharatCode IDE • GitKitty • Ashby ATS • LearnOS • Form2Fact • OrvynAI • Spare-GPU • PayGuard UPI • Anonymous-Campus.</div>
+                        </div>
                         <div class="starter-card" onclick="sendQuickPrompt('What is the live weather in Hyderabad?')">
                             <div class="starter-card-title">🌤️ Live Weather Telemetry</div>
                             <div class="starter-card-desc">Check real-time temperatures, wind, and forecast conditions.</div>
@@ -1534,6 +1639,9 @@
                 </button>
                 <button type="button" id="fTab_systems10" onclick="switchFlagshipTab('systems10')" style="flex: 1; min-width: 210px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(56,189,248,0.45); background: rgba(56,189,248,0.12); color: #bae6fd; font-weight: 700; font-size: 12.5px; cursor: pointer;">
                     5. 🧠 10-System Omni-Core (100 AI)
+                </button>
+                <button type="button" id="fTab_bharatcode10" onclick="switchFlagshipTab('bharatcode10')" style="flex: 1; min-width: 220px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(245,158,11,0.65); background: rgba(245,158,11,0.18); color: #fde68a; font-weight: 700; font-size: 12.5px; cursor: pointer;">
+                    6. 🏆 BharatCode Top-10 Winners Suite
                 </button>
             </div>
 
@@ -1796,6 +1904,84 @@
                 </div>
 
                 <pre id="sys10ResultBox" style="background:#090d16; color:#7dd3fc; padding:12px; border-radius:10px; font-size:11.5px; max-height:300px; overflow:auto; border:1px solid rgba(56,189,248,0.25);">Click "Run Full 10-System Omni-Pipeline (A-to-Z)" to execute all 10 systems sequentially with System 10 security gating, or run any single system (1..10).</pre>
+            </div>
+
+            <!-- SECTION 6: BHARATCODE BUILD LEAGUE TOP-10 WINNERS SUPER-SUITE -->
+            <div id="fSection_bharatcode10" style="display: none;">
+                <div style="background: linear-gradient(135deg, rgba(245,158,11,0.14), rgba(168,85,247,0.14), rgba(56,189,248,0.14)); border: 1px solid rgba(245,158,11,0.55); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <div>
+                            <strong style="color:#fde68a; font-size:15px;">🏆 AURA BharatCode Build League Top-10 Super-Suite (All 10 Judged Winners Integrated 100%)</strong>
+                            <div style="font-size:12px; color:#cbd5e1; margin-top:3px;">
+                                Every capability from the 10 BharatCode Build League winning repositories natively engineered inside AURA. Click any card below to load its preset and run it live!
+                            </div>
+                        </div>
+                        <span style="font-size:11px; padding:4px 10px; border-radius:999px; background:rgba(245,158,11,0.25); color:#fef08a; font-weight:700;">10 / 10 Winners Active • Verified</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11px;">
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('trinetra', 'UPI phishing fraud, credential theft, and deepfake voice impersonation targeting customer accounts')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#1 🛡️ TRINETRA (145/175)</div>
+                            <div style="color:#94a3b8;">Sovereign Cyber Defense • BNS 2023 / IT Act / DPDP Legal Mapping • CERT-In Playbook & Deepfake XAI</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('bharatcode_ide', 'def login_user(u, p):\n    try:\n        return eval(u)\n    except:\n        return None')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#2 💻 BharatCode IDE (109.29)</div>
+                            <div style="color:#94a3b8;">Autonomous IDE Agent • AST Bug & Security Detector • Unified Diff Refactorer & Pytest Synthesizer</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('gitkitty', 'rebase_conflict')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#3 🐱 GitKitty (97.02 • Judges #1)</div>
+                            <div style="color:#94a3b8;">Interactive Codebase Architecture Tour & Safe Git Scenario Recovery Simulator (Rebase/Reflog)</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('ashby_job_radar', 'python, react, typescript, ai agents, docker, sql, security')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#4 🎯 Ashby Multi-ATS (85.65)</div>
+                            <div style="color:#94a3b8;">Ashby • Greenhouse • Lever • Workday Job Radar with Deterministic 0-100 Skill Match Scoring</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('learnos', 'AI Agents, Systems Engineering & Cyber Security')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#5 📚 LearnOS (79.99)</div>
+                            <div style="color:#94a3b8;">Student Learning OS • 4-Stage Mastery Roadmap • SM-2 Spaced Repetition Flashcards & Coding Arena</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('form2fact', 'Verify applicant name, DOB, ID number, and total marks across application form and official certificate')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#6 📑 Form2Fact (79.24)</div>
+                            <div style="color:#94a3b8;">Evidence-First Institutional Document Cross-Verification & Discrepancy Audit Engine</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('orvyn_interview', 'Full-Stack AI & Security Engineer')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#7 🎙️ OrvynAI (69.28)</div>
+                            <div style="color:#94a3b8;">Adaptive Technical Interviewer • STAR + Systems Design Rubric Scorer & Resume Gap Analyzer</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('spare_gpu', 'dependency_cve_audit')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#8 ⚡ Spare-GPU (45.94)</div>
+                            <div style="color:#94a3b8;">Idle-Capacity Hardware Telemetry Gate & Automated Background Repo Maintenance Chore Scheduler</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('payguard_upi', 'upi://pay?pa=refund-kyc-helpdesk@ybl&pn=Instant%20Lottery%20Refund&am=49999&mode=02&tn=Urgent%20KYC%20Collect')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#9 💳 PayGuard AI (42.32)</div>
+                            <div style="color:#94a3b8;">Explainable UPI QR Decoder • Collect-Pull Scam Shield & Hospital/Merchant Bill Anomaly Auditor</div>
+                        </div>
+                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('anonymous_campus', 'Hostel Wi-Fi router on 3rd floor is dropping packets during lab exams. Contact me at student@college.edu or +91 9876543210 Roll No: 22CS104')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
+                            <div style="color:#fde68a; font-weight:700;">#10 🕵️ Anonymous-Campus (27.35)</div>
+                            <div style="color:#94a3b8;">Zero-Identity PII-Scrubbed Feedback Vault • SHA-256 Ephemeral Receipt & Issue Priority Router</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1.8fr 1.2fr auto auto; gap:8px; margin-bottom:10px; align-items:center;">
+                    <input id="bc10PayloadInput" class="auth-input" type="text" value="UPI phishing fraud, credential theft, and deepfake voice impersonation targeting customer accounts">
+                    <select id="bc10EngineSelector" class="auth-input" style="background:#0f172a; color:#fde68a; font-weight:600;">
+                        <option value="trinetra">#1 TRINETRA — Cyber Defense & BNS/IT/DPDP Legal Shield</option>
+                        <option value="bharatcode_ide">#2 BharatCode IDE — AST Bug Detector & Diff Refactorer</option>
+                        <option value="gitkitty">#3 GitKitty — Repo Architecture Tour & Git Simulator</option>
+                        <option value="ashby_job_radar">#4 Ashby Multi-ATS — Job Radar & Skill Match Scorer</option>
+                        <option value="learnos">#5 LearnOS — Mastery Roadmap & SM-2 Spaced Repetition</option>
+                        <option value="form2fact">#6 Form2Fact — Document Evidence Cross-Verifier</option>
+                        <option value="orvyn_interview">#7 OrvynAI — Adaptive Technical Interviewer & Gap Coach</option>
+                        <option value="spare_gpu">#8 Spare-GPU — Idle Hardware Gate & Chore Scheduler</option>
+                        <option value="payguard_upi">#9 PayGuard AI — Explainable UPI QR & Fraud Shield</option>
+                        <option value="anonymous_campus">#10 Anonymous-Campus — Zero-PII Feedback Vault</option>
+                    </select>
+                    <button type="button" class="btn-auth-submit" onclick="runBharatCodeSingleEngine()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(245,158,11,0.22); border:1px solid rgba(245,158,11,0.65); color:#fef08a;">🎯 Run Winner Engine</button>
+                    <button type="button" class="btn-auth-submit" onclick="runBharatCodeSuperPipeline()" style="width:auto; padding:0 16px; white-space:nowrap; background:linear-gradient(135deg, #d97706, #7c3aed);">⚡ Run All 10 Winners Super-Pipeline</button>
+                </div>
+
+                <pre id="bc10ResultBox" style="background:#090d16; color:#fde68a; padding:12px; border-radius:10px; font-size:11.5px; max-height:300px; overflow:auto; border:1px solid rgba(245,158,11,0.35);">Click any of the 10 Winner Cards above or click "⚡ Run All 10 Winners Super-Pipeline" to execute all 10 BharatCode Build League winning engines live inside AURA.</pre>
             </div>
         </div>
     </div>
@@ -2591,16 +2777,16 @@
         }
 
         function switchFlagshipTab(tabName) {
-            const tabs = ['openhands', 'open_interpreter', 'autogpt', 'trinity', 'systems10'];
+            const tabs = ['openhands', 'open_interpreter', 'autogpt', 'trinity', 'systems10', 'bharatcode10'];
             tabs.forEach(t => {
                 const sec = document.getElementById('fSection_' + t);
                 const btn = document.getElementById('fTab_' + t);
                 if (sec) sec.style.display = (t === tabName) ? 'block' : 'none';
                 if (btn) {
                     if (t === tabName) {
-                        btn.style.background = 'rgba(16,185,129,0.22)';
-                        btn.style.borderColor = 'rgba(16,185,129,0.6)';
-                        btn.style.color = '#ecfdf5';
+                        btn.style.background = (t === 'bharatcode10') ? 'rgba(245,158,11,0.28)' : 'rgba(16,185,129,0.22)';
+                        btn.style.borderColor = (t === 'bharatcode10') ? 'rgba(245,158,11,0.8)' : 'rgba(16,185,129,0.6)';
+                        btn.style.color = (t === 'bharatcode10') ? '#fef08a' : '#ecfdf5';
                     } else {
                         btn.style.background = 'rgba(255,255,255,0.04)';
                         btn.style.borderColor = 'rgba(255,255,255,0.12)';
@@ -2608,6 +2794,60 @@
                     }
                 }
             });
+        }
+
+        function selectBharatCodeEngine(engineKey, presetPayload) {
+            const sel = document.getElementById('bc10EngineSelector');
+            const inp = document.getElementById('bc10PayloadInput');
+            if (sel) sel.value = engineKey;
+            if (inp && presetPayload) inp.value = presetPayload;
+            runBharatCodeSingleEngine();
+        }
+
+        async function runBharatCodeSingleEngine() {
+            const box = document.getElementById('bc10ResultBox');
+            const engine = document.getElementById('bc10EngineSelector').value || 'trinetra';
+            const rawVal = document.getElementById('bc10PayloadInput').value.trim();
+            box.textContent = `⏳ Executing BharatCode Winner Engine [${engine}] inside AURA...`;
+            try {
+                const payload = {
+                    prompt: rawVal,
+                    incident: rawVal,
+                    code: rawVal,
+                    scenario: rawVal,
+                    topic: rawVal,
+                    target_role: rawVal,
+                    chore: rawVal,
+                    upi_uri: rawVal.startsWith('upi://') ? rawVal : undefined,
+                    message: rawVal
+                };
+                const res = await apiFetch('/api/bharatcode10/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ engine, payload })
+                });
+                const data = await safeParseJson(res);
+                box.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                box.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function runBharatCodeSuperPipeline() {
+            const box = document.getElementById('bc10ResultBox');
+            const goal = document.getElementById('bc10PayloadInput').value.trim() || 'Full-Spectrum Autonomous Security, Code, Career & Campus Verification';
+            box.textContent = '⏳ Running All 10 BharatCode Build League Winners Super-Pipeline (#1 TRINETRA ➔ #2 BharatCode IDE ➔ #3 GitKitty ➔ #4 Ashby ATS ➔ #5 LearnOS ➔ #6 Form2Fact ➔ #7 OrvynAI ➔ #8 Spare-GPU ➔ #9 PayGuard AI ➔ #10 Anonymous-Campus)...';
+            try {
+                const res = await apiFetch('/api/bharatcode10/superpipeline', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ goal })
+                });
+                const data = await safeParseJson(res);
+                box.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                box.textContent = 'Error: ' + err.message;
+            }
         }
 
         async function runOpenHandsTask() {
@@ -3480,6 +3720,125 @@
                 });
             }
         }
+
+        // ---------------- Deep-Space Scroll-Driven 3D Starfield & Parallax Engine ----------------
+        (function initDeepSpaceScrollEngine() {
+            const canvas = document.getElementById('spaceCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width = window.innerWidth || 1280;
+            let height = window.innerHeight || 720;
+            canvas.width = width;
+            canvas.height = height;
+
+            let warpVelocity = 1.0;
+            let orbitalAngle = 0;
+            let scrollCumulative = 0;
+
+            const STAR_COUNT = 220;
+            const stars = [];
+            const palette = ['#ffffff', '#93c5fd', '#7dd3fc', '#c4b5fd', '#fde68a', '#6ee7b7'];
+            for (let i = 0; i < STAR_COUNT; i++) {
+                stars.push({
+                    x: (Math.random() - 0.5) * width * 2,
+                    y: (Math.random() - 0.5) * height * 2,
+                    z: Math.random() * width,
+                    color: palette[i % palette.length],
+                    size: 0.7 + Math.random() * 1.8
+                });
+            }
+
+            window.addEventListener('resize', () => {
+                width = window.innerWidth || 1280;
+                height = window.innerHeight || 720;
+                canvas.width = width;
+                canvas.height = height;
+            });
+
+            function onSpaceScrollDelta(deltaY, scrollRatio) {
+                const absDelta = Math.min(Math.abs(deltaY || 18), 140);
+                warpVelocity = Math.min(18.0, warpVelocity + absDelta * 0.14);
+                scrollCumulative += (deltaY || 12);
+                orbitalAngle = (scrollCumulative * 0.18) % 360;
+                document.documentElement.style.setProperty('--space-orbital-angle', orbitalAngle.toFixed(1) + 'deg');
+                if (typeof scrollRatio === 'number' && !isNaN(scrollRatio)) {
+                    document.documentElement.style.setProperty('--space-scroll-progress', Math.max(0, Math.min(1, scrollRatio)).toFixed(3));
+                }
+                const badge = document.getElementById('spaceWarpBadge');
+                if (badge) {
+                    badge.textContent = `🌌 SPACE WARP: ${warpVelocity.toFixed(1)}x • ORBIT ${Math.round(Math.abs(orbitalAngle))}°`;
+                }
+            }
+
+            window.addEventListener('wheel', (e) => {
+                onSpaceScrollDelta(e.deltaY, undefined);
+            }, { passive: true });
+
+            const chatScrollEl = document.getElementById('chatContainer');
+            if (chatScrollEl) {
+                let lastTop = 0;
+                chatScrollEl.addEventListener('scroll', () => {
+                    const dy = chatScrollEl.scrollTop - lastTop;
+                    lastTop = chatScrollEl.scrollTop;
+                    const maxScroll = Math.max(1, chatScrollEl.scrollHeight - chatScrollEl.clientHeight);
+                    onSpaceScrollDelta(dy || 10, chatScrollEl.scrollTop / maxScroll);
+                }, { passive: true });
+            }
+
+            function renderSpaceFrame() {
+                ctx.fillStyle = 'rgba(4, 6, 14, 0.34)';
+                ctx.fillRect(0, 0, width, height);
+
+                const cx = width * 0.5;
+                const cy = height * 0.5;
+
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    const s = stars[i];
+                    s.z -= (1.4 + warpVelocity * 2.4);
+                    if (s.z <= 2) {
+                        s.z = width;
+                        s.x = (Math.random() - 0.5) * width * 2;
+                        s.y = (Math.random() - 0.5) * height * 2;
+                    }
+                    const k = 320 / s.z;
+                    const px = cx + s.x * k;
+                    const py = cy + s.y * k;
+
+                    if (px >= 0 && px <= width && py >= 0 && py <= height) {
+                        const depthAlpha = Math.min(1, (1 - s.z / width) * 1.25);
+                        const radius = Math.max(0.6, s.size * (1 - s.z / width) * 2.1);
+                        ctx.beginPath();
+                        ctx.fillStyle = s.color;
+                        ctx.globalAlpha = depthAlpha;
+                        ctx.arc(px, py, radius, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        if (warpVelocity > 1.8) {
+                            const prevK = 320 / (s.z + warpVelocity * 5.5);
+                            const prevX = cx + s.x * prevK;
+                            const prevY = cy + s.y * prevK;
+                            ctx.beginPath();
+                            ctx.strokeStyle = s.color;
+                            ctx.lineWidth = Math.max(0.5, radius * 0.7);
+                            ctx.moveTo(prevX, prevY);
+                            ctx.lineTo(px, py);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+
+                if (warpVelocity > 1.0) {
+                    warpVelocity = Math.max(1.0, warpVelocity * 0.92);
+                    const badge = document.getElementById('spaceWarpBadge');
+                    if (badge && warpVelocity <= 1.08) {
+                        badge.textContent = `🌌 SPACE WARP: 1.0x • ORBIT ${Math.round(Math.abs(orbitalAngle))}°`;
+                    }
+                }
+                requestAnimationFrame(renderSpaceFrame);
+            }
+            requestAnimationFrame(renderSpaceFrame);
+        })();
     </script>
 </body>
 </html>

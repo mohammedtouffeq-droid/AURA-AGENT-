@@ -28,6 +28,25 @@ Run the focused offline pipeline tests with:
 python -m unittest test_aura_pipeline -v
 ```
 
+## BharatCode Top-10 Super-Suite (All 10 Judged Winners Integrated)
+
+`aura_bharatcode_top10.py` natively integrates the core capabilities of all 10 judged winners from the BharatCode Build League into a unified, 100% deterministic and verified execution suite (`/api/bharatcode10/overview`, `/api/bharatcode10/execute`, `/api/bharatcode10/superpipeline`):
+
+1. **#1 TRINETRA (`trinetra`)** — Sovereign Cyber Defense, IOC/SIEM extraction, MITRE ATT&CK + CERT-In Playbooks, Indian Statutory Legal Intelligence (`BNS 2023`, `IT Act 2000`, `DPDP Act 2023`), and Explainable AI (XAI) Deepfake Forensics.
+2. **#2 BharatCode IDE Agent (`bharatcode_ide`)** — Autonomous IDE Code Agent, Python/JS AST bug & anti-pattern detector, unified diff refactorer, and unit test synthesizer.
+3. **#3 GitKitty (`gitkitty`)** — Automated codebase architecture tour and interactive Git recovery simulator (`rebase_conflict`, `detached_head`, `accidental_hard_reset`).
+4. **#4 Ashby Multi-ATS Job Radar (`ashby_job_radar`)** — Multi-ATS (`Ashby`, `Greenhouse`, `Lever`, `Workday`) engineering role radar with deterministic `0-100` skill-match scoring.
+5. **#5 LearnOS (`learnos`)** — Student Learning OS with 4-stage mastery roadmaps, SM-2 spaced-repetition flashcards, and coding arena challenges.
+6. **#6 Form2Fact (`form2fact`)** — Evidence-first institutional document cross-verification and discrepancy audit engine.
+7. **#7 OrvynAI (`orvyn_interview`)** — Adaptive technical interviewer, STAR + Systems Design rubric evaluator, and resume-to-role gap analyzer.
+8. **#8 Spare-GPU (`spare_gpu`)** — Idle-capacity hardware telemetry gate and automated background repository maintenance chore scheduler.
+9. **#9 PayGuard AI (`payguard_upi`)** — Explainable UPI QR (`upi://pay?...`) decoder, collect-request scam shield, and itemized bill risk auditor.
+10. **#10 Anonymous-Campus (`anonymous_campus`)** — Zero-identity PII-scrubbed feedback vault with cryptographic SHA-256 receipts and issue routing.
+
+## Deep-Space Scroll-Driven 3D UI
+
+`index.html` features an interactive **Deep-Space Scroll-Driven 3D Starfield & Orbital Parallax Engine** (`#spaceCanvas`, `#spaceOrbitalRingOverlay`, `#spaceScrollProgressBar`, `#spaceWarpBadge`) that responds dynamically to scroll velocity and wheel delta across the chat stream and command hubs.
+
 ## Integration status
 
 The repository declares 63 upstream engine entries in `.gitmodules` and keeps descriptive metadata in `aura_agent.py`. In the current checkout, the engine audit reports those submodules as uninitialized. Listing or cloning an upstream project does **not** make its code callable by AURA; those entries are not all wired into the product pipeline. `engine_auditor.py` checks submodule metadata and local checkout state only—it does not test runtime integration or compatibility.

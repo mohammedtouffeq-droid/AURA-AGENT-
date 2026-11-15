@@ -695,6 +695,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_10_systems import AURA_10_SYSTEMS
             self._send_json(AURA_10_SYSTEMS.get_overview())
 
+        elif path == "/api/bharatcode10/overview":
+            if not self._get_auth_user():
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
+            self._send_json(BHARATCODE_TOP10_SUITE.get_overview())
+
         elif path == "/api/pipeline/status":
             if not self._get_auth_user():
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
@@ -1720,6 +1727,28 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_10_systems import AURA_10_SYSTEMS
             goal = str(body.get("goal") or body.get("prompt") or "Design, simulate, engineer, verify, and audit a full-stack autonomous system across all 10 AI cores")[:1000]
             res = AURA_10_SYSTEMS.run_10_system_omnipipeline(goal=goal, user_tag=user.get("username", "aura_operator"))
+            self._send_json(res)
+
+        # 10. BHARATCODE TOP-10 WINNERS SUPER-SUITE ROUTES
+        elif path == "/api/bharatcode10/execute":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
+            engine_key = body.get("engine_id") or body.get("engine") or "trinetra"
+            payload = str(body.get("payload") or body.get("goal") or body.get("prompt") or "")[:2000]
+            res = BHARATCODE_TOP10_SUITE.execute_engine(engine_key, payload=payload)
+            self._send_json(res)
+
+        elif path == "/api/bharatcode10/superpipeline":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
+            goal = str(body.get("goal") or body.get("payload") or "Run all 10 BharatCode Build League winning engines end-to-end")[:2000]
+            res = BHARATCODE_TOP10_SUITE.run_all_10_superpipeline(mission_goal=goal)
             self._send_json(res)
 
         else:

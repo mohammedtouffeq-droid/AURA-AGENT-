@@ -1943,6 +1943,18 @@ def tool_aura_execute_system(system_id: int, goal: str) -> Dict[str, Any]:
     return AURA_10_SYSTEMS.execute_single_system(system_id=int(system_id), goal=goal)
 
 
+def tool_bharatcode_top10_execute(engine_key: str, payload: str = "") -> Dict[str, Any]:
+    """Executes any of the 10 BharatCode Build League winning engines integrated into AURA (#1 TRINETRA, #2 BharatCode IDE, #3 GitKitty, #4 Ashby Multi-ATS, #5 LearnOS, #6 Form2Fact, #7 OrvynAI, #8 Spare-GPU, #9 PayGuard AI, #10 Anonymous-Campus)."""
+    from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
+    return BHARATCODE_TOP10_SUITE.execute_engine(engine_key, {"prompt": payload})
+
+
+def tool_bharatcode_top10_superpipeline(goal: str = "") -> Dict[str, Any]:
+    """Runs all 10 BharatCode Build League winning engines sequentially in one unified Super-Pipeline inside AURA."""
+    from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
+    return BHARATCODE_TOP10_SUITE.run_all_10_superpipeline(mission_goal=goal or "Full-Spectrum Autonomous Security, Code, Career & Campus Verification")
+
+
 AVAILABLE_TOOLS = {
     "tool_autonomous_code_loop": tool_autonomous_code_loop,
     "tool_coderx_build": tool_coderx_build,
@@ -1998,6 +2010,8 @@ AVAILABLE_TOOLS = {
     "tool_flagship_trinity_pipeline": tool_flagship_trinity_pipeline,
     "tool_aura_10_systems_pipeline": tool_aura_10_systems_pipeline,
     "tool_aura_execute_system": tool_aura_execute_system,
+    "tool_bharatcode_top10_execute": tool_bharatcode_top10_execute,
+    "tool_bharatcode_top10_superpipeline": tool_bharatcode_top10_superpipeline,
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
@@ -2498,6 +2512,28 @@ GEMINI_TOOLS_DECLARATION = [{
                 },
                 "required": ["system_id", "goal"]
             }
+        },
+        {
+            "name": "tool_bharatcode_top10_execute",
+            "description": "Executes any of the 10 BharatCode Build League winning engines integrated into AURA (#1 TRINETRA cyber defense & legal BNS/IT/DPDP intelligence, #2 BharatCode IDE AST refactorer, #3 GitKitty repo tour & git simulator, #4 Ashby Multi-ATS job radar, #5 LearnOS study & spaced repetition, #6 Form2Fact document cross-verifier, #7 OrvynAI interview coach, #8 Spare-GPU idle chore scheduler, #9 PayGuard UPI fraud shield, #10 Anonymous-Campus PII-scrubbed vault).",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "engine_key": {"type": "STRING", "description": "Engine key or rank (1..10 or 'trinetra', 'bharatcode_ide', 'gitkitty', 'ashby_job_radar', 'learnos', 'form2fact', 'orvyn_interview', 'spare_gpu', 'payguard_upi', 'anonymous_campus')."},
+                    "payload": {"type": "STRING", "description": "Input prompt, code, UPI URI, or scenario to analyze."}
+                },
+                "required": ["engine_key"]
+            }
+        },
+        {
+            "name": "tool_bharatcode_top10_superpipeline",
+            "description": "Runs all 10 BharatCode Build League winning engines in one unified Super-Pipeline inside AURA.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "goal": {"type": "STRING", "description": "Mission goal for the 10-winner super-pipeline."}
+                }
+            }
         }
     ]
 }]
@@ -2802,6 +2838,18 @@ The unified pipeline processed your instruction across all core engines (**Time:
 * **Cinema Studio Engine**: `{'ONLINE' if conn.get('media_cinema_engine', {}).get('cloud_flux_ready') else 'OFFLINE'}`
 * **Godot 4.3 Engine**: `{'ONLINE (v' + conn.get('game_studio_engine', {}).get('godot_version', '4.3') + ')' if conn.get('game_studio_engine', {}).get('godot_installed') else 'OFFLINE'}`
 * **OS Telemetry**: `RAM: {conn.get('os_telemetry', {}).get('ram_percent', 0)}% | Free Disk: {conn.get('os_telemetry', {}).get('disk_c_free_gb', 0)} GB`"""
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": text}]
+                        }
+                    }]
+                }
+
+            elif last_tool_name in ["tool_bharatcode_top10_execute", "tool_bharatcode_top10_superpipeline"]:
+                eng = last_output.get("engine") or last_output.get("suite") or "BharatCode Top-10 Super-Suite"
+                text = f"### 🏆 {eng} Executed!\n\n```json\n{json.dumps(last_output, indent=2)}\n```"
                 return {
                     "candidates": [{
                         "content": {
@@ -3144,6 +3192,29 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     "content": {
                         "role": "model",
                         "parts": [{"functionCall": {"name": "tool_master_pipeline_status", "args": {}}}]
+                    }
+                }]
+            }
+        elif any(k in lower_q for k in ["bharatcode top 10", "bharatcode superpipeline", "run all 10 winners", "all 10 bharatcode"]):
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_bharatcode_top10_superpipeline", "args": {"goal": user_text.strip()}}}]
+                    }
+                }]
+            }
+        elif any(k in lower_q for k in ["trinetra", "gitkitty", "ashby", "learnos", "form2fact", "orvyn", "spare-gpu", "payguard", "anonymous-campus", "anonymous campus"]):
+            eng_k = "trinetra"
+            for candidate_k in ["trinetra", "gitkitty", "ashby", "learnos", "form2fact", "orvyn", "spare-gpu", "payguard", "anonymous"]:
+                if candidate_k in lower_q:
+                    eng_k = candidate_k
+                    break
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_bharatcode_top10_execute", "args": {"engine_key": eng_k, "payload": user_text.strip()}}}]
                     }
                 }]
             }
