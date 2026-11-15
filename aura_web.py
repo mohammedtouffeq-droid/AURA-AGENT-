@@ -1148,7 +1148,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache, no-store")
-            self.send_header("Connection", "keep-alive")
+            self.send_header("Connection", "close")
             self._apply_security_and_cors_headers()
             self.end_headers()
 

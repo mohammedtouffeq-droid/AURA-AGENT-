@@ -308,3 +308,45 @@ def test_frontend_security_isolation_and_command_palette_present():
     visible = re.sub(r"<[^>]+>", " ", visible)
     assert "BharatCode" not in visible
     assert "Build League" not in visible
+
+
+def test_vercel_wsgi_strips_hop_by_hop_headers_and_sets_content_length_on_stream(isolated_server):
+    import importlib.util
+    import io
+
+    idx_path = Path(__file__).resolve().parent / "api" / "index.py"
+    spec = importlib.util.spec_from_file_location("aura_vercel_wsgi", str(idx_path))
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    app = mod.app
+
+    _, _, reg = _http_json(
+        f"{isolated_server['base_url']}/api/auth/register",
+        method="POST",
+        payload={"username": "wsgi_tester", "password": "WsgiPassword!99"},
+    )
+    body_bytes = json.dumps({"prompt": "/calc 9 * 9", "thread_id": "th_wsgi_1"}).encode("utf-8")
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "PATH_INFO": "/api/chat/stream",
+        "QUERY_STRING": "",
+        "CONTENT_TYPE": "application/json",
+        "CONTENT_LENGTH": str(len(body_bytes)),
+        "HTTP_AUTHORIZATION": f"Bearer {reg['token']}",
+        "wsgi.input": io.BytesIO(body_bytes),
+    }
+    captured = {}
+
+    def start_response(status, headers):
+        captured["status"] = status
+        captured["headers"] = {k.lower(): v for k, v in headers}
+
+    chunks = app(environ, start_response)
+    payload = b"".join(chunks)
+    assert captured["status"].startswith("200")
+    assert "connection" not in captured["headers"]
+    assert "transfer-encoding" not in captured["headers"]
+    assert int(captured["headers"]["content-length"]) == len(payload)
+    assert b'"type": "done"' in payload
+    assert b"81" in payload

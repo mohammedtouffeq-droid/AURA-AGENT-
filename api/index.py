@@ -91,7 +91,21 @@ def app(environ, start_response):
 
         header_lines = headers_part.split("\r\n")
         status_code = header_lines[0].split(" ", 1)[1] if " " in header_lines[0] else "200 OK"
-        response_headers = [(l.split(":", 1)[0].strip(), l.split(":", 1)[1].strip()) for l in header_lines[1:] if ":" in l]
+        hop_by_hop = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers", "transfer-encoding", "upgrade"}
+        response_headers = []
+        has_content_length = False
+        for line in header_lines[1:]:
+            if ":" not in line:
+                continue
+            k, v = line.split(":", 1)
+            k_clean, v_clean = k.strip(), v.strip()
+            if k_clean.lower() in hop_by_hop:
+                continue
+            if k_clean.lower() == "content-length":
+                has_content_length = True
+            response_headers.append((k_clean, v_clean))
+        if not has_content_length:
+            response_headers.append(("Content-Length", str(len(response_body))))
 
         start_response(status_code, response_headers)
         return [response_body]
