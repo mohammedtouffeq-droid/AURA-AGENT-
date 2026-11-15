@@ -1282,6 +1282,107 @@
             z-index: 99999;
             transition: width 0.08s linear;
         }
+        .sidebar-search-row {
+            padding: 6px 2px 10px 2px;
+        }
+        #threadSearchInput {
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 12px;
+            padding: 7px 10px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        #threadSearchInput:focus {
+            border-color: rgba(56, 189, 248, 0.65);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.16);
+        }
+        .thread-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #7dd3fc;
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            margin-left: 6px;
+        }
+        .slash-palette {
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            background: rgba(11, 15, 27, 0.96);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 12px;
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(56, 189, 248, 0.12);
+            backdrop-filter: blur(16px);
+            z-index: 40;
+        }
+        .slash-palette-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .slash-palette-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: background 0.12s ease;
+        }
+        .slash-palette-item:hover,
+        .slash-palette-item.active {
+            background: rgba(56, 189, 248, 0.16);
+        }
+        .slash-cmd-name {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #7dd3fc;
+            white-space: nowrap;
+        }
+        .slash-cmd-desc {
+            font-size: 11.5px;
+            color: #cbd5e1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .history-backup-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .btn-backup-action {
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            background: rgba(56, 189, 248, 0.14);
+            color: #bae6fd;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .btn-backup-action:hover {
+            background: rgba(56, 189, 248, 0.24);
+        }
     </style>
 </head>
 <body>
@@ -1336,7 +1437,13 @@
         </button>
 
         <div class="threads-scroll" id="threadsContainer">
-            <div class="thread-group-title">Recent Chats</div>
+            <div class="thread-group-title" style="display:flex; align-items:center; justify-content:space-between;">
+                <span>Recent Chats <span class="thread-count-badge" id="threadCountBadge">0</span></span>
+                <button type="button" onclick="loadThreads(true)" title="Refresh & sync saved chats" style="background:none; border:none; color:#7dd3fc; cursor:pointer; font-size:11px; padding:0;">↻ Sync</button>
+            </div>
+            <div class="sidebar-search-row">
+                <input type="search" id="threadSearchInput" placeholder="Search 100+ saved chats..." oninput="filterThreadsList(this.value)" autocomplete="off">
+            </div>
             <div id="threadsList">
                 <div style="font-size: 12px; color: var(--text-subtle); padding: 8px 10px;">Loading history...</div>
             </div>
@@ -1459,6 +1566,7 @@
 
         <!-- Floating Bottom Input Dock -->
         <div class="bottom-dock-wrapper">
+            <div class="slash-palette" id="slashCommandPalette" style="display: none;" role="listbox" aria-label="AURA Slash Commands"></div>
             <div class="input-dock-card" id="inputDockCard">
                 
                 <!-- Attached Files Chips Preview -->
@@ -1468,7 +1576,7 @@
                     class="main-textarea" 
                     id="userPrompt" 
                     rows="1" 
-                    placeholder="Message AURA (Press Enter to send, Shift+Enter for new line)..."
+                    placeholder="Message AURA or type / for commands (Enter to send, Shift+Enter for new line)..."
                 ></textarea>
                 
                 <div class="input-controls-row">
@@ -1483,6 +1591,9 @@
                                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                 <line x1="12" y1="19" x2="12" y2="22"/>
                             </svg>
+                        </button>
+                        <button class="btn-dock-icon" id="btnSlashPalette" type="button" title="Browse AURA Slash Commands (/help, /goal, /plan, /brightness, /nexus)" onclick="toggleSlashPaletteFromButton()" style="font-family: ui-monospace, monospace; font-weight: 800; font-size: 13px; color: #7dd3fc;">
+                            /
                         </button>
                         <button class="btn-dock-icon" title="AURA asks before running pipeline actions" style="color: var(--text-muted);">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -1539,6 +1650,16 @@
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
             <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">🧠 Scoped User Memories</h3>
             <div id="userMemoriesInspector" style="font-size:12px; color:#94a3b8; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.28); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Loading memories...</div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
+            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">💾 Persistent Account History (100+ Chats Safe)</h3>
+            <p style="font-size:11.5px; color:#94a3b8; margin:0 0 8px 0;">Chats are stored in an account-isolated IndexedDB vault and automatically re-synced for your username only. Export a portable backup anytime to keep chats permanently across devices.</p>
+            <div class="history-backup-row">
+                <button type="button" id="btnExportHistoryBackup" class="btn-backup-action" onclick="exportMyHistoryBackup()">💾 Export History Backup (.json)</button>
+                <button type="button" id="btnImportHistoryBackup" class="btn-backup-action" onclick="document.getElementById('historyImportFile').click()">📥 Import / Restore Backup</button>
+                <input type="file" id="historyImportFile" accept=".json,application/json" style="display:none;" onchange="importMyHistoryBackup(event)">
+            </div>
+            <div id="historyBackupStatus" style="font-size:11.5px; margin-top:6px; color:#a7f3d0;"></div>
 
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
             <h3 style="margin:0 0 8px 0; font-size:14px; color:#f8fafc;">🔐 Account Security</h3>
@@ -2111,45 +2232,245 @@
     </div>
 
     <script>
-        // Security Initialization: Purge any legacy bearer/CSRF tokens from localStorage.
-        // Session authentication relies on HttpOnly; SameSite=Strict cookies + in-memory CSRF tokens.
+        // Security Initialization: Purge legacy shared/bearer keys from localStorage.
+        // Session auth uses HttpOnly; SameSite=Strict cookies + tab sessionStorage token + dynamic CSRF.
         try {
             localStorage.removeItem('aura_auth_token');
             localStorage.removeItem('aura_csrf_token');
+            localStorage.removeItem('aura_active_vault');
+            localStorage.removeItem('aura_active_thread_id');
         } catch (e) {}
 
-        // State (tokens held strictly in JS memory, never persisted to localStorage)
+        // Account-Isolated IndexedDB Persistence Engine (Supports 100-5,000+ Chats Without 5MB localStorage Caps)
+        const AuraVaultDB = (() => {
+            const DB_NAME = 'AuraIsolatedHistoryV2';
+            const DB_VERSION = 1;
+            const STORE_NAME = 'user_vaults';
+            let dbPromise = null;
+
+            function openDb() {
+                if (dbPromise) return dbPromise;
+                dbPromise = new Promise((resolve) => {
+                    if (typeof indexedDB === 'undefined') {
+                        resolve(null);
+                        return;
+                    }
+                    try {
+                        const req = indexedDB.open(DB_NAME, DB_VERSION);
+                        req.onupgradeneeded = () => {
+                            const db = req.result;
+                            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                                db.createObjectStore(STORE_NAME, { keyPath: 'username' });
+                            }
+                        };
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => resolve(null);
+                    } catch (e) {
+                        resolve(null);
+                    }
+                });
+                return dbPromise;
+            }
+
+            async function get(username) {
+                const uname = String(username || '').trim().toLowerCase();
+                if (!uname) return null;
+                const db = await openDb();
+                if (!db) return null;
+                return new Promise((resolve) => {
+                    try {
+                        const tx = db.transaction(STORE_NAME, 'readonly');
+                        const req = tx.objectStore(STORE_NAME).get(uname);
+                        req.onsuccess = () => resolve(req.result ? req.result.vault : null);
+                        req.onerror = () => resolve(null);
+                    } catch (e) {
+                        resolve(null);
+                    }
+                });
+            }
+
+            async function set(username, vaultObj) {
+                const uname = String(username || '').trim().toLowerCase();
+                if (!uname || !vaultObj) return false;
+                const db = await openDb();
+                if (!db) return false;
+                return new Promise((resolve) => {
+                    try {
+                        const tx = db.transaction(STORE_NAME, 'readwrite');
+                        const req = tx.objectStore(STORE_NAME).put({
+                            username: uname,
+                            updatedAt: Date.now(),
+                            vault: vaultObj
+                        });
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = () => resolve(false);
+                    } catch (e) {
+                        resolve(false);
+                    }
+                });
+            }
+
+            async function remove(username) {
+                const uname = String(username || '').trim().toLowerCase();
+                if (!uname) return false;
+                const db = await openDb();
+                if (!db) return false;
+                return new Promise((resolve) => {
+                    try {
+                        const tx = db.transaction(STORE_NAME, 'readwrite');
+                        const req = tx.objectStore(STORE_NAME).delete(uname);
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = () => resolve(false);
+                    } catch (e) {
+                        resolve(false);
+                    }
+                });
+            }
+
+            async function purgeGuestsAndUnscoped() {
+                const db = await openDb();
+                if (!db) return;
+                return new Promise((resolve) => {
+                    try {
+                        const tx = db.transaction(STORE_NAME, 'readwrite');
+                        const store = tx.objectStore(STORE_NAME);
+                        const req = store.getAllKeys();
+                        req.onsuccess = () => {
+                            const keys = Array.isArray(req.result) ? req.result : [];
+                            keys.forEach(k => {
+                                if (String(k).startsWith('guest_')) {
+                                    store.delete(k);
+                                }
+                            });
+                            resolve();
+                        };
+                        req.onerror = () => resolve();
+                    } catch (e) {
+                        resolve();
+                    }
+                });
+            }
+
+            return { get, set, remove, purgeGuestsAndUnscoped };
+        })();
+
+        // State (session tokens never stored in localStorage; history strictly partitioned by username)
         let authMode = 'login';
         let currentUser = null;
         let authToken = '';
         let csrfToken = '';
+        try {
+            authToken = sessionStorage.getItem('aura_auth_token') || '';
+        } catch (e) {}
         let activeExecutionMode = 'auto_pilot';
-        let currentThreadId = localStorage.getItem('aura_active_thread_id') || ('th_' + Date.now());
+        let currentThreadId = 'th_' + Date.now();
         let isSending = false;
         let currentAttachments = [];
         let activePermissionId = null;
         let permissionPollTimer = null;
         let permissionPollInFlight = false;
+        let cachedThreads = [];
+        let threadFilterQuery = '';
+        let lastDeletedThreadIds = new Set();
+        let lastServerStorageStatus = {};
+        let sessionRecoveryPromise = null;
 
         const MAX_ATTACHMENTS = 5;
         const MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MB per file
         const MAX_TOTAL_ATTACHMENT_BYTES = 6 * 1024 * 1024; // 6 MB combined
 
+        function getScopedThreadKey(username) {
+            const uname = String(username || (currentUser && currentUser.username) || '').trim().toLowerCase();
+            return uname ? ('aura_thread_id_' + uname) : '';
+        }
+
+        function setScopedActiveThread(threadId) {
+            currentThreadId = String(threadId || ('th_' + Date.now()));
+            const key = getScopedThreadKey();
+            if (key) {
+                try {
+                    sessionStorage.setItem(key, currentThreadId);
+                    localStorage.setItem(key, currentThreadId);
+                } catch (e) {}
+            }
+        }
+
+        function restoreScopedActiveThread(username) {
+            const key = getScopedThreadKey(username);
+            let restored = '';
+            if (key) {
+                try {
+                    restored = sessionStorage.getItem(key) || localStorage.getItem(key) || '';
+                } catch (e) {}
+            }
+            currentThreadId = restored || ('th_' + Date.now());
+            return currentThreadId;
+        }
+
         function isAuthenticated() {
             return Boolean(currentUser || authToken);
         }
 
+        async function recoverActiveSession(isBackground = false) {
+            if (sessionRecoveryPromise) return sessionRecoveryPromise;
+            sessionRecoveryPromise = (async () => {
+                try {
+                    const hdrs = {};
+                    if (authToken) hdrs['Authorization'] = `Bearer ${authToken}`;
+                    const meRes = await fetch('/api/auth/me', {
+                        credentials: 'same-origin',
+                        headers: hdrs
+                    });
+                    const meData = await safeParseJson(meRes);
+                    if (meRes.ok && meData.authenticated && meData.user) {
+                        currentUser = meData.user;
+                        if (meData.csrf_token) csrfToken = meData.csrf_token;
+                        if (meData.storage_status) applyStorageStatusUI(meData.storage_status);
+                        return true;
+                    }
+                    if (!isBackground && currentUser && (currentUser.isGuest || String(currentUser.username || '').startsWith('guest_'))) {
+                        const prevVault = await loadIsolatedUserVault(currentUser.username);
+                        const okGuest = await continueAsGuest({ preserveConversation: true });
+                        if (okGuest && prevVault && prevVault.payload && Array.isArray(prevVault.payload.threads) && prevVault.payload.threads.length > 0) {
+                            await syncVaultPayloadToServer(prevVault);
+                        }
+                        return okGuest;
+                    }
+                } catch (e) {}
+                return false;
+            })();
+            try {
+                return await sessionRecoveryPromise;
+            } finally {
+                sessionRecoveryPromise = null;
+            }
+        }
+
         async function apiFetch(url, options = {}) {
-            const opts = Object.assign({ credentials: 'same-origin' }, options);
-            const headers = Object.assign({}, opts.headers || {});
-            if (authToken && !headers['Authorization']) {
-                headers['Authorization'] = `Bearer ${authToken}`;
+            const skipRecovery = Boolean(options.skipAuthRecovery);
+            const backgroundPoll = Boolean(options.backgroundPoll);
+            const makeRequest = () => {
+                const opts = Object.assign({ credentials: 'same-origin' }, options);
+                delete opts.skipAuthRecovery;
+                delete opts.backgroundPoll;
+                const headers = Object.assign({}, opts.headers || {});
+                if (authToken && !headers['Authorization']) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                if (csrfToken && !headers['X-CSRF-Token']) {
+                    headers['X-CSRF-Token'] = csrfToken;
+                }
+                opts.headers = headers;
+                return fetch(url, opts);
+            };
+            let res = await makeRequest();
+            if ((res.status === 401 || res.status === 403) && !skipRecovery && !String(url).startsWith('/api/auth/')) {
+                const recovered = await recoverActiveSession(backgroundPoll);
+                if (recovered) {
+                    res = await makeRequest();
+                }
             }
-            if (csrfToken && !headers['X-CSRF-Token']) {
-                headers['X-CSRF-Token'] = csrfToken;
-            }
-            opts.headers = headers;
-            return fetch(url, opts);
+            return res;
         }
 
         // DOM elements
@@ -2382,10 +2703,12 @@
                     return;
                 }
                 closeModelSettings();
-                purgeLocalVaultStorage();
+                const deletedUsername = currentUser && currentUser.username ? currentUser.username : '';
+                await purgeLocalVaultStorage({ removeUser: deletedUsername });
                 authToken = '';
                 csrfToken = '';
                 currentUser = null;
+                cachedThreads = [];
                 authOverlay.style.display = 'flex';
                 switchAuthTab('login');
             } catch (err) {
@@ -2636,34 +2959,201 @@
             }
         }
 
-        function saveUserVault(vaultObj) {
-            // Only accept v2 credential-free vaults (never store password_hash, salt, or session tokens)
-            if (!vaultObj || !vaultObj.username || !vaultObj.signature) return;
-            if (vaultObj.payload && (vaultObj.payload.sessions || (vaultObj.payload.user && (vaultObj.payload.user.password_hash || vaultObj.payload.user.salt)))) {
-                return;
-            }
+        async function loadIsolatedUserVault(username) {
+            const uname = String(username || '').trim().toLowerCase();
+            if (!uname) return null;
+            let vault = null;
             try {
-                const uname = String(vaultObj.username).toLowerCase();
-                localStorage.setItem('aura_user_vault_' + uname, JSON.stringify(vaultObj));
-                localStorage.setItem('aura_active_vault', JSON.stringify(vaultObj));
+                vault = await AuraVaultDB.get(uname);
             } catch (e) {}
+            if (!vault) {
+                try {
+                    const raw = localStorage.getItem('aura_user_vault_' + uname);
+                    if (raw) vault = JSON.parse(raw);
+                } catch (e) {}
+            }
+            if (!vault || typeof vault !== 'object') return null;
+            const vaultUser = String(vault.username || (vault.payload && vault.payload.username) || '').trim().toLowerCase();
+            if (vaultUser && vaultUser !== uname) return null;
+            return vault;
         }
 
-        function purgeLocalVaultStorage() {
+        async function saveUserVault(vaultObj) {
+            // Only accept v2 credential-free vaults scoped strictly to the signed-in username
+            if (!vaultObj || typeof vaultObj !== 'object') return false;
+            const uname = String(vaultObj.username || (vaultObj.payload && vaultObj.payload.username) || '').trim().toLowerCase();
+            if (!uname) return false;
+            if (currentUser && currentUser.username && String(currentUser.username).trim().toLowerCase() !== uname) {
+                return false;
+            }
+            if (vaultObj.payload && (vaultObj.payload.sessions || (vaultObj.payload.user && (vaultObj.payload.user.password_hash || vaultObj.payload.user.salt)))) {
+                return false;
+            }
+            try {
+                await AuraVaultDB.set(uname, vaultObj);
+                // Keep a compact mirror in localStorage when small for legacy fast login restore; never share across users
+                const serialized = JSON.stringify(vaultObj);
+                if (serialized.length < 1800000) {
+                    localStorage.setItem('aura_user_vault_' + uname, serialized);
+                } else {
+                    localStorage.removeItem('aura_user_vault_' + uname);
+                }
+                localStorage.removeItem('aura_active_vault');
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function syncVaultPayloadToServer(vaultObj, opts = {}) {
+            if (!vaultObj || !isAuthenticated() || !currentUser || !currentUser.username) return null;
+            const authedUser = String(currentUser.username).trim().toLowerCase();
+            const payload = vaultObj.payload && typeof vaultObj.payload === 'object' ? vaultObj.payload : vaultObj;
+            const vaultUser = String(vaultObj.username || payload.username || '').trim().toLowerCase();
+            const allowGuestCarryover = Boolean(opts.overrideOwnerForGuest && authedUser.startsWith('guest_') && vaultUser.startsWith('guest_'));
+            if (vaultUser && vaultUser !== authedUser && !allowGuestCarryover) {
+                return { success: false, error: 'Cross-account vault sync blocked.' };
+            }
+            const res = await apiFetch('/api/threads/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: authedUser,
+                    threads: Array.isArray(payload.threads) ? payload.threads : [],
+                    messages: Array.isArray(payload.messages) ? payload.messages : [],
+                    user_memories: Array.isArray(payload.user_memories) ? payload.user_memories : [],
+                    projects: Array.isArray(payload.projects) ? payload.projects : []
+                })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success && data.user_vault) {
+                await saveUserVault(data.user_vault);
+            }
+            return data;
+        }
+
+        async function purgeLocalVaultStorage(opts = {}) {
             try {
                 localStorage.removeItem('aura_active_vault');
                 localStorage.removeItem('aura_active_thread_id');
                 localStorage.removeItem('aura_auth_token');
                 localStorage.removeItem('aura_csrf_token');
+                sessionStorage.removeItem('aura_auth_token');
+                sessionStorage.removeItem('aura_csrf_token');
+
+                const removeSpecific = String(opts.removeUser || '').trim().toLowerCase();
+                if (removeSpecific) {
+                    localStorage.removeItem('aura_user_vault_' + removeSpecific);
+                    localStorage.removeItem('aura_thread_id_' + removeSpecific);
+                    sessionStorage.removeItem('aura_thread_id_' + removeSpecific);
+                    await AuraVaultDB.remove(removeSpecific);
+                }
+
+                // Always scrub ephemeral guest keys and optionally wipe all named user caches
+                const wipeNamed = Boolean(opts.clearNamedUserVaults);
                 const keysToDelete = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const k = localStorage.key(i);
-                    if (k && k.startsWith('aura_user_vault_')) {
+                    if (!k) continue;
+                    if (wipeNamed && (k.startsWith('aura_user_vault_') || k.startsWith('aura_thread_id_'))) {
+                        keysToDelete.push(k);
+                    } else if (k.startsWith('aura_user_vault_guest_') || k.startsWith('aura_thread_id_guest_')) {
                         keysToDelete.push(k);
                     }
                 }
                 keysToDelete.forEach(k => localStorage.removeItem(k));
+                await AuraVaultDB.purgeGuestsAndUnscoped();
             } catch (e) {}
+        }
+
+        async function exportMyHistoryBackup() {
+            const statusEl = document.getElementById('historyBackupStatus');
+            if (!isAuthenticated() || !currentUser) {
+                if (statusEl) statusEl.textContent = 'Sign in first to export your account history.';
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/auth/me');
+                const data = await safeParseJson(res);
+                let vault = (data && data.user_vault) ? data.user_vault : await loadIsolatedUserVault(currentUser.username);
+                if (!vault) {
+                    if (statusEl) statusEl.textContent = 'No history snapshot available yet.';
+                    return;
+                }
+                await saveUserVault(vault);
+                const blob = new Blob([JSON.stringify(vault, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const safeUser = String(currentUser.username || 'aura_user').replace(/[^a-z0-9_-]/gi, '_');
+                a.href = url;
+                a.download = `aura_history_backup_${safeUser}_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                const count = (vault.payload && Array.isArray(vault.payload.threads)) ? vault.payload.threads.length : 0;
+                if (statusEl) statusEl.textContent = `✓ Exported ${count} threads strictly for @${currentUser.username}.`;
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Export failed: ' + err.message;
+            }
+        }
+
+        async function importMyHistoryBackup(event) {
+            const file = event && event.target && event.target.files ? event.target.files[0] : null;
+            const statusEl = document.getElementById('historyBackupStatus');
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                const owner = String(parsed.username || (parsed.payload && parsed.payload.username) || '').trim().toLowerCase();
+                const currentU = currentUser && currentUser.username ? String(currentUser.username).trim().toLowerCase() : '';
+                if (!currentU) {
+                    if (statusEl) statusEl.textContent = 'Please sign in before importing history.';
+                    return;
+                }
+                if (owner && owner !== currentU) {
+                    if (statusEl) {
+                        statusEl.style.color = '#fca5a5';
+                        statusEl.textContent = `✕ Rejected: This backup belongs to @${owner}, not @${currentU}. Cross-account import is blocked.`;
+                    }
+                    return;
+                }
+                let restoredOk = false;
+                if (parsed.signature && parsed.version === 2) {
+                    const rRes = await apiFetch('/api/auth/restore_vault', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ vault_backup: parsed })
+                    });
+                    const rData = await safeParseJson(rRes);
+                    if (rRes.ok && rData.success) {
+                        restoredOk = true;
+                        if (rData.user_vault) await saveUserVault(rData.user_vault);
+                    }
+                }
+                if (!restoredOk) {
+                    const sData = await syncVaultPayloadToServer(parsed);
+                    if (!sData || !sData.success) {
+                        if (statusEl) {
+                            statusEl.style.color = '#fca5a5';
+                            statusEl.textContent = (sData && sData.error) || 'Failed to restore backup.';
+                        }
+                        return;
+                    }
+                }
+                await loadThreads(false);
+                if (statusEl) {
+                    statusEl.style.color = '#a7f3d0';
+                    statusEl.textContent = `✓ History restored cleanly for @${currentU}.`;
+                }
+            } catch (err) {
+                if (statusEl) {
+                    statusEl.style.color = '#fca5a5';
+                    statusEl.textContent = 'Invalid JSON backup file: ' + err.message;
+                }
+            } finally {
+                if (event && event.target) event.target.value = '';
+            }
         }
 
         function togglePasswordVisibility() {
@@ -2680,10 +3170,13 @@
 
         // ---------------- Authentication Handling ----------------
         function applyStorageStatusUI(storageStatus) {
+            if (storageStatus && typeof storageStatus === 'object') {
+                lastServerStorageStatus = storageStatus;
+            }
             const warnEl = document.getElementById('authStorageWarning');
             if (!storageStatus || !warnEl) return;
-            if (storageStatus.vault_sync_enabled) {
-                warnEl.innerText = '🔒 Signed History Sync Active — Credentials & sessions are excluded from browser storage.';
+            if (storageStatus.vault_sync_enabled || storageStatus.stateless_session_sync) {
+                warnEl.innerText = '🔒 Account-Isolated Sync Active — Signed sessions & IndexedDB vaults keep your 100+ chats safe.';
                 warnEl.style.display = 'block';
             } else {
                 warnEl.style.display = 'none';
@@ -2694,7 +3187,8 @@
             authOverlay.style.display = 'none';
         }
 
-        async function continueAsGuest() {
+        async function continueAsGuest(opts = {}) {
+            const preserveConversation = Boolean(opts && opts.preserveConversation);
             const guestUser = 'guest_' + Math.random().toString(36).substring(2, 7) + Date.now().toString(36).slice(-3);
             const guestPass = 'AuraGuest' + Math.floor(1000 + Math.random() * 9000);
             try {
@@ -2708,18 +3202,23 @@
                 if (res.ok && data.success && (data.user || data.token)) {
                     authToken = data.token || '';
                     csrfToken = data.csrf_token || '';
-                    currentUser = data.user;
-                    if (authToken) {
-                        sessionStorage.setItem('aura_auth_token', authToken);
-                        localStorage.setItem('aura_auth_token', authToken);
+                    currentUser = Object.assign({}, data.user || { username: guestUser }, { isGuest: true });
+                    try {
+                        if (authToken) sessionStorage.setItem('aura_auth_token', authToken);
+                    } catch (e) {}
+                    if (data.user_vault) {
+                        await saveUserVault(data.user_vault);
                     }
-                    sessionStorage.setItem('aura_auth_token', authToken);
-                    localStorage.setItem('aura_auth_token', authToken);
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
-                    await refreshActiveModelLabel();
-                    await loadThreads();
-                    startPermissionPolling();
+                    if (!preserveConversation) {
+                        cachedThreads = [];
+                        lastDeletedThreadIds.clear();
+                        restoreScopedActiveThread(currentUser.username);
+                        await refreshActiveModelLabel();
+                        await loadThreads();
+                        startPermissionPolling();
+                    }
                     return true;
                 }
             } catch (e) {
@@ -2761,14 +3260,9 @@
 
             const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
 
-            const savedVaultRaw = localStorage.getItem('aura_user_vault_' + u);
-            let parsedVault = null;
-            if (savedVaultRaw) {
-                try { parsedVault = JSON.parse(savedVaultRaw); } catch(e) {}
-            }
-
+            const parsedVault = await loadIsolatedUserVault(u);
             const loginPayload = { username: u, password: p };
-            if (parsedVault && parsedVault.username === u) {
+            if (parsedVault && parsedVault.username === u && parsedVault.signature) {
                 loginPayload.vault_backup = parsedVault;
             }
 
@@ -2786,47 +3280,65 @@
                 if (res.ok && data.success && (data.user || data.token)) {
                     authToken = data.token || '';
                     csrfToken = data.csrf_token || '';
-                    currentUser = data.user;
-                    if (authToken) {
-                        sessionStorage.setItem('aura_auth_token', authToken);
-                        localStorage.setItem('aura_auth_token', authToken);
-                    }
+                    currentUser = Object.assign({}, data.user || { username: u }, {
+                        isGuest: String(u).startsWith('guest_')
+                    });
+                    cachedThreads = [];
+                    lastDeletedThreadIds.clear();
+                    try {
+                        if (authToken) sessionStorage.setItem('aura_auth_token', authToken);
+                    } catch (e) {}
 
-                    // Post-authentication vault history sync (never runs before password verification)
-                    const savedVaultRaw = localStorage.getItem('aura_user_vault_' + u);
-                    if (authMode === 'login' && savedVaultRaw && (!data.threads_count || data.threads_count === 0)) {
-                        try {
-                            const parsedVault = JSON.parse(savedVaultRaw);
-                            if (parsedVault && parsedVault.version === 2) {
-                                await apiFetch('/api/auth/restore_vault', {
+                    // Post-authentication account-isolated history sync (never runs before auth; strictly keyed by username)
+                    const localVaultThreads = (parsedVault && parsedVault.payload && Array.isArray(parsedVault.payload.threads))
+                        ? parsedVault.payload.threads
+                        : [];
+                    if (authMode === 'login' && parsedVault && localVaultThreads.length > (data.threads_count || 0)) {
+                        let restoredSigned = false;
+                        if (parsedVault.version === 2 && parsedVault.signature) {
+                            try {
+                                const rRes = await apiFetch('/api/auth/restore_vault', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ vault_backup: parsedVault })
                                 });
-                            }
-                        } catch (syncErr) {}
+                                const rData = await safeParseJson(rRes);
+                                if (rRes.ok && rData.success) {
+                                    restoredSigned = true;
+                                    if (rData.user_vault) await saveUserVault(rData.user_vault);
+                                }
+                            } catch (syncErr) {}
+                        }
+                        if (!restoredSigned) {
+                            await syncVaultPayloadToServer(parsedVault);
+                        }
                     }
 
                     if (data.user_vault) {
-                        saveUserVault(data.user_vault);
+                        const existingCount = localVaultThreads.length;
+                        const serverCount = (data.user_vault.payload && Array.isArray(data.user_vault.payload.threads))
+                            ? data.user_vault.payload.threads.length
+                            : 0;
+                        if (serverCount >= existingCount || !parsedVault) {
+                            await saveUserVault(data.user_vault);
+                        }
                     }
+
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
                     await refreshActiveModelLabel();
                     authUsername.value = '';
                     authPassword.value = '';
+                    restoreScopedActiveThread(u);
 
-                    await loadThreads();
+                    await loadThreads(true);
                     if (data.default_thread_id) {
                         await selectThread(data.default_thread_id);
+                    } else if (cachedThreads && cachedThreads.length > 0) {
+                        const targetId = cachedThreads.some(t => t.id === currentThreadId) ? currentThreadId : cachedThreads[0].id;
+                        await selectThread(targetId);
                     } else {
-                        const threadsRes = await apiFetch('/api/threads');
-                        const threadsData = await safeParseJson(threadsRes);
-                        if (threadsData.threads && threadsData.threads.length > 0) {
-                            await selectThread(threadsData.threads[0].id);
-                        } else {
-                            createNewChatSession();
-                        }
+                        createNewChatSession();
                     }
                     startPermissionPolling();
                 } else {
@@ -2851,22 +3363,38 @@
 
         async function verifyAuth() {
             try {
-                const storedToken = sessionStorage.getItem('aura_auth_token') || localStorage.getItem('aura_auth_token');
+                let storedToken = '';
+                try { storedToken = sessionStorage.getItem('aura_auth_token') || ''; } catch (e) {}
                 if (storedToken && !authToken) {
                     authToken = storedToken;
                 }
-                const res = await apiFetch('/api/auth/me');
+                const res = await fetch('/api/auth/me', {
+                    credentials: 'same-origin',
+                    headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+                });
                 const data = await safeParseJson(res);
                 if (data.storage_status) {
                     applyStorageStatusUI(data.storage_status);
                 }
                 if (res.ok && data.authenticated && data.user) {
-                    currentUser = data.user;
+                    currentUser = Object.assign({}, data.user, {
+                        isGuest: String(data.user.username || '').startsWith('guest_')
+                    });
                     if (data.csrf_token) {
                         csrfToken = data.csrf_token;
                     }
+                    restoreScopedActiveThread(currentUser.username);
                     if (data.user_vault) {
-                        saveUserVault(data.user_vault);
+                        const localVault = await loadIsolatedUserVault(currentUser.username);
+                        const localCount = (localVault && localVault.payload && Array.isArray(localVault.payload.threads))
+                            ? localVault.payload.threads.length
+                            : 0;
+                        const serverCount = (data.user_vault.payload && Array.isArray(data.user_vault.payload.threads))
+                            ? data.user_vault.payload.threads.length
+                            : 0;
+                        if (serverCount >= localCount || !localVault) {
+                            await saveUserVault(data.user_vault);
+                        }
                     }
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
@@ -2876,8 +3404,11 @@
             authToken = '';
             csrfToken = '';
             currentUser = null;
-            sessionStorage.removeItem('aura_auth_token');
-            localStorage.removeItem('aura_auth_token');
+            try {
+                sessionStorage.removeItem('aura_auth_token');
+                localStorage.removeItem('aura_auth_token');
+                localStorage.removeItem('aura_csrf_token');
+            } catch (e) {}
             authOverlay.style.display = 'flex';
             return false;
         }
@@ -2961,11 +3492,14 @@
                 const pill = document.getElementById('agBridgeStatusPill');
                 if (pill) pill.textContent = `● Brightness Set: ${level}% (CSS Filter ${cssBrightness}x Active)`;
                 showBridgeToast(`☀️ <strong>AURA Display Bridge:</strong> Brightness set to <strong>${level}%</strong>`, '#f59e0b');
-                fetch('http://127.0.0.1:5050/api/os/brightness', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ level })
-                }).catch(() => {});
+                if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+                    apiFetch('/api/os/brightness', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ level }),
+                        skipAuthRecovery: true
+                    }).catch(() => {});
+                }
             } else if (action === 'get_brightness') {
                 const cur = window.__auraScreenBrightness || 100;
                 showBridgeToast(`☀️ <strong>AURA Display Telemetry:</strong> Current Brightness is <strong>${cur}%</strong>`, '#38bdf8');
@@ -3363,13 +3897,18 @@
                 await apiFetch('/api/auth/logout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    body: JSON.stringify({}),
+                    skipAuthRecovery: true
                 });
             } catch (e) {}
-            purgeLocalVaultStorage();
+            await purgeLocalVaultStorage({ clearNamedUserVaults: false });
             authToken = '';
             csrfToken = '';
             currentUser = null;
+            cachedThreads = [];
+            lastDeletedThreadIds.clear();
+            const badge = document.getElementById('threadCountBadge');
+            if (badge) badge.textContent = '0';
             threadsList.innerHTML = '<div style="font-size: 12px; color: var(--text-subtle); padding: 8px 10px;">Signed out</div>';
             chatStream.innerHTML = '';
             chatStream.appendChild(welcomeHero);
@@ -3393,7 +3932,7 @@
             const authed = await verifyAuth();
             if (authed) {
                 await refreshActiveModelLabel();
-                await loadThreads();
+                await loadThreads(true);
                 if (currentThreadId) {
                     await loadThreadMessages(currentThreadId);
                 }
@@ -3412,15 +3951,24 @@
 
         function startPermissionPolling() {
             if (permissionPollTimer) return;
+            const isRemoteHost = !['127.0.0.1', 'localhost'].includes(location.hostname);
+            const intervalMs = isRemoteHost ? 12000 : 2500;
             refreshPermissionRequests();
-            permissionPollTimer = setInterval(refreshPermissionRequests, 1500);
+            permissionPollTimer = setInterval(() => {
+                if (document.visibilityState === 'hidden') return;
+                if (isRemoteHost && !isSending) return;
+                refreshPermissionRequests();
+            }, intervalMs);
         }
 
         async function refreshPermissionRequests() {
             if (!isAuthenticated() || permissionPollInFlight) return;
             permissionPollInFlight = true;
             try {
-                const res = await apiFetch('/api/permission/pending');
+                const res = await apiFetch('/api/permission/pending', {
+                    skipAuthRecovery: true,
+                    backgroundPoll: true
+                });
                 if (!res.ok) return;
                 const data = await res.json();
                 const request = data.pending && data.pending[0];
@@ -3434,7 +3982,7 @@
                 permissionPromptDetails.textContent = request.details || request.command || 'This action will modify or access local resources.';
                 permissionPrompt.hidden = false;
             } catch (error) {
-                console.error('Permission request polling failed:', error);
+                // Silent resilience for background poll
             } finally {
                 permissionPollInFlight = false;
             }
@@ -3469,16 +4017,166 @@
         permissionAllow.addEventListener('click', () => respondToPermission('ALLOW_ONCE'));
         permissionDeny.addEventListener('click', () => respondToPermission('DENY'));
 
+        // ---------------- Interactive Slash Command Autocomplete Palette ----------------
+        const AURA_SLASH_COMMANDS = [
+            { cmd: '/help', template: '/help', desc: 'Show all working commands, OS controls & Flagship shortcuts' },
+            { cmd: '/goal', template: '/goal ', desc: 'Autonomous deep multi-step goal execution pipeline' },
+            { cmd: '/plan', template: '/plan ', desc: 'Structured step-by-step architecture & build plan' },
+            { cmd: '/boost', template: '/boost ', desc: 'Deep multi-perspective verification & optimization' },
+            { cmd: '/teamwork', template: '/teamwork ', desc: 'Coordinate multi-agent swarm team on a task' },
+            { cmd: '/browser', template: '/browser ', desc: 'Live web research & interactive browser workflow plan' },
+            { cmd: '/schedule', template: '/schedule ', desc: 'Set recurring cron monitor or one-shot timer' },
+            { cmd: '/compact', template: '/compact', desc: 'Summarize & compress long thread context cleanly' },
+            { cmd: '/learn', template: '/learn ', desc: 'Extract reusable workflow skill & memory note' },
+            { cmd: '/grill-me', template: '/grill-me ', desc: 'Interactive design & edge-case architecture interview' },
+            { cmd: '/brightness', template: '/brightness 50', desc: 'Adjust screen brightness smoothly (5-100%)' },
+            { cmd: '/volume', template: '/volume 70', desc: 'Set audio & voice level (0-100%)' },
+            { cmd: '/open', template: '/open whatsapp', desc: 'Launch app or URL (whatsapp, vscode, spotify, chrome)' },
+            { cmd: '/files', template: '/files', desc: 'List files inside your isolated workspace' },
+            { cmd: '/read', template: '/read ', desc: 'Inspect file contents inside workspace' },
+            { cmd: '/write', template: '/write notes.txt ', desc: 'Create or update a file inside your workspace' },
+            { cmd: '/code', template: '/code ', desc: 'Autonomous IDE coding, diff refactor & test synthesis' },
+            { cmd: '/weather', template: '/weather Mumbai', desc: 'Real-time weather telemetry for any city' },
+            { cmd: '/news', template: '/news AI tech', desc: 'Search & summarize latest verified headlines' },
+            { cmd: '/calc', template: '/calc (125 * 8) / 4', desc: 'Instant deterministic math & expression evaluator' },
+            { cmd: '/nexus', template: '/nexus ', desc: 'Run Sovereign 10-Nexus Super-Suite engines' },
+            { cmd: '/trinetra', template: '/trinetra ', desc: 'Cyber Defense + BNS 2023 / IT Act / DPDP Legal Shield' },
+            { cmd: '/payguard', template: '/payguard ', desc: 'UPI QR / collect-pull scam & bill anomaly shield' },
+            { cmd: '/new', template: '/new', desc: 'Start a fresh chat thread immediately' },
+            { cmd: '/clear', template: '/clear', desc: 'Clear current chat viewport cleanly' },
+            { cmd: '/export', template: '/export', desc: 'Download your isolated .json history backup' }
+        ];
+
+        let slashPaletteOpen = false;
+        let slashFilteredItems = [];
+        let slashActiveIndex = 0;
+
+        function hideSlashPalette() {
+            slashPaletteOpen = false;
+            const pal = document.getElementById('slashCommandPalette');
+            if (pal) pal.style.display = 'none';
+        }
+
+        function applySlashCommandChoice(item) {
+            if (!item) return;
+            const tpl = item.template || item.cmd;
+            userPrompt.value = tpl;
+            userPrompt.style.height = 'auto';
+            userPrompt.style.height = Math.min(userPrompt.scrollHeight, 200) + 'px';
+            btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
+            hideSlashPalette();
+            userPrompt.focus();
+            if (!tpl.endsWith(' ')) {
+                sendMessage();
+            }
+        }
+
+        function renderSlashPalette(queryText) {
+            const pal = document.getElementById('slashCommandPalette');
+            if (!pal) return;
+            const q = String(queryText || '').trim().toLowerCase();
+            if (!q.startsWith('/') || q.includes(' ')) {
+                hideSlashPalette();
+                return;
+            }
+            slashFilteredItems = AURA_SLASH_COMMANDS.filter(c =>
+                c.cmd.startsWith(q) || c.desc.toLowerCase().includes(q.slice(1))
+            );
+            if (slashFilteredItems.length === 0) {
+                hideSlashPalette();
+                return;
+            }
+            slashActiveIndex = Math.max(0, Math.min(slashActiveIndex, slashFilteredItems.length - 1));
+            pal.innerHTML = '';
+            const hdr = document.createElement('div');
+            hdr.className = 'slash-palette-header';
+            hdr.innerHTML = '<span>⚡ AURA Command System (Tab / Enter / Click)</span><span>Esc to close</span>';
+            pal.appendChild(hdr);
+
+            slashFilteredItems.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'slash-palette-item' + (idx === slashActiveIndex ? ' active' : '');
+                const left = document.createElement('span');
+                left.className = 'slash-cmd-name';
+                left.textContent = item.cmd;
+                const right = document.createElement('span');
+                right.className = 'slash-cmd-desc';
+                right.textContent = item.desc;
+                row.appendChild(left);
+                row.appendChild(right);
+                row.addEventListener('mousedown', (ev) => {
+                    ev.preventDefault();
+                    applySlashCommandChoice(item);
+                });
+                pal.appendChild(row);
+            });
+            pal.style.display = 'block';
+            slashPaletteOpen = true;
+        }
+
+        function toggleSlashPaletteFromButton() {
+            if (slashPaletteOpen) {
+                hideSlashPalette();
+                return;
+            }
+            if (!userPrompt.value.startsWith('/')) {
+                userPrompt.value = '/';
+            }
+            slashActiveIndex = 0;
+            renderSlashPalette(userPrompt.value);
+            userPrompt.focus();
+        }
+
         userPrompt.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 200) + 'px';
             btnSend.disabled = !this.value.trim() && currentAttachments.length === 0;
+            if (this.value.startsWith('/') && !this.value.includes(' ') && !this.value.includes('\n')) {
+                slashActiveIndex = 0;
+                renderSlashPalette(this.value);
+            } else {
+                hideSlashPalette();
+            }
         });
 
         let lastStreamActivity = 0;
 
         userPrompt.addEventListener('keydown', function(e) {
+            if (slashPaletteOpen && slashFilteredItems.length > 0) {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    slashActiveIndex = (slashActiveIndex + 1) % slashFilteredItems.length;
+                    renderSlashPalette(userPrompt.value);
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    slashActiveIndex = (slashActiveIndex - 1 + slashFilteredItems.length) % slashFilteredItems.length;
+                    renderSlashPalette(userPrompt.value);
+                    return;
+                }
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const picked = slashFilteredItems[slashActiveIndex];
+                    if (picked) {
+                        userPrompt.value = picked.template || (picked.cmd + ' ');
+                        hideSlashPalette();
+                        btnSend.disabled = !userPrompt.value.trim();
+                    }
+                    return;
+                }
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    const exact = slashFilteredItems.find(c => c.cmd === userPrompt.value.trim().toLowerCase());
+                    const picked = exact || slashFilteredItems[slashActiveIndex];
+                    if (picked && userPrompt.value.trim() !== picked.cmd) {
+                        e.preventDefault();
+                        applySlashCommandChoice(picked);
+                        return;
+                    }
+                }
+            }
             if (e.key === 'Escape') {
+                hideSlashPalette();
                 if (isSending) {
                     isSending = false;
                     btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
@@ -3487,6 +4185,7 @@
             }
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                hideSlashPalette();
                 // Auto-recover lock if stuck for more than 7s without streaming chunks
                 if (isSending && (Date.now() - lastStreamActivity > 7000)) {
                     console.warn('Auto-clearing stuck isSending lock on Enter press.');
@@ -3502,23 +4201,25 @@
 
         btnSend.addEventListener('click', (e) => {
             e.preventDefault();
+            hideSlashPalette();
             sendMessage();
         });
 
         function sendQuickPrompt(text) {
             userPrompt.value = text;
             userPrompt.style.height = 'auto';
+            hideSlashPalette();
             sendMessage();
         }
 
         function createNewChatSession() {
-            currentThreadId = 'th_' + Date.now();
-            localStorage.setItem('aura_active_thread_id', currentThreadId);
+            setScopedActiveThread('th_' + Date.now());
             chatStream.innerHTML = '';
             chatStream.appendChild(welcomeHero);
             welcomeHero.style.display = 'flex';
             userPrompt.value = '';
             userPrompt.style.height = 'auto';
+            hideSlashPalette();
             userPrompt.focus();
             renderThreadActiveState();
         }
@@ -3535,9 +4236,32 @@
             const hasAttachments = currentAttachments.length > 0;
             if ((!text && !hasAttachments) || isSending) return;
 
+            hideSlashPalette();
+
+            // Client-side UI utility commands (/new, /clear, /export)
+            const lowerCmd = text.toLowerCase();
+            if (!hasAttachments && lowerCmd === '/new') {
+                userPrompt.value = '';
+                createNewChatSession();
+                return;
+            }
+            if (!hasAttachments && lowerCmd === '/clear') {
+                userPrompt.value = '';
+                chatStream.innerHTML = '';
+                chatStream.appendChild(welcomeHero);
+                welcomeHero.style.display = 'flex';
+                return;
+            }
+            if (!hasAttachments && lowerCmd === '/export') {
+                userPrompt.value = '';
+                await exportMyHistoryBackup();
+                showBridgeToast('💾 Account history backup downloaded.', '#34d399');
+                return;
+            }
+
             if (!isAuthenticated()) {
                 console.warn('Unauthenticated send: auto-initializing guest session for instant access...');
-                const ok = await continueAsGuest();
+                const ok = await continueAsGuest({ preserveConversation: true });
                 if (!ok) {
                     authOverlay.style.display = 'flex';
                     if (authErrorMsg) {
@@ -3556,7 +4280,7 @@
                 welcomeHero.style.display = 'none';
             }
 
-            // Preserve draft in case of 401 or server failure
+            // Preserve draft in case of server failure
             const draftText = text;
             const attachedToSend = [...currentAttachments];
             currentAttachments = [];
@@ -3580,6 +4304,13 @@
             };
 
             try {
+                // Ensure current thread is tracked cleanly under current user's scope
+                if (!currentThreadId) {
+                    setScopedActiveThread('th_' + Date.now());
+                } else {
+                    setScopedActiveThread(currentThreadId);
+                }
+
                 const res = await apiFetch('/api/chat/stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3594,7 +4325,7 @@
                 if (res.status === 401) {
                     restoreDraftOnFailure();
                     turnData.thinking.style.display = 'none';
-                    turnData.bubble.textContent = 'Your session has expired. Your draft and attachments were preserved — please sign in again.';
+                    turnData.bubble.textContent = 'Your session expired after sign-out. Your draft and attachments were preserved — please sign in again.';
                     authToken = '';
                     csrfToken = '';
                     currentUser = null;
@@ -3658,7 +4389,18 @@
                                         turnData.thinking.style.display = 'none';
                                         accumulatedMarkdown = eventData.reply || accumulatedMarkdown;
                                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
-                                        loadThreads();
+                                        if (eventData.thread_id) {
+                                            setScopedActiveThread(eventData.thread_id);
+                                        }
+                                        if (eventData.user_vault) {
+                                            await saveUserVault(eventData.user_vault);
+                                        }
+                                        if (Array.isArray(eventData.threads)) {
+                                            cachedThreads = eventData.threads;
+                                            applyThreadSearchAndRender();
+                                        } else {
+                                            await loadThreads(false);
+                                        }
                                         streamFinished = true;
                                         break;
                                     } else if (eventData.type === 'error') {
@@ -3773,15 +4515,70 @@
             }, 30);
         }
 
-        // ---------------- Sidebar Threads Management (Safe DOM + Pin/Rename/Delete) ----------------
-        async function loadThreads() {
-            if (!isAuthenticated()) return;
+        // ---------------- Sidebar Threads Management (Account-Isolated + 100+ Chat Search + Sync) ----------------
+        function applyThreadSearchAndRender() {
+            const badge = document.getElementById('threadCountBadge');
+            if (badge) badge.textContent = String(cachedThreads.length || 0);
+            const q = String(threadFilterQuery || '').trim().toLowerCase();
+            const list = q
+                ? cachedThreads.filter(t => String(t.title || '').toLowerCase().includes(q))
+                : cachedThreads;
+            renderThreads(list);
+        }
+
+        function filterThreadsList(query) {
+            threadFilterQuery = String(query || '');
+            applyThreadSearchAndRender();
+        }
+
+        async function loadThreads(allowAutoRestore = true) {
+            if (!isAuthenticated() || !currentUser || !currentUser.username) return;
             try {
                 const res = await apiFetch('/api/threads');
-                const data = await res.json();
-                if (data.success && data.threads) {
-                    renderThreads(data.threads);
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+
+                let serverThreads = Array.isArray(data.threads) ? data.threads : [];
+                const localVault = await loadIsolatedUserVault(currentUser.username);
+                const vaultThreads = (localVault && localVault.payload && Array.isArray(localVault.payload.threads))
+                    ? localVault.payload.threads.filter(t => t && t.id && !lastDeletedThreadIds.has(t.id))
+                    : [];
+
+                // Check whether Vercel cold-started or hit a fresh container lacking this user's saved history
+                const serverIds = new Set(serverThreads.map(t => t.id));
+                const missingLocally = vaultThreads.filter(t => !serverIds.has(t.id));
+
+                if (allowAutoRestore && missingLocally.length > 0 && currentUser.username) {
+                    let synced = null;
+                    if (localVault.signature && localVault.version === 2 && serverThreads.length === 0) {
+                        try {
+                            const rRes = await apiFetch('/api/auth/restore_vault', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ vault_backup: localVault })
+                            });
+                            const rData = await safeParseJson(rRes);
+                            if (rRes.ok && rData.success && rData.user_vault) {
+                                await saveUserVault(rData.user_vault);
+                                const reRes = await apiFetch('/api/threads');
+                                const reData = await safeParseJson(reRes);
+                                if (reRes.ok && reData.success && Array.isArray(reData.threads)) {
+                                    serverThreads = reData.threads;
+                                    synced = true;
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                    if (!synced) {
+                        const sData = await syncVaultPayloadToServer(localVault);
+                        if (sData && sData.success && Array.isArray(sData.threads)) {
+                            serverThreads = sData.threads;
+                        }
+                    }
                 }
+
+                cachedThreads = serverThreads;
+                applyThreadSearchAndRender();
             } catch (e) {
                 console.error('Failed to load threads:', e);
             }
@@ -3789,7 +4586,14 @@
 
         function renderThreads(threads) {
             if (!threads || threads.length === 0) {
-                threadsList.innerHTML = '<div style="font-size: 12px; color: var(--text-subtle); padding: 8px 10px;">No chats yet. Start a new one!</div>';
+                const emptyText = threadFilterQuery
+                    ? 'No matching chats for "' + threadFilterQuery + '"'
+                    : 'No chats yet. Start a new one!';
+                const emptyDiv = document.createElement('div');
+                emptyDiv.style.cssText = 'font-size: 12px; color: var(--text-subtle); padding: 8px 10px;';
+                emptyDiv.textContent = emptyText;
+                threadsList.innerHTML = '';
+                threadsList.appendChild(emptyDiv);
                 return;
             }
 
@@ -3858,20 +4662,23 @@
         }
 
         async function selectThread(id) {
-            currentThreadId = id;
-            localStorage.setItem('aura_active_thread_id', id);
+            setScopedActiveThread(id);
             await loadThreadMessages(id);
-            await loadThreads();
+            applyThreadSearchAndRender();
         }
 
         async function togglePinThread(id, nextPinnedState) {
             try {
-                await apiFetch('/api/threads/pin', {
+                const res = await apiFetch('/api/threads/pin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ thread_id: id, is_pinned: Boolean(nextPinnedState) })
                 });
-                await loadThreads();
+                const data = await safeParseJson(res);
+                if (data && data.user_vault) {
+                    await saveUserVault(data.user_vault);
+                }
+                await loadThreads(false);
             } catch (e) {
                 console.error('Pin thread error:', e);
             }
@@ -3883,12 +4690,16 @@
             const trimmed = nextTitle.trim();
             if (!trimmed) return;
             try {
-                await apiFetch('/api/threads/rename', {
+                const res = await apiFetch('/api/threads/rename', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ thread_id: id, title: trimmed })
                 });
-                await loadThreads();
+                const data = await safeParseJson(res);
+                if (data && data.user_vault) {
+                    await saveUserVault(data.user_vault);
+                }
+                await loadThreads(false);
             } catch (e) {
                 console.error('Rename thread error:', e);
             }
@@ -3897,29 +4708,47 @@
         async function deleteThread(id) {
             if (!confirm('Delete this conversation?')) return;
             try {
-                await apiFetch('/api/threads/delete', {
+                lastDeletedThreadIds.add(id);
+                const res = await apiFetch('/api/threads/delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ thread_id: id })
                 });
+                const data = await safeParseJson(res);
+                if (data && data.user_vault) {
+                    await saveUserVault(data.user_vault);
+                }
                 if (currentThreadId === id) {
                     createNewChatSession();
                 }
-                await loadThreads();
+                await loadThreads(false);
             } catch (e) {
                 console.error('Delete thread error:', e);
             }
         }
 
         async function loadThreadMessages(threadId) {
-            if (!isAuthenticated()) return;
+            if (!isAuthenticated() || !currentUser) return;
             try {
                 const res = await apiFetch(`/api/threads/messages?thread_id=${encodeURIComponent(threadId)}`);
-                const data = await res.json();
-                if (data.success && data.messages && data.messages.length > 0) {
+                const data = await safeParseJson(res);
+                let msgs = (res.ok && data.success && Array.isArray(data.messages)) ? data.messages : [];
+
+                if (msgs.length === 0 && !lastDeletedThreadIds.has(threadId)) {
+                    const localVault = await loadIsolatedUserVault(currentUser.username);
+                    if (localVault && localVault.payload && Array.isArray(localVault.payload.messages)) {
+                        const localMsgs = localVault.payload.messages.filter(m => m && m.thread_id === threadId);
+                        if (localMsgs.length > 0) {
+                            msgs = localMsgs;
+                            syncVaultPayloadToServer(localVault).catch(() => {});
+                        }
+                    }
+                }
+
+                if (msgs.length > 0) {
                     welcomeHero.style.display = 'none';
                     chatStream.innerHTML = '';
-                    data.messages.forEach(m => {
+                    msgs.forEach(m => {
                         if (m.role === 'user') {
                             appendUserMessage(m.content);
                         } else {

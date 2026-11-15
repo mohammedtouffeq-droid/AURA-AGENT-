@@ -101,6 +101,8 @@ def _selected_brain_settings(user: Dict[str, Any]) -> Dict[str, str]:
         "active_model",
         SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-3.5-flash-lite"),
     )
+    if provider == "gemini" and model in ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite"):
+        model = "gemini-3.5-flash-lite"
     if not AuraSettingsManager.validate_model_selection(provider, model):
         provider, model = "gemini", "gemini-3.5-flash-lite"
     return {"active_provider": provider, "active_model": model}
@@ -114,7 +116,7 @@ def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
             brain.user_id = int(user["id"])
         except (ValueError, TypeError):
             brain.user_id = None
-        brain.user_role = "admin"
+        brain.user_role = str(user.get("role", "user") or "user").lower()
         user_brain = (user.get("settings") or {}).get("brain_settings") or {}
         if user_brain.get("api_key"):
             brain.api_key = str(user_brain["api_key"]).strip()
@@ -132,6 +134,7 @@ DEFAULT_ALLOWED_ORIGINS = {
     "http://127.0.0.1:5052",
     "http://localhost:5052",
     "https://aura-agent.vercel.app",
+    "https://aura-agent-78dz.vercel.app",
     "https://aura-agent-mohammedtouffeq-7681s-projects.vercel.app",
 }
 
@@ -923,7 +926,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if thread_id is not None:
                 thread_id = str(thread_id)[:64]
             thread = aura_db.create_user_thread(user_id, title, thread_id=thread_id)
-            self._send_json({"success": True, "thread": thread})
+            self._send_json({
+                "success": True,
+                "thread": thread,
+                "user_vault": aura_db.export_user_vault(user_id),
+            })
 
         elif path == "/api/threads/rename":
             user = self._get_auth_user(body)
@@ -936,7 +943,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "thread_id and title required"}, status=400)
                 return
             ok = aura_db.rename_user_thread(user["id"], thread_id, new_title)
-            self._send_json({"success": ok})
+            self._send_json({
+                "success": ok,
+                "user_vault": aura_db.export_user_vault(user["id"]) if ok else None,
+            })
 
         elif path == "/api/threads/pin":
             user = self._get_auth_user(body)
@@ -949,7 +959,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "thread_id required"}, status=400)
                 return
             ok = aura_db.pin_user_thread(user["id"], thread_id, is_pinned)
-            self._send_json({"success": ok})
+            self._send_json({
+                "success": ok,
+                "user_vault": aura_db.export_user_vault(user["id"]) if ok else None,
+            })
 
         elif path == "/api/threads/delete":
             user = self._get_auth_user(body)
@@ -958,7 +971,39 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             thread_id = str(body.get("thread_id", "")).strip()
             ok = aura_db.delete_user_thread(user["id"], thread_id)
-            self._send_json({"success": ok})
+            self._send_json({
+                "success": ok,
+                "user_vault": aura_db.export_user_vault(user["id"]) if ok else None,
+            })
+
+        elif path == "/api/threads/sync":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            owner_username = str(body.get("username") or user["username"])
+            threads_payload = body.get("threads") if isinstance(body.get("threads"), list) else []
+            messages_payload = body.get("messages") if isinstance(body.get("messages"), list) else []
+            memories_payload = body.get("user_memories") if isinstance(body.get("user_memories"), list) else []
+            projects_payload = body.get("projects") if isinstance(body.get("projects"), list) else []
+            sync_res = aura_db.sync_user_history(
+                authenticated_user_id=int(user["id"]),
+                owner_username=owner_username,
+                threads=threads_payload,
+                messages=messages_payload,
+                user_memories=memories_payload,
+                projects=projects_payload,
+            )
+            if not sync_res.get("success"):
+                self._send_json(sync_res, status=int(sync_res.get("status", 400)))
+                return
+            self._send_json({
+                "success": True,
+                "restored_threads": sync_res.get("restored_threads", 0),
+                "restored_messages": sync_res.get("restored_messages", 0),
+                "threads": aura_db.get_user_threads(user["id"]),
+                "user_vault": aura_db.export_user_vault(user["id"]),
+            })
 
         # 2B. CODING PROJECTS ROUTES
         elif path == "/api/projects/new":
@@ -1112,6 +1157,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             tools_used = []
 
             try:
+                final_reply_text = ""
                 for chunk in brain.think_and_act_stream(
                     prompt,
                     attachments=attachments,
@@ -1132,13 +1178,23 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
                         self.wfile.flush()
                     elif chunk_type == "done":
-                        if not accumulated_text:
-                            accumulated_text = chunk.get("reply", "")
-                        payload = json.dumps({"type": "done", "reply": accumulated_text, "tools": tools_used})
+                        final_reply_text = accumulated_text or chunk.get("reply", "")
+                        aura_db.save_message(user_id, thread_id, "assistant", final_reply_text, tools_used)
+                        fresh_vault = aura_db.export_user_vault(user_id)
+                        fresh_threads = aura_db.get_user_threads(user_id)
+                        payload = json.dumps({
+                            "type": "done",
+                            "reply": final_reply_text,
+                            "tools": tools_used,
+                            "thread_id": thread_id,
+                            "threads": fresh_threads,
+                            "user_vault": fresh_vault,
+                        })
                         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
                         self.wfile.flush()
 
-                aura_db.save_message(user_id, thread_id, "assistant", accumulated_text, tools_used)
+                if not final_reply_text and accumulated_text:
+                    aura_db.save_message(user_id, thread_id, "assistant", accumulated_text, tools_used)
             except Exception as e:
                 err_payload = json.dumps({"type": "error", "error": str(e)})
                 try:

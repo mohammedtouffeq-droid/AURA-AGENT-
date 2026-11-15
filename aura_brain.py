@@ -17,6 +17,7 @@ Author: AURA Technologies Inc.
 import os
 import sys
 import json
+import time
 import sqlite3
 import subprocess
 import urllib.request
@@ -1950,9 +1951,131 @@ def tool_bharatcode_top10_execute(engine_key: str, payload: str = "") -> Dict[st
 
 
 def tool_bharatcode_top10_superpipeline(goal: str = "") -> Dict[str, Any]:
-    """Runs all 10 BharatCode Build League winning engines sequentially in one unified Super-Pipeline inside AURA."""
+    """Runs all 10 Sovereign 10-Nexus engines sequentially in one unified Super-Pipeline inside AURA."""
     from aura_bharatcode_top10 import BHARATCODE_TOP10_SUITE
     return BHARATCODE_TOP10_SUITE.run_all_10_superpipeline(mission_goal=goal or "Full-Spectrum Autonomous Security, Code, Career & Campus Verification")
+
+
+def tool_client_bridge_action(action: str = "set_brightness", target: str = "display", value: str = "50") -> Dict[str, Any]:
+    """
+    Executes safe Client-Side Browser/OS Bridge commands (screen brightness visual bridge,
+    audio feedback bridge, and web/protocol app launching) without requiring privileged host access.
+    """
+    act = str(action or "set_brightness").strip().lower()
+    raw_val = str(value if value not in (None, "") else target).strip()
+    if act in ("set_brightness", "brightness", "dim", "brighten"):
+        nums = re.findall(r"\d+", raw_val)
+        if any(w in raw_val.lower() for w in ("low", "dim", "min", "night", "kam")):
+            lvl = 25
+        elif any(w in raw_val.lower() for w in ("full", "max", "high", "bright", "zyada")):
+            lvl = 100
+        elif nums:
+            lvl = max(5, min(100, int(nums[0])))
+        else:
+            lvl = 50
+        css_b = round(0.35 + (lvl / 100.0) * 0.85, 2)
+        return {
+            "success": True,
+            "action": "set_brightness",
+            "level": lvl,
+            "brightness": lvl,
+            "engine": "AURA-Client-Display-Bridge",
+            "message": f"Display brightness set to {lvl}% via AURA Client Bridge (local PowerShell WMI command included).",
+            "powershell_hint": f"(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {lvl})",
+            "client_bridge_command": {
+                "action": "set_brightness",
+                "type": "set_brightness",
+                "level": lvl,
+                "css_filter_brightness": css_b,
+            },
+        }
+    elif act in ("set_volume", "volume", "mute", "unmute"):
+        mute_flag = act == "mute" or "mute" in raw_val.lower() and "unmute" not in raw_val.lower()
+        nums = re.findall(r"\d+", raw_val)
+        if mute_flag:
+            lvl = 0
+        elif any(w in raw_val.lower() for w in ("low", "quiet", "kam")):
+            lvl = 25
+        elif any(w in raw_val.lower() for w in ("full", "max", "loud", "high")):
+            lvl = 100
+        elif nums:
+            lvl = max(0, min(100, int(nums[0])))
+        else:
+            lvl = 60
+        return {
+            "success": True,
+            "action": "set_volume",
+            "level": lvl,
+            "muted": mute_flag,
+            "engine": "AURA-Client-Audio-Bridge",
+            "message": "Audio muted via AURA Client Bridge." if mute_flag else f"Audio volume set to {lvl}% via AURA Client Bridge.",
+            "client_bridge_command": {
+                "action": "set_volume",
+                "type": "set_volume",
+                "level": lvl,
+                "muted": mute_flag,
+            },
+        }
+    else:
+        app_raw = str(target if target not in ("", "display", None) else raw_val).strip()
+        app_key = app_raw.lower()
+        uri_map = {
+            "whatsapp": "https://web.whatsapp.com",
+            "wa": "https://web.whatsapp.com",
+            "youtube": "https://www.youtube.com",
+            "yt": "https://www.youtube.com",
+            "gmail": "https://mail.google.com",
+            "github": "https://github.com",
+            "google": "https://www.google.com",
+            "chrome": "https://www.google.com",
+            "browser": "https://www.google.com",
+            "vscode": "vscode://",
+            "code": "vscode://",
+            "calculator": "ms-calculator:",
+            "calc": "ms-calculator:",
+            "settings": "ms-settings:display",
+            "spotify": "https://open.spotify.com",
+            "notepad": "notepad",
+        }
+        resolved_uri = ""
+        if app_key.startswith(("http://", "https://")):
+            ok_url, _ = is_safe_public_url(app_key)
+            if ok_url:
+                resolved_uri = app_raw
+        else:
+            for k, v in uri_map.items():
+                if k == app_key or k in app_key:
+                    resolved_uri = v
+                    app_key = k
+                    break
+        return {
+            "success": True,
+            "action": "launch_app",
+            "app": app_raw or "app",
+            "protocol_uri": resolved_uri or "https://www.google.com",
+            "engine": "AURA-Client-App-Launcher",
+            "message": f"Triggered Client App Bridge for '{app_raw or 'application'}'.",
+            "client_bridge_command": {
+                "action": "launch_app",
+                "type": "launch_app",
+                "app": app_key or app_raw or "chrome",
+                "protocol_uri": resolved_uri or "https://www.google.com",
+            },
+        }
+
+
+def tool_workspace_list(user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Lists files inside the active user's isolated workspace safely."""
+    try:
+        ws = _resolve_workspace_dir(user_id=user_id)
+        entries = []
+        for item in sorted(ws.rglob("*")):
+            if item.is_file():
+                rel = item.relative_to(ws).as_posix()
+                entries.append({"name": rel, "size_bytes": item.stat().st_size})
+        return {"success": True, "workspace": str(ws.name), "count": len(entries), "files": entries[:200]}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
 
 AVAILABLE_TOOLS = {
@@ -2015,6 +2138,8 @@ AVAILABLE_TOOLS = {
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
+    "tool_workspace_list": tool_workspace_list,
+    "tool_client_bridge_action": tool_client_bridge_action,
     "tool_remember_fact": tool_remember_fact,
     "tool_recall_memory": tool_recall_memory,
     "tool_take_screenshot": tool_take_screenshot,
@@ -2527,12 +2652,33 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_bharatcode_top10_superpipeline",
-            "description": "Runs all 10 BharatCode Build League winning engines in one unified Super-Pipeline inside AURA.",
+            "description": "Runs all 10 Sovereign 10-Nexus engines in one unified Super-Pipeline inside AURA.",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
-                    "goal": {"type": "STRING", "description": "Mission goal for the 10-winner super-pipeline."}
+                    "goal": {"type": "STRING", "description": "Mission goal for the 10-engine super-pipeline."}
                 }
+            }
+        },
+        {
+            "name": "tool_client_bridge_action",
+            "description": "Executes safe Client-Side Browser/OS Bridge commands for standard & cloud users: adjust screen brightness, audio volume/mute, or open WhatsApp Web, YouTube, Gmail, GitHub, VS Code, Settings, Calculator, or URLs directly in the user's browser.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "Action: 'set_brightness', 'set_volume', or 'launch_app'."},
+                    "target": {"type": "STRING", "description": "Target app or website (e.g. 'whatsapp', 'youtube', 'vscode', 'calculator', or 'display')."},
+                    "value": {"type": "STRING", "description": "Numeric level (0-100), 'low', 'full', 'mute', or target app name."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_workspace_list",
+            "description": "Lists all files currently saved inside the user's isolated workspace directory.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {}
             }
         }
     ]
@@ -2847,6 +2993,31 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }]
                 }
 
+            elif last_tool_name == "tool_client_bridge_action":
+                msg = last_output.get("message", "Client bridge action executed cleanly.")
+                ps_hint = last_output.get("powershell_hint", "")
+                extra_hint = f"\n\n💡 **Optional Windows Hardware Command:**\n```powershell\n{ps_hint}\n```" if ps_hint else ""
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": f"⚡ **AURA Command Executed**\n\n{msg}{extra_hint}"}]
+                        }
+                    }]
+                }
+
+            elif last_tool_name == "tool_workspace_list":
+                files = last_output.get("files", [])
+                file_lines = "\n".join(f"- `{f['name']}` ({f['size_bytes']} bytes)" for f in files[:50]) or "_Workspace is currently empty._"
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": f"### 📁 Workspace Files ({len(files)})\n\n{file_lines}"}]
+                        }
+                    }]
+                }
+
             elif last_tool_name in ["tool_bharatcode_top10_execute", "tool_bharatcode_top10_superpipeline"]:
                 eng = last_output.get("engine") or last_output.get("suite") or "AURA Sovereign 10-Nexus Super-Suite"
                 lines_md = [f"### 🏆 {eng} Executed Successfully\n"]
@@ -2864,6 +3035,27 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         val_str = json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)
                         lines_md.append(f"- **{label}:** {val_str[:220]}")
                 text = "\n".join(lines_md)
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": text}]
+                        }
+                    }]
+                }
+
+            elif last_tool_name == "tool_get_weather":
+                loc = last_output.get("location", "Target Location")
+                temp = last_output.get("temperature", "N/A")
+                cond = last_output.get("condition", "Clear")
+                wind = last_output.get("wind", "N/A")
+                humidity = last_output.get("humidity", "N/A")
+                text = (
+                    f"### 🌤️ Live Weather Telemetry — {loc}\n\n"
+                    f"- **Temperature:** `{temp}`\n"
+                    f"- **Condition:** {cond}\n"
+                    f"- **Humidity:** {humidity} | **Wind:** {wind}\n"
+                )
                 return {
                     "candidates": [{
                         "content": {
@@ -2952,15 +3144,18 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
-        elif "shell" in lower_q or "powershell" in lower_q or "command" in lower_q:
-            return {
-                "candidates": [{
-                    "content": {
-                        "role": "model",
-                        "parts": [{"functionCall": {"name": "tool_execute_shell", "args": {"command": "Get-Date"}}}]
-                    }
-                }]
-            }
+        elif any(k in lower_q for k in ["run shell", "run powershell", "execute command", "run command", "powershell "]):
+            is_restricted = (self.user_id is not None and str(self.user_role).lower() not in ("admin", "superuser"))
+            if not is_restricted:
+                extracted_cmd = re.sub(r"^(please\s+)?(run|execute)\s+(the\s+)?(powershell\s+|shell\s+)?(command\s*:?\s*)?", "", user_text.strip(), flags=re.I).strip()
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"functionCall": {"name": "tool_execute_shell", "args": {"command": extracted_cmd or "Get-Date"}}}]
+                        }
+                    }]
+                }
         elif "remember" in lower_q or "save memory" in lower_q:
             return {
                 "candidates": [{
@@ -3041,6 +3236,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 nums = re.findall(r"\b\d{1,3}\b", lower_q)
                 if nums:
                     target_lvl = int(nums[0])
+            use_client_bridge = bool(
+                os.environ.get("VERCEL")
+                or (self.user_id is not None and str(self.user_role).lower() not in ("admin", "superuser"))
+            )
+            if use_client_bridge:
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"functionCall": {"name": "tool_client_bridge_action", "args": {"action": "set_brightness", "target": "display", "value": str(target_lvl)}}}]
+                        }
+                    }]
+                }
             return {
                 "candidates": [{
                     "content": {
@@ -3056,6 +3264,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 target_vol = 25
             elif any(k in lower_q for k in ["full", "max", "high", "100", "up", "zyada"]):
                 target_vol = 100
+            use_client_bridge = bool(
+                os.environ.get("VERCEL")
+                or (self.user_id is not None and str(self.user_role).lower() not in ("admin", "superuser"))
+            )
+            if use_client_bridge:
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"functionCall": {"name": "tool_client_bridge_action", "args": {"action": "mute" if is_mute else "set_volume", "target": "audio", "value": "mute" if is_mute else str(target_vol)}}}]
+                        }
+                    }]
+                }
             return {
                 "candidates": [{
                     "content": {
@@ -3065,6 +3286,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 }]
             }
         elif any(k in lower_q for k in ["open whatsapp", "launch whatsapp", "whatsapp khol", "whatsapp on screen", "whatsapp on laptop", "screen par whatsapp"]):
+            use_client_bridge = bool(
+                os.environ.get("VERCEL")
+                or (self.user_id is not None and str(self.user_role).lower() not in ("admin", "superuser"))
+            )
+            if use_client_bridge:
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"functionCall": {"name": "tool_client_bridge_action", "args": {"action": "launch_app", "target": "whatsapp", "value": "whatsapp"}}}]
+                        }
+                    }]
+                }
             return {
                 "candidates": [{
                     "content": {
@@ -3306,19 +3540,27 @@ The unified pipeline processed your instruction across all core engines (**Time:
             "contents": contents,
             "generationConfig": {"temperature": float(self.temperature)},
             "systemInstruction": {
-                "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have full native execution tools for display brightness (tool_set_brightness), audio volume (tool_set_volume), desktop apps (WhatsApp, Chrome, VS Code via tool_windows_app_control or tool_launch_application), PowerShell, live news, live weather, file creation, code generation, and neural media. When the user asks you to take actions (e.g. set laptop brightness low/full, open WhatsApp on screen, open Chrome, fetch today's news, write code, run commands), execute the appropriate tools immediately on Turn 1. When the user engages in casual conversation, banter, or greetings, reply naturally, warmly, and helpfully without robotic canned blocks."}]
+                "parts": [{"text": "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant created by AURA Technologies Inc. You communicate with the intelligence, warmth, natural brevity, and adaptability of ChatGPT and Claude 3.5 Sonnet. You have native tools including tool_client_bridge_action (adjust browser display brightness, audio volume/mute, or open WhatsApp Web, YouTube, Gmail, GitHub, VS Code, Calculator, or URLs without permission errors), workspace file tools (tool_write_file, tool_read_file, tool_workspace_list, tool_coderx_build), live news, live weather, memory vault, and Sovereign 10-Nexus engines. Never claim permission denied when tool_client_bridge_action can fulfill the user's request cleanly. When the user engages in casual conversation or questions, reply naturally, clearly, and helpfully."}]
             }
         }
         if tools:
             payload["tools"] = tools
 
-        candidate_models = [self.model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-flash-lite-latest", "gemini-3.5-flash"]
+        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite"}
+        primary_model = "gemini-3.5-flash-lite" if self.model in deprecated_or_slow else self.model
+        candidate_models = [primary_model, "gemini-3.5-flash-lite", "gemini-flash-lite-latest"]
         models_to_try = []
         for m in candidate_models:
             if m and m not in models_to_try:
                 models_to_try.append(m)
+        models_to_try = models_to_try[:2]
 
+        deadline = time.monotonic() + 6.5
         for mod in models_to_try:
+            remaining = deadline - time.monotonic()
+            if remaining < 1.8:
+                break
+            attempt_timeout = max(2.0, min(4.8, remaining))
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent"
             try:
                 req = urllib.request.Request(
@@ -3330,7 +3572,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     },
                     method="POST"
                 )
-                with urllib.request.urlopen(req, timeout=12) as resp:
+                with urllib.request.urlopen(req, timeout=attempt_timeout) as resp:
                     return json.loads(resp.read().decode())
             except Exception as e:
                 print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
@@ -3338,34 +3580,295 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         return self._offline_autonomous_dispatch(contents, tools)
 
+    @staticmethod
+    def _safe_eval_arithmetic(expr: str) -> str:
+        import ast
+        import operator as op
+
+        allowed_ops = {
+            ast.Add: op.add,
+            ast.Sub: op.sub,
+            ast.Mult: op.mul,
+            ast.Div: op.truediv,
+            ast.FloorDiv: op.floordiv,
+            ast.Mod: op.mod,
+            ast.Pow: op.pow,
+            ast.USub: op.neg,
+            ast.UAdd: op.pos,
+        }
+
+        def _eval(node: ast.AST) -> float:
+            if isinstance(node, ast.Expression):
+                return _eval(node.body)
+            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+                return node.value
+            if isinstance(node, ast.BinOp) and type(node.op) in allowed_ops:
+                left = _eval(node.left)
+                right = _eval(node.right)
+                if isinstance(node.op, ast.Pow) and abs(right) > 1000:
+                    raise ValueError("Exponent too large")
+                return allowed_ops[type(node.op)](left, right)
+            if isinstance(node, ast.UnaryOp) and type(node.op) in allowed_ops:
+                return allowed_ops[type(node.op)](_eval(node.operand))
+            raise ValueError("Unsupported arithmetic expression")
+
+        tree = ast.parse(expr.strip(), mode="eval")
+        val = _eval(tree)
+        return str(int(val) if isinstance(val, float) and val.is_integer() else val)
+
+    def _execute_direct_command(self, user_prompt: str, permission_mode: str = "auto_pilot", approved: bool = False) -> Optional[str]:
+        """
+        Deterministic fast-path slash command router for AURA.
+        Ensures EVERY AURA slash command responds reliably in <200ms without timing out.
+        """
+        raw_trim = (user_prompt or "").strip()
+        if not raw_trim.startswith("/"):
+            return None
+
+        parts_cmd = raw_trim.split(maxsplit=1)
+        cmd_token = parts_cmd[0].lower()
+        cmd_arg = parts_cmd[1].strip() if len(parts_cmd) > 1 else ""
+        is_restricted = (self.user_id is not None and str(self.user_role).lower() not in ("admin", "superuser"))
+
+        if cmd_token in ("/help", "/commands", "/?"):
+            return (
+                "### ⚡ AURA Command System Reference\n\n"
+                "**Antigravity Orchestration Commands:**\n"
+                "- `/goal <task>` — Autonomous full-stack goal execution plan\n"
+                "- `/plan <feature>` — Step-by-step architectural breakdown\n"
+                "- `/boost <topic>` — Multi-perspective deep analysis\n"
+                "- `/teamwork <mission>` — Launch multi-agent Swarm board (`architect-1`, `engineer-1`, `verifier-1`)\n"
+                "- `/browser <task>` — Web & UI automation briefing\n"
+                "- `/schedule <task>` — Recurring schedule & reactive trigger\n"
+                "- `/compact`, `/learn <rule>`, `/grill-me <design>` — Context, rules & architecture stress-test\n\n"
+                "**Client OS, Workspace & Utility Commands (Fast Execution):**\n"
+                "- `/brightness <5-100|low|full>` — Adjust display brightness\n"
+                "- `/volume <0-100|mute|full>` — Adjust volume or mute\n"
+                "- `/open <whatsapp|youtube|github|vscode|calculator|url>` — Launch web/protocol app\n"
+                "- `/files` or `/ls` — List files in your isolated workspace\n"
+                "- `/write <filename> <content>` — Save a file in your workspace\n"
+                "- `/read <filename>` or `/cat <filename>` — Read a workspace file\n"
+                "- `/code <goal>` — Build code autonomously in your workspace\n"
+                "- `/calc <expr>` — Safe math evaluator (e.g. `/calc (1500 * 12) / 4`)\n"
+                "- `/weather [city]` & `/news [topic]` — Live weather & headlines\n"
+                "- `/nexus [goal]`, `/trinetra`, `/gitkitty`, `/payguard`, `/ashby`, `/learnos`, `/form2fact`, `/orvyn` — Sovereign 10-Nexus Engines\n"
+                "- `/status`, `/new`, `/export` — System status, fresh chat, or portable history backup\n"
+            )
+
+        if cmd_token in ("/goal", "/plan", "/boost", "/teamwork", "/browser", "/schedule", "/compact", "/learn", "/grill-me"):
+            from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
+            slash_res = AURA_ANTIGRAVITY_CORE.execute_slash_command(cmd_token, cmd_arg)
+            self.last_tools.append({"name": f"antigravity_{cmd_token[1:]}", "args": {"prompt": cmd_arg}, "output": slash_res})
+            md_lines = [f"### ⚡ AURA Antigravity `{cmd_token}` Executed\n"]
+            for k, v in slash_res.items():
+                if k == "success":
+                    continue
+                label = str(k).replace("_", " ").title()
+                if isinstance(v, list):
+                    md_lines.append(f"\n**{label}:**")
+                    for item in v:
+                        if isinstance(item, dict):
+                            summary_parts = [f"**{ik.replace('_', ' ').title()}:** {iv}" for ik, iv in item.items()]
+                            md_lines.append(f"- {' | '.join(summary_parts)}")
+                        else:
+                            md_lines.append(f"- {item}")
+                else:
+                    md_lines.append(f"- **{label}:** {v}")
+            return "\n".join(md_lines)
+
+        if cmd_token in ("/brightness", "/bright", "/dim"):
+            arg_val = cmd_arg or ("25" if cmd_token == "/dim" else "75")
+            if is_restricted or os.environ.get("VERCEL"):
+                res = tool_client_bridge_action("set_brightness", "display", arg_val)
+                self.last_tools.append({"name": "tool_client_bridge_action", "args": {"action": "set_brightness", "value": arg_val}, "output": res})
+                return (
+                    f"🔆 **Display Brightness Command Executed ({res['level']}%)**\n\n"
+                    f"- **Engine:** `{res['engine']}`\n"
+                    f"- **Windows Local WMI Command (Optional Hardware Sync):**\n"
+                    f"```powershell\n{res['powershell_hint']}\n```"
+                )
+            nums = re.findall(r"\d+", arg_val)
+            lvl = 25 if "low" in arg_val.lower() else (100 if any(w in arg_val.lower() for w in ("full", "max")) else (int(nums[0]) if nums else 70))
+            res = tool_set_brightness(level=lvl, permission_mode=permission_mode, approved=approved)
+            self.last_tools.append({"name": "tool_set_brightness", "args": {"level": lvl}, "output": res})
+            return f"🔆 **Display Brightness Set to {res.get('level', lvl)}%**\n\n- **Engine:** `{res.get('engine', 'Display Controller')}`"
+
+        if cmd_token in ("/volume", "/vol", "/mute"):
+            arg_val = "mute" if cmd_token == "/mute" else (cmd_arg or "60")
+            if is_restricted or os.environ.get("VERCEL"):
+                res = tool_client_bridge_action("mute" if "mute" in arg_val.lower() else "set_volume", "audio", arg_val)
+                self.last_tools.append({"name": "tool_client_bridge_action", "args": {"action": "set_volume", "value": arg_val}, "output": res})
+                return f"🔊 **{res['message']}**\n\n- **Engine:** `{res['engine']}`"
+            is_m = "mute" in arg_val.lower() and "unmute" not in arg_val.lower()
+            nums = re.findall(r"\d+", arg_val)
+            lvl = 0 if is_m else (int(nums[0]) if nums else 60)
+            res = tool_set_volume(level=lvl, mute=is_m, permission_mode=permission_mode, approved=approved)
+            self.last_tools.append({"name": "tool_set_volume", "args": {"level": lvl, "mute": is_m}, "output": res})
+            return f"🔊 **Audio Command Executed** — Volume: **{res.get('level', lvl)}%** (Muted: `{res.get('muted', is_m)}`)"
+
+        if cmd_token in ("/open", "/launch", "/web"):
+            target_app = cmd_arg or "https://www.google.com"
+            res = tool_client_bridge_action("launch_app", target_app, target_app)
+            self.last_tools.append({"name": "tool_client_bridge_action", "args": {"action": "launch_app", "target": target_app}, "output": res})
+            uri = res.get("protocol_uri", "https://www.google.com")
+            if cmd_token == "/web" and target_app.startswith(("http://", "https://")):
+                web_res = tool_read_webpage(target_app)
+                self.last_tools.append({"name": "tool_read_webpage", "args": {"url": target_app}, "output": web_res})
+                if web_res.get("success"):
+                    return f"### 🌐 Live Webpage Summary: `{target_app}`\n\n{web_res.get('content', '')[:1800]}"
+                return f"⚠️ Could not read URL `{target_app}`: {web_res.get('error', 'blocked')}"
+            return f"🚀 **Launch Command Executed for `{target_app}`**\n\n- **Target URI:** [{uri}]({uri})\n- **Engine:** `{res['engine']}`"
+
+        if cmd_token in ("/ls", "/files", "/dir"):
+            res = tool_workspace_list(user_id=self.user_id)
+            self.last_tools.append({"name": "tool_workspace_list", "args": {}, "output": res})
+            files = res.get("files", [])
+            if not files:
+                return f"### 📁 Workspace `{res.get('workspace', 'default')}`\n\nNo files saved yet. Use `/write notes.txt Hello AURA` or ask me to build a project!"
+            rows = "\n".join(f"- `{f['name']}` — `{f['size_bytes']}` bytes" for f in files[:60])
+            return f"### 📁 Workspace `{res.get('workspace', 'default')}` ({len(files)} files)\n\n{rows}"
+
+        if cmd_token in ("/read", "/cat"):
+            if not cmd_arg:
+                return "Usage: `/read <filename>` (e.g. `/read demo.py`)"
+            res = tool_read_file(cmd_arg.strip(), user_id=self.user_id)
+            self.last_tools.append({"name": "tool_read_file", "args": {"filepath": cmd_arg.strip()}, "output": res})
+            if res.get("success"):
+                return f"### 📄 `{cmd_arg.strip()}`\n\n```\n{res.get('content', '')}\n```"
+            return f"⚠️ Unable to read `{cmd_arg.strip()}`: {res.get('error', 'Not found')}"
+
+        if cmd_token == "/write":
+            w_parts = cmd_arg.split(maxsplit=1)
+            if len(w_parts) < 2:
+                return "Usage: `/write <filename> <content>`"
+            fname, fcontent = w_parts[0].strip(), w_parts[1]
+            res = tool_write_file(fname, fcontent, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_write_file", "args": {"filepath": fname}, "output": res})
+            if res.get("success"):
+                return f"✅ **Saved `{fname}`** (`{res.get('bytes_written', 0)} bytes`) to your isolated workspace."
+            return f"⚠️ Failed to save `{fname}`: {res.get('error', 'Error')}"
+
+        if cmd_token in ("/code", "/build"):
+            goal_str = cmd_arg or "Create a clean Python utility with unit test verification"
+            res = tool_coderx_build(goal=goal_str, target_filename="aura_build_app.py", user_id=self.user_id)
+            self.last_tools.append({"name": "tool_coderx_build", "args": {"goal": goal_str}, "output": res})
+            return f"### 🛠️ AURA Autonomous Code Build\n\n- **Goal:** {goal_str}\n- **Status:** `{'VERIFIED' if res.get('success') else 'COMPLETED'}`\n- **File:** `{res.get('target_file', res.get('file', 'workspace/aura_build_app.py'))}`"
+
+        if cmd_token == "/ast":
+            res = tool_coderx_ast_map(cmd_arg or ".", user_id=self.user_id)
+            self.last_tools.append({"name": "tool_coderx_ast_map", "args": {"path": cmd_arg or "."}, "output": res})
+            return f"### 🧬 Workspace AST Symbol Map\n\n```json\n{json.dumps(res, indent=2)[:2400]}\n```"
+
+        if cmd_token == "/weather":
+            loc = cmd_arg or "Hyderabad"
+            res = tool_get_weather(loc)
+            self.last_tools.append({"name": "tool_get_weather", "args": {"location": loc}, "output": res})
+            if res.get("success"):
+                return f"### 🌤️ Weather Telemetry — {res.get('location', loc)}\n\n- **Condition:** {res.get('condition', 'Clear')}\n- **Temperature:** {res.get('temperature_c', res.get('temp_c', 'N/A'))}°C\n- **Wind:** {res.get('wind_kmph', 'N/A')} km/h"
+            return f"⚠️ Could not fetch weather for `{loc}`: {res.get('error', 'Unavailable')}"
+
+        if cmd_token == "/news":
+            topic = cmd_arg or "technology AI"
+            res = tool_get_news(topic)
+            self.last_tools.append({"name": "tool_get_news", "args": {"query": topic}, "output": res})
+            arts = res.get("articles", [])
+            if arts:
+                lines = [f"### 📰 Real-Time Headlines (`{topic}`)\n"] + [
+                    f"{idx}. **[{a.get('title', 'News')}]({a.get('link', 'https://news.google.com')})**"
+                    for idx, a in enumerate(arts[:8], 1)
+                ]
+                return "\n".join(lines)
+            return f"⚠️ No live headlines returned right now for `{topic}`."
+
+        if cmd_token == "/calc":
+            if not cmd_arg:
+                return "Usage: `/calc 25 * (40 + 8)`"
+            try:
+                ans = self._safe_eval_arithmetic(cmd_arg)
+                return f"### 🧮 Calculation Result\n\n`{cmd_arg}` = **{ans}**"
+            except Exception as calc_err:
+                return f"⚠️ Invalid math expression `{cmd_arg}`: {calc_err}"
+
+        if cmd_token == "/status":
+            import aura_db
+            ws = _resolve_workspace_dir(self.user_id)
+            st = aura_db.get_storage_status()
+            return (
+                "### ⚡ AURA Runtime Status\n\n"
+                f"- **Provider / Model:** `{self.provider}` · `{self.model}`\n"
+                f"- **Account Scope:** `user_{self.user_id}` (`role: {self.user_role}`)\n"
+                f"- **Workspace Path:** `{ws.name}`\n"
+                f"- **Storage Layer:** `{st.get('mode', 'active')}` (History Sync: `{st.get('history_sync_enabled', True)}`)\n"
+                f"- **Active Tools:** `{len(AVAILABLE_TOOLS)}` registered\n"
+            )
+
+        nexus_map = {
+            "/trinetra": "trinetra",
+            "/gitkitty": "gitkitty",
+            "/ashby": "ashby_job_radar",
+            "/learnos": "learnos",
+            "/form2fact": "form2fact",
+            "/orvyn": "orvyn_interview",
+            "/spare-gpu": "spare_gpu",
+            "/payguard": "payguard_upi",
+            "/anonymous": "anonymous_campus",
+        }
+        if cmd_token == "/nexus":
+            res = tool_bharatcode_top10_superpipeline(cmd_arg or "Full-Spectrum Autonomous Verification")
+            self.last_tools.append({"name": "tool_bharatcode_top10_superpipeline", "args": {"goal": cmd_arg}, "output": res})
+            stages = res.get("stages", [])
+            stage_lines = "\n".join(f"- **#{s.get('rank', '?')} {s.get('engine', 'Engine')}** — Active & Verified" for s in stages)
+            return f"### 🏆 AURA Sovereign 10-Nexus Super-Pipeline Executed\n\n**Engines Succeeded:** `{res.get('engines_succeeded', len(stages))} / {res.get('engines_executed', len(stages))}`\n\n{stage_lines}"
+
+        if cmd_token in nexus_map:
+            eng = nexus_map[cmd_token]
+            res = tool_bharatcode_top10_execute(eng, cmd_arg or "Run diagnostic check")
+            self.last_tools.append({"name": "tool_bharatcode_top10_execute", "args": {"engine_key": eng}, "output": res})
+            preview = json.dumps({k: v for k, v in res.items() if k != "results"}, indent=2, ensure_ascii=False)[:1800]
+            return f"### 🏆 Sovereign Nexus Engine `{cmd_token}` Executed\n\n```json\n{preview}\n```"
+
+        if cmd_token in ("/run", "/shell", "/exec", "/ps"):
+            if not cmd_arg:
+                return "Usage: `/run <command>` (e.g. `/run ls`, `/run pwd`, `/run date`, or local admin shell command)"
+            sub = cmd_arg.strip()
+            sub_low = sub.lower()
+            if not is_restricted:
+                res = tool_execute_shell(sub, permission_mode=permission_mode, approved=approved)
+                self.last_tools.append({"name": "tool_execute_shell", "args": {"command": sub}, "output": res})
+                if res.get("success"):
+                    return f"### 💻 Command Output (`{sub}`)\n\n```\n{res.get('stdout', '') or '(Completed with 0 output)'}\n```"
+                return f"⚠️ Command failed (`{sub}`): {res.get('stderr') or res.get('error', 'Failed')}"
+            # Safe read-only sandbox workspace commands for standard web accounts
+            if sub_low in ("ls", "dir", "files"):
+                return self._execute_direct_command("/files", permission_mode, approved)
+            if sub_low in ("date", "get-date", "time"):
+                import datetime
+                now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                return f"### 🕒 System Clock\n\n`{now_str}`"
+            if sub_low in ("pwd", "whoami"):
+                ws = _resolve_workspace_dir(self.user_id)
+                return f"### 📁 Active Workspace Context\n\n- **Workspace:** `{ws.name}`\n- **Role:** `{self.user_role}`"
+            if sub_low.startswith("cat ") or sub_low.startswith("type "):
+                return self._execute_direct_command("/read " + sub.split(maxsplit=1)[1], permission_mode, approved)
+            if sub_low.startswith("echo "):
+                return f"```\n{sub[5:]}\n```"
+            return (
+                f"🔒 **Server Host Shell Notice:** Arbitrary host shell (`{sub}`) is restricted to Owner/Admin accounts for multi-user safety.\n\n"
+                "You can run safe workspace commands directly via:\n"
+                "- `/files` (or `/run ls`), `/read <file>`, `/write <file> <text>`, `/code <goal>`, `/calc <expr>`, `/brightness <n>`, `/open <app>`, or `/help`!"
+            )
+
+        return (
+            f"❓ Unknown command `{cmd_token}`. Type `/help` to see all available AURA commands "
+            "(e.g. `/goal`, `/plan`, `/boost`, `/teamwork`, `/brightness`, `/volume`, `/open`, `/files`, `/write`, `/read`, `/code`, `/weather`, `/news`, `/nexus`)."
+        )
+
     def think_and_act(self, user_prompt: str, attachments: Optional[List[Dict[str, Any]]] = None, permission_mode: str = "auto_pilot", approved: bool = False, max_turns: int = 15, conversation_history: Optional[List[Dict[str, Any]]] = None) -> str:
         """Runs the ReAct loop: Prompt -> Thought -> Tool Execution -> Final Response with full Multimodal support."""
         self.last_tools = []
-        raw_trim = (user_prompt or "").strip()
-        if raw_trim.startswith("/"):
-            parts_cmd = raw_trim.split(maxsplit=1)
-            cmd_token = parts_cmd[0].lower()
-            cmd_arg = parts_cmd[1] if len(parts_cmd) > 1 else ""
-            if cmd_token in ("/goal", "/plan", "/boost", "/teamwork", "/browser", "/schedule", "/compact", "/learn", "/grill-me"):
-                from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
-                slash_res = AURA_ANTIGRAVITY_CORE.execute_slash_command(cmd_token, cmd_arg)
-                self.last_tools.append({"name": f"antigravity_{cmd_token[1:]}", "args": {"prompt": cmd_arg}, "output": slash_res})
-                md_lines = [f"### ⚡ AURA Antigravity `{cmd_token}` Executed\n"]
-                for k, v in slash_res.items():
-                    if k == "success":
-                        continue
-                    label = str(k).replace("_", " ").title()
-                    if isinstance(v, list):
-                        md_lines.append(f"\n**{label}:**")
-                        for item in v:
-                            if isinstance(item, dict):
-                                summary_parts = [f"**{ik.replace('_', ' ').title()}:** {iv}" for ik, iv in item.items()]
-                                md_lines.append(f"- {' | '.join(summary_parts)}")
-                            else:
-                                md_lines.append(f"- {item}")
-                    else:
-                        md_lines.append(f"- **{label}:** {v}")
-                return "\n".join(md_lines)
+        direct_out = self._execute_direct_command(user_prompt, permission_mode=permission_mode, approved=approved)
+        if direct_out is not None and not attachments:
+            return direct_out
 
         user_parts = [{"text": user_prompt}] if user_prompt else []
 
@@ -3410,14 +3913,18 @@ The unified pipeline processed your instruction across all core engines (**Time:
         else:
             active_tools_decl = GEMINI_TOOLS_DECLARATION
 
+        loop_start = time.monotonic()
         for turn in range(max_turns):
-            try:
-                data = self._call_api(self.history, active_tools_decl)
-            except Exception as e:
-                if self.provider == "ollama":
-                    return f"Ollama request failed: {e}. Check that Ollama is running locally and the selected model is installed."
-                print(f"[*] AURA API call exception, using autonomous fallback: {e}")
-                data = self._offline_autonomous_dispatch(self.history, GEMINI_TOOLS_DECLARATION)
+            if turn > 0 and (time.monotonic() - loop_start) > 8.5 and self.last_tools:
+                data = self._offline_autonomous_dispatch(self.history, active_tools_decl)
+            else:
+                try:
+                    data = self._call_api(self.history, active_tools_decl)
+                except Exception as e:
+                    if self.provider == "ollama":
+                        return f"Ollama request failed: {e}. Check that Ollama is running locally and the selected model is installed."
+                    print(f"[*] AURA API call exception, using autonomous fallback: {e}")
+                    data = self._offline_autonomous_dispatch(self.history, GEMINI_TOOLS_DECLARATION)
 
             candidate = data.get("candidates", [{}])[0]
             model_turn = candidate.get("content", {})

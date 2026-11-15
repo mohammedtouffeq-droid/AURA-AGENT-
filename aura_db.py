@@ -12,6 +12,7 @@ Enterprise-grade SQLite / LibSQL database supporting:
 ===================================================================================
 """
 
+import base64
 import datetime
 import hashlib
 import hmac
@@ -54,10 +55,40 @@ def _resolve_projects_root() -> Path:
 _RUNTIME_SECRETS_CACHE: Dict[str, str] = {}
 
 
+def _resolve_shared_deployment_seed() -> str:
+    """
+    Combines shared non-public deployment runtime env vars that are identical across
+    all serverless containers of a deployment (returns '' if none exist).
+    """
+    env_keys = (
+        "AURA_SESSION_SECRET",
+        "AURA_VAULT_SECRET",
+        "AURA_CSRF_SECRET",
+        "TURSO_AUTH_TOKEN",
+        "AURA_DATABASE_URL",
+        "TURSO_DATABASE_URL",
+        "GEMINI_API_KEY",
+        "VERCEL_PROJECT_ID",
+        "VERCEL_ORG_ID",
+        "VERCEL_GIT_REPO_ID",
+        "VERCEL_PROJECT_PRODUCTION_URL",
+    )
+    parts = [f"{k}={os.environ.get(k, '').strip()}" for k in env_keys if os.environ.get(k, "").strip()]
+    if not parts:
+        return ""
+    return "|".join(parts)
+
+
 def _get_or_create_secret(env_name: str, key_name: str) -> str:
     env_val = os.environ.get(env_name, "").strip()
     if env_val:
         return env_val
+
+    if os.environ.get("VERCEL"):
+        shared_seed = _resolve_shared_deployment_seed()
+        if shared_seed:
+            return hashlib.sha256(f"aura-v2:{key_name}:{shared_seed}".encode("utf-8")).hexdigest()
+
     if key_name in _RUNTIME_SECRETS_CACHE:
         return _RUNTIME_SECRETS_CACHE[key_name]
 
@@ -128,12 +159,15 @@ def get_storage_status() -> Dict[str, Any]:
         }
     if os.environ.get("VERCEL"):
         vault_configured = bool(os.environ.get("AURA_VAULT_SECRET", "").strip())
+        shared_seed_active = bool(_resolve_shared_deployment_seed())
         return {
             "persistent": False,
             "mode": "serverless_ephemeral_sqlite",
             "engine": "sqlite3_ephemeral",
             "production_accounts_available": True,
             "vault_sync_enabled": vault_configured,
+            "history_sync_enabled": True,
+            "stateless_session_sync": shared_seed_active,
             "message": "Serverless SQLite (/tmp is ephemeral across cold starts; configure TURSO_DATABASE_URL for durable multi-instance persistence)."
         }
     return {
@@ -516,6 +550,20 @@ def init_database():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS revoked_sessions (
+            token_hash TEXT PRIMARY KEY,
+            revoked_at REAL NOT NULL
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS user_revocations (
+            username TEXT PRIMARY KEY,
+            revoked_before REAL NOT NULL
+        )
+    """)
+
     # Schema migrations for existing local SQLite files
     c.execute("PRAGMA table_info(users)")
     user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
@@ -544,6 +592,60 @@ init_database()
 # AUTHENTICATION & ACCOUNT LIFECYCLE API
 # ===================================================================================
 
+def _issue_signed_session_token(user_id: int, username: str, display_name: str = "", role: str = "user", ttl_days: int = 30) -> Tuple[str, str]:
+    """
+    Issues a signed, container-portable session token (`aura_s2.<payload>.<sig>`)
+    that stays valid across Vercel multi-container invocations while still supporting
+    per-token and per-user revocation in SQLite.
+    """
+    now_ts = time.time()
+    exp_dt = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=ttl_days)
+    payload = {
+        "v": 2,
+        "jti": secrets.token_hex(12),
+        "uid": int(user_id),
+        "u": str(username).strip().lower(),
+        "dn": (str(display_name or username).strip()[:64] or str(username).capitalize()),
+        "r": str(role or "user").lower(),
+        "iat": round(now_ts, 3),
+        "exp": round(exp_dt.timestamp(), 3),
+    }
+    raw_b64 = base64.urlsafe_b64encode(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii").rstrip("=")
+    secret_seed = _get_or_create_secret("AURA_SESSION_SECRET", "session_secret")
+    sig = hmac.new(secret_seed.encode("utf-8"), raw_b64.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"aura_s2.{raw_b64}.{sig}", exp_dt.isoformat()
+
+
+def _verify_signed_session_token(token: str) -> Optional[Dict[str, Any]]:
+    if not token or not isinstance(token, str) or not token.startswith("aura_s2."):
+        return None
+    parts = token.split(".")
+    if len(parts) != 3:
+        return None
+    _, raw_b64, sig = parts
+    if not raw_b64 or not sig:
+        return None
+    secret_seed = _get_or_create_secret("AURA_SESSION_SECRET", "session_secret")
+    expected_sig = hmac.new(secret_seed.encode("utf-8"), raw_b64.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected_sig, sig):
+        return None
+    try:
+        padded = raw_b64 + "=" * (-len(raw_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
+        if not isinstance(payload, dict) or payload.get("v") != 2:
+            return None
+        if float(payload.get("exp", 0)) < time.time():
+            return None
+        uname = str(payload.get("u", "")).strip().lower()
+        if not uname:
+            return None
+        return payload
+    except Exception:
+        return None
+
+
 def register_user(username: str, password: str) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Username and password must be strings."}
@@ -568,8 +670,7 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
         """, (username, hashed, salt, display_name, json.dumps({})))
         user_id = c.lastrowid
 
-        token = secrets.token_hex(24)
-        expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+        token, expires_at = _issue_signed_session_token(int(user_id), username, display_name, "user")
         c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
 
         default_thread_id = f"th_{secrets.token_hex(8)}"
@@ -648,8 +749,9 @@ def login_user(username: str, password: str, vault_backup: Optional[Dict[str, An
         conn.commit()
 
     clear_login_failures(username)
-    token = secrets.token_hex(24)
-    expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+    user_role = row["role"] if "role" in row.keys() else "user"
+    disp_name = row["display_name"] or row["username"].capitalize()
+    token, expires_at = _issue_signed_session_token(int(user_id), row["username"], disp_name, user_role)
     c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
     conn.commit()
     conn.close()
@@ -660,8 +762,8 @@ def login_user(username: str, password: str, vault_backup: Optional[Dict[str, An
         "user": {
             "id": user_id,
             "username": row["username"],
-            "display_name": row["display_name"] or row["username"].capitalize(),
-            "role": row["role"] if "role" in row.keys() else "user"
+            "display_name": disp_name,
+            "role": user_role
         }
     }
 
@@ -674,7 +776,7 @@ def change_user_password(user_id: int, current_password: str, new_password: str)
     conn = get_connection()
     c = conn.cursor()
     try:
-        c.execute("SELECT password_hash, salt FROM users WHERE id = ?", (user_id,))
+        c.execute("SELECT username, display_name, COALESCE(role, 'user') as role, password_hash, salt FROM users WHERE id = ?", (user_id,))
         row = c.fetchone()
         if not row:
             return {"success": False, "error": "Account not found."}
@@ -684,8 +786,16 @@ def change_user_password(user_id: int, current_password: str, new_password: str)
         new_hash, new_salt = hash_password(new_password)
         c.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user_id))
         c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (user_id,))
-        fresh_token = secrets.token_hex(24)
-        expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+        c.execute(
+            "INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)",
+            (str(row["username"]).lower(), time.time() - 0.002),
+        )
+        fresh_token, expires_at = _issue_signed_session_token(
+            int(user_id),
+            row["username"],
+            row["display_name"] or row["username"].capitalize(),
+            row["role"] if "role" in row.keys() else "user",
+        )
         c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (fresh_token, user_id, expires_at))
         conn.commit()
         return {"success": True, "token": fresh_token, "message": "Password updated and old sessions revoked."}
@@ -698,13 +808,17 @@ def delete_user_account(user_id: int, password: str) -> Dict[str, Any]:
     conn = get_connection()
     c = conn.cursor()
     try:
-        c.execute("SELECT password_hash, salt FROM users WHERE id = ?", (user_id,))
+        c.execute("SELECT username, password_hash, salt FROM users WHERE id = ?", (user_id,))
         row = c.fetchone()
         if not row:
             return {"success": False, "error": "Account not found."}
         ok, _ = verify_password(password, row["password_hash"], row["salt"])
         if not ok:
             return {"success": False, "error": "Incorrect password."}
+        c.execute(
+            "INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)",
+            (str(row["username"]).lower(), time.time() + 1.0),
+        )
         c.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         return {"success": True, "message": "Account and all associated data permanently deleted."}
@@ -727,11 +841,21 @@ def bootstrap_admin_user(user_id: int, provided_secret: str) -> Dict[str, Any]:
 
 
 def create_session_token(user_id: int) -> str:
-    """Generates and registers an active session token for a given user ID."""
-    token = secrets.token_hex(24)
-    expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
+    """Generates and registers a signed active session token for a given user ID."""
     conn = get_connection()
     c = conn.cursor()
+    c.execute("SELECT username, display_name, COALESCE(role, 'user') as role FROM users WHERE id = ?", (user_id,))
+    u_row = c.fetchone()
+    if u_row:
+        token, expires_at = _issue_signed_session_token(
+            int(user_id),
+            u_row["username"],
+            u_row["display_name"] or u_row["username"].capitalize(),
+            u_row["role"] if "role" in u_row.keys() else "user",
+        )
+    else:
+        token = secrets.token_hex(24)
+        expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=30)).isoformat()
     c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, user_id, expires_at))
     conn.commit()
     conn.close()
@@ -741,66 +865,116 @@ def create_session_token(user_id: int) -> str:
 def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
     if not token or not isinstance(token, str):
         return None
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
     conn = get_connection()
     c = conn.cursor()
-    c.execute("""
-        SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at, COALESCE(u.role, 'user') as role
-        FROM auth_sessions s
-        JOIN users u ON s.user_id = u.id
-        WHERE s.token = ?
-    """, (token,))
-    row = c.fetchone()
-    if not row:
-        conn.close()
-        return None
-
-    # Fail-closed session expiration validation
-    expires_at_str = row["expires_at"]
-    if not expires_at_str:
-        c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
-        conn.commit()
-        conn.close()
-        return None
     try:
-        exp = datetime.datetime.fromisoformat(str(expires_at_str))
-        now = datetime.datetime.now(datetime.timezone.utc)
-        if exp.tzinfo is None:
-            exp = exp.replace(tzinfo=datetime.timezone.utc)
-        if exp < now:
+        c.execute("SELECT 1 FROM revoked_sessions WHERE token_hash = ?", (token_hash,))
+        if c.fetchone():
+            return None
+
+        c.execute("""
+            SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at, COALESCE(u.role, 'user') as role
+            FROM auth_sessions s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.token = ?
+        """, (token,))
+        row = c.fetchone()
+
+        signed_payload = _verify_signed_session_token(token) if token.startswith("aura_s2.") else None
+        if signed_payload:
+            uname = str(signed_payload.get("u", "")).lower()
+            c.execute("SELECT revoked_before FROM user_revocations WHERE username = ?", (uname,))
+            rev_row = c.fetchone()
+            if rev_row and float(signed_payload.get("iat", 0)) < float(rev_row["revoked_before"]):
+                c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+                conn.commit()
+                return None
+
+        if not row:
+            # Stateless cold-start / multi-container rehydration for valid signed aura_s2 tokens
+            if not signed_payload:
+                return None
+            uname = str(signed_payload["u"]).strip().lower()
+            disp = str(signed_payload.get("dn") or uname.capitalize())
+            role = str(signed_payload.get("r") or "user")
+            c.execute("SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = ?", (uname,))
+            u_row = c.fetchone()
+            if not u_row:
+                c.execute("""
+                    INSERT OR IGNORE INTO users (username, password_hash, salt, display_name, settings_json, role)
+                    VALUES (?, 'SHADOW_SESSION_ONLY', 'SHADOW', ?, ?, ?)
+                """, (uname, disp, json.dumps({}), role))
+                c.execute("SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = ?", (uname,))
+                u_row = c.fetchone()
+                if not u_row:
+                    return None
+            actual_uid = int(u_row["id"])
+            exp_iso = datetime.datetime.fromtimestamp(float(signed_payload["exp"]), tz=datetime.timezone.utc).isoformat()
+            c.execute(
+                "INSERT OR IGNORE INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
+                (token, actual_uid, exp_iso),
+            )
+            conn.commit()
+            try:
+                parsed_settings = json.loads(u_row["settings_json"] or "{}")
+            except Exception:
+                parsed_settings = {}
+            return {
+                "id": actual_uid,
+                "username": u_row["username"],
+                "display_name": u_row["display_name"] or u_row["username"].capitalize(),
+                "role": u_row["role"] if "role" in u_row.keys() else "user",
+                "settings": parsed_settings,
+            }
+
+        # Fail-closed session expiration validation
+        expires_at_str = row["expires_at"]
+        if not expires_at_str:
             c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
             conn.commit()
-            conn.close()
             return None
-    except (ValueError, TypeError):
-        c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
-        conn.commit()
-        conn.close()
-        return None
+        try:
+            exp = datetime.datetime.fromisoformat(str(expires_at_str))
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=datetime.timezone.utc)
+            if exp < now:
+                c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+                conn.commit()
+                return None
+        except (ValueError, TypeError):
+            c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+            conn.commit()
+            return None
 
-    conn.close()
-    try:
-        parsed_settings = json.loads(row["settings_json"] or "{}")
-    except Exception:
-        parsed_settings = {}
-    return {
-        "id": row["id"],
-        "username": row["username"],
-        "display_name": row["display_name"] or row["username"].capitalize(),
-        "role": row["role"] if "role" in row.keys() else "user",
-        "settings": parsed_settings
-    }
+        try:
+            parsed_settings = json.loads(row["settings_json"] or "{}")
+        except Exception:
+            parsed_settings = {}
+        return {
+            "id": row["id"],
+            "username": row["username"],
+            "display_name": row["display_name"] or row["username"].capitalize(),
+            "role": row["role"] if "role" in row.keys() else "user",
+            "settings": parsed_settings,
+        }
+    finally:
+        conn.close()
 
 
 def revoke_session(token: str) -> bool:
-    if not token:
+    if not token or not isinstance(token, str):
         return False
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
     conn = get_connection()
     c = conn.cursor()
     c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
     affected = c.rowcount > 0
+    c.execute("INSERT OR REPLACE INTO revoked_sessions (token_hash, revoked_at) VALUES (?, ?)", (token_hash, time.time()))
     conn.commit()
     conn.close()
-    return affected
+    return affected or token.startswith("aura_s2.")
 
 
 # ===================================================================================
@@ -911,24 +1085,28 @@ def save_message(user_id: int, thread_id: str, role: str, content: str, tools: O
     safe_tid = "".join(ch for ch in str(thread_id or "") if ch.isalnum() or ch in ("_", "-"))[:64] or f"th_{secrets.token_hex(8)}"
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, user_id FROM threads WHERE id = ?", (safe_tid,))
+    c.execute("SELECT id, user_id, title FROM threads WHERE id = ?", (safe_tid,))
     t_row = c.fetchone()
+    clean_first = content.strip().split("\n")[0].strip()
+    auto_title = (clean_first[:42] + "...") if len(clean_first) > 42 else (clean_first or "New Conversation")
     if not t_row:
-        clean_first = content.strip().split("\n")[0].strip()
-        title = (clean_first[:28] + "...") if len(clean_first) > 28 else (clean_first or "New Conversation")
         c.execute("""
             INSERT INTO threads (id, user_id, title)
             VALUES (?, ?, ?)
-        """, (safe_tid, user_id, title))
+        """, (safe_tid, user_id, auto_title))
     elif t_row["user_id"] != user_id:
         # Prevent cross-tenant thread ID collision
         safe_tid = f"th_{user_id}_{secrets.token_hex(6)}"
-        clean_first = content.strip().split("\n")[0].strip()
-        title = (clean_first[:28] + "...") if len(clean_first) > 28 else (clean_first or "New Conversation")
         c.execute("""
             INSERT INTO threads (id, user_id, title)
             VALUES (?, ?, ?)
-        """, (safe_tid, user_id, title))
+        """, (safe_tid, user_id, auto_title))
+    elif role == "user" and str(t_row["title"]) in ("New Session", "Welcome & Overview", "New Conversation"):
+        c.execute("SELECT COUNT(*) as cnt FROM messages WHERE thread_id = ? AND user_id = ?", (safe_tid, user_id))
+        m_cnt_row = c.fetchone()
+        m_cnt = (m_cnt_row["cnt"] if isinstance(m_cnt_row, (dict, sqlite3.Row)) else m_cnt_row[0]) if m_cnt_row else 0
+        if m_cnt == 0 and auto_title:
+            c.execute("UPDATE threads SET title = ? WHERE id = ? AND user_id = ?", (auto_title, safe_tid, user_id))
 
     tools_str = json.dumps(tools) if tools else None
     c.execute("""
@@ -1398,5 +1576,138 @@ def restore_user_vault(vault_envelope: Any, authenticated_user_id: Optional[int]
         return True
     except Exception:
         return False
+    finally:
+        conn.close()
+
+
+def sync_user_history(
+    authenticated_user_id: int,
+    owner_username: str,
+    threads: Optional[List[Dict[str, Any]]] = None,
+    messages: Optional[List[Dict[str, Any]]] = None,
+    user_memories: Optional[List[Dict[str, Any]]] = None,
+    projects: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """
+    Strictly tenant-scoped history synchronization for an ALREADY authenticated user.
+    Used when ephemeral cloud containers reset /tmp SQLite or when importing a user's
+    portable backup archive. Rejects cross-user payloads and namespaces colliding IDs.
+    """
+    conn = get_connection()
+    if isinstance(conn, _RemoteLibSQLConnection):
+        conn.buffer_writes = True
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, username FROM users WHERE id = ?", (int(authenticated_user_id),))
+        existing = c.fetchone()
+        if not existing:
+            return {"success": False, "error": "Authenticated account not found", "status": 401}
+        actual_uname = str(existing["username"]).strip().lower()
+        req_uname = str(owner_username or "").strip().lower()
+        if req_uname and req_uname != actual_uname:
+            return {"success": False, "error": "Forbidden: Cross-account history payload rejected", "status": 403}
+
+        target_uid = int(existing["id"])
+        restored_threads = 0
+        restored_messages = 0
+        id_remap: Dict[str, str] = {}
+
+        for t in (threads or [])[:1000]:
+            if not isinstance(t, dict) or not t.get("id"):
+                continue
+            raw_tid = str(t["id"])
+            safe_tid = "".join(ch for ch in raw_tid if ch.isalnum() or ch in ("_", "-"))[:64]
+            if not safe_tid:
+                continue
+            c.execute("SELECT user_id FROM threads WHERE id = ?", (safe_tid,))
+            owner_row = c.fetchone()
+            if owner_row and int(owner_row["user_id"]) != target_uid:
+                safe_tid = f"th_{target_uid}_{safe_tid}"[:64]
+            id_remap[raw_tid] = safe_tid
+
+            title = str(t.get("title") or "Saved Conversation").strip()[:120] or "Saved Conversation"
+            is_pinned = int(bool(t.get("is_pinned", 0)))
+            updated_at = str(t.get("updated_at") or datetime.datetime.now(datetime.timezone.utc).isoformat())[:32]
+            c.execute("""
+                INSERT OR IGNORE INTO threads (id, user_id, title, is_pinned, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (safe_tid, target_uid, title, is_pinned, updated_at))
+            if c.rowcount > 0:
+                restored_threads += 1
+
+        msgs_by_tid: Dict[str, List[Dict[str, Any]]] = {}
+        for m in (messages or [])[:15000]:
+            if not isinstance(m, dict) or not m.get("thread_id"):
+                continue
+            raw_tid = str(m["thread_id"])
+            mapped_tid = id_remap.get(raw_tid)
+            if not mapped_tid:
+                safe_tid = "".join(ch for ch in raw_tid if ch.isalnum() or ch in ("_", "-"))[:64]
+                if not safe_tid:
+                    continue
+                c.execute("SELECT user_id FROM threads WHERE id = ?", (safe_tid,))
+                owner_row = c.fetchone()
+                if owner_row and int(owner_row["user_id"]) != target_uid:
+                    safe_tid = f"th_{target_uid}_{safe_tid}"[:64]
+                c.execute("INSERT OR IGNORE INTO threads (id, user_id, title) VALUES (?, ?, ?)", (safe_tid, target_uid, "Restored Conversation"))
+                mapped_tid = safe_tid
+                id_remap[raw_tid] = safe_tid
+            msgs_by_tid.setdefault(mapped_tid, []).append(m)
+
+        for mapped_tid, t_msgs in msgs_by_tid.items():
+            c.execute("SELECT COUNT(*) as cnt FROM messages WHERE thread_id = ? AND user_id = ?", (mapped_tid, target_uid))
+            cnt_row = c.fetchone()
+            existing_cnt = int((cnt_row["cnt"] if isinstance(cnt_row, (dict, sqlite3.Row)) else cnt_row[0]) if cnt_row else 0)
+            # Only append slice beyond what already exists on this container
+            if len(t_msgs) > existing_cnt:
+                for m in t_msgs[existing_cnt:]:
+                    tools_json = m.get("tools_json")
+                    if tools_json is None and isinstance(m.get("tools"), list) and m.get("tools"):
+                        tools_json = json.dumps(m["tools"])
+                    c.execute("""
+                        INSERT INTO messages (thread_id, user_id, role, content, tools_json)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        mapped_tid,
+                        target_uid,
+                        str(m.get("role", "user"))[:24],
+                        str(m.get("content", "")),
+                        tools_json,
+                    ))
+                    restored_messages += 1
+
+        for mem in (user_memories or [])[:500]:
+            if isinstance(mem, dict) and mem.get("key"):
+                c.execute("""
+                    INSERT OR IGNORE INTO user_memories (user_id, key, value)
+                    VALUES (?, ?, ?)
+                """, (target_uid, str(mem["key"])[:120], str(mem.get("value", ""))[:4000]))
+
+        for p in (projects or [])[:200]:
+            if isinstance(p, dict) and p.get("id") and p.get("name"):
+                safe_pid = "".join(ch for ch in str(p["id"]) if ch.isalnum() or ch in ("_", "-"))[:64]
+                if not safe_pid:
+                    continue
+                c.execute("SELECT user_id FROM projects WHERE id = ?", (safe_pid,))
+                p_owner = c.fetchone()
+                if p_owner and int(p_owner["user_id"]) != target_uid:
+                    safe_pid = f"p_{target_uid}_{safe_pid}"[:64]
+                c.execute("""
+                    INSERT OR IGNORE INTO projects (id, user_id, name, company, stack, path, description, is_pinned)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    safe_pid, target_uid, str(p["name"])[:100], str(p.get("company", ""))[:100],
+                    str(p.get("stack", "Python"))[:80], str(p.get("path", ""))[:260], str(p.get("description", ""))[:500],
+                    int(bool(p.get("is_pinned", 0))),
+                ))
+
+        conn.commit()
+        return {
+            "success": True,
+            "restored_threads": restored_threads,
+            "restored_messages": restored_messages,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "status": 500}
     finally:
         conn.close()
