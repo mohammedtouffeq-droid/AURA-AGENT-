@@ -168,6 +168,7 @@ def test_bharatcode_top10_http_endpoints_end_to_end():
 
 
 def test_zero_visible_bharatcode_branding_and_antigravity_core_active():
+    import json
     import re
     from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
 
@@ -179,6 +180,12 @@ def test_zero_visible_bharatcode_branding_and_antigravity_core_active():
     assert 'id="fTab_antigravity"' in html
     assert 'id="fSection_antigravity"' in html
     assert "executeClientBridgeCommand" in html
+    assert "renderAuraVisualResult" in html
+
+    sp_out = BHARATCODE_TOP10_SUITE.run_all_10_superpipeline("Verify zero competitor branding in pipeline outputs")
+    sp_json = json.dumps(sp_out)
+    assert "BharatCode Build League" not in sp_json
+    assert "Highest Judges' Score" not in sp_json
 
     for cmd in ["/goal", "/plan", "/boost", "/teamwork", "/browser", "/schedule", "/compact", "/learn", "/grill-me"]:
         res = AURA_ANTIGRAVITY_CORE.execute_slash_command(cmd, "Test mission")

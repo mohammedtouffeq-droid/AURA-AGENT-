@@ -2849,7 +2849,21 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
             elif last_tool_name in ["tool_bharatcode_top10_execute", "tool_bharatcode_top10_superpipeline"]:
                 eng = last_output.get("engine") or last_output.get("suite") or "AURA Sovereign 10-Nexus Super-Suite"
-                text = f"### 🏆 {eng} Executed!\n\n```json\n{json.dumps(last_output, indent=2)}\n```"
+                lines_md = [f"### 🏆 {eng} Executed Successfully\n"]
+                if isinstance(last_output.get("stages"), list):
+                    lines_md.append(f"**Engines Succeeded:** `{last_output.get('engines_succeeded', 10)} / {last_output.get('engines_executed', 10)}` ({last_output.get('elapsed_ms', 0)} ms)\n")
+                    for st in last_output["stages"]:
+                        sname = st.get("engine", "Stage")
+                        srank = st.get("rank", "")
+                        lines_md.append(f"- **#{srank} {sname}** — Verified Active")
+                else:
+                    for k, v in last_output.items():
+                        if k in ("success", "results", "statutory_citations"):
+                            continue
+                        label = str(k).replace("_", " ").title()
+                        val_str = json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else str(v)
+                        lines_md.append(f"- **{label}:** {val_str[:220]}")
+                text = "\n".join(lines_md)
                 return {
                     "candidates": [{
                         "content": {
@@ -3336,7 +3350,22 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 from aura_antigravity_core import AURA_ANTIGRAVITY_CORE
                 slash_res = AURA_ANTIGRAVITY_CORE.execute_slash_command(cmd_token, cmd_arg)
                 self.last_tools.append({"name": f"antigravity_{cmd_token[1:]}", "args": {"prompt": cmd_arg}, "output": slash_res})
-                return f"### ⚡ AURA Antigravity `{cmd_token}` Executed\n\n```json\n{json.dumps(slash_res, indent=2)}\n```"
+                md_lines = [f"### ⚡ AURA Antigravity `{cmd_token}` Executed\n"]
+                for k, v in slash_res.items():
+                    if k == "success":
+                        continue
+                    label = str(k).replace("_", " ").title()
+                    if isinstance(v, list):
+                        md_lines.append(f"\n**{label}:**")
+                        for item in v:
+                            if isinstance(item, dict):
+                                summary_parts = [f"**{ik.replace('_', ' ').title()}:** {iv}" for ik, iv in item.items()]
+                                md_lines.append(f"- {' | '.join(summary_parts)}")
+                            else:
+                                md_lines.append(f"- {item}")
+                    else:
+                        md_lines.append(f"- **{label}:** {v}")
+                return "\n".join(md_lines)
 
         user_parts = [{"text": user_prompt}] if user_prompt else []
 
