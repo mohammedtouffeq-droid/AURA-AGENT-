@@ -6,7 +6,11 @@
       "destination": "/api/index?__aura_path__=/api/$1"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/(manifest\\.json|sw\\.js)",
+      "destination": "/api/index?__aura_path__=/$1"
+    },
+    {
+      "source": "/((?!api/|manifest\\.json|sw\\.js).*)",
       "destination": "/index.html"
     }
   ]

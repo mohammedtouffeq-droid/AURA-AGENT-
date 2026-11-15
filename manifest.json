@@ -1,0 +1,20 @@
+{
+  "name": "AURA Core — Autonomous Intelligence Workspace",
+  "short_name": "AURA Core",
+  "description": "Autonomous AI coding workspace, file agent, terminal runner, and 10-Nexus engineering hub by Mohd Ahmed (Lyberty).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0e12",
+  "theme_color": "#0d0e12",
+  "categories": ["developer", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/api/pwa/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

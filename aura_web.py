@@ -184,6 +184,7 @@ CSP_HEADER_VALUE = (
     "font-src 'self' https://fonts.gstatic.com data:; "
     "img-src 'self' data: blob: https:; "
     "media-src 'self' blob: data:; "
+    "frame-src 'self' http://127.0.0.1:* http://localhost:* blob: data:; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
@@ -354,7 +355,26 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"success": False, "error": "index.html not found"}, status=404)
 
-        elif path in ("/manifest.json", "/sw.js"):
+        elif path in ("/manifest.json", "/sw.js", "/api/pwa/icon.svg"):
+            if path == "/api/pwa/icon.svg":
+                svg_data = (
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">'
+                    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+                    '<stop offset="0%" stop-color="#0066ff"/><stop offset="100%" stop-color="#00d4ff"/>'
+                    '</linearGradient></defs>'
+                    '<rect width="192" height="192" rx="44" fill="#0d0e12"/>'
+                    '<rect x="18" y="18" width="156" height="156" rx="34" fill="url(#g)"/>'
+                    '<path d="M108 38L58 106h36l-10 48 50-68H98z" fill="#ffffff"/>'
+                    '</svg>'
+                ).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
+                self.send_header("Content-Length", str(len(svg_data)))
+                self.send_header("Connection", "close")
+                self._apply_security_and_cors_headers()
+                self.end_headers()
+                self.wfile.write(svg_data)
+                return
             asset_file = ROOT / path.lstrip("/")
             if asset_file.exists() and asset_file.is_file():
                 data = asset_file.read_bytes()
@@ -368,6 +388,61 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self.wfile.write(data)
             else:
                 self._send_json({"success": False, "error": "Not found"}, status=404)
+
+        elif path == "/api/workspace/preview" or path.startswith("/api/workspace/preview/"):
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            rel_part = urllib.parse.unquote(path[len("/api/workspace/preview"):]).lstrip("/")
+            if not rel_part:
+                rel_part = str(query.get("path", ["index.html"])[0] or "index.html")
+            ws = _resolve_workspace_dir(user["id"])
+            target_file = _safe_resolve_under(ws, rel_part)
+            if target_file is None:
+                self._send_json({"success": False, "error": "Path traversal restricted"}, status=403)
+                return
+            if target_file.is_dir():
+                target_file = target_file / "index.html"
+            if not target_file.exists() or not target_file.is_file():
+                self._send_json({"success": False, "error": "Preview file not found"}, status=404)
+                return
+            from aura_workspace_ide import SAFE_PREVIEW_MIME_TYPES
+            ext = target_file.suffix.lower()
+            ctype = SAFE_PREVIEW_MIME_TYPES.get(ext)
+            if not ctype:
+                self._send_json({"success": False, "error": f"Unsupported preview file type: {ext}"}, status=415)
+                return
+            data = target_file.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "private, no-store")
+            self.send_header("Connection", "close")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "SAMEORIGIN")
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; "
+                "img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com data:; frame-ancestors 'self'; object-src 'none'"
+            )
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
+        elif path == "/api/workspace/devserver/status":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            from aura_workspace_ide import WORKSPACE_DEV_MANAGER
+            servers = WORKSPACE_DEV_MANAGER.list_servers(user_id=user["id"])
+            self._send_json({
+                "success": True,
+                "serverless": bool(os.environ.get("VERCEL")),
+                "servers": servers,
+            })
 
         elif path == "/api/auth/me":
             user = self._get_auth_user()
@@ -1314,6 +1389,94 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "bytes": len(file_content),
             })
 
+        elif path == "/api/workspace/edit":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            file_rel = str(body.get("path", ""))
+            target_txt = body.get("target", "")
+            replacement_txt = body.get("replacement", "")
+            replace_all = bool(body.get("replace_all", False))
+            ws = _resolve_workspace_dir(user["id"])
+            target_p = _safe_resolve_under(ws, file_rel)
+            if target_p is None:
+                self._send_json({"success": False, "error": "Edit path outside workspace is forbidden"}, status=403)
+                return
+            from aura_workspace_ide import edit_workspace_file
+            res = edit_workspace_file(target_p, ws, target=str(target_txt), replacement=str(replacement_txt), replace_all=replace_all)
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/workspace/grep":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            query_txt = str(body.get("query", ""))
+            subdir = str(body.get("path", ".") or ".").strip() or "."
+            case_sensitive = bool(body.get("case_sensitive", False))
+            regex_mode = bool(body.get("regex", False))
+            ws = _resolve_workspace_dir(user["id"])
+            search_root = _safe_resolve_under(ws, subdir, allow_root=True)
+            if search_root is None:
+                self._send_json({"success": False, "error": "Search path outside workspace is forbidden"}, status=403)
+                return
+            from aura_workspace_ide import grep_workspace
+            res = grep_workspace(search_root, ws, query=query_txt, case_sensitive=case_sensitive, regex=regex_mode)
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/workspace/delete":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            file_rel = str(body.get("path", ""))
+            ws = _resolve_workspace_dir(user["id"])
+            target_p = _safe_resolve_under(ws, file_rel)
+            if target_p is None:
+                self._send_json({"success": False, "error": "Delete path outside workspace is forbidden"}, status=403)
+                return
+            from aura_workspace_ide import delete_workspace_file
+            res = delete_workspace_file(target_p, ws)
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/workspace/devserver/start":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mode = str(body.get("mode", "static")).strip().lower()
+            ws = _resolve_workspace_dir(user["id"])
+            from aura_workspace_ide import WORKSPACE_DEV_MANAGER
+            if mode == "command":
+                if not self._is_authorized_admin(body):
+                    self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for shell dev server"}, status=401)
+                    return
+                from aura_brain import is_safe_command
+                cmd = str(body.get("command", ""))
+                res = WORKSPACE_DEV_MANAGER.start_command_server(cmd, ws, safety_checker=is_safe_command, user_id=user["id"])
+                self._send_json(res, status=200 if res.get("success") else 400)
+                return
+            subdir = str(body.get("directory", ".") or ".").strip() or "."
+            serve_dir = _safe_resolve_under(ws, subdir, allow_root=True)
+            if serve_dir is None:
+                self._send_json({"success": False, "error": "Directory outside workspace is forbidden"}, status=403)
+                return
+            entry = str(body.get("entry", "index.html") or "index.html").strip()
+            port = _clamp_int(body.get("port"), 0, 0, 65535)
+            res = WORKSPACE_DEV_MANAGER.start_static_preview(serve_dir, entry=entry, port=port, user_id=user["id"])
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/workspace/devserver/stop":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            sid = str(body.get("server_id", "")).strip()
+            from aura_workspace_ide import WORKSPACE_DEV_MANAGER
+            res = WORKSPACE_DEV_MANAGER.stop_server(sid, user_id=user["id"])
+            self._send_json(res, status=200 if res.get("success") else 404)
+
         elif path == "/api/terminal/exec":
             if not self._is_authorized_admin(body):
                 self._send_json({"success": False, "error": "Unauthorized: Admin authentication required for terminal execution"}, status=401)
@@ -1325,6 +1488,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Command is required"}, status=400)
                 return
             from aura_brain import is_safe_command
+            from aura_workspace_ide import extract_localhost_urls
             is_safe, reason = is_safe_command(cmd)
             if not is_safe:
                 self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}", "exit_code": 1}, status=403)
@@ -1337,12 +1501,16 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     pwsh_bin = shutil.which("pwsh") or shutil.which("powershell")
                     shell_args = [pwsh_bin, "-NoProfile", "-Command", cmd] if pwsh_bin else ["/bin/sh", "-c", cmd]
                 proc = subprocess.run(shell_args, cwd=str(ws), capture_output=True, text=True, timeout=30)
+                stdout_txt = proc.stdout[:32768]
+                stderr_txt = proc.stderr[:32768]
                 self._send_json({
                     "success": proc.returncode == 0,
                     "command": cmd,
+                    "cwd": str(ws),
                     "exit_code": proc.returncode,
-                    "stdout": proc.stdout[:32768],
-                    "stderr": proc.stderr[:32768],
+                    "stdout": stdout_txt,
+                    "stderr": stderr_txt,
+                    "detected_urls": extract_localhost_urls(stdout_txt + "\n" + stderr_txt),
                 })
             except Exception as e:
                 self._send_json({"success": False, "command": cmd, "error": str(e), "exit_code": 1})

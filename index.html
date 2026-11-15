@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0d0e12">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/api/pwa/icon.svg" type="image/svg+xml">
     <title>AURA Core | Autonomous Intelligence Workspace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -115,9 +121,12 @@
             background-color: var(--bg-primary);
             color: var(--text-main);
             height: 100vh;
-            width: 100vw;
+            height: 100dvh;
+            width: 100%;
+            max-width: 100vw;
             display: flex;
             overflow: hidden;
+            padding-top: env(safe-area-inset-top, 0px);
             -webkit-font-smoothing: antialiased;
         }
 
@@ -1383,6 +1392,257 @@
         .btn-backup-action:hover {
             background: rgba(56, 189, 248, 0.24);
         }
+
+        /* ---------------- Play Store / Mobile Full Responsive Layout & Safe Areas ---------------- */
+        .bottom-dock-wrapper {
+            padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+        }
+        .chat-content-width, .msg-bubble-agent, .msg-bubble-user {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+        .msg-bubble-agent pre, .msg-bubble-agent table, .code-container {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+            gap: 6px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .navbar-left::-webkit-scrollbar { display: none; }
+        .nav-pill-btn {
+            padding: 6px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ---------------- IDE Workbench Drawer (Explorer + Editor + Terminal + Live Preview) ---------------- */
+        .ide-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 4, 10, 0.78);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9600;
+            display: none;
+            justify-content: flex-end;
+        }
+        .ide-drawer-panel {
+            width: min(980px, 100vw);
+            height: 100%;
+            background: #0b0f1a;
+            border-left: 1px solid rgba(56, 189, 248, 0.28);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 60px rgba(0, 0, 0, 0.8);
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        .ide-drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(15, 23, 42, 0.92);
+        }
+        .ide-tabs-bar {
+            display: flex;
+            gap: 6px;
+            padding: 8px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(13, 18, 30, 0.9);
+            overflow-x: auto;
+        }
+        .ide-tab-btn {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .ide-tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.28), rgba(6, 182, 212, 0.28));
+            border-color: rgba(56, 189, 248, 0.7);
+            color: #f8fafc;
+        }
+        .ide-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .ide-files-grid {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+        }
+        .ide-tree-pane {
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            background: rgba(9, 13, 22, 0.8);
+        }
+        .ide-file-item {
+            padding: 7px 9px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-family: var(--font-code);
+            color: #cbd5e1;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            border: 1px solid transparent;
+        }
+        .ide-file-item:hover, .ide-file-item.active {
+            background: rgba(56, 189, 248, 0.14);
+            border-color: rgba(56, 189, 248, 0.35);
+            color: #f8fafc;
+        }
+        .ide-editor-pane {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            padding: 10px 12px;
+            gap: 8px;
+        }
+        .ide-editor-textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 220px;
+            resize: none;
+            background: #070a12;
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: var(--font-code);
+            font-size: 12.5px;
+            line-height: 1.5;
+            outline: none;
+        }
+        .ide-terminal-output {
+            flex: 1;
+            min-height: 200px;
+            overflow-y: auto;
+            background: #05070e;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 10px;
+            padding: 12px;
+            font-family: var(--font-code);
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: #d1fae5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .ide-preview-frame-wrap {
+            flex: 1;
+            min-height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            background: #05070e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            overflow: auto;
+        }
+        .ide-preview-iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 360px;
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            border-radius: 10px;
+            background: #ffffff;
+            transition: width 0.2s ease;
+        }
+        .ide-preview-iframe.phone-frame {
+            width: 390px;
+            max-width: 100%;
+            border-radius: 26px;
+            border: 6px solid #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .top-navbar {
+                padding: 0 10px !important;
+                height: 50px;
+            }
+            .nav-desktop-only, #spaceWarpBadge, .nav-pill-sub {
+                display: none !important;
+            }
+            .nav-mobile-only {
+                display: inline-block !important;
+            }
+            .model-picker-pill {
+                padding: 4px 9px;
+                font-size: 11.5px;
+            }
+            .mode-toggle-chip {
+                padding: 3px 8px;
+                font-size: 11px;
+            }
+            .hero-title {
+                font-size: 22px !important;
+            }
+            .hero-subtitle {
+                font-size: 12.5px !important;
+                margin-bottom: 18px !important;
+            }
+            .main-textarea {
+                font-size: 16px !important;
+            }
+            .bottom-dock-wrapper {
+                padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px !important;
+            }
+            .msg-bubble-user {
+                max-width: 92% !important;
+                font-size: 14px;
+                padding: 10px 14px;
+            }
+            .msg-bubble-agent {
+                font-size: 14px;
+            }
+            .ide-files-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: 170px 1fr;
+            }
+            .ide-tree-pane {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .model-settings-card, .auth-card {
+                width: calc(100vw - 20px) !important;
+                max-width: calc(100vw - 20px) !important;
+                padding: 16px !important;
+                margin: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1436,6 +1696,11 @@
             <span style="font-size: 10px; color: #7dd3fc;">OS Bridge + 9 /Cmds</span>
         </button>
 
+        <button class="btn-new-chat" id="btnSidebarIdeWorkbench" onclick="openIdeWorkbench('terminal'); closeMobileSidebar();" style="margin-top: -4px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(0, 102, 255, 0.22)); border-color: rgba(139, 92, 246, 0.65);">
+            <span>💻 IDE & Terminal</span>
+            <span style="font-size: 10px; color: #ddd6fe;">Files • Localhost</span>
+        </button>
+
         <div class="threads-scroll" id="threadsContainer">
             <div class="thread-group-title" style="display:flex; align-items:center; justify-content:space-between;">
                 <span>Recent Chats <span class="thread-count-badge" id="threadCountBadge">0</span></span>
@@ -1477,33 +1742,38 @@
                 <div class="model-picker-pill">
                     <button id="modelSettingsOpen" type="button" onclick="openModelSettings()" style="border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;">
                         <span>⚡ AURA Model</span>
-                        <span id="activeModelLabel" style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
+                        <span id="activeModelLabel" class="nav-pill-sub" style="font-size: 11px; color: var(--text-subtle);">• Gemini Flash Core</span>
                     </button>
                 </div>
-                <button type="button" id="btnNavbarFlagshipHub" onclick="openFlagshipHub('openhands')" style="margin-left: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.12); color: #6ee7b7; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <button type="button" id="btnNavbarIde" class="nav-pill-btn" onclick="openIdeWorkbench('terminal')" style="border: 1px solid rgba(139, 92, 246, 0.7); background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(0, 102, 255, 0.22)); color: #ede9fe;">
+                    <span>💻 IDE</span>
+                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.9;">Files • Terminal • Localhost</span>
+                </button>
+                <button type="button" id="btnNavbarFlagshipHub" class="nav-pill-btn nav-desktop-only" onclick="openFlagshipHub('openhands')" style="border: 1px solid rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.12); color: #6ee7b7;">
                     <span>🚀 Flagship Engines</span>
-                    <span style="font-size: 10.5px; opacity: 0.85;">OpenHands • Open Interpreter • AutoGPT</span>
+                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.85;">OpenHands • Open Interpreter • AutoGPT</span>
                 </button>
-                <button type="button" id="btnNavbarSystems10" onclick="openFlagshipHub('systems10')" style="margin-left: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.14); color: #7dd3fc; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <button type="button" id="btnNavbarSystems10" class="nav-pill-btn nav-desktop-only" onclick="openFlagshipHub('systems10')" style="border: 1px solid rgba(56, 189, 248, 0.5); background: rgba(56, 189, 248, 0.14); color: #7dd3fc;">
                     <span>🧠 10-System Omni-Core</span>
-                    <span style="font-size: 10.5px; opacity: 0.9;">1 AURA = 100 AI</span>
+                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.9;">1 AURA = 100 AI</span>
                 </button>
-                <button type="button" id="btnNavbarBharatCode10" onclick="openFlagshipHub('bharatcode10')" style="margin-left: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(245, 158, 11, 0.65); background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(168, 85, 247, 0.2)); color: #fde68a; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
+                <button type="button" id="btnNavbarBharatCode10" class="nav-pill-btn nav-desktop-only" onclick="openFlagshipHub('bharatcode10')" style="border: 1px solid rgba(245, 158, 11, 0.65); background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(168, 85, 247, 0.2)); color: #fde68a; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
                     <span>🏆 Sovereign 10-Nexus</span>
-                    <span style="font-size: 10.5px; opacity: 0.95;">TRINETRA • GitKitty • All 10</span>
+                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.95;">TRINETRA • GitKitty • All 10</span>
                 </button>
-                <button type="button" id="btnNavbarAntigravity" onclick="openFlagshipHub('antigravity')" style="margin-left: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.75); background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(56, 189, 248, 0.22)); color: #bae6fd; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 16px rgba(56, 189, 248, 0.22);">
+                <button type="button" id="btnNavbarAntigravity" class="nav-pill-btn nav-desktop-only" onclick="openFlagshipHub('antigravity')" style="border: 1px solid rgba(56, 189, 248, 0.75); background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(56, 189, 248, 0.22)); color: #bae6fd; box-shadow: 0 0 16px rgba(56, 189, 248, 0.22);">
                     <span>🌌 Antigravity Mission Control</span>
-                    <span style="font-size: 10.5px; opacity: 0.95;">OS Bridge • Swarm • 9 /Cmds</span>
+                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.95;">OS Bridge • Swarm • 9 /Cmds</span>
                 </button>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
                 <div id="spaceWarpBadge" style="font-family: var(--font-code); font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(0, 102, 255, 0.14); border: 1px solid rgba(56, 189, 248, 0.35); color: #93c5fd;">
                     🌌 SPACE WARP: 1.0x • ORBIT 0°
                 </div>
                 <div class="mode-toggle-chip">
                     <span>●</span>
-                    <span>Auto-Pilot (Direct Execution)</span>
+                    <span class="nav-pill-sub">Auto-Pilot (Direct Execution)</span>
+                    <span class="nav-mobile-only" style="display:none; font-size:11px;">Auto</span>
                 </div>
             </div>
         </header>
@@ -1518,6 +1788,10 @@
                     <p class="hero-subtitle">AURA Deep-Space Command Center • Integrated with Antigravity Mission Control, Sovereign 10-Nexus Engines, 10-System Omni-Core, Godot 4.3 3D Engine & Live Client-OS Hardware Bridge.</p>
                     
                     <div class="starter-cards-grid">
+                        <div class="starter-card" onclick="openIdeWorkbench('terminal')" style="border-color: rgba(139, 92, 246, 0.7) !important; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(0, 102, 255, 0.16)) !important;">
+                            <div class="starter-card-title" style="color: #ddd6fe;">💻 IDE Workbench, Terminal & Localhost Preview</div>
+                            <div class="starter-card-desc">Inspect files, run commands, launch live localhost preview links, grep code & test mobile phone view inside AURA.</div>
+                        </div>
                         <div class="starter-card" onclick="openFlagshipHub('antigravity')" style="border-color: rgba(56, 189, 248, 0.7) !important; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(56, 189, 248, 0.18)) !important;">
                             <div class="starter-card-title" style="color: #7dd3fc;">🌌 Antigravity Mission Control & Laptop OS Bridge</div>
                             <div class="starter-card-desc">Google DeepMind Antigravity Architecture • 9 Slash Commands (/goal, /plan, /boost, /teamwork) • Multi-Agent Swarm • Live Brightness, Volume & App Controller.</div>
@@ -1673,6 +1947,15 @@
                 <button type="button" onclick="deleteMyAccount()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.15); color:#fca5a5; cursor:pointer; font-size:11.5px; font-weight:600;">Delete Account</button>
             </div>
             <div id="accountSecurityStatus" style="font-size:12px; margin-top:6px; color:#cbd5e1;"></div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
+            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">🛠️ Host Terminal Role (<span id="settingsRoleBadge">user</span>)</h3>
+            <p style="font-size:11.5px; color:#94a3b8; margin:0 0 8px 0;">Workspace files, safe CLI, grep, edit, and static previews work for every signed-in account. To unlock full OS PowerShell/bash terminal commands locally, enter your server <code>AURA_ADMIN_BOOTSTRAP_TOKEN</code>.</p>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input id="adminBootstrapSecret" type="password" placeholder="AURA_ADMIN_BOOTSTRAP_TOKEN" autocomplete="off" style="flex:1;">
+                <button type="button" onclick="bootstrapAdminRole()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(139,92,246,0.55); background:rgba(139,92,246,0.2); color:#ede9fe; cursor:pointer; font-size:12px; font-weight:600;">Unlock Admin</button>
+            </div>
+            <div id="adminBootstrapStatus" style="font-size:11.5px; margin-top:6px; color:#c4b5fd;"></div>
         </section>
     </div>
 
@@ -2231,6 +2514,100 @@
         </div>
     </div>
 
+    <!-- ---------------- IDE Workbench Drawer (Files, Surgical Edit, Terminal & Localhost Preview) ---------------- -->
+    <div class="ide-drawer-overlay" id="ideDrawer" role="dialog" aria-modal="true" aria-label="AURA IDE Workbench">
+        <div class="ide-drawer-panel" onclick="event.stopPropagation()">
+            <div class="ide-drawer-header">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                    <span style="font-size:18px;">💻</span>
+                    <div style="min-width:0;">
+                        <div style="font-size:14.5px; font-weight:700; color:#f8fafc;">AURA IDE Workbench</div>
+                        <div id="ideWorkspaceSubtitle" style="font-size:11px; color:#94a3b8; font-family:var(--font-code);">Isolated Workspace • Terminal • Localhost Preview</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeIdeWorkbench()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">✕ Close</button>
+            </div>
+
+            <div class="ide-tabs-bar">
+                <button type="button" class="ide-tab-btn" id="ideTabBtnFiles" onclick="switchIdeTab('files')">📁 Files & Editor</button>
+                <button type="button" class="ide-tab-btn active" id="ideTabBtnTerminal" onclick="switchIdeTab('terminal')">💻 Terminal & Localhost</button>
+                <button type="button" class="ide-tab-btn" id="ideTabBtnPreview" onclick="switchIdeTab('preview')">🌐 Live Preview (Desktop/Phone)</button>
+            </div>
+
+            <!-- Tab 1: Workspace Files & Code Editor -->
+            <div class="ide-body" id="ideTabFiles" style="display:none;">
+                <div class="ide-files-grid">
+                    <div class="ide-tree-pane">
+                        <div style="display:flex; gap:6px;">
+                            <input id="ideGrepInput" type="search" placeholder="Search / grep workspace..." style="flex:1; background:#070a12; border:1px solid rgba(56,189,248,0.28); border-radius:7px; padding:6px 8px; color:#f8fafc; font-size:12px;">
+                            <button type="button" onclick="runIdeGrep()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(56,189,248,0.45); background:rgba(56,189,248,0.16); color:#bae6fd; font-size:11.5px; cursor:pointer;">🔍</button>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" onclick="createNewIdeFile()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(16,185,129,0.45); background:rgba(16,185,129,0.15); color:#6ee7b7; font-size:11.5px; font-weight:600; cursor:pointer;">+ New File</button>
+                            <button type="button" onclick="refreshIdeFileTree()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:11.5px; cursor:pointer;">↻</button>
+                        </div>
+                        <div id="ideGrepResults" style="display:none; font-size:11.5px; background:rgba(15,23,42,0.9); border:1px solid rgba(56,189,248,0.28); border-radius:8px; padding:6px; max-height:140px; overflow-y:auto;"></div>
+                        <div id="ideFileTreeList" style="display:flex; flex-direction:column; gap:3px;"></div>
+                    </div>
+                    <div class="ide-editor-pane">
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
+                            <input id="ideActiveFilePath" type="text" placeholder="e.g. demo/index.html" style="flex:1; min-width:140px; background:#070a12; border:1px solid rgba(255,255,255,0.16); border-radius:7px; padding:6px 10px; color:#f8fafc; font-family:var(--font-code); font-size:12px;">
+                            <button type="button" onclick="saveIdeFile()" style="padding:6px 12px; border-radius:7px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12px; font-weight:600; cursor:pointer;">💾 Save</button>
+                            <button type="button" onclick="previewCurrentIdeFile()" style="padding:6px 12px; border-radius:7px; border:1px solid rgba(56,189,248,0.55); background:rgba(56,189,248,0.18); color:#bae6fd; font-size:12px; font-weight:600; cursor:pointer;">▶ Preview</button>
+                            <button type="button" onclick="askAuraToEditCurrentFile()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(168,85,247,0.55); background:rgba(168,85,247,0.18); color:#e9d5ff; font-size:12px; font-weight:600; cursor:pointer;">⚡ Ask AURA</button>
+                            <button type="button" onclick="deleteIdeFile()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.14); color:#fca5a5; font-size:12px; cursor:pointer;">🗑</button>
+                        </div>
+                        <textarea id="ideCodeEditor" class="ide-editor-textarea" placeholder="Select a file on the left or type code here to save into your workspace..."></textarea>
+                        <div id="ideEditorStatus" style="font-size:11.5px; color:#94a3b8; font-family:var(--font-code);">Ready.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Interactive Terminal & Localhost Link Runner -->
+            <div class="ide-body" id="ideTabTerminal" style="padding:12px; gap:10px;">
+                <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-radius:10px; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.25);">
+                    <div style="font-size:12px; color:#cbd5e1;">
+                        <strong>🌐 Localhost & Cloud App Runner:</strong>
+                        <span id="ideShellModeBadge" style="margin-left:6px; padding:2px 8px; border-radius:999px; font-size:11px; background:rgba(16,185,129,0.16); color:#6ee7b7; border:1px solid rgba(16,185,129,0.35);">Workspace CLI Ready</span>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        <button type="button" onclick="startIdeStaticPreview()" style="padding:6px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#a7f3d0; font-size:12px; font-weight:600; cursor:pointer;">▶ Launch Static Preview</button>
+                        <button type="button" onclick="refreshIdeDevServers()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">↻ Servers</button>
+                    </div>
+                </div>
+
+                <div id="ideServersList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+
+                <div id="ideTerminalOutput" class="ide-terminal-output">AURA Workspace Terminal v2.0
+• Works on Phone, Play Store TWA, Vercel Cloud & Desktop Localhost!
+• Built-in commands (All Users): ls | cat &lt;file&gt; | grep &lt;text&gt; | touch &lt;file&gt; [content] | edit &lt;file&gt; &lt;old&gt; =&gt; &lt;new&gt; | rm &lt;file&gt; | preview [file.html] | clear | help
+• Host Shell commands (Local Admin Unlocked in Settings): powershell / python / pytest / git / node / dev servers with auto localhost:PORT links.
+</div>
+
+                <div id="ideDetectedUrlsBar" style="display:none; flex-wrap:wrap; gap:6px; align-items:center;"></div>
+
+                <form onsubmit="event.preventDefault(); runIdeTerminalCommand();" style="display:flex; gap:8px;">
+                    <input id="ideTerminalInput" type="text" placeholder="Type ls, help, preview index.html, grep foo, or OS command..." autocomplete="off" style="flex:1; background:#070a12; border:1px solid rgba(56,189,248,0.4); border-radius:9px; padding:10px 12px; color:#f8fafc; font-family:var(--font-code); font-size:13px;">
+                    <button type="submit" style="padding:0 16px; border-radius:9px; border:none; background:linear-gradient(135deg, #0066ff, #06b6d4); color:#ffffff; font-weight:700; font-size:13px; cursor:pointer;">Run ↵</button>
+                </form>
+            </div>
+
+            <!-- Tab 3: Sandboxed Live Preview with Desktop / Phone Responsive Toggle -->
+            <div class="ide-body" id="ideTabPreview" style="display:none; padding:12px; gap:10px;">
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                    <input id="idePreviewPathInput" type="text" value="index.html" placeholder="Workspace HTML path (e.g. index.html)" style="flex:1; min-width:140px; background:#070a12; border:1px solid rgba(56,189,248,0.35); border-radius:8px; padding:7px 10px; color:#f8fafc; font-family:var(--font-code); font-size:12px;">
+                    <button type="button" onclick="loadWorkspaceHtmlPreview()" style="padding:7px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.55); background:rgba(56,189,248,0.2); color:#bae6fd; font-size:12px; font-weight:600; cursor:pointer;">↻ Reload</button>
+                    <button type="button" onclick="openWorkspacePreviewNewTab()" style="padding:7px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.18); color:#a7f3d0; font-size:12px; font-weight:600; cursor:pointer;">↗ Open Tab</button>
+                    <button type="button" onclick="setIdePreviewDevice('desktop')" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f8fafc; font-size:12px; cursor:pointer;">🖥️ Desktop</button>
+                    <button type="button" onclick="setIdePreviewDevice('phone')" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(168,85,247,0.45); background:rgba(168,85,247,0.16); color:#e9d5ff; font-size:12px; cursor:pointer;">📱 Phone 390px</button>
+                </div>
+                <div class="ide-preview-frame-wrap">
+                    <iframe id="idePreviewFrame" class="ide-preview-iframe" sandbox="allow-scripts allow-forms allow-modals" title="Workspace Live Preview"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Security Initialization: Purge legacy shared/bearer keys from localStorage.
         // Session auth uses HttpOnly; SameSite=Strict cookies + tab sessionStorage token + dynamic CSRF.
@@ -2615,6 +2992,9 @@
                     modelSettingsStatus.textContent = '';
                 }
                 updateModelSettingsFields();
+                if (typeof syncIdeRoleBadges === 'function') {
+                    syncIdeRoleBadges(currentUser);
+                }
                 await loadUserMemoriesInspector();
             } catch (error) {
                 modelSettingsStatus.textContent = error.message;
@@ -3359,6 +3739,9 @@
             const name = user.display_name || user.username || 'User';
             userName.innerText = name;
             userAvatar.innerText = name[0].toUpperCase();
+            if (typeof syncIdeRoleBadges === 'function') {
+                syncIdeRoleBadges(user);
+            }
         }
 
         async function verifyAuth() {
@@ -4033,9 +4416,15 @@
             { cmd: '/volume', template: '/volume 70', desc: 'Set audio & voice level (0-100%)' },
             { cmd: '/open', template: '/open whatsapp', desc: 'Launch app or URL (whatsapp, vscode, spotify, chrome)' },
             { cmd: '/files', template: '/files', desc: 'List files inside your isolated workspace' },
-            { cmd: '/read', template: '/read ', desc: 'Inspect file contents inside workspace' },
+            { cmd: '/read', template: '/read ', desc: 'Inspect file contents (optionally with start-end lines)' },
             { cmd: '/write', template: '/write notes.txt ', desc: 'Create or update a file inside your workspace' },
+            { cmd: '/edit', template: '/edit notes.txt old => new', desc: 'Surgical search-and-replace inside a workspace file' },
+            { cmd: '/grep', template: '/grep ', desc: 'Search code and text across your workspace files' },
+            { cmd: '/rm', template: '/rm ', desc: 'Delete a file inside your workspace' },
             { cmd: '/code', template: '/code ', desc: 'Autonomous IDE coding, diff refactor & test synthesis' },
+            { cmd: '/ide', template: '/ide', desc: 'Open AURA IDE Workbench (Files, Terminal & Live Preview)' },
+            { cmd: '/terminal', template: '/terminal', desc: 'Open Interactive Workspace & Localhost Terminal' },
+            { cmd: '/preview', template: '/preview index.html', desc: 'Preview workspace web app in Desktop or Phone frame' },
             { cmd: '/weather', template: '/weather Mumbai', desc: 'Real-time weather telemetry for any city' },
             { cmd: '/news', template: '/news AI tech', desc: 'Search & summarize latest verified headlines' },
             { cmd: '/calc', template: '/calc (125 * 8) / 4', desc: 'Instant deterministic math & expression evaluator' },
@@ -4238,7 +4627,7 @@
 
             hideSlashPalette();
 
-            // Client-side UI utility commands (/new, /clear, /export)
+            // Client-side UI utility commands (/new, /clear, /export, /ide, /terminal, /preview)
             const lowerCmd = text.toLowerCase();
             if (!hasAttachments && lowerCmd === '/new') {
                 userPrompt.value = '';
@@ -4256,6 +4645,24 @@
                 userPrompt.value = '';
                 await exportMyHistoryBackup();
                 showBridgeToast('💾 Account history backup downloaded.', '#34d399');
+                return;
+            }
+            if (!hasAttachments && lowerCmd === '/ide') {
+                userPrompt.value = '';
+                if (typeof openIdeWorkbench === 'function') await openIdeWorkbench('files');
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/terminal' || lowerCmd === '/term')) {
+                userPrompt.value = '';
+                if (typeof openIdeWorkbench === 'function') await openIdeWorkbench('terminal');
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/preview' || lowerCmd.startsWith('/preview '))) {
+                const targetPreviewPath = text.slice(8).trim();
+                userPrompt.value = '';
+                if (typeof openIdeWorkbench === 'function') {
+                    await openIdeWorkbench('preview', targetPreviewPath);
+                }
                 return;
             }
 
@@ -5059,6 +5466,753 @@
                 requestAnimationFrame(renderSpaceFrame);
             }
             requestAnimationFrame(renderSpaceFrame);
+        })();
+
+        // ---------------- PWA Registration, Admin Role & IDE Workbench Controller ----------------
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+
+        function syncIdeRoleBadges(user) {
+            const role = (user && user.role) ? String(user.role).toLowerCase() : 'user';
+            const isAdmin = role === 'admin';
+            const roleBadge = document.getElementById('settingsRoleBadge');
+            if (roleBadge) roleBadge.textContent = role;
+
+            const shellBadge = document.getElementById('ideShellModeBadge');
+            if (shellBadge) {
+                if (isAdmin) {
+                    shellBadge.textContent = 'Admin Host Shell + Workspace CLI';
+                    shellBadge.style.background = 'rgba(139, 92, 246, 0.22)';
+                    shellBadge.style.color = '#e9d5ff';
+                    shellBadge.style.borderColor = 'rgba(139, 92, 246, 0.55)';
+                } else {
+                    shellBadge.textContent = 'Workspace CLI Ready';
+                    shellBadge.style.background = 'rgba(16, 185, 129, 0.16)';
+                    shellBadge.style.color = '#6ee7b7';
+                    shellBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                }
+            }
+
+            const bootStatus = document.getElementById('adminBootstrapStatus');
+            if (bootStatus && isAdmin && !bootStatus.textContent) {
+                bootStatus.textContent = 'Host Admin Role active on this account.';
+                bootStatus.style.color = '#6ee7b7';
+            }
+        }
+
+        async function bootstrapAdminRole() {
+            const secretInput = document.getElementById('adminBootstrapSecret');
+            const statusEl = document.getElementById('adminBootstrapStatus');
+            const tokenVal = secretInput ? secretInput.value.trim() : '';
+            if (!statusEl) return;
+
+            if (!isAuthenticated()) {
+                statusEl.textContent = 'Please sign in first (Guest or Account) before unlocking Admin.';
+                statusEl.style.color = '#fbbf24';
+                return;
+            }
+            if (!tokenVal) {
+                statusEl.textContent = 'Enter your server AURA_ADMIN_BOOTSTRAP_TOKEN secret.';
+                statusEl.style.color = '#fca5a5';
+                return;
+            }
+
+            statusEl.textContent = 'Verifying bootstrap secret...';
+            statusEl.style.color = '#bae6fd';
+            try {
+                const res = await apiFetch('/api/auth/bootstrap_admin', {
+                    method: 'POST',
+                    body: JSON.stringify({ bootstrap_token: tokenVal })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data && data.success) {
+                    if (secretInput) secretInput.value = '';
+                    statusEl.textContent = 'Host Admin unlocked! Refreshing profile...';
+                    statusEl.style.color = '#6ee7b7';
+                    await verifyAuth();
+                    if (typeof currentUser !== 'undefined') syncIdeRoleBadges(currentUser);
+                    showBridgeToast('Host Admin Role unlocked.', '#34d399');
+                } else {
+                    statusEl.textContent = (data && data.error) ? data.error : 'Invalid bootstrap token or server token unset.';
+                    statusEl.style.color = '#fca5a5';
+                }
+            } catch (err) {
+                statusEl.textContent = 'Request failed: ' + (err && err.message ? err.message : 'Network error');
+                statusEl.style.color = '#fca5a5';
+            }
+        }
+
+        function sanitizeIdePreviewOrLocalUrl(rawUrl) {
+            if (!rawUrl) return '';
+            const cleaned = String(rawUrl).replace(/[\x00-\x20\x7f]/g, '').trim();
+            if (!cleaned || /["'<>`\\]/.test(cleaned) || cleaned.startsWith('//')) return '';
+            if (cleaned.startsWith('/api/workspace/preview/')) {
+                if (cleaned.includes('..') || !/^\/api\/workspace\/preview\/[A-Za-z0-9._\/%-]+$/.test(cleaned)) {
+                    return '';
+                }
+                return cleaned;
+            }
+            return sanitizeSafeUrl(cleaned);
+        }
+
+        function appendIdeTerminalText(text) {
+            const out = document.getElementById('ideTerminalOutput');
+            if (!out) return;
+            const prev = out.textContent || '';
+            const sep = (prev && !prev.endsWith('\n')) ? '\n' : '';
+            out.textContent = prev + sep + String(text || '');
+            out.scrollTop = out.scrollHeight;
+        }
+
+        function renderIdeDetectedUrls(urls) {
+            const bar = document.getElementById('ideDetectedUrlsBar');
+            if (!bar) return;
+            bar.replaceChildren();
+            const safeUrls = (Array.isArray(urls) ? urls : []).map(sanitizeIdePreviewOrLocalUrl).filter(Boolean);
+            if (!safeUrls.length) {
+                bar.style.display = 'none';
+                return;
+            }
+            bar.style.display = 'flex';
+            const label = document.createElement('span');
+            label.style.fontSize = '11.5px';
+            label.style.color = '#94a3b8';
+            label.textContent = 'Detected Links:';
+            bar.appendChild(label);
+
+            safeUrls.forEach((safeUrl) => {
+                const link = document.createElement('a');
+                link.href = safeUrl;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = safeUrl;
+                link.style.cssText = 'padding:4px 10px; border-radius:999px; background:rgba(56,189,248,0.16); border:1px solid rgba(56,189,248,0.45); color:#7dd3fc; font-family:var(--font-code); font-size:11.5px; text-decoration:none;';
+                bar.appendChild(link);
+            });
+        }
+
+        function evaluateSafeMathExpr(expr) {
+            const cleaned = String(expr || '').trim();
+            if (!cleaned || cleaned.length > 160 || !/^[0-9+\-*/().%\s]+$/.test(cleaned)) {
+                throw new Error('Allowed characters: digits, + - * / % ( )');
+            }
+            const tokens = [];
+            let i = 0;
+            while (i < cleaned.length) {
+                const ch = cleaned[i];
+                if (/\s/.test(ch)) { i += 1; continue; }
+                if (/[0-9.]/.test(ch)) {
+                    let numStr = '';
+                    while (i < cleaned.length && /[0-9.]/.test(cleaned[i])) {
+                        numStr += cleaned[i];
+                        i += 1;
+                    }
+                    const parsed = Number(numStr);
+                    if (!Number.isFinite(parsed)) throw new Error('Invalid number: ' + numStr);
+                    tokens.push({ type: 'num', value: parsed });
+                    continue;
+                }
+                if ('+-*/%()'.includes(ch)) {
+                    tokens.push({ type: 'op', value: ch });
+                    i += 1;
+                    continue;
+                }
+                throw new Error('Unexpected character: ' + ch);
+            }
+            let pos = 0;
+            function peek() { return tokens[pos] || null; }
+            function consume() { return tokens[pos++]; }
+            function parseExpr() {
+                let left = parseTerm();
+                while (peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')) {
+                    const op = consume().value;
+                    const right = parseTerm();
+                    left = op === '+' ? left + right : left - right;
+                }
+                return left;
+            }
+            function parseTerm() {
+                let left = parseFactor();
+                while (peek() && peek().type === 'op' && (peek().value === '*' || peek().value === '/' || peek().value === '%')) {
+                    const op = consume().value;
+                    const right = parseFactor();
+                    if ((op === '/' || op === '%') && right === 0) throw new Error('Division by zero');
+                    left = op === '*' ? left * right : (op === '/' ? left / right : left % right);
+                }
+                return left;
+            }
+            function parseFactor() {
+                const tok = peek();
+                if (!tok) throw new Error('Unexpected end of expression');
+                if (tok.type === 'op' && (tok.value === '+' || tok.value === '-')) {
+                    consume();
+                    return tok.value === '-' ? -parseFactor() : parseFactor();
+                }
+                if (tok.type === 'op' && tok.value === '(') {
+                    consume();
+                    const val = parseExpr();
+                    const closeTok = consume();
+                    if (!closeTok || closeTok.value !== ')') throw new Error('Missing closing parenthesis');
+                    return val;
+                }
+                if (tok.type === 'num') {
+                    consume();
+                    return tok.value;
+                }
+                throw new Error('Unexpected token');
+            }
+            const result = parseExpr();
+            if (pos !== tokens.length || !Number.isFinite(result)) {
+                throw new Error('Malformed arithmetic expression');
+            }
+            return result;
+        }
+
+        async function openIdeWorkbench(tab = 'terminal', previewPath = '') {
+            if (!isAuthenticated()) {
+                await continueAsGuest({ preserveConversation: true });
+            }
+            const overlay = document.getElementById('ideDrawer');
+            if (!overlay) return;
+            overlay.style.display = 'flex';
+            if (typeof currentUser !== 'undefined') {
+                syncIdeRoleBadges(currentUser);
+            }
+            if (previewPath) {
+                const previewInput = document.getElementById('idePreviewPathInput');
+                if (previewInput) previewInput.value = previewPath;
+            }
+            await switchIdeTab(tab || 'terminal');
+        }
+
+        function closeIdeWorkbench() {
+            const overlay = document.getElementById('ideDrawer');
+            if (overlay) overlay.style.display = 'none';
+        }
+
+        async function switchIdeTab(tab = 'terminal') {
+            const normalized = (tab === 'files' || tab === 'preview') ? tab : 'terminal';
+            const tabs = {
+                files: { body: document.getElementById('ideTabFiles'), btn: document.getElementById('ideTabBtnFiles') },
+                terminal: { body: document.getElementById('ideTabTerminal'), btn: document.getElementById('ideTabBtnTerminal') },
+                preview: { body: document.getElementById('ideTabPreview'), btn: document.getElementById('ideTabBtnPreview') }
+            };
+            Object.entries(tabs).forEach(([key, refs]) => {
+                if (refs.body) refs.body.style.display = (key === normalized) ? 'flex' : 'none';
+                if (refs.btn) refs.btn.classList.toggle('active', key === normalized);
+            });
+            if (normalized === 'files') {
+                await refreshIdeFileTree();
+            } else if (normalized === 'terminal') {
+                await refreshIdeDevServers();
+                const termIn = document.getElementById('ideTerminalInput');
+                if (termIn) setTimeout(() => termIn.focus(), 40);
+            } else if (normalized === 'preview') {
+                await loadWorkspaceHtmlPreview();
+            }
+        }
+
+        async function refreshIdeFileTree() {
+            const listEl = document.getElementById('ideFileTreeList');
+            const statusEl = document.getElementById('ideEditorStatus');
+            if (!listEl) return;
+            try {
+                const res = await apiFetch('/api/workspace/tree');
+                const data = await safeParseJson(res);
+                listEl.replaceChildren();
+                const files = (data && Array.isArray(data.files)) ? data.files : [];
+                if (!files.length) {
+                    const empty = document.createElement('div');
+                    empty.style.cssText = 'padding:10px; font-size:12px; color:#94a3b8;';
+                    empty.textContent = 'Workspace is empty. Click "+ New File" to create index.html or scripts.';
+                    listEl.appendChild(empty);
+                    return;
+                }
+                const activePath = (document.getElementById('ideActiveFilePath')?.value || '').trim();
+                files.forEach((f) => {
+                    const item = document.createElement('div');
+                    item.className = 'ide-file-item' + (f.rel_path === activePath ? ' active' : '');
+                    const nameSpan = document.createElement('span');
+                    nameSpan.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+                    nameSpan.textContent = f.rel_path;
+                    const sizeSpan = document.createElement('span');
+                    sizeSpan.style.cssText = 'color:#64748b; font-size:10.5px; flex-shrink:0;';
+                    sizeSpan.textContent = f.size_kb + 'KB';
+                    item.appendChild(nameSpan);
+                    item.appendChild(sizeSpan);
+                    item.addEventListener('click', () => openIdeFile(f.rel_path));
+                    listEl.appendChild(item);
+                });
+                if (statusEl && files.length) {
+                    statusEl.textContent = files.length + ' workspace file(s) synced.';
+                }
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Failed to list workspace: ' + (err.message || err);
+            }
+        }
+
+        async function openIdeFile(relPath) {
+            const pathInput = document.getElementById('ideActiveFilePath');
+            const editor = document.getElementById('ideCodeEditor');
+            const statusEl = document.getElementById('ideEditorStatus');
+            if (!relPath || !pathInput || !editor) return;
+            try {
+                const res = await apiFetch('/api/workspace/file?path=' + encodeURIComponent(relPath));
+                const data = await safeParseJson(res);
+                if (!res.ok || !data || !data.success) {
+                    if (statusEl) statusEl.textContent = (data && data.error) ? data.error : 'Unable to open file.';
+                    return;
+                }
+                pathInput.value = data.path || relPath;
+                editor.value = data.content || '';
+                if (/\.(html?|svg)$/i.test(pathInput.value)) {
+                    const previewIn = document.getElementById('idePreviewPathInput');
+                    if (previewIn) previewIn.value = pathInput.value;
+                }
+                if (statusEl) statusEl.textContent = 'Loaded ' + pathInput.value + ' (' + editor.value.length + ' chars)';
+                await refreshIdeFileTree();
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Error loading file: ' + (err.message || err);
+            }
+        }
+
+        async function runIdeGrep() {
+            const queryInput = document.getElementById('ideGrepInput');
+            const resultsEl = document.getElementById('ideGrepResults');
+            if (!queryInput || !resultsEl) return;
+            const query = queryInput.value.trim();
+            if (!query) {
+                resultsEl.style.display = 'none';
+                resultsEl.replaceChildren();
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/workspace/grep', {
+                    method: 'POST',
+                    body: JSON.stringify({ query })
+                });
+                const data = await safeParseJson(res);
+                resultsEl.replaceChildren();
+                resultsEl.style.display = 'block';
+                const matches = (data && Array.isArray(data.matches)) ? data.matches : [];
+                if (!matches.length) {
+                    const none = document.createElement('div');
+                    none.style.color = '#94a3b8';
+                    none.textContent = 'No matches found for "' + query + '"';
+                    resultsEl.appendChild(none);
+                    return;
+                }
+                matches.slice(0, 40).forEach((m) => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'padding:4px 6px; border-radius:5px; cursor:pointer; color:#e2e8f0; border-bottom:1px solid rgba(255,255,255,0.05);';
+                    row.textContent = m.file + ':' + m.line + '  ' + m.text;
+                    row.addEventListener('click', () => openIdeFile(m.file));
+                    resultsEl.appendChild(row);
+                });
+            } catch (err) {
+                resultsEl.style.display = 'block';
+                resultsEl.textContent = 'Search error: ' + (err.message || err);
+            }
+        }
+
+        function createNewIdeFile() {
+            const pathInput = document.getElementById('ideActiveFilePath');
+            const editor = document.getElementById('ideCodeEditor');
+            const statusEl = document.getElementById('ideEditorStatus');
+            const suggested = 'app/index.html';
+            const entered = (typeof window.prompt === 'function')
+                ? window.prompt('Workspace file path (e.g. index.html, src/app.js):', suggested)
+                : suggested;
+            if (entered === null) return;
+            const rel = (entered || suggested).trim().replace(/^\/+/, '');
+            if (!rel || !pathInput || !editor) return;
+            pathInput.value = rel;
+            if (rel.endsWith('.html') || rel.endsWith('.htm')) {
+                editor.value = '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>AURA Workspace App</title>\n</head>\n<body style="font-family:system-ui;padding:24px;">\n  <h1>Hello from AURA Workspace</h1>\n</body>\n</html>\n';
+            } else {
+                editor.value = '';
+            }
+            if (statusEl) statusEl.textContent = 'Drafting new file: ' + rel + ' (click Save to write)';
+            editor.focus();
+        }
+
+        async function saveIdeFile() {
+            const pathInput = document.getElementById('ideActiveFilePath');
+            const editor = document.getElementById('ideCodeEditor');
+            const statusEl = document.getElementById('ideEditorStatus');
+            const relPath = pathInput ? pathInput.value.trim() : '';
+            if (!relPath) {
+                if (statusEl) statusEl.textContent = 'Enter a workspace file path first.';
+                return false;
+            }
+            try {
+                const res = await apiFetch('/api/workspace/save', {
+                    method: 'POST',
+                    body: JSON.stringify({ path: relPath, content: editor ? editor.value : '' })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data || !data.success) {
+                    if (statusEl) statusEl.textContent = (data && data.error) ? data.error : 'Save failed.';
+                    return false;
+                }
+                pathInput.value = data.saved_path || relPath;
+                if (statusEl) statusEl.textContent = 'Saved ' + pathInput.value + ' (' + data.bytes + ' bytes)';
+                await refreshIdeFileTree();
+                return true;
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Save error: ' + (err.message || err);
+                return false;
+            }
+        }
+
+        async function deleteIdeFile() {
+            const pathInput = document.getElementById('ideActiveFilePath');
+            const editor = document.getElementById('ideCodeEditor');
+            const statusEl = document.getElementById('ideEditorStatus');
+            const relPath = pathInput ? pathInput.value.trim() : '';
+            if (!relPath) return;
+            try {
+                const res = await apiFetch('/api/workspace/delete', {
+                    method: 'POST',
+                    body: JSON.stringify({ path: relPath })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data && data.success) {
+                    if (pathInput) pathInput.value = '';
+                    if (editor) editor.value = '';
+                    if (statusEl) statusEl.textContent = 'Deleted ' + (data.deleted_path || relPath);
+                    await refreshIdeFileTree();
+                } else if (statusEl) {
+                    statusEl.textContent = (data && data.error) ? data.error : 'Delete failed.';
+                }
+            } catch (err) {
+                if (statusEl) statusEl.textContent = 'Delete error: ' + (err.message || err);
+            }
+        }
+
+        async function previewCurrentIdeFile() {
+            const pathInput = document.getElementById('ideActiveFilePath');
+            const previewInput = document.getElementById('idePreviewPathInput');
+            const relPath = pathInput ? pathInput.value.trim() : '';
+            if (relPath) {
+                await saveIdeFile();
+                if (previewInput) previewInput.value = relPath;
+            }
+            await switchIdeTab('preview');
+        }
+
+        function askAuraToEditCurrentFile() {
+            const relPath = (document.getElementById('ideActiveFilePath')?.value || '').trim();
+            closeIdeWorkbench();
+            if (typeof userPrompt !== 'undefined' && userPrompt) {
+                userPrompt.value = relPath
+                    ? ('/code Inspect and improve ' + relPath + ' in my workspace: ')
+                    : '/code Build a responsive web app in my workspace: ';
+                userPrompt.focus();
+            }
+        }
+
+        async function loadWorkspaceHtmlPreview() {
+            const pathInput = document.getElementById('idePreviewPathInput');
+            const frame = document.getElementById('idePreviewFrame');
+            if (!frame) return;
+            const relPath = ((pathInput && pathInput.value) || 'index.html').trim().replace(/^\/+/, '');
+            if (pathInput) pathInput.value = relPath;
+            try {
+                const res = await apiFetch('/api/workspace/file?path=' + encodeURIComponent(relPath));
+                const data = await safeParseJson(res);
+                if (!res.ok || !data || !data.success) {
+                    frame.srcdoc = '<!DOCTYPE html><html><body style="font-family:system-ui;background:#0b1120;color:#e2e8f0;padding:24px;"><h3>Preview File Not Found: ' + escapeHtml(relPath) + '</h3><p>Create or save an HTML file in <strong>Files &amp; Editor</strong>, or run <code>touch index.html &lt;h1&gt;Hello&lt;/h1&gt;</code> in the Terminal tab.</p></body></html>';
+                    return;
+                }
+                const raw = String(data.content || '');
+                if (/\.(html?|svg)$/i.test(relPath)) {
+                    frame.srcdoc = raw;
+                } else {
+                    frame.srcdoc = '<!DOCTYPE html><html><body style="margin:0;padding:16px;background:#070a12;color:#d1fae5;font-family:monospace;white-space:pre-wrap;">' + escapeHtml(raw) + '</body></html>';
+                }
+            } catch (err) {
+                frame.srcdoc = '<!DOCTYPE html><html><body style="font-family:system-ui;background:#0b1120;color:#fca5a5;padding:24px;">Error loading preview: ' + escapeHtml(err.message || String(err)) + '</body></html>';
+            }
+        }
+
+        function openWorkspacePreviewNewTab() {
+            const relPath = ((document.getElementById('idePreviewPathInput')?.value) || 'index.html').trim().replace(/^\/+/, '');
+            const previewUrl = '/api/workspace/preview/' + relPath.split('/').map(encodeURIComponent).join('/');
+            const safeUrl = sanitizeIdePreviewOrLocalUrl(previewUrl);
+            if (safeUrl) {
+                window.open(safeUrl, '_blank', 'noopener,noreferrer');
+            }
+        }
+
+        function setIdePreviewDevice(mode) {
+            const frame = document.getElementById('idePreviewFrame');
+            if (!frame) return;
+            frame.classList.toggle('phone-frame', mode === 'phone');
+        }
+
+        async function refreshIdeDevServers() {
+            const listEl = document.getElementById('ideServersList');
+            if (!listEl) return;
+            try {
+                const res = await apiFetch('/api/workspace/devserver/status');
+                const data = await safeParseJson(res);
+                listEl.replaceChildren();
+                const servers = (data && Array.isArray(data.servers)) ? data.servers : [];
+                servers.forEach((srv) => {
+                    const chip = document.createElement('div');
+                    chip.style.cssText = 'display:inline-flex; align-items:center; gap:8px; padding:5px 10px; border-radius:999px; background:rgba(15,23,42,0.95); border:1px solid rgba(56,189,248,0.35); font-size:11.5px; color:#e2e8f0;';
+                    const badge = document.createElement('span');
+                    badge.textContent = (srv.running ? '🟢 ' : '⚪ ') + (srv.mode || 'server');
+                    chip.appendChild(badge);
+                    const safeUrl = sanitizeIdePreviewOrLocalUrl(srv.url);
+                    if (safeUrl) {
+                        const a = document.createElement('a');
+                        a.href = safeUrl;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        a.textContent = safeUrl;
+                        a.style.cssText = 'color:#7dd3fc; font-family:var(--font-code); text-decoration:none;';
+                        chip.appendChild(a);
+                    }
+                    const stopBtn = document.createElement('button');
+                    stopBtn.type = 'button';
+                    stopBtn.textContent = 'Stop';
+                    stopBtn.style.cssText = 'background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.45); color:#fca5a5; border-radius:6px; padding:2px 7px; font-size:11px; cursor:pointer;';
+                    stopBtn.addEventListener('click', () => stopIdeDevServer(srv.server_id));
+                    chip.appendChild(stopBtn);
+                    listEl.appendChild(chip);
+                });
+            } catch (err) {
+                // Silent if offline or unauthorized
+            }
+        }
+
+        async function startIdeStaticPreview() {
+            const entry = ((document.getElementById('idePreviewPathInput')?.value) || 'index.html').trim();
+            try {
+                const res = await apiFetch('/api/workspace/devserver/start', {
+                    method: 'POST',
+                    body: JSON.stringify({ mode: 'static', entry })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data && data.success) {
+                    const urls = [data.url, data.cloud_preview_url].filter(Boolean);
+                    appendIdeTerminalText('[Preview Server] Ready -> ' + urls.join(' | '));
+                    renderIdeDetectedUrls(urls);
+                    await refreshIdeDevServers();
+                } else {
+                    appendIdeTerminalText('[Preview Error] ' + ((data && data.error) || 'Failed to launch preview'));
+                }
+            } catch (err) {
+                appendIdeTerminalText('[Preview Error] ' + (err.message || String(err)));
+            }
+        }
+
+        async function stopIdeDevServer(serverId) {
+            if (!serverId) return;
+            try {
+                await apiFetch('/api/workspace/devserver/stop', {
+                    method: 'POST',
+                    body: JSON.stringify({ server_id: serverId })
+                });
+                await refreshIdeDevServers();
+            } catch (err) {}
+        }
+
+        async function runIdeTerminalCommand() {
+            const inputEl = document.getElementById('ideTerminalInput');
+            if (!inputEl) return;
+            const raw = inputEl.value.trim();
+            if (!raw) return;
+            inputEl.value = '';
+
+            if (!isAuthenticated()) {
+                await continueAsGuest({ preserveConversation: true });
+            }
+            appendIdeTerminalText('\n$ ' + raw);
+
+            const lower = raw.toLowerCase();
+            if (lower === 'clear' || lower === 'cls') {
+                const out = document.getElementById('ideTerminalOutput');
+                if (out) out.textContent = 'Terminal cleared. Type "help" for commands.\n';
+                renderIdeDetectedUrls([]);
+                return;
+            }
+            if (lower === 'help') {
+                appendIdeTerminalText(
+                    'Built-in Workspace CLI (All Users / Mobile / Vercel):\n' +
+                    '  ls                      List workspace files\n' +
+                    '  cat <file>              Read file contents\n' +
+                    '  grep <term>             Search across workspace files\n' +
+                    '  touch <file> [content]  Create or update a file\n' +
+                    '  edit <file> old => new  Surgical search-and-replace\n' +
+                    '  rm <file>               Delete a workspace file\n' +
+                    '  preview [file.html]     Open live Desktop/Phone preview (--serve to launch URL)\n' +
+                    '  calc <expr>             Evaluate arithmetic safely\n' +
+                    'Host Shell (Admin role unlocked in Settings):\n' +
+                    '  Any OS command (python, pytest, git, node) or "!bg <server cmd>" for localhost:PORT links.'
+                );
+                return;
+            }
+            if (lower === 'ls' || lower === 'dir') {
+                const res = await apiFetch('/api/workspace/tree');
+                const data = await safeParseJson(res);
+                const files = (data && data.files) ? data.files : [];
+                appendIdeTerminalText(files.length ? files.map(f => f.rel_path + ' (' + f.size_kb + ' KB)').join('\n') : '(empty workspace)');
+                return;
+            }
+            if (lower.startsWith('cat ')) {
+                const target = raw.slice(4).trim();
+                const res = await apiFetch('/api/workspace/file?path=' + encodeURIComponent(target));
+                const data = await safeParseJson(res);
+                appendIdeTerminalText((res.ok && data && data.success) ? data.content : ('Error: ' + ((data && data.error) || 'File not found')));
+                return;
+            }
+            if (lower.startsWith('grep ')) {
+                const q = raw.slice(5).trim();
+                const res = await apiFetch('/api/workspace/grep', { method: 'POST', body: JSON.stringify({ query: q }) });
+                const data = await safeParseJson(res);
+                const hits = (data && data.matches) ? data.matches : [];
+                appendIdeTerminalText(hits.length ? hits.slice(0, 40).map(m => m.file + ':' + m.line + ': ' + m.text).join('\n') : 'No matches.');
+                return;
+            }
+            if (lower.startsWith('touch ')) {
+                const rest = raw.slice(6).trim();
+                const sp = rest.indexOf(' ');
+                const filePath = (sp === -1 ? rest : rest.slice(0, sp)).trim();
+                const fileBody = sp === -1 ? '' : rest.slice(sp + 1);
+                const res = await apiFetch('/api/workspace/save', { method: 'POST', body: JSON.stringify({ path: filePath, content: fileBody }) });
+                const data = await safeParseJson(res);
+                appendIdeTerminalText((res.ok && data && data.success) ? ('Saved ' + data.saved_path + ' (' + data.bytes + ' bytes)') : ('Error: ' + ((data && data.error) || 'Failed')));
+                await refreshIdeFileTree();
+                return;
+            }
+            if (lower.startsWith('edit ')) {
+                const rest = raw.slice(5).trim();
+                const sp = rest.indexOf(' ');
+                const arrow = rest.indexOf('=>');
+                if (sp === -1 || arrow === -1 || arrow < sp) {
+                    appendIdeTerminalText('Usage: edit <file> <old text> => <new text>');
+                    return;
+                }
+                const filePath = rest.slice(0, sp).trim();
+                const targetTxt = rest.slice(sp + 1, arrow).trim();
+                const replTxt = rest.slice(arrow + 2).trim();
+                const res = await apiFetch('/api/workspace/edit', {
+                    method: 'POST',
+                    body: JSON.stringify({ path: filePath, target: targetTxt, replacement: replTxt })
+                });
+                const data = await safeParseJson(res);
+                appendIdeTerminalText((res.ok && data && data.success) ? (data.diff || ('Updated ' + data.rel_path)) : ('Error: ' + ((data && data.error) || 'Edit failed')));
+                await refreshIdeFileTree();
+                return;
+            }
+            if (lower.startsWith('rm ') || lower.startsWith('del ')) {
+                const target = raw.replace(/^(rm|del)\s+/i, '').trim();
+                const res = await apiFetch('/api/workspace/delete', { method: 'POST', body: JSON.stringify({ path: target }) });
+                const data = await safeParseJson(res);
+                appendIdeTerminalText((res.ok && data && data.success) ? ('Deleted ' + data.deleted_path) : ('Error: ' + ((data && data.error) || 'Delete failed')));
+                await refreshIdeFileTree();
+                return;
+            }
+            if (lower === 'preview' || lower.startsWith('preview ')) {
+                let arg = raw.slice(7).trim();
+                const serveFlag = arg.includes('--serve');
+                arg = arg.replace('--serve', '').trim();
+                const previewIn = document.getElementById('idePreviewPathInput');
+                if (previewIn && arg) previewIn.value = arg;
+                if (serveFlag) {
+                    await startIdeStaticPreview();
+                } else {
+                    await switchIdeTab('preview');
+                }
+                return;
+            }
+            if (lower.startsWith('calc ')) {
+                try {
+                    const ans = evaluateSafeMathExpr(raw.slice(5));
+                    appendIdeTerminalText('= ' + ans);
+                } catch (err) {
+                    appendIdeTerminalText('Calc error: ' + err.message);
+                }
+                return;
+            }
+
+            if (lower.startsWith('!bg ') || lower.startsWith('dev ')) {
+                const bgCmd = raw.replace(/^(!bg|dev)\s+/i, '').trim();
+                const res = await apiFetch('/api/workspace/devserver/start', {
+                    method: 'POST',
+                    body: JSON.stringify({ mode: 'command', command: bgCmd })
+                });
+                const data = await safeParseJson(res);
+                if (res.status === 401) {
+                    appendIdeTerminalText('[Admin Required] Unlock Host Admin in Settings -> Host Terminal Role to run background OS servers, or click "Launch Static Preview" for instant HTML previews.');
+                    return;
+                }
+                if (res.ok && data && data.success) {
+                    appendIdeTerminalText('[Server ' + data.server_id + '] Started PID ' + data.pid + (data.url ? (' -> ' + data.url) : ''));
+                    if (Array.isArray(data.logs) && data.logs.length) appendIdeTerminalText(data.logs.join('\n'));
+                    renderIdeDetectedUrls(data.detected_urls || (data.url ? [data.url] : []));
+                    await refreshIdeDevServers();
+                } else {
+                    appendIdeTerminalText('[Error] ' + ((data && data.error) || 'Failed to start server'));
+                }
+                return;
+            }
+
+            const shellCmd = lower.startsWith('/shell ') ? raw.slice(7).trim() : raw;
+            try {
+                const res = await apiFetch('/api/terminal/exec', {
+                    method: 'POST',
+                    body: JSON.stringify({ command: shellCmd })
+                });
+                const data = await safeParseJson(res);
+                if (res.status === 401) {
+                    appendIdeTerminalText('[Workspace CLI] Host OS shell requires Admin role (Settings -> Host Terminal Role).\nRun built-in commands right now: ls, cat, grep, touch, edit, rm, preview, calc, help');
+                    return;
+                }
+                if (data) {
+                    if (data.stdout) appendIdeTerminalText(data.stdout.trimEnd());
+                    if (data.stderr) appendIdeTerminalText('[stderr]\n' + data.stderr.trimEnd());
+                    if (data.error) appendIdeTerminalText('[error] ' + data.error);
+                    if (!data.stdout && !data.stderr && !data.error) {
+                        appendIdeTerminalText('(exit ' + data.exit_code + ')');
+                    }
+                    renderIdeDetectedUrls(data.detected_urls || []);
+                }
+            } catch (err) {
+                appendIdeTerminalText('[Network Error] ' + (err.message || String(err)));
+            }
+        }
+
+        (function initIdeModalBindings() {
+            const overlay = document.getElementById('ideDrawer');
+            if (overlay) {
+                overlay.addEventListener('click', (ev) => {
+                    if (ev.target === overlay) closeIdeWorkbench();
+                });
+            }
+            document.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Escape' && overlay && overlay.style.display === 'flex') {
+                    closeIdeWorkbench();
+                }
+            });
+            const grepIn = document.getElementById('ideGrepInput');
+            if (grepIn) {
+                grepIn.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        runIdeGrep();
+                    }
+                });
+            }
+            if (typeof currentUser !== 'undefined' && currentUser) {
+                syncIdeRoleBadges(currentUser);
+            }
         })();
     </script>
 </body>

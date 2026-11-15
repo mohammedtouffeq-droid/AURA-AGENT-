@@ -1135,10 +1135,18 @@ def tool_execute_shell(command: str, permission_mode: str = "auto_pilot", approv
             text=True,
             timeout=25
         )
+        stdout_txt = res.stdout.strip()
+        stderr_txt = res.stderr.strip()
+        try:
+            from aura_workspace_ide import extract_localhost_urls
+            detected_urls = extract_localhost_urls(stdout_txt + "\n" + stderr_txt)
+        except Exception:
+            detected_urls = []
         return {
             "success": res.returncode == 0,
-            "stdout": res.stdout.strip(),
-            "stderr": res.stderr.strip()
+            "stdout": stdout_txt,
+            "stderr": stderr_txt,
+            "detected_urls": detected_urls,
         }
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Command execution timed out after 25s."}
@@ -1157,18 +1165,99 @@ def tool_write_file(filepath: str, content: str, user_id: Optional[int] = None) 
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-def tool_read_file(filepath: str, user_id: Optional[int] = None) -> Dict[str, Any]:
-    """Reads content of a file from disk within the validated (user-scoped) workspace."""
+def tool_read_file(
+    filepath: str,
+    start_line: int = 1,
+    end_line: Optional[int] = 250,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Reads line-ranged content from disk within the validated (user-scoped) workspace."""
     try:
         p = validate_safe_path(filepath, user_id=user_id)
-        if not p.exists() or not p.is_file():
-            return {"success": False, "error": f"File {filepath} not found"}
-        content = p.read_text(encoding="utf-8", errors="ignore")
-        return {"success": True, "file": str(p), "content": content[:3000]}
+        ws = _resolve_workspace_dir(user_id=user_id) if user_id is not None else _resolve_workspace_dir()
+        from aura_workspace_ide import read_workspace_lines
+        return read_workspace_lines(p, ws, start_line=start_line, end_line=end_line)
     except PermissionError as pe:
         return {"success": False, "blocked": True, "error": str(pe)}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+def tool_edit_file(
+    filepath: str,
+    target: str,
+    replacement: str,
+    replace_all: bool = False,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Applies a surgical search-and-replace diff inside an isolated workspace file."""
+    try:
+        p = validate_safe_path(filepath, user_id=user_id)
+        ws = _resolve_workspace_dir(user_id=user_id) if user_id is not None else _resolve_workspace_dir()
+        from aura_workspace_ide import edit_workspace_file
+        return edit_workspace_file(p, ws, target=target, replacement=replacement, replace_all=replace_all)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def tool_grep_search(
+    pattern: str,
+    path: str = ".",
+    case_sensitive: bool = False,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Searches files inside the user's isolated workspace using literal or substring patterns."""
+    try:
+        ws = _resolve_workspace_dir(user_id=user_id) if user_id is not None else _resolve_workspace_dir()
+        rel = (path or ".").strip() or "."
+        search_root = ws if rel in (".", "./") else validate_safe_path(rel, user_id=user_id)
+        from aura_workspace_ide import grep_workspace
+        return grep_workspace(search_root, ws, query=pattern, case_sensitive=case_sensitive)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def tool_delete_file(filepath: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Deletes a file strictly inside the user's isolated workspace."""
+    try:
+        p = validate_safe_path(filepath, user_id=user_id)
+        ws = _resolve_workspace_dir(user_id=user_id) if user_id is not None else _resolve_workspace_dir()
+        from aura_workspace_ide import delete_workspace_file
+        return delete_workspace_file(p, ws)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def tool_start_local_preview(
+    directory: str = ".",
+    port: int = 0,
+    entry: str = "index.html",
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Starts an isolated static localhost preview server (or Vercel cloud preview URL) for workspace files."""
+    try:
+        ws = _resolve_workspace_dir(user_id=user_id) if user_id is not None else _resolve_workspace_dir()
+        rel = (directory or ".").strip() or "."
+        serve_dir = ws if rel in (".", "./") else validate_safe_path(rel, user_id=user_id)
+        from aura_workspace_ide import WORKSPACE_DEV_MANAGER
+        return WORKSPACE_DEV_MANAGER.start_static_preview(serve_dir, entry=entry, port=port, user_id=user_id)
+    except PermissionError as pe:
+        return {"success": False, "blocked": True, "error": str(pe)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def tool_list_local_previews(user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Lists active localhost/preview servers owned by the current workspace user."""
+    from aura_workspace_ide import WORKSPACE_DEV_MANAGER
+    servers = WORKSPACE_DEV_MANAGER.list_servers(user_id=user_id)
+    return {"success": True, "servers": servers, "count": len(servers)}
+
+def tool_stop_local_preview(server_id: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+    """Stops a running workspace preview/dev server owned by the current workspace user."""
+    from aura_workspace_ide import WORKSPACE_DEV_MANAGER
+    return WORKSPACE_DEV_MANAGER.stop_server(server_id=str(server_id or ""), user_id=user_id)
 
 def tool_generate_image(prompt: str, style: str = "photorealistic", aspect_ratio: str = "1:1", user_id: Optional[int] = None) -> Dict[str, Any]:
     """Generates an image inside the user's isolated workspace via AURA Cinema Studio."""
@@ -2162,7 +2251,13 @@ AVAILABLE_TOOLS = {
     "tool_read_webpage": tool_read_webpage,
     "tool_write_file": tool_write_file,
     "tool_read_file": tool_read_file,
+    "tool_edit_file": tool_edit_file,
+    "tool_grep_search": tool_grep_search,
+    "tool_delete_file": tool_delete_file,
     "tool_workspace_list": tool_workspace_list,
+    "tool_start_local_preview": tool_start_local_preview,
+    "tool_list_local_previews": tool_list_local_previews,
+    "tool_stop_local_preview": tool_stop_local_preview,
     "tool_client_bridge_action": tool_client_bridge_action,
     "tool_remember_fact": tool_remember_fact,
     "tool_recall_memory": tool_recall_memory,
@@ -2342,13 +2437,73 @@ GEMINI_TOOLS_DECLARATION = [{
         },
         {
             "name": "tool_read_file",
-            "description": "Read file content from the computer.",
+            "description": "Read a specific 1-based line range with line numbers from a file inside the user's isolated workspace.",
             "parameters": {
                 "type": "OBJECT",
                 "properties": {
-                    "filepath": {"type": "STRING", "description": "File path to read."}
+                    "filepath": {"type": "STRING", "description": "Workspace-relative or workspace-confined file path to read."},
+                    "start_line": {"type": "INTEGER", "description": "1-based start line number (default 1)."},
+                    "end_line": {"type": "INTEGER", "description": "1-based inclusive end line number (default 250)."}
                 },
                 "required": ["filepath"]
+            }
+        },
+        {
+            "name": "tool_edit_file",
+            "description": "Apply a surgical search-and-replace edit to an existing workspace file without overwriting unrelated sections.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "filepath": {"type": "STRING", "description": "Workspace file path to edit."},
+                    "target": {"type": "STRING", "description": "Exact existing text block to replace."},
+                    "replacement": {"type": "STRING", "description": "Replacement text block."},
+                    "replace_all": {"type": "BOOLEAN", "description": "Replace every occurrence if true (default false)."}
+                },
+                "required": ["filepath", "target", "replacement"]
+            }
+        },
+        {
+            "name": "tool_grep_search",
+            "description": "Search code or text patterns across files inside the user's workspace.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "pattern": {"type": "STRING", "description": "Search pattern or text."},
+                    "path": {"type": "STRING", "description": "Workspace subdirectory or '.' (default '.')."},
+                    "case_sensitive": {"type": "BOOLEAN", "description": "Case-sensitive search (default false)."}
+                },
+                "required": ["pattern"]
+            }
+        },
+        {
+            "name": "tool_start_local_preview",
+            "description": "Start a live localhost preview server (or cloud preview link) for a workspace web app directory.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "directory": {"type": "STRING", "description": "Workspace directory containing index.html or web assets (default '.')."},
+                    "entry": {"type": "STRING", "description": "Entry HTML file name (default 'index.html')."},
+                    "port": {"type": "INTEGER", "description": "Optional port 1024-65535 or 0 for automatic port."}
+                }
+            }
+        },
+        {
+            "name": "tool_list_local_previews",
+            "description": "List running localhost preview servers owned by the active user.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {}
+            }
+        },
+        {
+            "name": "tool_stop_local_preview",
+            "description": "Stop a running localhost preview server by server_id.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "server_id": {"type": "STRING", "description": "The server_id returned by tool_start_local_preview."}
+                },
+                "required": ["server_id"]
             }
         },
         {
@@ -3623,12 +3778,12 @@ The unified pipeline processed your instruction across all core engines (**Time:
         action_pattern = re.compile(
             r"\b(brightness|dim|volume|mute|open|launch|khol|kholo|kholdo|whatsapp|chatgpt|chat\s*gpt|chart\s*gpt|"
             r"youtube|chrome|spotify|gmail|github|weather|temperature|forecast|news|headline|game|cyberarena|"
-            r"cybercraft|godot|arena|banao|bana|file|folder|workspace|read|write|create|save|delete|list|"
-            r"memory|remember|recall|search|browse|scrape|url|http|ram|storage|disk|ssd|cpu|health|specs|"
-            r"terminal|shell|command|powershell|run|execute|code|script|python|bug|fix|patch|refactor|nexus|"
-            r"trinetra|gitkitty|ashby|learnos|form2fact|orvyn|spare-gpu|payguard|anonymous|image|picture|photo|"
-            r"draw|generate|poster|video|screen|screenshot|click|scroll|adb|phone|pipeline|omnipipeline|"
-            r"openhands|autogpt|interpreter|calculat|report)\b"
+            r"cybercraft|godot|arena|banao|bana|file|files|folder|workspace|read|write|edit|grep|diff|create|save|"
+            r"delete|list|memory|remember|recall|search|browse|scrape|url|http|localhost|preview|server|port|ram|"
+            r"storage|disk|ssd|cpu|health|specs|terminal|shell|command|powershell|run|execute|code|script|python|"
+            r"html|css|app|website|bug|fix|patch|refactor|nexus|trinetra|gitkitty|ashby|learnos|form2fact|orvyn|"
+            r"spare-gpu|payguard|anonymous|image|picture|photo|draw|generate|poster|video|screen|screenshot|click|"
+            r"scroll|adb|phone|pipeline|omnipipeline|openhands|autogpt|interpreter|calculat|report)\b"
         )
         return bool(action_pattern.search(last_text))
 
@@ -3656,8 +3811,10 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     "You communicate with natural warmth, intelligence, and conversational continuity in English or Hinglish as appropriate. "
                     "Always read the full conversation history carefully and stay directly on topic—never parrot the user or repeat generic greetings. "
                     "You have native tools including tool_client_bridge_action (display brightness, audio volume/mute, or opening apps/URLs cleanly), "
-                    "workspace file tools (tool_write_file, tool_read_file, tool_workspace_list, tool_coderx_build), live news/weather, memory vault, "
-                    "Godot 4 game builder, and Sovereign 10-Nexus engines."
+                    "workspace file tools (tool_workspace_list, tool_grep_search, tool_read_file with line ranges, tool_edit_file surgical diff, "
+                    "tool_write_file, tool_delete_file, tool_start_local_preview, tool_coderx_build), live news/weather, memory vault, "
+                    "Godot 4 game builder, and Sovereign 10-Nexus engines. When editing existing code, prefer tool_grep_search + tool_read_file + "
+                    "tool_edit_file instead of blindly rewriting whole files, and report only verified tool results."
                 )
             }]
         }
@@ -3878,12 +4035,67 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         if cmd_token in ("/read", "/cat"):
             if not cmd_arg:
-                return "Usage: `/read <filename>` (e.g. `/read demo.py`)"
-            res = tool_read_file(cmd_arg.strip(), user_id=self.user_id)
-            self.last_tools.append({"name": "tool_read_file", "args": {"filepath": cmd_arg.strip()}, "output": res})
+                return "Usage: `/read <filename>` or `/read <filename> 1-120`"
+            r_parts = cmd_arg.split()
+            fpath = r_parts[0].strip()
+            s_line, e_line = 1, 200
+            if len(r_parts) > 1 and "-" in r_parts[1]:
+                bounds = r_parts[1].split("-", 1)
+                try:
+                    s_line = max(1, int(bounds[0]))
+                    e_line = max(s_line, int(bounds[1]))
+                except ValueError:
+                    pass
+            res = tool_read_file(fpath, start_line=s_line, end_line=e_line, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_read_file", "args": {"filepath": fpath, "start_line": s_line, "end_line": e_line}, "output": res})
             if res.get("success"):
-                return f"### 📄 `{cmd_arg.strip()}`\n\n```\n{res.get('content', '')}\n```"
-            return f"⚠️ Unable to read `{cmd_arg.strip()}`: {res.get('error', 'Not found')}"
+                text_out = res.get("numbered_content") or res.get("content", "")
+                return f"### 📄 `{fpath}` (Lines {res.get('start_line')}-{res.get('end_line')} of {res.get('total_lines')})\n\n```\n{text_out}\n```"
+            return f"⚠️ Unable to read `{fpath}`: {res.get('error', 'Not found')}"
+
+        if cmd_token in ("/grep", "/search"):
+            if not cmd_arg:
+                return "Usage: `/grep <pattern>` (e.g. `/grep def main`)"
+            res = tool_grep_search(cmd_arg.strip(), user_id=self.user_id)
+            self.last_tools.append({"name": "tool_grep_search", "args": {"pattern": cmd_arg.strip()}, "output": res})
+            if not res.get("success"):
+                return f"⚠️ Search failed: {res.get('error', 'Unknown error')}"
+            hits = res.get("matches", [])
+            if not hits:
+                return f"🔍 No workspace matches found for `{cmd_arg.strip()}` ({res.get('files_scanned', 0)} files scanned)."
+            rows = "\n".join(f"- `{m['file']}:{m['line']}` — `{m['text']}`" for m in hits[:30])
+            return f"### 🔍 Grep Results for `{cmd_arg.strip()}` ({res.get('count', len(hits))} matches)\n\n{rows}"
+
+        if cmd_token == "/edit":
+            if "=>" not in cmd_arg or len(cmd_arg.split(maxsplit=1)) < 2:
+                return "Usage: `/edit <filepath> <old_text> => <new_text>`"
+            epath, expr = cmd_arg.split(maxsplit=1)
+            old_txt, new_txt = expr.split("=>", 1)
+            res = tool_edit_file(epath.strip(), target=old_txt.strip(), replacement=new_txt.strip(), user_id=self.user_id)
+            self.last_tools.append({"name": "tool_edit_file", "args": {"filepath": epath.strip()}, "output": res})
+            if res.get("success"):
+                diff_txt = res.get("diff", "")
+                return f"✅ **Edited `{res.get('rel_path', epath)}` cleanly!**\n\n```diff\n{diff_txt}\n```"
+            return f"⚠️ Edit failed: {res.get('error', 'Target not matched')}"
+
+        if cmd_token in ("/rm", "/delete"):
+            if not cmd_arg:
+                return "Usage: `/rm <filepath>`"
+            res = tool_delete_file(cmd_arg.strip(), user_id=self.user_id)
+            self.last_tools.append({"name": "tool_delete_file", "args": {"filepath": cmd_arg.strip()}, "output": res})
+            if res.get("success"):
+                return f"🗑️ Deleted `{res.get('deleted_path', cmd_arg.strip())}` from your workspace."
+            return f"⚠️ Delete failed: {res.get('error', 'Error')}"
+
+        if cmd_token == "/preview":
+            entry = cmd_arg.strip() or "index.html"
+            res = tool_start_local_preview(".", entry=entry, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_start_local_preview", "args": {"entry": entry}, "output": res})
+            if res.get("success"):
+                url = res.get("url", "")
+                cloud_url = res.get("cloud_preview_url", url)
+                return f"🌐 **Workspace Preview Ready**\n\n- **Live URL:** [{url}]({url})\n- **Cloud Preview:** [{cloud_url}]({cloud_url})\n- **Mode:** `{res.get('mode', 'static')}`"
+            return f"⚠️ Could not start preview: {res.get('error', 'Unknown error')}"
 
         if cmd_token == "/write":
             w_parts = cmd_arg.split(maxsplit=1)
