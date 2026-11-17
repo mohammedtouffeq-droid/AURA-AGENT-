@@ -1,6 +1,6 @@
 /*
 @title: Cyber Heist: Protocol Zero
-@author: Mohammed Touffeq
+@author: Mohd Ahmed
 @tags: ['stealth', 'action', 'puzzle', 'cyberpunk', 'tactical']
 @addedOn: 2026-10-31
 @description: AAA tactical stealth game in 16x16 retro cyber aesthetics. Infiltrate 6 corporate security sectors, evade patrolling heavy mechs, bypass high-voltage laser grids using EMP battery cells, and extract the Quantum AI Mainframe!

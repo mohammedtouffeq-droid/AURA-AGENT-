@@ -81,6 +81,7 @@ def _clamp_float(value: Any, default: float, minimum: float, maximum: float) -> 
 
 import aura_db
 from aura_brain import AuraBrain
+from aura_jarvis_hub import JARVIS_HUB
 from aura_settings import AuraSettingsManager
 from coderx_engine import _atomic_write_text
 
@@ -124,6 +125,33 @@ def _create_user_brain(user: Dict[str, Any]) -> AuraBrain:
         if "temperature" in prefs:
             brain.temperature = _clamp_float(prefs.get("temperature"), 0.3, 0.0, 1.0)
     return brain
+
+
+def _prepare_chat_dispatch(
+    user_id: int,
+    prompt: str,
+    body: Dict[str, Any],
+    permission_mode: str,
+    brain: AuraBrain,
+) -> Tuple[str, str]:
+    """Applies Sovereign reasoning-mode framing and enforces active JARVIS Kill Switch guardrails."""
+    reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
+    dispatch_prompt = prompt
+    if prompt:
+        if reasoning_mode == "architect":
+            dispatch_prompt = (
+                "[REASONING MODE: ARCHITECT — Structure concisely with ## Plan, ## Implementation, ## Verification]\n\n"
+                + prompt
+            )
+        elif reasoning_mode == "verifier":
+            dispatch_prompt = (
+                "[REASONING MODE: STRICT VERIFIER — Audit edge cases, security boundaries, and failure modes explicitly]\n\n"
+                + prompt
+            )
+            brain.temperature = min(float(getattr(brain, "temperature", 0.3)), 0.2)
+
+    effective_permission = "ask_first" if JARVIS_HUB.get_status(user_id).get("halted") else permission_mode
+    return dispatch_prompt, effective_permission
 
 
 def _build_conversation_history(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
@@ -834,6 +862,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                         pass
             self._send_json({"success": True, "runs": runs})
 
+        elif path == "/api/jarvis/status":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            self._send_json(JARVIS_HUB.get_status(user["id"]))
+
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)
 
@@ -1185,8 +1220,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             conv_history = _build_conversation_history(user_id, thread_id)
 
             brain = _create_user_brain(user)
+            dispatch_prompt, permission_mode = _prepare_chat_dispatch(
+                user_id, prompt, body, permission_mode, brain
+            )
             reply = brain.think_and_act(
-                prompt,
+                dispatch_prompt,
                 attachments=attachments,
                 permission_mode=permission_mode,
                 approved=approved,
@@ -1239,13 +1277,16 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             brain = _create_user_brain(user)
+            dispatch_prompt, permission_mode = _prepare_chat_dispatch(
+                user_id, prompt, body, permission_mode, brain
+            )
             accumulated_text = ""
             tools_used = []
 
             try:
                 final_reply_text = ""
                 for chunk in brain.think_and_act_stream(
-                    prompt,
+                    dispatch_prompt,
                     attachments=attachments,
                     permission_mode=permission_mode,
                     approved=approved,
@@ -2025,6 +2066,28 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             target = str(body.get("target") or "display")[:120]
             value = body.get("value", 50)
             self._send_json(AURA_ANTIGRAVITY_CORE.execute_desktop_action(action=action, target=target, value=value))
+
+        # 12. JARVIS AUTOMATIONS & HARDWARE KILL-SWITCH ROUTES
+        elif path == "/api/jarvis/run":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            routine = str(body.get("routine") or "repo_health_audit")[:64]
+            target = str(body.get("target") or "")[:500]
+            res = JARVIS_HUB.run_routine(user["id"], routine, target=target)
+            status = 423 if res.get("halted") else (200 if res.get("success", True) else 400)
+            self._send_json(res, status=status)
+
+        elif path == "/api/jarvis/kill_switch":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            halted = bool(body.get("halted", True))
+            reason = str(body.get("reason") or "Operator toggle")[:200]
+            res = JARVIS_HUB.set_kill_switch(user["id"], halted=halted, reason=reason)
+            self._send_json(res)
 
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)

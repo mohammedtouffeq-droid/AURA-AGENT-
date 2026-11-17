@@ -1,6 +1,6 @@
 # AURA AGENT - KINETIC UI/UX MASTER BLUEPRINT
 **Architectural Specification & ChatGPT Frontend Build Prompt**  
-*Creator: Mohammed Touffeq | Architecture: Kinetic Liquid Cyberpunk*
+*Creator: Mohd Ahmed | Architecture: Sovereign Luxury & Obsidian Kinetic AI*
 
 ---
 
@@ -48,7 +48,7 @@ AURA's settings engine (`aura_settings.py` & `aura_config.json`) controls 5 dist
 > **Copy everything below this line and give it directly to ChatGPT:**
 
 ```markdown
-Bhai ChatGPT, suno: Hum Mohammed Touffeq ke flagship project "AURA AGENT" ke liye duniya ka sabse khoobsurat, modern aur kinetic animated UI/UX frontend create kar rahe hain. 
+Bhai ChatGPT, suno: Hum Mohd Ahmed ke flagship project "AURA AGENT" ke liye duniya ka sabse khoobsurat, modern aur kinetic animated UI/UX frontend create kar rahe hain. 
 
 Mujhe koi boring flat black/blue standard design nahi chahiye. AURA ek "Living AI Artifact" jaisa dikhna chahiye jisme colors aur particles continuously move kar rahe hon.
 

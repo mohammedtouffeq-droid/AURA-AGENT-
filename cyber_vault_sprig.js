@@ -1,6 +1,6 @@
 /*
 @title: Cyber Vault: Quantum Heist
-@author: Mohammed Touffeq
+@author: Mohd Ahmed
 @tags: ['puzzle', 'action', 'cyberpunk']
 @description: Infiltrate the high-security cyber vault! Collect the encryption cards, unlock the security firewalls, and extract the quantum core across 3 security sectors.
 */

@@ -3,7 +3,7 @@
                      AURA AGENT - INTERACTIVE TERMINAL CONSOLE
 ===================================================================================
 Interactive live console to chat and give autonomous commands to AURA.
-Author: Mohammed Touffeq & Antigravity
+Author: Mohd Ahmed
 ===================================================================================
 """
 
@@ -13,7 +13,7 @@ from aura_brain import AuraBrain
 def main():
     print("=" * 65)
     print("        AURA AGENT - NEXT-GEN AUTONOMOUS INTERFACE")
-    print("                 Created by Mohammed Touffeq")
+    print("                 Created by Mohd Ahmed")
     print("=" * 65)
     print("[*] Engine Status : ACTIVE (Gemini 3.1 Next-Gen Brain Online)")
     print("[*] Hardware Tools: PowerShell, Browser, Code Editor, File I/O")
