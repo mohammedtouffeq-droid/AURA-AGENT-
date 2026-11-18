@@ -4038,12 +4038,61 @@ The unified pipeline processed your instruction across all core engines (**Time:
         deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview"}
         primary_model = "gemini-3-flash-preview" if self.model in deprecated_or_slow else self.model
         models_to_try: List[str] = []
-        for m in (primary_model, "gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
+        for m in (primary_model, "gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite"):
             if m and m not in models_to_try:
                 models_to_try.append(m)
         models_to_try = models_to_try[:3]
 
+        is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
+
         def _post_gemini(mod: str, api_key_val: str, pl: Dict[str, Any], timeout_s: float) -> Dict[str, Any]:
+            # Use SSE streaming for live calls so 3,500+ char code/architecture responses never trip short read timeouts
+            if not is_mocked_urlopen:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:streamGenerateContent?alt=sse"
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(pl).encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": api_key_val,
+                    },
+                    method="POST",
+                )
+                chunk_timeout = min(max(3.0, timeout_s), 5.2)
+                text_chunks: List[str] = []
+                extra_parts: List[Dict[str, Any]] = []
+                last_cand: Dict[str, Any] = {}
+                with urllib.request.urlopen(req, timeout=chunk_timeout) as resp:
+                    for raw_line in resp:
+                        line = raw_line.decode("utf-8", errors="ignore").strip()
+                        if not line.startswith("data:"):
+                            continue
+                        payload_str = line[5:].strip()
+                        if not payload_str or payload_str == "[DONE]":
+                            continue
+                        evt = json.loads(payload_str)
+                        cand = (evt.get("candidates") or [{}])[0]
+                        if cand:
+                            last_cand = cand
+                        for part in ((cand.get("content") or {}).get("parts") or []):
+                            if not isinstance(part, dict):
+                                continue
+                            if "text" in part and "functionCall" not in part:
+                                if part.get("text"):
+                                    text_chunks.append(str(part["text"]))
+                            else:
+                                extra_parts.append(part)
+                merged_parts: List[Dict[str, Any]] = []
+                full_text = "".join(text_chunks)
+                if full_text:
+                    merged_parts.append({"text": full_text})
+                merged_parts.extend(extra_parts)
+                if not merged_parts:
+                    raise RuntimeError(f"Empty SSE response from {mod}")
+                out_cand = dict(last_cand) if last_cand else {}
+                out_cand["content"] = {"role": "model", "parts": merged_parts}
+                return {"candidates": [out_cand]}
+
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent"
             req = urllib.request.Request(
                 url,
@@ -4056,8 +4105,6 @@ The unified pipeline processed your instruction across all core engines (**Time:
             )
             with urllib.request.urlopen(req, timeout=timeout_s) as resp:
                 return json.loads(resp.read().decode())
-
-        is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
         is_vercel = bool(os.environ.get("VERCEL"))
         voice_fast = bool(getattr(self, "voice_turn_mode", False))
 
@@ -4086,9 +4133,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
             return resp_obj
 
         if voice_fast:
-            total_budget = 12.5
+            total_budget = 14.0
         else:
-            total_budget = (16.5 if is_vercel else 19.5) if include_tools else (15.0 if is_vercel else 16.5)
+            total_budget = (20.0 if is_vercel else 22.0) if include_tools else (19.0 if is_vercel else 20.0)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
@@ -4115,13 +4162,10 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         for mod, k_val in ordered_pairs:
             remaining = deadline - time.monotonic()
-            if remaining < 2.2:
+            if remaining < 2.5:
                 break
-            if voice_fast:
-                max_att = 6.5
-            else:
-                max_att = (8.5 if include_tools else 7.8) if is_vercel else (9.0 if include_tools else 8.0)
-            attempt_timeout = max(2.2, min(max_att, remaining))
+            max_att = 5.2
+            attempt_timeout = max(2.5, min(max_att, remaining))
             mod_payload = _payload_for_model(primary_payload, mod, allow_thinking=True)
             try:
                 return _cache_and_return(_post_gemini(mod, k_val, mod_payload, attempt_timeout))
@@ -4151,7 +4195,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
         if include_tools and (deadline - time.monotonic()) >= 2.5:
             salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
             salvage_payload = _make_payload(salvage_contents, use_tools=False)
-            for mod in ("gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+            for mod in ("gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite"):
                 if (deadline - time.monotonic()) < 2.0:
                     break
                 for k_val in key_pool[:2]:
