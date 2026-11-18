@@ -3786,13 +3786,13 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 expr = user_text.strip().rstrip("=").strip()
                 reply = self._safe_eval_arithmetic(expr)
             else:
-                recent_topics = []
-                for item in contents[-6:]:
-                    for part in item.get("parts", []):
-                        txt = str(part.get("text", "") or "").strip()
-                        if txt and not txt.startswith("Notice:"):
-                            recent_topics.append(txt[:90].replace("\n", " "))
-                topic_hint = f" (Topic: *\"{recent_topics[-2][:70]}\"*)" if len(recent_topics) >= 2 else ""
+                clean_topic = " ".join(str(user_text or "").split()).strip()
+                if "[/ENGINE PROFILE]" in clean_topic:
+                    clean_topic = clean_topic.split("[/ENGINE PROFILE]", 1)[-1].strip()
+                clean_topic = re.sub(r"\[LANGUAGE LOCK:[^\]]*\]", "", clean_topic).strip()
+                if clean_topic.startswith(":::thought") or len(clean_topic) < 3:
+                    clean_topic = ""
+                topic_hint = f' (Topic: *"{clean_topic[:70]}"*)' if clean_topic else ""
                 reply = (
                     f"High student traffic temporarily throttled the shared cloud model{topic_hint}. "
                     "Please retry in a few seconds, run workspace commands (`/help`, `/calc`, `/files`, `/nexus`), or add a free personal Gemini API key in Settings for dedicated speed."
@@ -4057,15 +4057,15 @@ The unified pipeline processed your instruction across all core engines (**Time:
         is_vercel = bool(os.environ.get("VERCEL"))
         voice_fast = bool(getattr(self, "voice_turn_mode", False))
         if voice_fast:
-            total_budget = 9.0
+            total_budget = 8.0
         else:
-            total_budget = (14.5 if is_vercel else 18.0) if include_tools else (11.5 if is_vercel else 14.0)
+            total_budget = (12.5 if is_vercel else 16.0) if include_tools else (9.5 if is_vercel else 12.0)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
         primary_payload = _make_payload(compacted, use_tools=include_tools)
 
-        # Build prioritized healthy attempts first; keep cooled-down pairs only as last resort
+        # Build prioritized healthy attempts first; if all cooled, sample distinct fallback model buckets
         attempt_pairs: List[tuple[str, str]] = []
         cooled_pairs: List[tuple[str, str]] = []
         for mod in models_to_try:
@@ -4074,17 +4074,25 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     cooled_pairs.append((mod, k_val))
                 else:
                     attempt_pairs.append((mod, k_val))
-        ordered_pairs = attempt_pairs if attempt_pairs else cooled_pairs[:2]
+        if attempt_pairs:
+            ordered_pairs = attempt_pairs
+        else:
+            seen_mods = set()
+            ordered_pairs = []
+            for mod, k_val in cooled_pairs:
+                if mod not in seen_mods:
+                    seen_mods.add(mod)
+                    ordered_pairs.append((mod, k_val))
 
         for mod, k_val in ordered_pairs:
             remaining = deadline - time.monotonic()
-            if remaining < 2.0:
+            if remaining < 1.8:
                 break
             if voice_fast:
-                max_att = 5.0
+                max_att = 4.2
             else:
-                max_att = (8.5 if include_tools else 6.5) if is_vercel else (9.5 if include_tools else 7.5)
-            attempt_timeout = max(2.0, min(max_att, remaining))
+                max_att = (6.5 if include_tools else 5.0) if is_vercel else (8.0 if include_tools else 6.0)
+            attempt_timeout = max(1.8, min(max_att, remaining))
             mod_payload = _payload_for_model(primary_payload, mod, allow_thinking=True)
             try:
                 return _post_gemini(mod, k_val, mod_payload, attempt_timeout)
@@ -4092,14 +4100,14 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 print(f"[*] AURA Gemini live HTTP {e.code} fallback for {mod}: {e}")
                 if e.code == 400 and "thinkingConfig" in (mod_payload.get("generationConfig") or {}):
                     try:
-                        return _post_gemini(mod, k_val, primary_payload, max(2.0, min(max_att, deadline - time.monotonic())))
+                        return _post_gemini(mod, k_val, primary_payload, max(1.8, min(max_att, deadline - time.monotonic())))
                     except Exception:
                         pass
                 if not is_mocked_urlopen:
                     if e.code == 429:
-                        _mark_key_model_cooldown(k_val, mod, 40.0)
+                        _mark_key_model_cooldown(k_val, mod, 22.0)
                     elif e.code in (503, 504):
-                        _mark_key_model_cooldown(k_val, mod, 18.0)
+                        _mark_key_model_cooldown(k_val, mod, 10.0)
                     elif e.code == 404:
                         _mark_key_model_cooldown(k_val, mod, 300.0)
                 if e.code in (429, 403, 503, 404, 400):
@@ -4107,7 +4115,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
             except Exception as e:
                 print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
                 if not is_mocked_urlopen:
-                    _mark_key_model_cooldown(k_val, mod, 12.0)
+                    _mark_key_model_cooldown(k_val, mod, 8.0)
                 continue
 
         # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
@@ -4133,7 +4141,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
             secondary = self._try_pollinations_text_fallback(
                 compacted,
                 sys_instruction["parts"][0]["text"],
-                timeout_s=7.5,
+                timeout_s=9.0,
             )
             if secondary is not None:
                 return secondary
@@ -4144,17 +4152,23 @@ The unified pipeline processed your instruction across all core engines (**Time:
     def _try_pollinations_text_fallback(
         compacted_contents: List[Dict[str, Any]],
         sys_text: str,
-        timeout_s: float = 8.0,
+        timeout_s: float = 9.0,
     ) -> Optional[Dict[str, Any]]:
         """Secondary cloud text LLM fallback via Pollinations when Gemini quota buckets saturate."""
         try:
-            msgs: List[Dict[str, str]] = [{"role": "system", "content": sys_text[:1500]}]
-            for item in compacted_contents[-6:]:
+            msgs: List[Dict[str, str]] = [{"role": "system", "content": sys_text[:1200]}]
+            recent_slice = compacted_contents[-3:]
+            last_idx = len(recent_slice) - 1
+            for idx, item in enumerate(recent_slice):
                 role = "assistant" if item.get("role") == "model" else "user"
                 text_parts = [str(p.get("text") or "").strip() for p in (item.get("parts") or []) if isinstance(p, dict) and p.get("text")]
                 joined = "\n".join(text_parts).strip()
+                joined = re.sub(r":::thought[\s\S]*?:::\s*", "", joined).strip()
+                if "[/ENGINE PROFILE]" in joined and idx < last_idx:
+                    joined = joined.split("[/ENGINE PROFILE]", 1)[-1].strip()
+                cap = 2000 if idx == last_idx else 500
                 if joined:
-                    msgs.append({"role": role, "content": joined[:3500]})
+                    msgs.append({"role": role, "content": joined[:cap]})
             if len(msgs) <= 1:
                 return None
             payload = json.dumps({"model": "openai", "messages": msgs}).encode("utf-8")
