@@ -7761,9 +7761,20 @@
                     }
                     return;
                 }
-                const audioRes = await apiFetch(sp.audio_url);
-                if (!audioRes.ok) throw new Error('Audio stream load failed');
-                const blob = await audioRes.blob();
+                let blob = null;
+                if (data.audio_base64) {
+                    try {
+                        const binStr = atob(data.audio_base64);
+                        const bytes = new Uint8Array(binStr.length);
+                        for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                        blob = new Blob([bytes], { type: data.content_type || sp.content_type || 'audio/mpeg' });
+                    } catch (_) { blob = null; }
+                }
+                if (!blob) {
+                    const audioRes = await apiFetch(sp.audio_url);
+                    if (!audioRes.ok) throw new Error('Audio stream load failed');
+                    blob = await audioRes.blob();
+                }
                 const objUrl = URL.createObjectURL(blob);
                 player.src = objUrl;
                 player.style.display = 'block';
@@ -7822,11 +7833,13 @@
             rawChunks.forEach(part => {
                 const trimmed = part.trim();
                 if (!trimmed) return;
-                if ((cur + ' ' + trimmed).trim().length <= 220) {
+                // Keep chunk 0 short (<= 140 chars) for rapid audio start, pack later chunks up to 320 chars
+                const cap = chunks.length === 0 ? 140 : 320;
+                if ((cur + ' ' + trimmed).trim().length <= cap) {
                     cur = (cur ? cur + ' ' : '') + trimmed;
                 } else {
                     if (cur) chunks.push(cur);
-                    cur = trimmed.slice(0, 220);
+                    cur = trimmed.slice(0, chunks.length === 0 ? 140 : 320);
                 }
             });
             if (cur) chunks.push(cur);
@@ -7878,6 +7891,15 @@
             const data = await safeParseJson(res);
             if (!res.ok || !data.success || !data.speech || data.speech.engine === 'fallback_pcm') {
                 return null;
+            }
+            if (data.audio_base64) {
+                try {
+                    const binStr = atob(data.audio_base64);
+                    const bytes = new Uint8Array(binStr.length);
+                    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                    const blob = new Blob([bytes], { type: data.content_type || data.speech.content_type || 'audio/mpeg' });
+                    return { blob, meta: data.speech };
+                } catch (_) {}
             }
             const audioRes = await apiFetch(data.speech.audio_url, { signal });
             if (!audioRes.ok) return null;
@@ -8068,18 +8090,40 @@
                 const prefs = getVoicePreferences();
                 const localeMap = { 'en': 'en-US', 'auto': 'en-US', 'hi': 'hi-IN', 'hi-en': 'en-IN', 'te': 'te-IN' };
                 rec.lang = localeMap[prefs.language] || 'en-US';
-                rec.interimResults = false;
+                rec.interimResults = true;
                 rec.maxAlternatives = 1;
                 voiceHudState.recognition = rec;
+                let dispatched = false;
+                let latestTranscript = '';
                 _setVoiceHudMode('listening', `LISTENING (${rec.lang}) • Speak naturally...`);
                 rec.onresult = (ev) => {
-                    const transcript = (ev.results && ev.results[0] && ev.results[0][0]) ? ev.results[0][0].transcript : '';
-                    if (transcript && transcript.trim()) {
-                        sendVoiceTurnToAura(transcript.trim());
+                    if (dispatched || !ev.results) return;
+                    let interim = '';
+                    let finalTxt = '';
+                    for (let i = 0; i < ev.results.length; i++) {
+                        const r = ev.results[i];
+                        const t = (r && r[0] && r[0].transcript) ? r[0].transcript : '';
+                        if (r && r.isFinal) finalTxt += ' ' + t;
+                        else interim += ' ' + t;
+                    }
+                    latestTranscript = (finalTxt || interim).trim();
+                    if (latestTranscript && !finalTxt) {
+                        _setVoiceHudMode('listening', `HEARD: ${latestTranscript.slice(0, 56)}${latestTranscript.length > 56 ? '...' : ''}`);
+                    }
+                    if (finalTxt && finalTxt.trim()) {
+                        dispatched = true;
+                        try { rec.stop(); } catch (_) {}
+                        sendVoiceTurnToAura(finalTxt.trim());
+                    }
+                };
+                rec.onend = () => {
+                    if (!dispatched && latestTranscript && voiceHudState.callActive && !voiceHudState.muted) {
+                        dispatched = true;
+                        sendVoiceTurnToAura(latestTranscript);
                     }
                 };
                 rec.onerror = () => {
-                    _setVoiceHudMode('standby', 'MIC READY • Type below or click Start Call');
+                    if (!dispatched) _setVoiceHudMode('standby', 'MIC READY • Type below or click Start Call');
                 };
                 rec.start();
             } catch (_) {
@@ -8283,7 +8327,11 @@
                 } else if (box) {
                     box.textContent = JSON.stringify(data, null, 2);
                 }
-                await syncJarvisStatus();
+                if (data && data.jarvis_status && typeof _applyJarvisUiState === 'function') {
+                    _applyJarvisUiState(data.jarvis_status);
+                } else {
+                    await syncJarvisStatus();
+                }
             } catch (err) {
                 if (box) box.textContent = 'JARVIS Error: ' + err.message;
             }

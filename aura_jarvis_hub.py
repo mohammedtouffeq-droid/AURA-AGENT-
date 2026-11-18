@@ -13,18 +13,35 @@ ROOT_DIR = Path(__file__).resolve().parent
 SECRET_PATTERN = re.compile(
     r"(?:AIza[0-9A-Za-z\-_]{30,}|sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,})"
 )
-SKIP_DIRS = frozenset({".git", "__pycache__", ".pytest_cache", "node_modules", ".venv", "venv", "engines"})
+SKIP_DIRS = frozenset({
+    ".git", "__pycache__", ".pytest_cache", "node_modules", ".venv", "venv", "engines",
+    "workspace", "site-packages", "dist-packages", ".vercel", "dist", "build",
+})
+WORKSPACE_PY_SUBDIRS = frozenset({"api", "aura_adapters", "generated_benchmarks", "tests"})
+_HEALTH_CACHE: Dict[str, tuple[float, Dict[str, Any]]] = {}
+_BRIEFING_IO_CACHE: Dict[str, tuple[float, Any]] = {}
 
 
 def _audit_workspace_health(root_dir: Path = ROOT_DIR) -> Dict[str, Any]:
     """Synthesizes real Python AST, secret hygiene, and test inventory telemetry."""
+    cache_key = str(root_dir.resolve())
+    now = time.monotonic()
+    cached = _HEALTH_CACHE.get(cache_key)
+    if cached and (now - cached[0]) < 90.0:
+        return dict(cached[1])
+
     py_files: List[Path] = []
     syntax_errors: List[Dict[str, Any]] = []
     secret_hits: List[str] = []
     test_files: List[str] = []
+    is_vercel = bool(os.environ.get("VERCEL"))
+    root_resolved = str(root_dir)
 
     for dirpath, dirnames, filenames in os.walk(root_dir):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        if dirpath == root_resolved and is_vercel:
+            dirnames[:] = [d for d in dirnames if d in WORKSPACE_PY_SUBDIRS]
+        else:
+            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for fname in filenames:
             p = Path(dirpath) / fname
             if fname.startswith("test_") and fname.endswith(".py"):
@@ -44,7 +61,7 @@ def _audit_workspace_health(root_dir: Path = ROOT_DIR) -> Dict[str, Any]:
     if gi.exists():
         gitignore_ok = ".env" in gi.read_text(encoding="utf-8", errors="ignore")
 
-    return {
+    result = {
         "python_modules_checked": len(py_files),
         "syntax_errors": syntax_errors,
         "syntax_clean": len(syntax_errors) == 0,
@@ -54,6 +71,8 @@ def _audit_workspace_health(root_dir: Path = ROOT_DIR) -> Dict[str, Any]:
         "secret_hygiene_clean": len(secret_hits) == 0 and gitignore_ok,
         "gitignore_protects_env": gitignore_ok,
     }
+    _HEALTH_CACHE[cache_key] = (now, dict(result))
+    return result
 
 
 def _audit_code_ast(target: str = "", root_dir: Path = ROOT_DIR) -> Dict[str, Any]:
@@ -252,11 +271,38 @@ class AuraJarvisCoordinator:
         }
 
     def _exec_briefing(self, city: str) -> Dict[str, Any]:
+        from concurrent.futures import ThreadPoolExecutor
         from aura_brain import tool_get_news, tool_get_weather
+
         loc = (city or "Hyderabad").strip()
-        health = _audit_workspace_health(self.root_dir)
-        weather = tool_get_weather(loc)
-        news = tool_get_news("Artificial Intelligence India")
+        now = time.monotonic()
+
+        def _get_cached_weather() -> Dict[str, Any]:
+            ck = f"w:{loc.lower()}"
+            hit = _BRIEFING_IO_CACHE.get(ck)
+            if hit and (now - hit[0]) < 180.0:
+                return dict(hit[1])
+            val = tool_get_weather(loc)
+            _BRIEFING_IO_CACHE[ck] = (time.monotonic(), dict(val))
+            return val
+
+        def _get_cached_news() -> Dict[str, Any]:
+            ck = "n:ai_india"
+            hit = _BRIEFING_IO_CACHE.get(ck)
+            if hit and (now - hit[0]) < 180.0:
+                return dict(hit[1])
+            val = tool_get_news("Artificial Intelligence India")
+            _BRIEFING_IO_CACHE[ck] = (time.monotonic(), dict(val))
+            return val
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            f_health = pool.submit(_audit_workspace_health, self.root_dir)
+            f_weather = pool.submit(_get_cached_weather)
+            f_news = pool.submit(_get_cached_news)
+            health = f_health.result(timeout=4.0)
+            weather = f_weather.result(timeout=3.5)
+            news = f_news.result(timeout=3.5)
+
         headlines = [a.get("title", "") for a in (news.get("articles") or [])[:4]]
         return {
             "success": True,

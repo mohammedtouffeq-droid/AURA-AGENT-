@@ -518,13 +518,26 @@ class EdgeNeuralAdapter(BaseVoiceAdapter):
         rate_delta = int(round((max(0.65, min(1.5, float(speed or 1.0))) - 1.0) * 100))
         rate_str = f"{rate_delta:+d}%"
 
-        async def _collect() -> bytes:
+        async def _collect_once() -> bytes:
             comm = edge_tts.Communicate(text=text, voice=provider_voice or "en-IN-PrabhatNeural", rate=rate_str)
             chunks = bytearray()
             async for item in comm.stream():
                 if item.get("type") == "audio" and item.get("data"):
                     chunks.extend(item["data"])
             return bytes(chunks)
+
+        async def _collect() -> bytes:
+            last_err: Optional[Exception] = None
+            for attempt in range(2):
+                try:
+                    data = await asyncio.wait_for(_collect_once(), timeout=5.5)
+                    if data and len(data) >= 64:
+                        return data
+                except Exception as exc:
+                    last_err = exc
+                if attempt == 0:
+                    await asyncio.sleep(0.08)
+            raise RuntimeError(f"Edge neural TTS failed: {last_err or 'empty audio stream'}")
 
         audio = _run_coro_sync(_collect())
         if not audio or len(audio) < 64:
@@ -748,6 +761,7 @@ class UniversalVoiceOrchestrator:
         }
         self._artifacts: Dict[str, SpeechArtifact] = {}
         self._calls: Dict[str, Dict[str, Any]] = {}
+        self._phrase_cache: Dict[Tuple[str, str, float, str], Tuple[bytes, str, str, str, str]] = {}
 
     def _voices(self) -> List[Dict[str, Any]]:
         data = _load_json_override("voices.json", {"voices": DEFAULT_VOICES})
@@ -831,7 +845,10 @@ class UniversalVoiceOrchestrator:
             order = ["maya", "kokoro", "sapi"]
         elif language in ("te",):
             # Telugu uses Maya remote GPU first, Edge neural online next (Kokoro doesn't support Telugu)
-            order = ["maya", "edge", "sapi"]
+            order = ["maya", "edge"] if os.environ.get("VERCEL") else ["maya", "edge", "sapi"]
+        elif os.environ.get("VERCEL"):
+            # Serverless Linux: skip local desktop SAPI and local heavy ONNX weights unless configured
+            order = ["maya", "edge"] if (os.environ.get("MAYA_ENGINE_URL") or "").strip() else ["edge"]
         else:
             # Interactive Live Voice Hybrid: low-latency Maya GPU -> Edge HD (~1.8s EN/HI/HI-EN) -> Offline Apache-2.0 Kokoro -> SAPI
             order = ["maya", "edge", "kokoro", "sapi"]
@@ -892,8 +909,20 @@ class UniversalVoiceOrchestrator:
         used_provider_voice = ""
         licenses = self._licenses()
 
+        cache_key = (
+            voice_entry["id"],
+            resolved_lang,
+            round(max(0.65, min(1.5, float(speed or 1.0))), 2),
+            clean_text,
+        )
+        if not commercial_only and (engine or "auto").strip().lower() in ("auto", "edge") and len(clean_text) <= 220:
+            with self._lock:
+                cached = self._phrase_cache.get(cache_key)
+            if cached:
+                audio_bytes, ext, ctype, used_engine, used_provider_voice = cached
+
         maps = voice_entry.get("mappings") or {}
-        for eng_id in chain:
+        for eng_id in ([] if audio_bytes else chain):
             adapter = self._adapters[eng_id]
             ok, reason = adapter.is_available()
             if not ok:
@@ -928,6 +957,12 @@ class UniversalVoiceOrchestrator:
             audio_bytes = _build_minimal_wav_tone_fallback()
             used_engine = "fallback_pcm"
             used_provider_voice = "pcm_silence"
+        elif not commercial_only and used_engine in ("edge", "kokoro", "maya") and len(clean_text) <= 220:
+            with self._lock:
+                if len(self._phrase_cache) >= 64:
+                    oldest_key = next(iter(self._phrase_cache))
+                    self._phrase_cache.pop(oldest_key, None)
+                self._phrase_cache[cache_key] = (audio_bytes, ext, ctype, used_engine, used_provider_voice)
 
         latency_ms = round((time.perf_counter() - t0) * 1000.0, 2)
         aid = f"aud_{uuid.uuid4().hex[:14]}"

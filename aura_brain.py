@@ -398,7 +398,7 @@ def tool_get_news(query: str = "breaking news") -> Dict[str, Any]:
         encoded = urllib.parse.quote(query.strip())
         rss_url = f"https://news.google.com/rss/search?q={encoded}&hl=en-IN&gl=IN&ceid=IN:en"
         req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=2.5) as resp:
             xml_data = resp.read()
             root = ET.fromstring(xml_data)
             items = []
@@ -962,7 +962,7 @@ def tool_github_manager(action: str = "inspect_my_repos", repo_name: str = "", u
         if gh_tok:
             headers["Authorization"] = f"Bearer {gh_tok}"
         req = urllib.request.Request(api_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=2.5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         repos_summary = []
@@ -2884,12 +2884,38 @@ HOST_PRIVILEGED_TOOLS = frozenset({
 })
 
 
+import threading as _threading
+
+_KEY_MODEL_COOLDOWN: Dict[tuple[str, str], float] = {}
+_KEY_COOLDOWN_LOCK = _threading.Lock()
+
+
+def _is_key_model_cooled_down(api_key_val: str, model_name: str) -> bool:
+    key_id = (str(api_key_val)[-8:], str(model_name))
+    now = time.monotonic()
+    with _KEY_COOLDOWN_LOCK:
+        until = _KEY_MODEL_COOLDOWN.get(key_id, 0.0)
+        if until <= now:
+            _KEY_MODEL_COOLDOWN.pop(key_id, None)
+            return False
+        return True
+
+
+def _mark_key_model_cooldown(api_key_val: str, model_name: str, ttl_seconds: float) -> None:
+    key_id = (str(api_key_val)[-8:], str(model_name))
+    until = time.monotonic() + max(1.0, float(ttl_seconds))
+    with _KEY_COOLDOWN_LOCK:
+        _KEY_MODEL_COOLDOWN[key_id] = until
+
+
 class AuraBrain:
     def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
         self.api_key = API_KEY
         self.provider = provider or "gemini"
         self.model = model or MODEL_NAME
         self.temperature: float = 0.3
+        self.thinking_level: Optional[str] = None
+        self.voice_turn_mode: bool = False
         self.user_id: Optional[int] = None
         self.user_role: str = "admin"  # Overridden to tenant role ('user'/'admin') by aura_web._create_user_brain
         self.history: List[Dict[str, Any]] = []
@@ -3900,7 +3926,12 @@ The unified pipeline processed your instruction across all core engines (**Time:
             last_parts = contents[-1].get("parts", [])
             if any("functionResponse" in p or "functionCall" in p or "inlineData" in p or "inline_data" in p for p in last_parts if isinstance(p, dict)):
                 return True
-            last_text = " ".join(str(p.get("text", "")) for p in last_parts if isinstance(p, dict)).lower()
+            raw_last = " ".join(str(p.get("text", "")) for p in last_parts if isinstance(p, dict))
+            # Strip injected engine & language framing headers so prompt rules do not falsely trigger 35+ JSON tools
+            if "[/ENGINE PROFILE]" in raw_last:
+                raw_last = raw_last.split("[/ENGINE PROFILE]", 1)[-1]
+            raw_last = re.sub(r"\[LANGUAGE LOCK:[^\n]*\n?", "", raw_last)
+            last_text = raw_last.lower().strip()
             # Keep tools enabled on follow-ups to recent media/image generation turns
             recent_blob = " ".join(
                 str(p.get("text", ""))
@@ -3915,14 +3946,16 @@ The unified pipeline processed your instruction across all core engines (**Time:
             last_text = ""
 
         action_pattern = re.compile(
-            r"\b(brightness|dim|volume|mute|open|launch|khol|kholo|kholdo|whatsapp|chatgpt|chat\s*gpt|chart\s*gpt|"
-            r"youtube|chrome|spotify|gmail|github|weather|temperature|forecast|news|headline|game|cyberarena|"
-            r"cybercraft|godot|arena|banao|bana|file|files|folder|workspace|read|write|edit|grep|diff|create|save|"
-            r"delete|list|memory|remember|recall|search|browse|scrape|url|http|localhost|preview|server|port|ram|"
-            r"storage|disk|ssd|cpu|health|specs|terminal|shell|command|powershell|run|execute|code|script|python|"
-            r"html|css|app|website|bug|fix|patch|refactor|nexus|trinetra|gitkitty|ashby|learnos|form2fact|orvyn|"
-            r"spare-gpu|payguard|anonymous|image|picture|pic|photo|draw|generate|poster|banner|logo|video|screen|screenshot|click|"
-            r"scroll|adb|phone|pipeline|omnipipeline|openhands|autogpt|interpreter|calculat|report)\b"
+            r"(https?://\S+|upi://pay\S*|\b(?:brightness|dim|bright|volume|mute|open|launch|khol|kholo|kholdo|"
+            r"whatsapp|chatgpt|chat\s*gpt|youtube|chrome|spotify|gmail|github|weather|temperature|forecast|"
+            r"news|headline|game|cyberarena|cybercraft|godot|arena|file|files|folder|workspace|read\s+file|"
+            r"write\s+file|save\s+file|edit\s+file|create\s+file|delete\s+file|list\s+files|memory|remember|"
+            r"recall|web\s*search|search\s+(?:the\s+)?web|search\s+files|browse|scrape|localhost|preview|server|port|"
+            r"ram|storage|disk|ssd|cpu|health|specs|terminal|shell|powershell|(?:run|execute)\s+(?:the\s+|this\s+|my\s+)?(?:command|powershell|shell|script|tests?)|"
+            r"nexus|trinetra|gitkitty|ashby|learnos|form2fact|orvyn|spare-gpu|payguard|anonymous|"
+            r"generate\s+(?:an?\s+)?(?:image|picture|pic|photo|poster|banner|logo|video)|"
+            r"draw\s+(?:an?\s+)?(?:image|picture|pic|photo)|screenshot|click|scroll|adb|phone|"
+            r"pipeline|omnipipeline|openhands|autogpt|interpreter)\b)"
         )
         return bool(action_pattern.search(last_text))
 
@@ -3988,10 +4021,20 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 pl["tools"] = tools
             return pl
 
-        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite"}
+        def _payload_for_model(base_pl: Dict[str, Any], mod_name: str, allow_thinking: bool = True) -> Dict[str, Any]:
+            t_lvl = getattr(self, "thinking_level", None)
+            if allow_thinking and t_lvl and str(mod_name).startswith("gemini-3-flash"):
+                pl_copy = dict(base_pl)
+                gen_cfg = dict(base_pl.get("generationConfig") or {})
+                gen_cfg["thinkingConfig"] = {"thinkingLevel": str(t_lvl)}
+                pl_copy["generationConfig"] = gen_cfg
+                return pl_copy
+            return base_pl
+
+        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite-preview"}
         primary_model = "gemini-3-flash-preview" if self.model in deprecated_or_slow else self.model
         models_to_try: List[str] = []
-        for m in (primary_model, "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
+        for m in (primary_model, "gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
             if m and m not in models_to_try:
                 models_to_try.append(m)
         models_to_try = models_to_try[:4]
@@ -4010,49 +4053,81 @@ The unified pipeline processed your instruction across all core engines (**Time:
             with urllib.request.urlopen(req, timeout=timeout_s) as resp:
                 return json.loads(resp.read().decode())
 
+        is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
         is_vercel = bool(os.environ.get("VERCEL"))
-        total_budget = (19.0 if is_vercel else 22.0) if include_tools else (15.5 if is_vercel else 17.5)
+        voice_fast = bool(getattr(self, "voice_turn_mode", False))
+        if voice_fast:
+            total_budget = 9.0
+        else:
+            total_budget = (14.5 if is_vercel else 18.0) if include_tools else (11.5 if is_vercel else 14.0)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
         primary_payload = _make_payload(compacted, use_tools=include_tools)
 
+        # Build prioritized healthy attempts first; keep cooled-down pairs only as last resort
+        attempt_pairs: List[tuple[str, str]] = []
+        cooled_pairs: List[tuple[str, str]] = []
         for mod in models_to_try:
             for k_val in key_pool:
-                remaining = deadline - time.monotonic()
-                if remaining < 2.2:
-                    break
-                max_att = (10.5 if include_tools else 8.5) if is_vercel else (12.0 if include_tools else 9.5)
-                attempt_timeout = max(2.2, min(max_att, remaining))
-                try:
-                    return _post_gemini(mod, k_val, primary_payload, attempt_timeout)
-                except urllib.error.HTTPError as e:
-                    print(f"[*] AURA Gemini live HTTP {e.code} fallback for {mod}: {e}")
-                    if e.code in (429, 403, 503):
-                        continue  # Immediately try next API key in pool
-                    break  # Non-quota error (e.g. 404/400) -> try next model
-                except Exception as e:
-                    print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
-                    if mod == "gemini-3-flash-preview":
-                        continue  # Still try alternate key on fastest primary model
-                    break  # Otherwise advance quickly to next model
+                if not is_mocked_urlopen and _is_key_model_cooled_down(k_val, mod):
+                    cooled_pairs.append((mod, k_val))
+                else:
+                    attempt_pairs.append((mod, k_val))
+        ordered_pairs = attempt_pairs if attempt_pairs else cooled_pairs[:2]
+
+        for mod, k_val in ordered_pairs:
+            remaining = deadline - time.monotonic()
+            if remaining < 2.0:
+                break
+            if voice_fast:
+                max_att = 5.0
+            else:
+                max_att = (8.5 if include_tools else 6.5) if is_vercel else (9.5 if include_tools else 7.5)
+            attempt_timeout = max(2.0, min(max_att, remaining))
+            mod_payload = _payload_for_model(primary_payload, mod, allow_thinking=True)
+            try:
+                return _post_gemini(mod, k_val, mod_payload, attempt_timeout)
+            except urllib.error.HTTPError as e:
+                print(f"[*] AURA Gemini live HTTP {e.code} fallback for {mod}: {e}")
+                if e.code == 400 and "thinkingConfig" in (mod_payload.get("generationConfig") or {}):
+                    try:
+                        return _post_gemini(mod, k_val, primary_payload, max(2.0, min(max_att, deadline - time.monotonic())))
+                    except Exception:
+                        pass
+                if not is_mocked_urlopen:
+                    if e.code == 429:
+                        _mark_key_model_cooldown(k_val, mod, 40.0)
+                    elif e.code in (503, 504):
+                        _mark_key_model_cooldown(k_val, mod, 18.0)
+                    elif e.code == 404:
+                        _mark_key_model_cooldown(k_val, mod, 300.0)
+                if e.code in (429, 403, 503, 404, 400):
+                    continue
+            except Exception as e:
+                print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
+                if not is_mocked_urlopen:
+                    _mark_key_model_cooldown(k_val, mod, 12.0)
+                continue
 
         # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
-        if include_tools and (deadline - time.monotonic()) >= 3.0:
+        if include_tools and (deadline - time.monotonic()) >= 2.5:
             salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
             salvage_payload = _make_payload(salvage_contents, use_tools=False)
-            for mod in ("gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
-                if (deadline - time.monotonic()) < 2.2:
+            for mod in ("gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+                if (deadline - time.monotonic()) < 2.0:
                     break
                 for k_val in key_pool[:2]:
+                    if not is_mocked_urlopen and _is_key_model_cooled_down(k_val, mod):
+                        continue
                     try:
-                        return _post_gemini(mod, k_val, salvage_payload, min(8.0, max(2.2, deadline - time.monotonic())))
+                        pl_s = _payload_for_model(salvage_payload, mod, allow_thinking=True)
+                        return _post_gemini(mod, k_val, pl_s, min(6.0, max(2.0, deadline - time.monotonic())))
                     except Exception:
                         continue
 
         # Secondary zero-key cloud LLM failover (Pollinations OpenAI-compatible text)
         # Dedicated rescue budget so Gemini timeouts never starve the fallback provider.
-        is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
         is_test_key = str(primary_key).lower().startswith(("your_", "key-", "test", "mock"))
         if not is_mocked_urlopen and not is_test_key and not include_tools and deadline_override is None:
             secondary = self._try_pollinations_text_fallback(

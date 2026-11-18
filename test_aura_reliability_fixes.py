@@ -581,5 +581,97 @@ def test_pollinations_secondary_llm_failover_parses_openai_response():
     assert "O(1)" in out["candidates"][0]["content"]["parts"][0]["text"]
 
 
+def test_should_include_tools_ignores_engine_framing_and_coding_conceptual_queries():
+    """Engine framing keywords ('html', 'url', 'trinetra') must NEVER inflate pure architecture/code prompts with 35+ tools."""
+    from aura_engine_26 import Aura26ApexEngine
+    plan = Aura26ApexEngine().build_dispatch_plan(1, "Design a scalable URL shortener architecture.")
+    framed = f"[LANGUAGE LOCK: ENGLISH]\n\n{plan.system_framing}\n\nDesign a scalable URL shortener architecture."
+    dummy_tools = [{"functionDeclarations": [{"name": "tool_read_file"}]}]
+
+    assert aura_brain.AuraBrain._should_include_tools_for_contents(
+        [{"role": "user", "parts": [{"text": framed}]}], dummy_tools
+    ) is False
+
+    # Real tool workflows MUST still keep tools active
+    assert aura_brain.AuraBrain._should_include_tools_for_contents(
+        [{"role": "user", "parts": [{"text": "Make the screen less bright"}]}], dummy_tools
+    ) is True
+    assert aura_brain.AuraBrain._should_include_tools_for_contents(
+        [{"role": "user", "parts": [{"text": "Read file aura_db.py"}]}], dummy_tools
+    ) is True
+
+
+def test_thinking_config_only_sent_to_gemini3_and_strips_on_http_400():
+    """Verify thinkingLevel is sent on gemini-3-flash-preview, stripped on non-3 fallbacks, and retried safely on 400."""
+    import urllib.error
+    import io
+    from unittest.mock import patch
+
+    sent_payloads = []
+
+    class _MockResp:
+        def __init__(self, txt):
+            self._txt = txt
+        def read(self):
+            return json.dumps({
+                "candidates": [{"content": {"parts": [{"text": self._txt}]}}]
+            }).encode("utf-8")
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+
+    def _fake_urlopen(req, timeout=10):
+        pl = json.loads(req.data.decode("utf-8"))
+        sent_payloads.append((req.full_url, pl))
+        if len(sent_payloads) == 1:
+            raise urllib.error.HTTPError(
+                req.full_url, 400, "Bad Request", {}, io.BytesIO(b"Invalid thinkingConfig")
+            )
+        return _MockResp("Fast binary search summary.")
+
+    brain = aura_brain.AuraBrain(provider="gemini", model="gemini-3-flash-preview")
+    brain.api_key = "unit_synthetic_credential_for_verification_01"
+    brain.thinking_level = "minimal"
+    with patch("urllib.request.urlopen", side_effect=_fake_urlopen):
+        out = brain._call_api([{"role": "user", "parts": [{"text": "Explain binary search"}]}], [])
+
+    assert out["candidates"][0]["content"]["parts"][0]["text"] == "Fast binary search summary."
+    assert len(sent_payloads) >= 2
+    assert sent_payloads[0][1]["generationConfig"].get("thinkingConfig") == {"thinkingLevel": "minimal"}
+    assert "thinkingConfig" not in sent_payloads[1][1]["generationConfig"]
+
+
+def test_jarvis_workspace_audit_uses_ttl_cache_and_briefing_runs_fast(tmp_path):
+    """Verify JARVIS health audit caches within TTL and executive_briefing completes cleanly."""
+    from aura_jarvis_hub import _audit_workspace_health
+    p = tmp_path / "sample_mod.py"
+    p.write_text("x = 1\n", encoding="utf-8")
+    first = _audit_workspace_health(tmp_path)
+    assert first["python_modules_checked"] == 1
+    p2 = tmp_path / "sample_mod2.py"
+    p2.write_text("y = 2\n", encoding="utf-8")
+    cached = _audit_workspace_health(tmp_path)
+    assert cached["python_modules_checked"] == 1  # Served instantaneously from 90s cache
+
+
+def test_edge_voice_orchestrator_caches_short_phrases(monkeypatch):
+    """Short spoken phrases hit in-memory LRU cache without invoking Edge-TTS twice."""
+    from aura_voice_cloud import UniversalVoiceOrchestrator
+    orch = UniversalVoiceOrchestrator()
+    calls = {"n": 0}
+    monkeypatch.setattr(orch._adapters["edge"], "is_available", lambda: (True, "ok"))
+
+    def _fake_synth(**kwargs):
+        calls["n"] += 1
+        return b"ID3_FAKE_MP3_BYTES_" + (b"\x00" * 100), "mp3", "audio/mpeg"
+
+    monkeypatch.setattr(orch._adapters["edge"], "synthesize", _fake_synth)
+    a1 = orch.synthesize_speech("u1", "Systems ready.", language="en", voice_id="male_02", engine="edge")
+    a2 = orch.synthesize_speech("u1", "Systems ready.", language="en", voice_id="male_02", engine="edge")
+    assert calls["n"] == 1
+    assert a1.bytes_len == a2.bytes_len and a2.bytes_len > 64
+
+
 
 

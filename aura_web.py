@@ -184,6 +184,8 @@ def _prepare_aura_turn(
     voice_turn = bool(body.get("voice_turn", False))
     pref_lang = str(body.get("preferred_language") or body.get("language") or "auto")
     resolved_lang = detect_preferred_language(prompt, None if pref_lang == "auto" else pref_lang)
+    brain.voice_turn_mode = voice_turn
+    brain.thinking_level = "minimal" if voice_turn else None
 
     dispatch_prompt, effective_permission = _prepare_chat_dispatch(
         user_id, prompt, body, permission_mode, brain
@@ -201,16 +203,25 @@ def _prepare_aura_turn(
         brain.model = plan.preferred_llm
     if reasoning_mode == "fast":
         brain.temperature = plan.temperature
+        brain.thinking_level = "minimal" if norm_tier == "aura-2.0" else "low"
+    elif reasoning_mode == "verifier":
+        brain.thinking_level = "low"
     framed_prompt = f"{lang_policy}\n\n{plan.system_framing}\n\n{dispatch_prompt}"
     return framed_prompt, effective_permission, plan, norm_tier, resolved_lang
 
 
-def _build_conversation_history(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
-    """Builds a compacted, alternating-role Gemini history slice (last 16 messages)."""
+def _build_conversation_history(
+    user_id: int,
+    thread_id: str,
+    window_limit: int = 16,
+    recent_char_cap: int = 3500,
+    older_char_cap: int = 1200,
+) -> List[Dict[str, Any]]:
+    """Builds a compacted, alternating-role Gemini history slice."""
     prior_messages = aura_db.get_thread_messages(user_id, thread_id)[:-1]
     if not prior_messages:
         return []
-    window = prior_messages[-16:]
+    window = prior_messages[-max(1, int(window_limit)):]
     conv_history: List[Dict[str, Any]] = []
     total = len(window)
     for idx, m in enumerate(window):
@@ -220,7 +231,7 @@ def _build_conversation_history(user_id: int, thread_id: str) -> List[Dict[str, 
             continue
         if role == "model" and (txt.startswith("Understood. You said:") or txt.startswith("Hello! I heard you.")):
             continue
-        max_chars = 3500 if idx >= total - 4 else 1200
+        max_chars = recent_char_cap if idx >= total - 4 else older_char_cap
         if len(txt) > max_chars:
             txt = txt[:max_chars] + "\n...[trimmed for speed]"
         if conv_history and conv_history[-1]["role"] == role:
@@ -1384,7 +1395,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 display_prompt += f"\n[📎 {len(att_names)} Attachment(s): {', '.join(att_names)}]"
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
-            conv_history = _build_conversation_history(user_id, thread_id)
+            is_voice_turn = bool(body.get("voice_turn", False))
+            conv_history = (
+                _build_conversation_history(user_id, thread_id, window_limit=6, recent_char_cap=900, older_char_cap=400)
+                if is_voice_turn
+                else _build_conversation_history(user_id, thread_id)
+            )
 
             brain = _create_user_brain(user)
             byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
@@ -1442,7 +1458,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 display_prompt += f"\n[📎 {len(att_names)} Attachment(s): {', '.join(att_names)}]"
 
             aura_db.save_message(user_id, thread_id, "user", display_prompt)
-            conv_history = _build_conversation_history(user_id, thread_id)
+            is_voice_turn = bool(body.get("voice_turn", False))
+            conv_history = (
+                _build_conversation_history(user_id, thread_id, window_limit=6, recent_char_cap=900, older_char_cap=400)
+                if is_voice_turn
+                else _build_conversation_history(user_id, thread_id)
+            )
 
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
@@ -2278,6 +2299,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             routine = str(body.get("routine") or "repo_health_audit")[:64]
             target = str(body.get("target") or "")[:500]
             res = JARVIS_HUB.run_routine(user["id"], routine, target=target)
+            if isinstance(res, dict):
+                res["jarvis_status"] = JARVIS_HUB.get_status(user["id"])
             status = 423 if res.get("halted") else (200 if res.get("success", True) else 400)
             self._send_json(res, status=status)
 
@@ -2323,7 +2346,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     speed=speed,
                     commercial_only=commercial_only,
                 )
-                self._send_json({"success": True, "speech": art.to_public_dict()})
+                payload_out: Dict[str, Any] = {"success": True, "speech": art.to_public_dict()}
+                if art.raw_bytes and art.engine != "fallback_pcm" and len(art.raw_bytes) <= 450_000:
+                    import base64
+                    payload_out["audio_base64"] = base64.b64encode(art.raw_bytes).decode("ascii")
+                    payload_out["content_type"] = art.content_type
+                self._send_json(payload_out)
             except PermissionError as exc:
                 self._send_json({"success": False, "error": str(exc)}, status=403)
             except Exception as exc:
