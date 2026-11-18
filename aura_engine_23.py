@@ -45,6 +45,7 @@ class Aura23ArchitectEngine(BaseAuraModelEngine):
             "Engineering Standards:\n"
             f"{casual_rule}"
             "- Write clean, runnable, modular code with real error handling, input validation, and concise explanations.\n"
+            "- LIVE WEB APP DELIVERY: When asked to build or create a web app, calculator, dashboard, timer, game, or UI component (unless editing existing multi-file repository code), ALWAYS output a complete, self-contained single-file runnable ```html``` block (with inline `<style>` and `<script>`) directly in your reply so AURA's Live Render Studio opens an interactive preview immediately.\n"
             "- On complex build/debug prompts, organize cleanly (`## Architecture`, `## Implementation`, `## Verification`).\n"
             "- Never emit fake charts, cartoons, or filler callouts; only emit a clean chart/diagram if explicitly requested or strictly necessary."
         )

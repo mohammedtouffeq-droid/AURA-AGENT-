@@ -427,3 +427,95 @@ def test_no_robotic_understood_or_substring_hi_regression_and_key_rotation(tmp_p
     assert all("Understood. You said:" not in str(c) for c in conv)
     assert len(conv) == 1 and conv[0]["role"] == "user"
     assert "Hello creator" in conv[0]["parts"][0]["text"] and "Second question" in conv[0]["parts"][0]["text"]
+
+
+def test_cross_container_account_proof_rejects_wrong_password_and_restores_valid_user(tmp_path: Path, monkeypatch):
+    """
+    On Vercel serverless, Container B has an empty /tmp/aura.db. With a server-signed encrypted
+    `account_proof`, Container B MUST reject wrong passwords (401) and seamlessly restore the account +
+    vault ONLY when the exact original password matches scrypt verification.
+    """
+    monkeypatch.setenv("AURA_SESSION_SECRET", "test-deployment-shared-session-secret-0123456789abcdef")
+    monkeypatch.setenv("AURA_VAULT_SECRET", "test-deployment-shared-vault-secret-0123456789abcdef")
+    monkeypatch.setenv("AURA_CSRF_SECRET", "test-deployment-shared-csrf-secret-0123456789abcdef")
+    aura_db._RUNTIME_SECRETS_CACHE.clear()
+    db_a = tmp_path / "container_a.db"
+    db_b = tmp_path / "container_b.db"
+    monkeypatch.setattr(aura_db, "DB_PATH", db_a)
+    aura_db.init_database()
+
+    uname = f"student_{os.urandom(3).hex()}"
+    reg = aura_db.register_user(uname, "CollegePass99!")
+    assert reg["success"] is True
+    proof = reg.get("account_proof", "")
+    assert proof.startswith("aura_ap1.")
+    # Raw scrypt secrets must never appear plaintext in account_proof or user_vault
+    vault = aura_db.export_user_vault(reg["user"]["id"])
+    assert "CollegePass99!" not in proof and "password_hash" not in proof
+    assert "password_hash" not in json.dumps(vault) and "salt" not in json.dumps(vault)
+
+    # Save a chat thread in Container A and export signed vault
+    tid = f"th_{os.urandom(3).hex()}"
+    aura_db.create_user_thread(reg["user"]["id"], title="Calculus Notes", thread_id=tid)
+    aura_db.save_message(reg["user"]["id"], tid, "user", "Explain Bayes theorem")
+    vault = aura_db.export_user_vault(reg["user"]["id"])
+
+    # Simulate cold-start on Container B (brand-new empty SQLite)
+    monkeypatch.setattr(aura_db, "DB_PATH", db_b)
+    aura_db.init_database()
+
+    # Wrong password MUST be rejected even with valid proof + valid vault
+    bad_login = aura_db.login_user(uname, "WrongPass99!", vault_backup=vault, account_proof=proof)
+    assert bad_login["success"] is False
+
+    # Forged / tampered proof MUST be rejected
+    tampered = proof[:-4] + ("0000" if not proof.endswith("0000") else "1111")
+    forged_login = aura_db.login_user(uname, "CollegePass99!", vault_backup=vault, account_proof=tampered)
+    assert forged_login["success"] is False
+
+    # Correct password restores user AND threads/messages
+    good_login = aura_db.login_user(uname, "CollegePass99!", vault_backup=vault, account_proof=proof)
+    assert good_login["success"] is True
+    assert good_login.get("session_restored") is True
+    restored_threads = aura_db.get_user_threads(good_login["user"]["id"])
+    assert any(t["id"] == tid for t in restored_threads)
+
+
+def test_offline_tool_fallback_bundles_html_app_for_live_studio():
+    """When Gemini writes HTML/CSS/JS workspace files and hits fallback, reply must emit runnable HTML."""
+    brain = aura_brain.AuraBrain(provider="gemini", model="gemini-3-flash-preview")
+    brain.last_tools = [
+        {
+            "name": "tool_write_file",
+            "args": {
+                "filepath": "index.html",
+                "content": "<!DOCTYPE html><html><head><link rel=\"stylesheet\" href=\"style.css\"></head><body><h1>App</h1><script src=\"app.js\"></script></body></html>",
+            },
+            "output": {"success": True, "file": "index.html"},
+        },
+        {
+            "name": "tool_write_file",
+            "args": {"filepath": "style.css", "content": "body { color: white; }"},
+            "output": {"success": True, "file": "style.css"},
+        },
+        {
+            "name": "tool_write_file",
+            "args": {"filepath": "app.js", "content": "console.log('ready');"},
+            "output": {"success": True, "file": "app.js"},
+        },
+        {
+            "name": "tool_start_local_preview",
+            "args": {"directory": ".", "entry": "index.html"},
+            "output": {"success": True, "url": "http://127.0.0.1:5050/preview"},
+        },
+    ]
+    fake_history = [
+        {"role": "user", "parts": [{"text": "Build me an interactive timer app"}]},
+        {"role": "user", "parts": [{"functionResponse": {"name": "tool_start_local_preview", "response": {"output": {"success": True}}}}]},
+    ]
+    out = brain._offline_autonomous_dispatch(fake_history, [])
+    text = out["candidates"][0]["content"]["parts"][0]["text"]
+    assert "Operation completed successfully" not in text
+    assert "```html" in text
+    assert "<style>" in text and "console.log('ready');" in text
+

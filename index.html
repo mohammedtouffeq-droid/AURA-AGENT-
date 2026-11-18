@@ -326,23 +326,30 @@
             gap: 4px;
         }
 
-        .btn-signout {
+        .btn-signout,
+        .btn-logout-small {
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-subtle);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             color: var(--text-muted);
-            border-radius: 6px;
-            padding: 4px 8px;
+            border-radius: 7px;
+            padding: 4px 9px;
             font-size: 11px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.18s ease;
             flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-height: 26px;
         }
 
-        .btn-signout:hover {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-            border-color: rgba(239, 68, 68, 0.4);
+        .btn-signout:hover,
+        .btn-logout-small:hover {
+            background: rgba(255, 255, 255, 0.11);
+            color: #fafafa;
+            border-color: rgba(255, 255, 255, 0.24);
         }
 
         /* ---------------- Mobile Sidebar Drawer ---------------- */
@@ -503,7 +510,6 @@
             align-items: center;
             text-align: center;
             margin-top: 36px;
-            animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {
@@ -516,7 +522,7 @@
             font-weight: 700;
             letter-spacing: -0.7px;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, #ffffff 30%, #e2b96f 74%, #38bdf8 100%);
+            background: linear-gradient(135deg, #ffffff 35%, #d4d4d8 78%, #93c5fd 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -933,15 +939,18 @@
         /* ---------------- Auth Modal Overlay ---------------- */
         .auth-modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
+            inset: 0;
+            width: 100%;
             height: 100vh;
-            background: rgba(10, 11, 14, 0.88);
+            height: 100dvh;
+            padding: 16px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: rgba(9, 9, 11, 0.88);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             display: flex;
-            align-items: center;
+            align-items: safe center;
             justify-content: center;
             z-index: 1000;
         }
@@ -1041,14 +1050,39 @@
         .model-settings-status { min-height: 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
 
         .auth-card {
-            background: #16181e;
+            background: #121318;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
-            padding: 32px 30px;
-            width: 90%;
+            padding: 28px 26px;
+            width: 100%;
             max-width: 420px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 102, 255, 0.08);
-            animation: authFadeIn 0.25s ease-out;
+            max-height: calc(100dvh - 32px);
+            overflow-y: auto;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+            animation: authFadeIn 0.22s ease-out;
+        }
+        .auth-cap-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin: 12px 0 14px 0;
+        }
+        .auth-cap-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 6px 6px;
+            text-align: center;
+            font-size: 10.5px;
+            font-weight: 500;
+            color: #d4d4d8;
+            line-height: 1.25;
+        }
+        .auth-field-hint {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 5px;
+            line-height: 1.35;
         }
 
         @keyframes authFadeIn {
@@ -1655,8 +1689,30 @@
             .model-settings-card, .auth-card {
                 width: calc(100vw - 20px) !important;
                 max-width: calc(100vw - 20px) !important;
-                padding: 16px !important;
-                margin: 10px;
+                max-height: calc(100dvh - 24px) !important;
+                padding: 18px 16px !important;
+                margin: 0 !important;
+            }
+            .auth-cap-strip {
+                gap: 5px;
+            }
+            .auth-cap-pill {
+                font-size: 10px;
+                padding: 5px 4px;
+            }
+            .main-chat-viewport {
+                height: 100vh;
+                height: 100dvh;
+            }
+            .welcome-hero {
+                margin-top: clamp(20px, 6vh, 64px) !important;
+            }
+            .hero-minimal-chips {
+                gap: 8px;
+            }
+            .hero-chip {
+                font-size: 12px;
+                padding: 8px 12px;
             }
         }
 
@@ -1687,14 +1743,14 @@
             transform: translateY(-1px);
         }
         .nav-pill-gold {
-            border-color: var(--accent-gold-border);
-            background: linear-gradient(135deg, rgba(226, 185, 111, 0.16), rgba(56, 189, 248, 0.10));
-            color: #f7e4b4;
+            border-color: rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.06);
+            color: #f4f4f5;
         }
         .reasoning-select {
-            background: #10141f;
-            border: 1px solid rgba(226, 185, 111, 0.38);
-            color: #f7e4b4;
+            background: #14151b;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f4f4f5;
             border-radius: 999px;
             padding: 5px 10px;
             font-size: 11.5px;
@@ -2089,8 +2145,16 @@
                 text-overflow: ellipsis;
                 display: inline-block;
             }
-            .composer-popover {
-                width: calc(100vw - 24px);
+            .composer-popover,
+            .composer-popover-left,
+            .composer-popover-right {
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .input-controls-row {
+                gap: 4px;
             }
         }
 
@@ -2341,20 +2405,24 @@
                 <!-- Time-Aware Minimalist Welcome Hero -->
                 <div class="welcome-hero" id="welcomeHero">
                     <h1 class="hero-title" id="heroGreetingTitle">Good morning</h1>
-                    <p class="hero-subtitle" id="heroGreetingSubtitle">What are we building today?</p>
+                    <p class="hero-subtitle" id="heroGreetingSubtitle">Build live apps, audit threats, or solve engineering problems.</p>
                     
                     <div class="hero-minimal-chips">
-                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Build a sleek interactive calculator app in HTML and CSS')">
+                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Build a dark minimalist scientific calculator web app in HTML CSS JS')">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                            <span>Build a live web UI</span>
+                            <span>Build live web app</span>
                         </button>
-                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Inspect my workspace files and suggest architectural improvements')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            <span>Debug &amp; refactor code</span>
-                        </button>
-                        <button type="button" class="hero-chip" onclick="runJarvisRoutine('security_threat_scan'); openJarvisConsole();">
+                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Scan this UPI link for fraud risk: upi://pay?pa=kyc-update@okaxis&pn=SBI%20Alert&am=2499&tn=Verify%20KYC')">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            <span>Check security &amp; threats</span>
+                            <span>Scan UPI or scam link</span>
+                        </button>
+                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Compare SQLite vs PostgreSQL vs MongoDB write throughput and latency with real numbers')">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            <span>Benchmark &amp; live chart</span>
+                        </button>
+                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Explain recursion vs dynamic programming with a crisp real-world example')">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                            <span>Explain a concept clearly</span>
                         </button>
                     </div>
                 </div>
@@ -2482,14 +2550,14 @@
             <div style="display:flex; align-items:center; gap:8px; min-width:0;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 <div style="min-width:0;">
-                    <div id="artifactPaneTitle" style="font-size:13px; font-weight:700; color:#f7e4b4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Live Artifact</div>
+                    <div id="artifactPaneTitle" style="font-size:13px; font-weight:700; color:#f4f4f5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Live Artifact</div>
                     <div id="artifactPaneLang" style="font-size:10.5px; color:#94a3b8; font-family:var(--font-code);">html • sandboxed</div>
                 </div>
             </div>
             <button type="button" onclick="closeArtifactPane()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:4px 10px; border-radius:7px; cursor:pointer; font-size:11.5px; font-weight:600;">Close</button>
         </div>
         <div class="artifact-toolbar">
-            <button type="button" id="btnArtifactPreviewTab" onclick="switchArtifactView('preview')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(226,185,111,0.55); background:rgba(226,185,111,0.18); color:#f7e4b4; font-size:11.5px; font-weight:600; cursor:pointer;">Live Render</button>
+            <button type="button" id="btnArtifactPreviewTab" onclick="switchArtifactView('preview')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.28); background:rgba(255,255,255,0.12); color:#fafafa; font-size:11.5px; font-weight:600; cursor:pointer;">Live Render</button>
             <button type="button" id="btnArtifactSourceTab" onclick="switchArtifactView('source')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; font-weight:600; cursor:pointer;">Source Code</button>
             <button type="button" onclick="copyCurrentArtifact()" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; cursor:pointer;">Copy</button>
             <button type="button" onclick="saveCurrentArtifactToWorkspace()" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(16,185,129,0.45); background:rgba(16,185,129,0.16); color:#6ee7b7; font-size:11.5px; font-weight:600; cursor:pointer;">Save to Workspace</button>
@@ -2759,10 +2827,12 @@
         </div>
     </div>
 
-    <!-- ---------------- Enterprise Auth Modal (Instagram-Style Smooth Login & Signup) ---------------- -->
+    <!-- ---------------- Account Authentication Modal ---------------- -->
     <div class="auth-modal-overlay" id="authOverlay" style="display: none;">
-        <div class="auth-card" style="position: relative; max-width: 410px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 64px rgba(0,0,0,0.75);">
-            <button type="button" onclick="closeAuthModal()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 4px;">✕</button>
+        <div class="auth-card" style="position: relative; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 24px 64px rgba(0,0,0,0.75);">
+            <button type="button" onclick="closeAuthModal()" aria-label="Close sign in dialog" style="position: absolute; top: 14px; right: 14px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 6px; display:inline-flex; align-items:center; justify-content:center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
             <div class="auth-header">
                 <div class="auth-brand">
                     <div class="brand-logo-icon" aria-hidden="true">
@@ -2770,14 +2840,19 @@
                     </div>
                     <span class="auth-title">AURA</span>
                 </div>
-                <div class="auth-subtitle">Autonomous Workspace Account</div>
-                <p class="auth-desc" id="authStorageDesc">Sign in with your username and password to restore your saved chats and workspace, or create an account.</p>
+                <div class="auth-subtitle">Engineering &amp; Reasoning Workspace</div>
+                <p class="auth-desc" id="authStorageDesc">Sign in to keep your chats and workspace isolated to your account, or start immediately as a guest.</p>
+                <div class="auth-cap-strip">
+                    <div class="auth-cap-pill">Live App Studio</div>
+                    <div class="auth-cap-pill">TRINETRA Shield</div>
+                    <div class="auth-cap-pill">2.0 / 2.3 / 2.6 + Voice</div>
+                </div>
             </div>
 
-            <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; font-size: 12px;"></div>
+            <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; font-size: 12px;"></div>
 
             <div style="margin-bottom: 14px;">
-                <button type="button" id="btnGuestInstant" onclick="continueAsGuest()" style="width: 100%; padding: 11px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.14)); border: 1px solid rgba(16, 185, 129, 0.55); border-radius: 8px; color: #a7f3d0; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                <button type="button" id="btnGuestInstant" onclick="continueAsGuest()" style="width: 100%; padding: 11px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 8px; color: #f4f4f5; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <span>Continue as Guest</span>
                 </button>
@@ -2797,14 +2872,16 @@
             <form id="authForm" onsubmit="handleAuthSubmit(event)">
                 <div class="auth-field">
                     <label for="authUsername">Username</label>
-                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="username" required minlength="3">
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3">
+                    <div class="auth-field-hint" id="authUsernameHint" style="display:none;">3-64 characters: letters, numbers, dots, underscores, or hyphens.</div>
                 </div>
                 <div class="auth-field">
                     <label for="authPassword" style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Password</span>
-                        <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#34d399; font-size:11.5px; cursor:pointer; padding:0;">Show</button>
+                        <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#34d399; font-size:11.5px; cursor:pointer; padding:2px 4px;">Show</button>
                     </label>
                     <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="current-password" required minlength="1">
+                    <div class="auth-field-hint" id="authPasswordHint" style="display:none;">Minimum 8 characters including both letters and numbers.</div>
                 </div>
                 <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Log In</button>
             </form>
@@ -2814,7 +2891,7 @@
             </div>
 
             <div class="auth-footer-note" style="margin-top: 12px;">
-                Unique Username Enforcement • Scrypt Hashing • Private History Vault
+                Scrypt Hashing • Per-Account Vault Isolation • Signed Sessions
             </div>
         </div>
     </div>
@@ -3897,9 +3974,12 @@
                 }
                 if (data.token) authToken = data.token;
                 if (data.csrf_token) csrfToken = data.csrf_token;
+                if (data.account_proof && currentUser && currentUser.username) {
+                    saveAccountProof(currentUser.username, data.account_proof);
+                }
                 curInput.value = '';
                 newInput.value = '';
-                accountSecurityStatus.textContent = '✅ Password updated and prior sessions rotated.';
+                accountSecurityStatus.textContent = 'Password updated and prior sessions rotated.';
             } catch (err) {
                 accountSecurityStatus.textContent = 'Error: ' + err.message;
             }
@@ -4176,6 +4256,18 @@
             }
         }
 
+        function saveAccountProof(username, proof) {
+            const uname = String(username || '').trim().toLowerCase();
+            if (!uname || !proof || typeof proof !== 'string' || !proof.startsWith('aura_ap1.')) return;
+            try { localStorage.setItem('aura_acct_proof_' + uname, proof); } catch (e) {}
+        }
+
+        function loadAccountProof(username) {
+            const uname = String(username || '').trim().toLowerCase();
+            if (!uname) return '';
+            try { return localStorage.getItem('aura_acct_proof_' + uname) || ''; } catch (e) { return ''; }
+        }
+
         async function loadIsolatedUserVault(username) {
             const uname = String(username || '').trim().toLowerCase();
             if (!uname) return null;
@@ -4261,6 +4353,7 @@
                 const removeSpecific = String(opts.removeUser || '').trim().toLowerCase();
                 if (removeSpecific) {
                     localStorage.removeItem('aura_user_vault_' + removeSpecific);
+                    localStorage.removeItem('aura_acct_proof_' + removeSpecific);
                     localStorage.removeItem('aura_thread_id_' + removeSpecific);
                     sessionStorage.removeItem('aura_thread_id_' + removeSpecific);
                     await AuraVaultDB.remove(removeSpecific);
@@ -4272,9 +4365,9 @@
                 for (let i = 0; i < localStorage.length; i++) {
                     const k = localStorage.key(i);
                     if (!k) continue;
-                    if (wipeNamed && (k.startsWith('aura_user_vault_') || k.startsWith('aura_thread_id_'))) {
+                    if (wipeNamed && (k.startsWith('aura_user_vault_') || k.startsWith('aura_acct_proof_') || k.startsWith('aura_thread_id_'))) {
                         keysToDelete.push(k);
-                    } else if (k.startsWith('aura_user_vault_guest_') || k.startsWith('aura_thread_id_guest_')) {
+                    } else if (k.startsWith('aura_user_vault_guest_') || k.startsWith('aura_acct_proof_guest_') || k.startsWith('aura_thread_id_guest_')) {
                         keysToDelete.push(k);
                     }
                 }
@@ -4448,6 +4541,10 @@
             authMode = mode;
             authErrorMsg.style.display = 'none';
             const bottomRow = document.getElementById('authBottomSwitchRow');
+            const userHint = document.getElementById('authUsernameHint');
+            const pwdHint = document.getElementById('authPasswordHint');
+            if (userHint) userHint.style.display = (mode === 'register') ? 'block' : 'none';
+            if (pwdHint) pwdHint.style.display = (mode === 'register') ? 'block' : 'none';
             if (authPassword) {
                 authPassword.minLength = (mode === 'login') ? 1 : 8;
                 authPassword.placeholder = (mode === 'login') ? 'Password' : 'Password (min 8 chars, letters + numbers)';
@@ -4474,7 +4571,16 @@
             e.preventDefault();
             const u = authUsername.value.trim().toLowerCase();
             const p = authPassword.value;
-            if (!u || !p) return;
+            if (!u || !p) {
+                authErrorMsg.innerText = 'Please enter both username and password.';
+                authErrorMsg.style.display = 'block';
+                return;
+            }
+            if (authMode === 'register' && (p.length < 8 || !/[a-zA-Z]/.test(p) || !/[0-9]/.test(p))) {
+                authErrorMsg.innerText = 'Password must be at least 8 characters and include both letters and numbers.';
+                authErrorMsg.style.display = 'block';
+                return;
+            }
 
             btnAuthSubmit.disabled = true;
             btnAuthSubmit.innerText = authMode === 'login' ? 'Logging in...' : 'Creating account...';
@@ -4484,8 +4590,14 @@
 
             const parsedVault = await loadIsolatedUserVault(u);
             const loginPayload = { username: u, password: p };
-            if (parsedVault && parsedVault.username === u && parsedVault.signature) {
-                loginPayload.vault_backup = parsedVault;
+            if (authMode === 'login') {
+                const storedProof = loadAccountProof(u);
+                if (storedProof) {
+                    loginPayload.account_proof = storedProof;
+                }
+                if (parsedVault && parsedVault.username === u && parsedVault.signature) {
+                    loginPayload.vault_backup = parsedVault;
+                }
             }
 
             try {
@@ -4502,6 +4614,9 @@
                 if (res.ok && data.success && (data.user || data.token)) {
                     authToken = data.token || '';
                     csrfToken = data.csrf_token || '';
+                    if (data.account_proof) {
+                        saveAccountProof(u, data.account_proof);
+                    }
                     currentUser = Object.assign({}, data.user || { username: u }, {
                         isGuest: String(u).startsWith('guest_')
                     });
@@ -4565,7 +4680,7 @@
                     startPermissionPolling();
                 } else {
                     const fallbackHint = (authMode === 'login' && res.status === 401)
-                        ? ' No matching account on this device yet? Switch to Create Account to register or restore from backup.'
+                        ? ' Verify your username and password, or switch to Create Account if you have not registered on this device yet.'
                         : '';
                     authErrorMsg.innerText = (data.error || 'Authentication failed.') + fallbackHint;
                     authErrorMsg.style.display = 'block';
@@ -4613,6 +4728,9 @@
                     });
                     if (data.csrf_token) {
                         csrfToken = data.csrf_token;
+                    }
+                    if (data.account_proof && currentUser.username) {
+                        saveAccountProof(currentUser.username, data.account_proof);
                     }
                     restoreScopedActiveThread(currentUser.username);
                     if (data.user_vault) {
@@ -5144,6 +5262,7 @@
             chatStream.innerHTML = '';
             chatStream.appendChild(welcomeHero);
             welcomeHero.style.display = 'flex';
+            closeMobileSidebar();
             userName.innerText = 'User';
             userAvatar.innerText = 'U';
             if (typeof updateTimeGreeting === 'function') updateTimeGreeting();
@@ -5484,6 +5603,7 @@
             chatStream.innerHTML = '';
             chatStream.appendChild(welcomeHero);
             welcomeHero.style.display = 'flex';
+            closeMobileSidebar();
             userPrompt.value = '';
             userPrompt.style.height = 'auto';
             hideSlashPalette();
@@ -7361,12 +7481,14 @@
             frame.style.display = showPreview ? 'block' : 'none';
             sourcePre.style.display = showPreview ? 'none' : 'block';
             if (btnPreview) {
-                btnPreview.style.background = showPreview ? 'rgba(226,185,111,0.18)' : 'rgba(255,255,255,0.05)';
-                btnPreview.style.color = showPreview ? '#f7e4b4' : '#cbd5e1';
+                btnPreview.style.background = showPreview ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)';
+                btnPreview.style.color = showPreview ? '#fafafa' : '#a1a1aa';
+                btnPreview.style.borderColor = showPreview ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.12)';
             }
             if (btnSource) {
-                btnSource.style.background = !showPreview ? 'rgba(226,185,111,0.18)' : 'rgba(255,255,255,0.05)';
-                btnSource.style.color = !showPreview ? '#f7e4b4' : '#cbd5e1';
+                btnSource.style.background = !showPreview ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)';
+                btnSource.style.color = !showPreview ? '#fafafa' : '#a1a1aa';
+                btnSource.style.borderColor = !showPreview ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.12)';
             }
         }
 

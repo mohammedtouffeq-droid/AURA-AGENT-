@@ -652,6 +652,100 @@ def _verify_signed_session_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+def _derive_account_proof_keystream(secret_seed: str, nonce: str, username: str, length: int) -> bytes:
+    """Derives a deterministic HMAC-SHA256 stream key for obscuring encrypted client credential proofs."""
+    out = bytearray()
+    counter = 0
+    uname = str(username or "").strip().lower()
+    key_bytes = secret_seed.encode("utf-8")
+    while len(out) < length:
+        block = hmac.new(
+            key_bytes,
+            f"aura_ap1_enc:{nonce}:{uname}:{counter}".encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        out.extend(block)
+        counter += 1
+    return bytes(out[:length])
+
+
+def _issue_account_proof(username: str, password_hash: str, salt: str) -> str:
+    """
+    Issues a server-signed, stream-encrypted credential proof (`aura_ap1.<nonce>.<cipher>.<sig>`)
+    so ephemeral serverless containers can still verify the user's exact scrypt password across
+    cold starts WITHOUT ever exposing raw `password_hash` or `salt` in client storage or `user_vault`.
+    """
+    uname = str(username or "").strip().lower()
+    if not uname or not password_hash or not salt:
+        return ""
+    nonce = secrets.token_hex(12)
+    payload_bytes = json.dumps(
+        {
+            "v": 1,
+            "u": uname,
+            "h": str(password_hash),
+            "s": str(salt),
+            "ts": round(time.time(), 3),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    secret_seed = _get_or_create_secret("AURA_VAULT_SECRET", "vault_secret")
+    keystream = _derive_account_proof_keystream(secret_seed, nonce, uname, len(payload_bytes))
+    cipher_bytes = bytes(b ^ k for b, k in zip(payload_bytes, keystream))
+    cipher_b64 = base64.urlsafe_b64encode(cipher_bytes).decode("ascii").rstrip("=")
+    body = f"aura_ap1.{nonce}.{cipher_b64}"
+    sig = hmac.new(secret_seed.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{body}.{sig}"
+
+
+def _verify_and_extract_account_proof(account_proof: Any, username: str) -> Optional[Tuple[str, str]]:
+    """Verifies an `aura_ap1` proof and decrypts `(password_hash, salt)` in memory only."""
+    if not account_proof or not isinstance(account_proof, str):
+        return None
+    parts = account_proof.strip().split(".")
+    if len(parts) != 4 or parts[0] != "aura_ap1":
+        return None
+    _, nonce, cipher_b64, sig = parts
+    if not nonce or not cipher_b64 or not sig:
+        return None
+    uname = str(username or "").strip().lower()
+    secret_seed = _get_or_create_secret("AURA_VAULT_SECRET", "vault_secret")
+    body = f"aura_ap1.{nonce}.{cipher_b64}"
+    expected_sig = hmac.new(secret_seed.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected_sig, sig):
+        return None
+    try:
+        padded = cipher_b64 + "=" * (-len(cipher_b64) % 4)
+        cipher_bytes = base64.urlsafe_b64decode(padded.encode("ascii"))
+        keystream = _derive_account_proof_keystream(secret_seed, nonce, uname, len(cipher_bytes))
+        plain_bytes = bytes(b ^ k for b, k in zip(cipher_bytes, keystream))
+        data = json.loads(plain_bytes.decode("utf-8"))
+        if int(data.get("v", 0)) != 1 or str(data.get("u", "")).strip().lower() != uname:
+            return None
+        p_hash = str(data.get("h", "")).strip()
+        p_salt = str(data.get("s", "")).strip()
+        if not p_hash or not p_salt:
+            return None
+        return p_hash, p_salt
+    except Exception:
+        return None
+
+
+def get_account_proof_for_user(user_id: int) -> str:
+    """Returns a fresh signed credential proof for an authenticated user ID."""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT username, password_hash, salt FROM users WHERE id = ?", (user_id,))
+        row = c.fetchone()
+        if not row:
+            return ""
+        return _issue_account_proof(row["username"], row["password_hash"], row["salt"])
+    finally:
+        conn.close()
+
+
 def register_user(username: str, password: str) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Username and password must be strings."}
@@ -689,6 +783,7 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
         return {
             "success": True,
             "token": token,
+            "account_proof": _issue_account_proof(username, hashed, salt),
             "user": {
                 "id": user_id,
                 "username": username,
@@ -705,7 +800,12 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
         conn.close()
 
 
-def login_user(username: str, password: str, vault_backup: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def login_user(
+    username: str,
+    password: str,
+    vault_backup: Optional[Dict[str, Any]] = None,
+    account_proof: Optional[str] = None,
+) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Invalid username or password."}
     username = username.strip().lower()
@@ -722,10 +822,77 @@ def login_user(username: str, password: str, vault_backup: Optional[Dict[str, An
     row = c.fetchone()
     if not row:
         # Resilient multi-instance / serverless cold-start account restoration:
-        # If user is not yet present in this ephemeral container, but client presents a valid vault backup
+        # 1) Strict path: verify exact scrypt password via server-signed encrypted `account_proof`
+        proof_creds = _verify_and_extract_account_proof(account_proof, username) if account_proof else None
+        if account_proof and not proof_creds:
+            conn.close()
+            record_login_failure(username)
+            return {"success": False, "error": "Invalid username or password."}
+        if proof_creds:
+            stored_hash, stored_salt = proof_creds
+            ok, needs_upgrade = verify_password(password, stored_hash, stored_salt)
+            if not ok:
+                conn.close()
+                record_login_failure(username)
+                return {"success": False, "error": "Invalid username or password."}
+            eff_hash, eff_salt = hash_password(password) if needs_upgrade else (stored_hash, stored_salt)
+            disp_name = username.capitalize()
+            try:
+                c.execute(
+                    """
+                    INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
+                    VALUES (?, ?, ?, ?, ?, 'user')
+                    """,
+                    (username, eff_hash, eff_salt, disp_name, json.dumps({})),
+                )
+                new_uid = c.lastrowid
+                has_vault_threads = (
+                    isinstance(vault_backup, dict)
+                    and isinstance((vault_backup.get("payload") or {}).get("threads"), list)
+                    and len((vault_backup.get("payload") or {}).get("threads") or []) > 0
+                )
+                if not has_vault_threads:
+                    c.execute(
+                        "INSERT INTO threads (id, user_id, title, is_pinned) VALUES (?, ?, ?, 1)",
+                        (f"th_{secrets.token_hex(8)}", new_uid, "Welcome & Overview"),
+                    )
+                token, expires_at = _issue_signed_session_token(int(new_uid), username, disp_name, "user")
+                c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, new_uid, expires_at))
+                conn.commit()
+            finally:
+                conn.close()
+            restored_ok = False
+            if vault_backup and isinstance(vault_backup, dict):
+                restored_ok = restore_user_vault(vault_backup, authenticated_user_id=int(new_uid))
+            clear_login_failures(username)
+            return {
+                "success": True,
+                "token": token,
+                "account_proof": _issue_account_proof(username, eff_hash, eff_salt),
+                "user": {
+                    "id": int(new_uid),
+                    "username": username,
+                    "display_name": disp_name,
+                    "role": "user",
+                },
+                "vault_restored": restored_ok or bool(vault_backup),
+                "session_restored": True,
+            }
+
+        # 2) Legacy compatibility path (signed vault_backup without separate proof token):
+        #    NEVER accepts forged/unsigned vaults; verifies vault HMAC signature first.
         if vault_backup and isinstance(vault_backup, dict):
             vault_username = str(vault_backup.get("username", "")).strip().lower()
-            if vault_username == username:
+            v_payload = vault_backup.get("payload")
+            v_sig = str(vault_backup.get("signature", ""))
+            sig_ok = False
+            if vault_username == username and isinstance(v_payload, dict) and v_sig:
+                try:
+                    canonical = json.dumps(v_payload, sort_keys=True, separators=(",", ":"))
+                    sig_ok = hmac.compare_digest(compute_vault_signature(canonical), v_sig)
+                except Exception:
+                    sig_ok = False
+            if sig_ok:
                 conn.close()
                 reg_res = register_user(username, password)
                 if reg_res.get("success"):
@@ -735,9 +902,11 @@ def login_user(username: str, password: str, vault_backup: Optional[Dict[str, An
                     return {
                         "success": True,
                         "token": reg_res["token"],
+                        "account_proof": reg_res.get("account_proof", ""),
                         "user": reg_res["user"],
-                        "vault_restored": True
+                        "vault_restored": True,
                     }
+                return {"success": False, "error": reg_res.get("error", "Invalid username or password.")}
         conn.close()
         record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
@@ -749,10 +918,13 @@ def login_user(username: str, password: str, vault_backup: Optional[Dict[str, An
         record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
 
+    eff_hash = row["password_hash"]
+    eff_salt = row["salt"]
     if needs_upgrade:
         new_hash, new_salt = hash_password(password)
         c.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, user_id))
         conn.commit()
+        eff_hash, eff_salt = new_hash, new_salt
 
     clear_login_failures(username)
     user_role = row["role"] if "role" in row.keys() else "user"
@@ -765,6 +937,7 @@ def login_user(username: str, password: str, vault_backup: Optional[Dict[str, An
     return {
         "success": True,
         "token": token,
+        "account_proof": _issue_account_proof(row["username"], eff_hash, eff_salt),
         "user": {
             "id": user_id,
             "username": row["username"],
@@ -804,7 +977,12 @@ def change_user_password(user_id: int, current_password: str, new_password: str)
         )
         c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (fresh_token, user_id, expires_at))
         conn.commit()
-        return {"success": True, "token": fresh_token, "message": "Password updated and old sessions revoked."}
+        return {
+            "success": True,
+            "token": fresh_token,
+            "account_proof": _issue_account_proof(row["username"], new_hash, new_salt),
+            "message": "Password updated and old sessions revoked.",
+        }
     finally:
         conn.close()
 

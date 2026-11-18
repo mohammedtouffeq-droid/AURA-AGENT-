@@ -171,9 +171,15 @@ def _prepare_aura_turn(
     brain: AuraBrain,
 ) -> Tuple[str, str, Optional[EngineDispatchPlan], Optional[str], str]:
     """Applies AURA 2.0 / 2.3 / 2.6 engine profile, strict language policy, and Kill Switch guardrails."""
-    user_id = int(user["id"])
+    raw_uid = user.get("id")
+    try:
+        user_id: Any = int(raw_uid)
+    except (ValueError, TypeError):
+        user_id = str(raw_uid or "guest")
     prefs = ((user.get("settings") or {}).get("preferences") or {})
-    raw_tier = body.get("aura_model") or prefs.get("aura_model")
+    raw_tier = body.get("aura_model") or body.get("model_tier") or prefs.get("aura_model")
+    if not raw_tier and isinstance(body.get("model"), str):
+        raw_tier = AURA_MODEL_ROUTER.normalize_tier(body.get("model"))
     norm_tier = AURA_MODEL_ROUTER.normalize_tier(raw_tier) if raw_tier else None
     voice_turn = bool(body.get("voice_turn", False))
     pref_lang = str(body.get("preferred_language") or body.get("language") or "auto")
@@ -529,6 +535,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     "csrf_token": user.get("csrf_token"),
                     "storage_status": storage_status,
                     "user_vault": aura_db.export_user_vault(user["id"]),
+                    "account_proof": aura_db.get_account_proof_for_user(user["id"]),
                 })
 
         elif path.startswith("/media/"):
@@ -1097,7 +1104,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             username = str(body.get("username", ""))
             password = str(body.get("password", ""))
             vault_backup = body.get("vault_backup") if isinstance(body.get("vault_backup"), dict) else None
-            res = aura_db.login_user(username, password, vault_backup=vault_backup)
+            account_proof = str(body.get("account_proof", "") or "") or None
+            res = aura_db.login_user(username, password, vault_backup=vault_backup, account_proof=account_proof)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
                 uid = int(res["user"]["id"])
@@ -1150,6 +1158,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if relogin.get("success") and relogin.get("token"):
                 res["token"] = relogin["token"]
                 res["csrf_token"] = aura_db.compute_csrf_token(relogin["token"])
+                if relogin.get("account_proof"):
+                    res["account_proof"] = relogin["account_proof"]
                 extra.append(("Set-Cookie", self._build_session_cookie(relogin["token"])))
             self._send_json(res, status=200, extra_headers=extra)
 

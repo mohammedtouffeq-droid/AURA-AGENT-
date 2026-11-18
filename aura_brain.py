@@ -3244,12 +3244,71 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }]
                 }
 
+            written_artifacts = []
+            edited_files = []
+            preview_urls = []
+            for t_entry in (self.last_tools or []):
+                t_name = str(t_entry.get("name", ""))
+                t_args = t_entry.get("args") or {}
+                t_out = t_entry.get("output") or {}
+                if t_name == "tool_write_file" and isinstance(t_args, dict):
+                    fp = str(t_args.get("filepath") or t_out.get("file") or "output.txt")
+                    written_artifacts.append((fp, str(t_args.get("content") or "")))
+                elif t_name == "tool_edit_file" and isinstance(t_args, dict):
+                    edited_files.append(str(t_args.get("filepath") or t_out.get("file") or "edited_file"))
+                elif t_name == "tool_start_local_preview" and isinstance(t_out, dict):
+                    p_url = t_out.get("url") or t_out.get("preview_url") or t_out.get("entry")
+                    if p_url:
+                        preview_urls.append(str(p_url))
+
+            if written_artifacts or edited_files or preview_urls:
+                sections = []
+                if written_artifacts:
+                    sections.append("### Workspace Files Created\n" + "\n".join(f"- `{fp}` ({len(cnt)} bytes)" for fp, cnt in written_artifacts))
+                if edited_files:
+                    sections.append("### Files Updated\n" + "\n".join(f"- `{fp}`" for fp in edited_files))
+                html_entry = next(((fp, cnt) for fp, cnt in written_artifacts if fp.lower().endswith((".html", ".htm"))), None)
+                if html_entry:
+                    raw_html = html_entry[1]
+                    css_map = {Path(fp).name: cnt for fp, cnt in written_artifacts if fp.lower().endswith(".css")}
+                    js_map = {Path(fp).name: cnt for fp, cnt in written_artifacts if fp.lower().endswith(".js")}
+                    bundled = raw_html
+                    for css_name, css_code in css_map.items():
+                        bundled = re.sub(
+                            rf'<link[^>]+href=["\'](?:\./)?{re.escape(css_name)}["\'][^>]*>',
+                            lambda _m, c=css_code: f"<style>\n{c}\n</style>",
+                            bundled,
+                            flags=re.IGNORECASE,
+                        )
+                    for js_name, js_code in js_map.items():
+                        bundled = re.sub(
+                            rf'<script[^>]+src=["\'](?:\./)?{re.escape(js_name)}["\'][^>]*>\s*</script>',
+                            lambda _m, j=js_code: f"<script>\n{j}\n</script>",
+                            bundled,
+                            flags=re.IGNORECASE,
+                        )
+                    sections.append(f"### Live Interactive Preview\n```html\n{bundled}\n```")
+                elif written_artifacts:
+                    primary_fp, primary_cnt = written_artifacts[0]
+                    ext = Path(primary_fp).suffix.lstrip(".") or "text"
+                    sections.append(f"```{ext}\n{primary_cnt[:8000]}\n```")
+                if preview_urls:
+                    sections.append("Local Preview Entry: " + ", ".join(f"`{u}`" for u in preview_urls))
+                return {
+                    "candidates": [{
+                        "content": {
+                            "role": "model",
+                            "parts": [{"text": "\n\n".join(sections)}]
+                        }
+                    }]
+                }
+
             return {
                 "candidates": [{
                     "content": {
                         "role": "model",
                         "parts": [{
-                            "text": f"Operation completed successfully. Actions resolved and persisted into workspace."
+                            "text": "Workspace actions resolved cleanly."
                         }]
                     }
                 }]
@@ -3631,6 +3690,15 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
+        elif "upi://" in lower_q or ("upi" in lower_q and any(w in lower_q for w in ["fraud", "scam", "kyc", "phish", "verify", "risk"])):
+            return {
+                "candidates": [{
+                    "content": {
+                        "role": "model",
+                        "parts": [{"functionCall": {"name": "tool_bharatcode_top10_execute", "args": {"engine_key": "payguard_upi", "payload": user_text.strip()}}}]
+                    }
+                }]
+            }
         elif any(k in lower_q for k in ["trinetra", "gitkitty", "ashby", "learnos", "form2fact", "orvyn", "spare-gpu", "payguard", "anonymous-campus", "anonymous campus"]):
             eng_k = "trinetra"
             for candidate_k in ["trinetra", "gitkitty", "ashby", "learnos", "form2fact", "orvyn", "spare-gpu", "payguard", "anonymous"]:
@@ -3876,7 +3944,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 return json.loads(resp.read().decode())
 
         is_vercel = bool(os.environ.get("VERCEL"))
-        total_budget = (9.5 if is_vercel else 26.0) if include_tools else (7.5 if is_vercel else 18.0)
+        total_budget = (16.0 if is_vercel else 24.0) if include_tools else (14.0 if is_vercel else 18.0)
         deadline = time.monotonic() + total_budget
         primary_payload = _make_payload(compacted, use_tools=include_tools)
 
@@ -3885,7 +3953,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 remaining = deadline - time.monotonic()
                 if remaining < 2.2:
                     break
-                max_att = (8.0 if include_tools else 6.0) if is_vercel else (14.0 if include_tools else 11.0)
+                max_att = (12.0 if include_tools else 10.5) if is_vercel else (14.0 if include_tools else 12.0)
                 attempt_timeout = max(3.5, min(max_att, remaining))
                 try:
                     return _post_gemini(mod, k_val, primary_payload, attempt_timeout)
@@ -3902,10 +3970,10 @@ The unified pipeline processed your instruction across all core engines (**Time:
         if include_tools:
             salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
             salvage_payload = _make_payload(salvage_contents, use_tools=False)
-            for mod in ("gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
+            for mod in ("gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
                 for k_val in key_pool[:2]:
                     try:
-                        return _post_gemini(mod, k_val, salvage_payload, 8.5)
+                        return _post_gemini(mod, k_val, salvage_payload, 12.0)
                     except Exception:
                         continue
 
@@ -4301,7 +4369,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         loop_start = time.monotonic()
         for turn in range(max_turns):
-            if turn > 0 and (time.monotonic() - loop_start) > 8.5 and self.last_tools:
+            if turn > 0 and (time.monotonic() - loop_start) > 10.5 and self.last_tools:
                 data = self._offline_autonomous_dispatch(self.history, active_tools_decl)
             else:
                 try:
