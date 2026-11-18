@@ -543,3 +543,17 @@ def test_vercel_image_embedding_uses_portable_data_uri_and_strips_raw_json(tmp_p
     assert '"image_url"' not in embedded
 
 
+def test_offline_dispatch_ignores_injected_engine_framing_words():
+    """Engine system framing words (e.g. 'Sound genuinely human' in AURA 2.0) must NEVER hijack volume/tool dispatch."""
+    from aura_engine_20 import Aura20StudyEngine
+    plan = Aura20StudyEngine().build_dispatch_plan(1, "Explain hash maps simply for a first-year CS student.")
+    framed = f"[LANGUAGE LOCK: English]\n\n{plan.system_framing}\n\nExplain hash maps simply for a first-year CS student."
+    brain = aura_brain.AuraBrain(provider="gemini", model="gemini-3-flash-preview")
+    out = brain._offline_autonomous_dispatch([{"role": "user", "parts": [{"text": framed}]}], [])
+    parts = out["candidates"][0]["content"]["parts"]
+    assert all("functionCall" not in p for p in parts)
+    txt = " ".join(p.get("text", "") for p in parts)
+    assert "set_volume" not in txt and "Audio volume" not in txt
+
+
+

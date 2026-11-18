@@ -3314,8 +3314,24 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 }]
             }
 
+        # Strip AURA's injected framing headers ([LANGUAGE LOCK], [ENGINE PROFILE], [REASONING MODE])
+        # so system-prompt keywords like "Sound genuinely human" NEVER trigger offline tool routes.
+        raw_user_text = user_text.strip()
+        if any(tag in raw_user_text for tag in ("[LANGUAGE LOCK", "[ENGINE PROFILE", "[REASONING MODE")):
+            chunks = [c.strip() for c in re.split(r"\n{2,}", raw_user_text) if c.strip()]
+            filtered_chunks = [
+                c for c in chunks
+                if not c.startswith(("[LANGUAGE LOCK", "[ENGINE PROFILE", "[REASONING MODE"))
+                and "Communication Rules:" not in c
+                and "Engineering Standards:" not in c
+                and "Execution & Quality Directives:" not in c
+            ]
+            if filtered_chunks:
+                raw_user_text = "\n\n".join(filtered_chunks)
+        user_text = raw_user_text
+
         lower_q = user_text.lower()
-        if "news" in lower_q:
+        if re.search(r"\b(news|headlines)\b", lower_q):
             query = "breaking news"
             m = re.search(r"about\s+([a-zA-Z0-9\s]+)", lower_q)
             if m:
@@ -3328,7 +3344,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
-        elif "weather" in lower_q:
+        elif re.search(r"\b(weather|forecast|temperature)\b", lower_q):
             loc = "Telangana"
             m = re.search(r"in\s+([a-zA-Z\s]+)", lower_q)
             if m:
@@ -3394,7 +3410,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         }
                     }]
                 }
-        elif "remember" in lower_q or "save memory" in lower_q:
+        elif any(k in lower_q for k in ["remember that", "remember my", "save memory", "remember fact"]):
             return {
                 "candidates": [{
                     "content": {
@@ -3495,7 +3511,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
-        elif any(k in lower_q for k in ["volume", "sound", "awaaz", "mute", "unmute"]):
+        elif re.search(r"\b(volume|mute|unmute|awaaz)\b", lower_q) or re.search(r"\b(set|turn|lower|raise|increase|decrease|adjust|kam|badha)\b.{0,14}\bsound\b", lower_q):
             is_mute = "mute" in lower_q and "unmute" not in lower_q
             target_vol = 50
             if any(k in lower_q for k in ["low", "kam", "down"]):
@@ -3564,7 +3580,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         }
                     }]
                 }
-        elif any(k in lower_q for k in ["instagram", "insta", "story", "dm"]):
+        elif re.search(r"\b(instagram|insta)\b", lower_q):
             return {
                 "candidates": [{
                     "content": {
@@ -3995,7 +4011,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 return json.loads(resp.read().decode())
 
         is_vercel = bool(os.environ.get("VERCEL"))
-        total_budget = (16.0 if is_vercel else 24.0) if include_tools else (14.0 if is_vercel else 18.0)
+        total_budget = (22.0 if is_vercel else 24.0) if include_tools else (20.0 if is_vercel else 18.0)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
@@ -4006,7 +4022,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 remaining = deadline - time.monotonic()
                 if remaining < 2.2:
                     break
-                max_att = (12.0 if include_tools else 10.5) if is_vercel else (14.0 if include_tools else 12.0)
+                max_att = (15.0 if include_tools else 14.0) if is_vercel else (14.0 if include_tools else 12.0)
                 attempt_timeout = max(2.2, min(max_att, remaining))
                 try:
                     return _post_gemini(mod, k_val, primary_payload, attempt_timeout)

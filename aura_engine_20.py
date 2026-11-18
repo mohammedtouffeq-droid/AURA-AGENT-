@@ -14,7 +14,7 @@ class Aura20StudyEngine(BaseAuraModelEngine):
     tagline = "Fast Explanations & Everyday Clarity"
     tier_rank = 1
     default_temperature = 0.55
-    preferred_llm = "gemini-3.5-flash-lite"
+    preferred_llm = "gemini-3-flash-preview"
 
     def _compose_blueprint(
         self, prompt: str, ws_info: Dict[str, Any], reasoning_mode: str
