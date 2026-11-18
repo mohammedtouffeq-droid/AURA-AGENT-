@@ -58,7 +58,10 @@ def _audit_workspace_health(root_dir: Path = ROOT_DIR) -> Dict[str, Any]:
 
 def _audit_code_ast(target: str = "", root_dir: Path = ROOT_DIR) -> Dict[str, Any]:
     """Inspects a repository Python module via native AST for functions, docstrings, and risk calls."""
-    rel = (target or "aura_jarvis_hub.py").strip().lstrip("/\\")
+    raw_target = (target or "").strip()
+    if not raw_target or "://" in raw_target or ("." not in raw_target and "/" not in raw_target and "\\" not in raw_target):
+        raw_target = "aura_jarvis_hub.py"
+    rel = raw_target.lstrip("/\\")
     candidate = (root_dir / rel).resolve()
     try:
         candidate.relative_to(root_dir.resolve())

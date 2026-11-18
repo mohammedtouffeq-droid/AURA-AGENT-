@@ -3389,19 +3389,19 @@
         <div class="ide-drawer-panel" onclick="event.stopPropagation()">
             <div class="ide-drawer-header">
                 <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-                    <span style="font-size:18px;">💻</span>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                     <div style="min-width:0;">
                         <div style="font-size:14.5px; font-weight:700; color:#f8fafc;">AURA IDE Workbench</div>
                         <div id="ideWorkspaceSubtitle" style="font-size:11px; color:#94a3b8; font-family:var(--font-code);">Isolated Workspace • Terminal • Localhost Preview</div>
                     </div>
                 </div>
-                <button type="button" onclick="closeIdeWorkbench()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">✕ Close</button>
+                <button type="button" onclick="closeIdeWorkbench()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;">Close</button>
             </div>
 
             <div class="ide-tabs-bar">
-                <button type="button" class="ide-tab-btn" id="ideTabBtnFiles" onclick="switchIdeTab('files')">📁 Files & Editor</button>
-                <button type="button" class="ide-tab-btn active" id="ideTabBtnTerminal" onclick="switchIdeTab('terminal')">💻 Terminal & Localhost</button>
-                <button type="button" class="ide-tab-btn" id="ideTabBtnPreview" onclick="switchIdeTab('preview')">🌐 Live Preview (Desktop/Phone)</button>
+                <button type="button" class="ide-tab-btn" id="ideTabBtnFiles" onclick="switchIdeTab('files')">Files &amp; Editor</button>
+                <button type="button" class="ide-tab-btn active" id="ideTabBtnTerminal" onclick="switchIdeTab('terminal')">Terminal &amp; Localhost</button>
+                <button type="button" class="ide-tab-btn" id="ideTabBtnPreview" onclick="switchIdeTab('preview')">Live Preview (Desktop / Phone)</button>
             </div>
 
             <!-- Tab 1: Workspace Files & Code Editor -->
@@ -3410,11 +3410,11 @@
                     <div class="ide-tree-pane">
                         <div style="display:flex; gap:6px;">
                             <input id="ideGrepInput" type="search" placeholder="Search / grep workspace..." style="flex:1; background:#070a12; border:1px solid rgba(56,189,248,0.28); border-radius:7px; padding:6px 8px; color:#f8fafc; font-size:12px;">
-                            <button type="button" onclick="runIdeGrep()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(56,189,248,0.45); background:rgba(56,189,248,0.16); color:#bae6fd; font-size:11.5px; cursor:pointer;">🔍</button>
+                            <button type="button" onclick="runIdeGrep()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(56,189,248,0.45); background:rgba(56,189,248,0.16); color:#bae6fd; font-size:11.5px; cursor:pointer;">Find</button>
                         </div>
                         <div style="display:flex; gap:6px;">
                             <button type="button" onclick="createNewIdeFile()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(16,185,129,0.45); background:rgba(16,185,129,0.15); color:#6ee7b7; font-size:11.5px; font-weight:600; cursor:pointer;">+ New File</button>
-                            <button type="button" onclick="refreshIdeFileTree()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:11.5px; cursor:pointer;">↻</button>
+                            <button type="button" onclick="refreshIdeFileTree()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:11.5px; cursor:pointer;">Refresh</button>
                         </div>
                         <div id="ideGrepResults" style="display:none; font-size:11.5px; background:rgba(15,23,42,0.9); border:1px solid rgba(56,189,248,0.28); border-radius:8px; padding:6px; max-height:140px; overflow-y:auto;"></div>
                         <div id="ideFileTreeList" style="display:flex; flex-direction:column; gap:3px;"></div>
@@ -3422,10 +3422,10 @@
                     <div class="ide-editor-pane">
                         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
                             <input id="ideActiveFilePath" type="text" placeholder="e.g. demo/index.html" style="flex:1; min-width:140px; background:#070a12; border:1px solid rgba(255,255,255,0.16); border-radius:7px; padding:6px 10px; color:#f8fafc; font-family:var(--font-code); font-size:12px;">
-                            <button type="button" onclick="saveIdeFile()" style="padding:6px 12px; border-radius:7px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12px; font-weight:600; cursor:pointer;">💾 Save</button>
-                            <button type="button" onclick="previewCurrentIdeFile()" style="padding:6px 12px; border-radius:7px; border:1px solid rgba(56,189,248,0.55); background:rgba(56,189,248,0.18); color:#bae6fd; font-size:12px; font-weight:600; cursor:pointer;">▶ Preview</button>
-                            <button type="button" onclick="askAuraToEditCurrentFile()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(168,85,247,0.55); background:rgba(168,85,247,0.18); color:#e9d5ff; font-size:12px; font-weight:600; cursor:pointer;">⚡ Ask AURA</button>
-                            <button type="button" onclick="deleteIdeFile()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.14); color:#fca5a5; font-size:12px; cursor:pointer;">🗑</button>
+                            <button type="button" onclick="saveIdeFile()" style="padding:6px 12px; border-radius:7px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12px; font-weight:600; cursor:pointer;">Save</button>
+                            <button type="button" onclick="previewCurrentIdeFile()" style="padding:6px 12px; border-radius:7px; border:1px solid rgba(56,189,248,0.55); background:rgba(56,189,248,0.18); color:#bae6fd; font-size:12px; font-weight:600; cursor:pointer;">Preview</button>
+                            <button type="button" onclick="askAuraToEditCurrentFile()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(168,85,247,0.55); background:rgba(168,85,247,0.18); color:#e9d5ff; font-size:12px; font-weight:600; cursor:pointer;">Ask AURA</button>
+                            <button type="button" onclick="deleteIdeFile()" style="padding:6px 10px; border-radius:7px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.14); color:#fca5a5; font-size:12px; cursor:pointer;">Delete</button>
                         </div>
                         <textarea id="ideCodeEditor" class="ide-editor-textarea" placeholder="Select a file on the left or type code here to save into your workspace..."></textarea>
                         <div id="ideEditorStatus" style="font-size:11.5px; color:#94a3b8; font-family:var(--font-code);">Ready.</div>
@@ -3437,19 +3437,19 @@
             <div class="ide-body" id="ideTabTerminal" style="padding:12px; gap:10px;">
                 <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-radius:10px; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.25);">
                     <div style="font-size:12px; color:#cbd5e1;">
-                        <strong>🌐 Localhost & Cloud App Runner:</strong>
+                        <strong>Localhost &amp; Cloud App Runner:</strong>
                         <span id="ideShellModeBadge" style="margin-left:6px; padding:2px 8px; border-radius:999px; font-size:11px; background:rgba(16,185,129,0.16); color:#6ee7b7; border:1px solid rgba(16,185,129,0.35);">Workspace CLI Ready</span>
                     </div>
                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                        <button type="button" onclick="startIdeStaticPreview()" style="padding:6px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#a7f3d0; font-size:12px; font-weight:600; cursor:pointer;">▶ Launch Static Preview</button>
-                        <button type="button" onclick="refreshIdeDevServers()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">↻ Servers</button>
+                        <button type="button" onclick="startIdeStaticPreview()" style="padding:6px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#a7f3d0; font-size:12px; font-weight:600; cursor:pointer;">Launch Static Preview</button>
+                        <button type="button" onclick="refreshIdeDevServers()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">Servers</button>
                     </div>
                 </div>
 
                 <div id="ideServersList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
 
                 <div id="ideTerminalOutput" class="ide-terminal-output">AURA Workspace Terminal v2.0
-• Works on Phone, Play Store TWA, Vercel Cloud & Desktop Localhost!
+• Works on Phone, Play Store TWA, Vercel Cloud &amp; Desktop Localhost!
 • Built-in commands (All Users): ls | cat &lt;file&gt; | grep &lt;text&gt; | touch &lt;file&gt; [content] | edit &lt;file&gt; &lt;old&gt; =&gt; &lt;new&gt; | rm &lt;file&gt; | preview [file.html] | clear | help
 • Host Shell commands (Local Admin Unlocked in Settings): powershell / python / pytest / git / node / dev servers with auto localhost:PORT links.
 </div>
@@ -3458,7 +3458,7 @@
 
                 <form onsubmit="event.preventDefault(); runIdeTerminalCommand();" style="display:flex; gap:8px;">
                     <input id="ideTerminalInput" type="text" placeholder="Type ls, help, preview index.html, grep foo, or OS command..." autocomplete="off" style="flex:1; background:#070a12; border:1px solid rgba(56,189,248,0.4); border-radius:9px; padding:10px 12px; color:#f8fafc; font-family:var(--font-code); font-size:13px;">
-                    <button type="submit" style="padding:0 16px; border-radius:9px; border:none; background:linear-gradient(135deg, #0066ff, #06b6d4); color:#ffffff; font-weight:700; font-size:13px; cursor:pointer;">Run ↵</button>
+                    <button type="submit" style="padding:0 16px; border-radius:9px; border:none; background:linear-gradient(135deg, #0066ff, #06b6d4); color:#ffffff; font-weight:700; font-size:13px; cursor:pointer;">Run</button>
                 </form>
             </div>
 
@@ -3466,10 +3466,10 @@
             <div class="ide-body" id="ideTabPreview" style="display:none; padding:12px; gap:10px;">
                 <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
                     <input id="idePreviewPathInput" type="text" value="index.html" placeholder="Workspace HTML path (e.g. index.html)" style="flex:1; min-width:140px; background:#070a12; border:1px solid rgba(56,189,248,0.35); border-radius:8px; padding:7px 10px; color:#f8fafc; font-family:var(--font-code); font-size:12px;">
-                    <button type="button" onclick="loadWorkspaceHtmlPreview()" style="padding:7px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.55); background:rgba(56,189,248,0.2); color:#bae6fd; font-size:12px; font-weight:600; cursor:pointer;">↻ Reload</button>
-                    <button type="button" onclick="openWorkspacePreviewNewTab()" style="padding:7px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.18); color:#a7f3d0; font-size:12px; font-weight:600; cursor:pointer;">↗ Open Tab</button>
-                    <button type="button" onclick="setIdePreviewDevice('desktop')" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f8fafc; font-size:12px; cursor:pointer;">🖥️ Desktop</button>
-                    <button type="button" onclick="setIdePreviewDevice('phone')" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(168,85,247,0.45); background:rgba(168,85,247,0.16); color:#e9d5ff; font-size:12px; cursor:pointer;">📱 Phone 390px</button>
+                    <button type="button" onclick="loadWorkspaceHtmlPreview()" style="padding:7px 12px; border-radius:8px; border:1px solid rgba(56,189,248,0.55); background:rgba(56,189,248,0.2); color:#bae6fd; font-size:12px; font-weight:600; cursor:pointer;">Reload</button>
+                    <button type="button" onclick="openWorkspacePreviewNewTab()" style="padding:7px 12px; border-radius:8px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.18); color:#a7f3d0; font-size:12px; font-weight:600; cursor:pointer;">Open Tab</button>
+                    <button type="button" onclick="setIdePreviewDevice('desktop')" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f8fafc; font-size:12px; cursor:pointer;">Desktop</button>
+                    <button type="button" onclick="setIdePreviewDevice('phone')" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(168,85,247,0.45); background:rgba(168,85,247,0.16); color:#e9d5ff; font-size:12px; cursor:pointer;">Phone 390px</button>
                 </div>
                 <div class="ide-preview-frame-wrap">
                     <iframe id="idePreviewFrame" class="ide-preview-iframe" sandbox="allow-scripts allow-forms allow-modals" title="Workspace Live Preview"></iframe>

@@ -556,4 +556,30 @@ def test_offline_dispatch_ignores_injected_engine_framing_words():
     assert "set_volume" not in txt and "Audio volume" not in txt
 
 
+def test_pollinations_secondary_llm_failover_parses_openai_response():
+    """Verifies secondary zero-key cloud text failover cleanly builds a Gemini-shaped response."""
+    from unittest.mock import patch
+
+    class _MockPollResp:
+        status = 200
+        def read(self):
+            return json.dumps({
+                "choices": [{"message": {"content": "A hash map provides O(1) average lookup."}}]
+            }).encode("utf-8")
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+
+    with patch("urllib.request.urlopen", return_value=_MockPollResp()):
+        out = aura_brain.AuraBrain._try_pollinations_text_fallback(
+            [{"role": "user", "parts": [{"text": "Explain hash maps"}]}],
+            "You are AURA.",
+            timeout_s=5.0,
+        )
+    assert out is not None
+    assert "O(1)" in out["candidates"][0]["content"]["parts"][0]["text"]
+
+
+
 

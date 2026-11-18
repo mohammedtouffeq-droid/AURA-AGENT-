@@ -1364,7 +1364,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 )
                 return
             user_id = user["id"]
-            prompt = str(body.get("prompt", "")).strip()
+            prompt = str(body.get("prompt", "")).strip()[:32000]
             thread_id = str(body.get("thread_id", "default"))[:64]
             raw_attachments = body.get("attachments", [])
             attachments = raw_attachments if isinstance(raw_attachments, list) else []
@@ -1422,7 +1422,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"reply": "Session expired or not logged in.", "error": "unauthorized"}, status=401)
                 return
             user_id = user["id"]
-            prompt = str(body.get("prompt", "")).strip()
+            prompt = str(body.get("prompt", "")).strip()[:32000]
             thread_id = str(body.get("thread_id", "default"))[:64]
             raw_attachments = body.get("attachments", [])
             attachments = raw_attachments if isinstance(raw_attachments, list) else []

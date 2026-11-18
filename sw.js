@@ -1,4 +1,4 @@
-const AURA_CACHE_NAME = 'aura-core-shell-v6';
+const AURA_CACHE_NAME = 'aura-core-shell-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
