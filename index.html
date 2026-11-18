@@ -1918,6 +1918,188 @@
                 padding: 18px 14px;
             }
         }
+
+        /* ---------------- Minimalist Luxury V6 Overrides (Anti-Emoji + Antigravity Composer) ---------------- */
+        .welcome-hero {
+            margin-top: clamp(44px, 13vh, 130px);
+        }
+        .hero-title {
+            font-size: clamp(28px, 4vw, 38px);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+        }
+        .hero-subtitle {
+            font-size: 14.5px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        .hero-minimal-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            max-width: 620px;
+        }
+        .hero-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d1d5db;
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.16s ease;
+        }
+        .hero-chip:hover {
+            background: rgba(226, 185, 111, 0.1);
+            border-color: rgba(226, 185, 111, 0.42);
+            color: #f9fafb;
+            transform: translateY(-1px);
+        }
+        .input-dock-card {
+            position: relative;
+        }
+        .input-right-tools {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .composer-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 29px;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            color: #d1d5db;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+        .composer-pill-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(226, 185, 111, 0.45);
+            color: #f9fafb;
+        }
+        .jarvis-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            flex-shrink: 0;
+        }
+        .jarvis-status-dot.halted {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+        }
+        .composer-popover {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            width: 286px;
+            max-width: calc(100vw - 24px);
+            background: rgba(14, 17, 25, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(16px);
+            z-index: 60;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .composer-popover.open {
+            display: flex;
+        }
+        .composer-popover-left {
+            left: 0;
+        }
+        .composer-popover-right {
+            right: 0;
+        }
+        .popover-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: var(--text-subtle);
+            padding: 2px 4px;
+        }
+        .popover-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 9px;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.03);
+            color: #e5e7eb;
+            font-size: 12.5px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .popover-item:hover {
+            background: rgba(226, 185, 111, 0.12);
+            border-color: rgba(226, 185, 111, 0.35);
+            color: #ffffff;
+        }
+        .nav-icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .nav-icon-btn:hover {
+            color: #f9fafb;
+            border-color: rgba(226, 185, 111, 0.4);
+            background: rgba(255, 255, 255, 0.07);
+        }
+        @media (max-width: 560px) {
+            .composer-pill-label-hide-xs {
+                display: none;
+            }
+            .input-left-tools, .input-right-tools {
+                gap: 3px;
+            }
+            .btn-dock-icon {
+                width: 26px;
+                height: 26px;
+            }
+            .composer-pill-btn {
+                padding: 0 7px;
+                gap: 4px;
+                height: 27px;
+                font-size: 11px;
+            }
+            #activeModelLabel {
+                max-width: 78px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: inline-block;
+            }
+            .composer-popover {
+                width: calc(100vw - 24px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1946,8 +2128,10 @@
         <div class="sidebar-section-switcher" style="display:none;" aria-hidden="true"></div>
         <div class="sidebar-header">
             <div class="brand-badge">
-                <div class="brand-logo-icon">⚡</div>
-                <span>AURA Agent</span>
+                <div class="brand-logo-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <span>AURA</span>
             </div>
         </div>
 
@@ -1956,28 +2140,16 @@
             <span style="font-size: 11px; color: var(--text-subtle);">Ctrl+K</span>
         </button>
 
-        <button class="btn-new-chat sidebar-pill-sovereign" id="btnSidebarVoiceCall" onclick="openVoiceCallHud(); closeMobileSidebar();">
-            <span>🎙️ Live Voice HUD</span>
-            <span style="font-size: 10px; color: var(--accent-gold);">Duplex Call</span>
-        </button>
-
-        <button class="btn-new-chat sidebar-pill-sovereign" id="btnSidebarIdeWorkbench" onclick="openIdeWorkbench('terminal'); closeMobileSidebar();">
-            <span>💻 IDE &amp; Live Preview</span>
-            <span style="font-size: 10px; color: #7dd3fc;">Files • Localhost</span>
-        </button>
-
-        <button class="btn-new-chat sidebar-pill-sovereign" id="btnSidebarJarvisConsole" onclick="openJarvisConsole(); closeMobileSidebar();">
-            <span>🛡️ JARVIS &amp; Nexus Hubs</span>
-            <span style="font-size: 10px; color: #6ee7b7;">Safe Ops • Hubs</span>
-        </button>
-
         <div class="threads-scroll" id="threadsContainer">
             <div class="thread-group-title" style="display:flex; align-items:center; justify-content:space-between;">
                 <span>Recent Chats <span class="thread-count-badge" id="threadCountBadge">0</span></span>
-                <button type="button" onclick="loadThreads(true)" title="Refresh & sync saved chats" style="background:none; border:none; color:#7dd3fc; cursor:pointer; font-size:11px; padding:0;">↻ Sync</button>
+                <button type="button" onclick="loadThreads(true)" title="Refresh saved chats" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:11px; padding:0; display:inline-flex; align-items:center; gap:4px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <span>Sync</span>
+                </button>
             </div>
             <div class="sidebar-search-row">
-                <input type="search" id="threadSearchInput" placeholder="Search 100+ saved chats..." oninput="filterThreadsList(this.value)" autocomplete="off">
+                <input type="search" id="threadSearchInput" placeholder="Search chats..." oninput="filterThreadsList(this.value)" autocomplete="off">
             </div>
             <div id="threadsList">
                 <div style="font-size: 12px; color: var(--text-subtle); padding: 8px 10px;">Loading history...</div>
@@ -1990,11 +2162,13 @@
                     <div class="user-avatar-circle" id="userAvatar">U</div>
                     <div class="user-text-col">
                         <div class="user-display-name" id="userName">User</div>
-                        <div class="user-status-pill">● Online</div>
+                        <div class="user-status-pill">Active</div>
                     </div>
                 </div>
                 <div style="display:flex; gap:6px; align-items:center;">
-                    <button class="btn-logout-small" id="btnAccountSettings" onclick="openModelSettings()" title="Model & Account Settings">⚙️</button>
+                    <button class="btn-logout-small" id="btnAccountSettings" onclick="openModelSettings()" title="Settings &amp; Appearance" aria-label="Settings">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
                     <button class="btn-logout-small" id="btnSignOut" onclick="logoutUser()" title="Sign Out">Sign Out</button>
                 </div>
             </div>
@@ -2003,47 +2177,23 @@
 
     <!-- ---------------- Main Chat Viewport ---------------- -->
     <main class="main-chat-viewport">
-        <!-- Top Navbar -->
+        <!-- Minimal Top Header -->
         <header class="top-navbar">
             <div class="navbar-left">
                 <button class="btn-mobile-menu" id="btnMobileMenu" onclick="toggleMobileSidebar()" aria-label="Toggle Navigation">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
-                <div class="model-picker-pill">
-                    <button id="modelSettingsOpen" type="button" onclick="openModelSettings()" style="border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
-                        <span>⚡ AURA</span>
-                        <span id="activeModelLabel" class="nav-pill-sub" style="font-size: 11px; color: var(--accent-gold);">• Sovereign Core</span>
-                    </button>
+                <div style="display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:14px; letter-spacing:-0.02em; color:#f3f4f6;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>AURA</span>
                 </div>
-                <select id="reasoningModeSelect" class="reasoning-select nav-desktop-only" aria-label="Reasoning Mode" title="Select Reasoning Mode">
-                    <option value="fast">⚡ Fast Core</option>
-                    <option value="architect">🏛️ Architect Mode</option>
-                    <option value="verifier">🔍 Verifier Mode</option>
-                </select>
-                <button type="button" id="btnNavbarVoiceCall" class="nav-pill-btn nav-pill-gold" onclick="openVoiceCallHud()" title="Launch Full-Duplex Voice Call HUD">
-                    <span>🎙️ Voice</span>
-                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.9;">Live Call</span>
-                </button>
-                <button type="button" id="btnNavbarIde" class="nav-pill-btn" onclick="openIdeWorkbench('terminal')" title="Open IDE Workbench and Live Preview">
-                    <span>💻 IDE</span>
-                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.85;">Workspace</span>
-                </button>
-                <button type="button" id="btnNavbarJarvis" class="nav-pill-btn nav-desktop-only" onclick="openJarvisConsole()" title="Open JARVIS Automations &amp; Nexus Engines">
-                    <span>🛡️ JARVIS</span>
-                    <span class="nav-pill-sub" style="font-size: 10.5px; opacity: 0.85;">Command</span>
-                </button>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-                <div id="spaceWarpBadge" style="font-family: var(--font-code); font-size: 10.5px; padding: 3px 9px; border-radius: 999px; background: rgba(226, 185, 111, 0.08); border: 1px solid rgba(226, 185, 111, 0.25); color: #e2b96f;">
-                    🌌 1.0x • 0°
-                </div>
-                <div class="mode-toggle-chip nav-desktop-only" id="globalExecutionChip">
-                    <span>●</span>
-                    <span class="nav-pill-sub">Auto-Pilot</span>
-                </div>
-                <button type="button" id="btnGlobalKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()" title="Emergency Hardware &amp; Automation Kill Switch">
-                    <span id="killSwitchDot">●</span>
-                    <span id="killSwitchLabel">ARMED</span>
+                <button type="button" class="nav-icon-btn" onclick="openVoiceCallHud()" title="Open Live Voice Call" aria-label="Open Live Voice Call">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
+                </button>
+                <button type="button" class="nav-icon-btn" onclick="openModelSettings()" title="Settings &amp; Appearance" aria-label="Settings">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
             </div>
         </header>
@@ -2052,39 +2202,83 @@
         <div class="chat-stream-container" id="chatContainer">
             <div class="chat-content-width" id="chatStream">
                 
-                <!-- Sovereign Welcome Hero (4 Disciplined Pillars) -->
+                <!-- Time-Aware Minimalist Welcome Hero -->
                 <div class="welcome-hero" id="welcomeHero">
-                    <h1 class="hero-title">AURA Sovereign AI Operating System</h1>
-                    <p class="hero-subtitle">Champagne-grade multimodal intelligence: Full-Duplex Voice Call, Live Claude-Style Artifacts &amp; IDE, Architectural Reasoning, and JARVIS Safe Autonomy with Kill-Switch Guardrails.</p>
+                    <h1 class="hero-title" id="heroGreetingTitle">Good morning</h1>
+                    <p class="hero-subtitle" id="heroGreetingSubtitle">What are we building today?</p>
                     
-                    <div class="starter-cards-grid">
-                        <div class="starter-card hero-card-luxury" id="heroCardVoiceCall" onclick="openVoiceCallHud()">
-                            <div class="starter-card-title" style="color: #f7e4b4;">🎙️ Live Full-Duplex Voice Call</div>
-                            <div class="starter-card-desc">Hands-free acoustic orb HUD with continuous voice dialogue, instant interruption &amp; real-time AI speech synthesis.</div>
-                        </div>
-                        <div class="starter-card hero-card-luxury" id="heroCardIdeArtifacts" onclick="openIdeWorkbench('terminal')">
-                            <div class="starter-card-title" style="color: #93c5fd;">💻 IDE Workbench &amp; Live Artifacts</div>
-                            <div class="starter-card-desc">Sandboxed live HTML/UI split-pane rendering, isolated file workspace, terminal &amp; 390px mobile preview.</div>
-                        </div>
-                        <div class="starter-card hero-card-luxury" id="heroCardJarvis" onclick="openJarvisConsole()">
-                            <div class="starter-card-title" style="color: #6ee7b7;">🛡️ JARVIS Automations &amp; Kill Switch</div>
-                            <div class="starter-card-desc">Repository health audits, TRINETRA cyber defense, AST reviews &amp; instant tenant-scoped Emergency Halt control.</div>
-                        </div>
-                        <div class="starter-card hero-card-luxury" id="heroCardArchitect" onclick="activateArchitectHub()">
-                            <div class="starter-card-title" style="color: #ddd6fe;">🏛️ Sovereign Architect &amp; 10-Nexus Hubs</div>
-                            <div class="starter-card-desc">Deep architectural reasoning mode + unified access to TRINETRA, Antigravity OS Bridge &amp; 10-System Omni-Core.</div>
-                        </div>
+                    <div class="hero-minimal-chips">
+                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Build a sleek interactive calculator app in HTML and CSS')">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            <span>Build a live web UI</span>
+                        </button>
+                        <button type="button" class="hero-chip" onclick="sendQuickPrompt('Inspect my workspace files and suggest architectural improvements')">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <span>Debug &amp; refactor code</span>
+                        </button>
+                        <button type="button" class="hero-chip" onclick="runJarvisRoutine('security_threat_scan'); openJarvisConsole();">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span>Check security &amp; threats</span>
+                        </button>
                     </div>
                 </div>
 
             </div>
         </div>
 
-        <!-- Floating Bottom Input Dock -->
+        <!-- Floating Bottom Input Dock (Antigravity-Style Model Left + JARVIS Right) -->
         <div class="bottom-dock-wrapper">
             <div class="slash-palette" id="slashCommandPalette" style="display: none;" role="listbox" aria-label="AURA Slash Commands"></div>
             <div class="input-dock-card" id="inputDockCard">
-                
+
+                <!-- Popover Left: Model & Reasoning Mode Switcher -->
+                <div class="composer-popover composer-popover-left" id="composerModelPopover" role="dialog" aria-label="Model and Reasoning Selection">
+                    <div class="popover-section-title">Active Model</div>
+                    <select id="quickModelSelect" onchange="applyQuickModelSelection(this.value)" style="width:100%; background:#090b11; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:7px 9px; color:#f3f4f6; font-size:12.5px;">
+                        <option value="gemini:gemini-3.5-flash-lite">Gemini 3.5 Flash Lite</option>
+                        <option value="gemini:gemini-flash-lite-latest">Gemini Flash Latest</option>
+                    </select>
+                    <div class="popover-section-title" style="margin-top:4px;">Reasoning Mode</div>
+                    <select id="reasoningModeSelect" class="reasoning-select" style="width:100%; border-radius:8px; padding:7px 9px; font-size:12.5px;" aria-label="Reasoning Mode">
+                        <option value="fast">Fast Core (Balanced Speed)</option>
+                        <option value="architect">Architect Mode (Structured Plan)</option>
+                        <option value="verifier">Verifier Mode (Strict Security Audit)</option>
+                    </select>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); openModelSettings();" style="margin-top:2px;">
+                        <span>All Model &amp; Ollama Settings</span>
+                        <span style="color:var(--text-subtle); font-size:11px;">Open</span>
+                    </button>
+                </div>
+
+                <!-- Popover Right: JARVIS Autonomy & Guardrails -->
+                <div class="composer-popover composer-popover-right" id="composerJarvisPopover" role="dialog" aria-label="JARVIS Controls">
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 4px;">
+                        <span class="popover-section-title" style="padding:0;">JARVIS Control</span>
+                        <span id="jarvisPopoverStatusBadge" style="font-size:10.5px; font-family:var(--font-code); color:#6ee7b7;">ARMED</span>
+                    </div>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('repo_health_audit'); openJarvisConsole();">
+                        <span>Workspace Health Audit</span>
+                        <span style="font-size:11px; color:#93c5fd;">Run</span>
+                    </button>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('security_threat_scan'); openJarvisConsole();">
+                        <span>Cyber &amp; UPI Threat Scan</span>
+                        <span style="font-size:11px; color:#e2b96f;">Run</span>
+                    </button>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('code_ast_review'); openJarvisConsole();">
+                        <span>Code AST Quality Review</span>
+                        <span style="font-size:11px; color:#c4b5fd;">Run</span>
+                    </button>
+                    <button type="button" id="btnGlobalKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()" style="width:100%; justify-content:space-between; border-radius:9px; padding:8px 10px;">
+                        <span style="display:inline-flex; align-items:center; gap:6px;"><span id="killSwitchDot">●</span> Kill Switch</span>
+                        <span id="killSwitchLabel">ARMED</span>
+                    </button>
+                    <div style="display:flex; gap:6px; margin-top:2px;">
+                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openJarvisConsole();">Logs</button>
+                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openIdeWorkbench('terminal');">AI Files</button>
+                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openFlagshipHub('bharatcode10');">Nexus</button>
+                    </div>
+                </div>
+
                 <!-- Attached Files Chips Preview -->
                 <div class="attachment-chips-row" id="attachmentChips" style="display: none;"></div>
 
@@ -2092,40 +2286,48 @@
                     class="main-textarea" 
                     id="userPrompt" 
                     rows="1" 
-                    placeholder="Message AURA or type / for commands (Enter to send, Shift+Enter for new line)..."
+                    placeholder="Ask AURA anything (type / for commands)..."
                 ></textarea>
                 
                 <div class="input-controls-row">
                     <div class="input-left-tools">
                         <input type="file" id="filePicker" multiple style="display: none;" onchange="handleFileSelect(event)">
-                        <button class="btn-dock-icon" id="btnAttachFile" title="Attach files or images (drag-and-drop supported)" onclick="document.getElementById('filePicker').click()">
+                        <button class="btn-dock-icon" id="btnAttachFile" title="Attach files or images" onclick="document.getElementById('filePicker').click()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         </button>
-                        <button class="btn-dock-icon" id="btnVoiceInput" title="Voice to Text: Speak your prompt" onclick="toggleVoiceInput(event)">
+                        <button type="button" class="composer-pill-btn" id="btnComposerModelMenu" onclick="toggleComposerPopover('model', event)" title="Switch Model &amp; Reasoning Mode">
+                            <span id="activeModelLabel" style="font-size:12px;">Gemini 3.5 Flash Lite</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <button class="btn-dock-icon" id="btnSlashPalette" type="button" title="Slash Commands" onclick="toggleSlashPaletteFromButton()" style="font-family: ui-monospace, monospace; font-weight: 700; font-size: 13px; color: var(--text-muted);">
+                            /
+                        </button>
+                    </div>
+
+                    <div class="input-right-tools">
+                        <button type="button" class="composer-pill-btn" id="btnComposerJarvis" onclick="toggleComposerPopover('jarvis', event)" title="JARVIS Automations &amp; Safety Kill Switch">
+                            <span class="jarvis-status-dot" id="composerJarvisDot"></span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span class="composer-pill-label-hide-xs">JARVIS</span>
+                        </button>
+                        <button class="btn-dock-icon" id="btnVoiceInput" title="Voice Dictation" onclick="toggleVoiceInput(event)">
                             <svg id="micIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
                                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                 <line x1="12" y1="19" x2="12" y2="22"/>
                             </svg>
                         </button>
-                        <button class="btn-dock-icon" id="btnStartVoiceCall" type="button" title="Live Duplex Voice Call (ChatGPT-Style Orb)" onclick="openVoiceCallHud()" style="color: var(--accent-gold);">
-                            🎧
+                        <button class="btn-dock-icon" id="btnStartVoiceCall" type="button" title="Live Voice Conversation" onclick="openVoiceCallHud()" style="color: var(--accent-gold);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
                         </button>
-                        <button class="btn-dock-icon" id="btnSlashPalette" type="button" title="Browse AURA Slash Commands (/help, /goal, /plan, /brightness, /nexus)" onclick="toggleSlashPaletteFromButton()" style="font-family: ui-monospace, monospace; font-weight: 800; font-size: 13px; color: #7dd3fc;">
-                            /
-                        </button>
-                        <button class="btn-dock-icon" title="AURA asks before running pipeline actions" style="color: var(--text-muted);">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <button class="btn-send-circle" id="btnSend" title="Send message (Enter)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </button>
                     </div>
-
-                    <button class="btn-send-circle" id="btnSend" title="Send message (Enter)">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                    </button>
                 </div>
             </div>
             <div class="dock-disclaimer">
-                AURA Agent • Sovereign AI Operating System • Kill-Switch &amp; Sandbox Guardrails Active
+                AURA can inspect files, generate code, and run workspace actions with active safety guardrails.
             </div>
         </div>
     </main>
@@ -2134,19 +2336,19 @@
     <aside class="artifact-split-pane" id="artifactSplitPane" aria-label="Live Artifact Workspace">
         <div class="artifact-header">
             <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-                <span style="font-size:15px;">✨</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                 <div style="min-width:0;">
                     <div id="artifactPaneTitle" style="font-size:13px; font-weight:700; color:#f7e4b4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Live Artifact</div>
                     <div id="artifactPaneLang" style="font-size:10.5px; color:#94a3b8; font-family:var(--font-code);">html • sandboxed</div>
                 </div>
             </div>
-            <button type="button" onclick="closeArtifactPane()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:4px 10px; border-radius:7px; cursor:pointer; font-size:11.5px; font-weight:600;">✕ Close</button>
+            <button type="button" onclick="closeArtifactPane()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:4px 10px; border-radius:7px; cursor:pointer; font-size:11.5px; font-weight:600;">Close</button>
         </div>
         <div class="artifact-toolbar">
-            <button type="button" id="btnArtifactPreviewTab" onclick="switchArtifactView('preview')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(226,185,111,0.55); background:rgba(226,185,111,0.18); color:#f7e4b4; font-size:11.5px; font-weight:600; cursor:pointer;">▶ Live Render</button>
-            <button type="button" id="btnArtifactSourceTab" onclick="switchArtifactView('source')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; font-weight:600; cursor:pointer;">{ } Source Code</button>
-            <button type="button" onclick="copyCurrentArtifact()" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; cursor:pointer;">📋 Copy</button>
-            <button type="button" onclick="saveCurrentArtifactToWorkspace()" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(16,185,129,0.45); background:rgba(16,185,129,0.16); color:#6ee7b7; font-size:11.5px; font-weight:600; cursor:pointer;">💾 Save to IDE</button>
+            <button type="button" id="btnArtifactPreviewTab" onclick="switchArtifactView('preview')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(226,185,111,0.55); background:rgba(226,185,111,0.18); color:#f7e4b4; font-size:11.5px; font-weight:600; cursor:pointer;">Live Render</button>
+            <button type="button" id="btnArtifactSourceTab" onclick="switchArtifactView('source')" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; font-weight:600; cursor:pointer;">Source Code</button>
+            <button type="button" onclick="copyCurrentArtifact()" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; cursor:pointer;">Copy</button>
+            <button type="button" onclick="saveCurrentArtifactToWorkspace()" style="padding:5px 10px; border-radius:7px; border:1px solid rgba(16,185,129,0.45); background:rgba(16,185,129,0.16); color:#6ee7b7; font-size:11.5px; font-weight:600; cursor:pointer;">Save to Workspace</button>
         </div>
         <div class="artifact-body">
             <iframe id="artifactPreviewFrame" class="artifact-preview-frame" sandbox="allow-scripts" title="Sandboxed Live Artifact Preview"></iframe>
@@ -2154,33 +2356,33 @@
         </div>
     </aside>
 
-    <!-- ---------------- ChatGPT-Style Full-Duplex Voice Call HUD ---------------- -->
+    <!-- ---------------- Full-Duplex Voice Call HUD ---------------- -->
     <div class="voice-hud-overlay" id="voiceCallOverlay" role="dialog" aria-modal="true" aria-label="AURA Live Voice HUD">
         <div class="voice-hud-card" onclick="event.stopPropagation()">
             <div style="width:100%; display:flex; align-items:center; justify-content:space-between;">
                 <div>
-                    <div style="font-size:14.5px; font-weight:700; color:#f7e4b4;">AURA Live Voice HUD</div>
+                    <div style="font-size:14.5px; font-weight:700; color:#f7e4b4;">AURA Voice Mode</div>
                     <div id="voiceHudStateLabel" style="font-size:11.5px; color:#7dd3fc; font-family:var(--font-code);">STANDBY • Click Start Call or Type</div>
                 </div>
-                <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">✕ Close</button>
+                <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
             </div>
 
             <canvas id="voiceCallOrb" class="voice-orb-canvas" width="220" height="220"></canvas>
 
             <div id="voiceHudTranscript" class="voice-transcript-box">
-                Say <strong>"Hello AURA"</strong> or type below to hold a low-latency spoken dialogue with TTS synthesis and instant barge-in interruption.
+                Say <strong>"Hello AURA"</strong> or type below to start a spoken dialogue with voice playback and interruption support.
             </div>
 
             <form onsubmit="event.preventDefault(); sendVoiceHudTextTurn();" style="width:100%; display:flex; gap:8px;">
-                <input id="voiceHudTextInput" type="text" placeholder="Type voice turn (mic-free fallback)..." autocomplete="off" style="flex:1; background:#070a12; border:1px solid rgba(226,185,111,0.38); border-radius:9px; padding:9px 12px; color:#f8fafc; font-size:13px;">
+                <input id="voiceHudTextInput" type="text" placeholder="Type voice turn..." autocomplete="off" style="flex:1; background:#070a12; border:1px solid rgba(226,185,111,0.38); border-radius:9px; padding:9px 12px; color:#f8fafc; font-size:13px;">
                 <button type="submit" style="padding:0 14px; border-radius:9px; border:none; background:linear-gradient(135deg, #e2b96f, #0066ff); color:#090a0e; font-weight:700; font-size:12.5px; cursor:pointer;">Speak Turn</button>
             </form>
 
             <div style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
-                <button type="button" id="btnVoiceCallToggleMic" onclick="toggleVoiceCallSession()" style="padding:8px 14px; border-radius:999px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12px; font-weight:700; cursor:pointer;">🎙️ Start Call</button>
-                <button type="button" id="btnVoiceCallMute" onclick="toggleVoiceCallMute()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">🔇 Mute</button>
-                <button type="button" onclick="interruptVoicePlayback()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(245,158,11,0.45); background:rgba(245,158,11,0.16); color:#fde68a; font-size:12px; cursor:pointer;">✋ Interrupt</button>
-                <button type="button" onclick="toggleGlobalKillSwitch()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(239,68,68,0.55); background:rgba(239,68,68,0.18); color:#fecaca; font-size:12px; font-weight:700; cursor:pointer;">🛑 Kill Switch</button>
+                <button type="button" id="btnVoiceCallToggleMic" onclick="toggleVoiceCallSession()" style="padding:8px 14px; border-radius:999px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12px; font-weight:700; cursor:pointer;">Start Call</button>
+                <button type="button" id="btnVoiceCallMute" onclick="toggleVoiceCallMute()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">Mute</button>
+                <button type="button" onclick="interruptVoicePlayback()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(245,158,11,0.45); background:rgba(245,158,11,0.16); color:#fde68a; font-size:12px; cursor:pointer;">Interrupt</button>
+                <button type="button" onclick="toggleGlobalKillSwitch()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(239,68,68,0.55); background:rgba(239,68,68,0.18); color:#fecaca; font-size:12px; font-weight:700; cursor:pointer;">Kill Switch</button>
             </div>
         </div>
     </div>
@@ -2190,40 +2392,40 @@
         <div class="jarvis-panel" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.1);">
                 <div>
-                    <div style="font-size:16px; font-weight:700; color:#f7e4b4;">🛡️ JARVIS Automations &amp; Emergency Kill Switch</div>
-                    <div id="jarvisStatusBanner" style="font-size:11.5px; color:#6ee7b7; font-family:var(--font-code); margin-top:2px;">SYSTEM ARMED • Safe Per-Tenant Guardrails Active</div>
+                    <div style="font-size:16px; font-weight:700; color:#f7e4b4;">JARVIS Automations &amp; Safety Guardrails</div>
+                    <div id="jarvisStatusBanner" style="font-size:11.5px; color:#6ee7b7; font-family:var(--font-code); margin-top:2px;">SYSTEM ARMED • Per-Tenant Guardrails Active</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button type="button" id="btnJarvisPanelKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()">🛑 ENGAGE KILL SWITCH</button>
-                    <button type="button" onclick="closeJarvisConsole()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">✕ Close</button>
+                    <button type="button" id="btnJarvisPanelKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()">ENGAGE KILL SWITCH</button>
+                    <button type="button" onclick="closeJarvisConsole()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
                 </div>
             </div>
 
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; align-items:center;">
                 <input id="jarvisTargetInput" type="text" placeholder="Optional routine target (e.g. coderx_engine.py, Hyderabad, or UPI URI)..." style="flex:1; min-width:220px; background:#070a12; border:1px solid rgba(226,185,111,0.32); border-radius:9px; padding:8px 12px; color:#f8fafc; font-size:12.5px;">
-                <button type="button" onclick="syncJarvisStatus()" style="padding:8px 12px; border-radius:9px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">↻ Refresh Telemetry</button>
+                <button type="button" onclick="syncJarvisStatus()" style="padding:8px 12px; border-radius:9px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">Refresh Telemetry</button>
             </div>
 
             <div class="jarvis-routines-grid">
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#93c5fd;">🩺 Workspace Health Audit</div>
+                    <div style="font-size:13px; font-weight:700; color:#93c5fd;">Workspace Health Audit</div>
                     <div style="font-size:11.5px; color:#94a3b8;">Scans all Python modules via AST, verifies secret hygiene &amp; inventories test suites.</div>
-                    <button type="button" onclick="runJarvisRoutine('repo_health_audit')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(56,189,248,0.5); background:rgba(56,189,248,0.16); color:#bae6fd; font-size:11.5px; font-weight:600; cursor:pointer;">▶ Run Health Audit</button>
+                    <button type="button" onclick="runJarvisRoutine('repo_health_audit')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(56,189,248,0.5); background:rgba(56,189,248,0.16); color:#bae6fd; font-size:11.5px; font-weight:600; cursor:pointer;">Run Health Audit</button>
                 </div>
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#fde68a;">🛡️ Security &amp; UPI Threat Scan</div>
+                    <div style="font-size:13px; font-weight:700; color:#fde68a;">Security &amp; UPI Threat Scan</div>
                     <div style="font-size:11.5px; color:#94a3b8;">Dispatches TRINETRA Cyber Forensics + PayGuard UPI phishing detector on payload.</div>
-                    <button type="button" onclick="runJarvisRoutine('security_threat_scan')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(245,158,11,0.5); background:rgba(245,158,11,0.16); color:#fde68a; font-size:11.5px; font-weight:600; cursor:pointer;">▶ Run Security Scan</button>
+                    <button type="button" onclick="runJarvisRoutine('security_threat_scan')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(245,158,11,0.5); background:rgba(245,158,11,0.16); color:#fde68a; font-size:11.5px; font-weight:600; cursor:pointer;">Run Security Scan</button>
                 </div>
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#d8b4fe;">🔍 Native Code AST Review</div>
+                    <div style="font-size:13px; font-weight:700; color:#d8b4fe;">Native Code AST Review</div>
                     <div style="font-size:11.5px; color:#94a3b8;">Audits docstring coverage, function counts &amp; unsafe call patterns via Python AST.</div>
-                    <button type="button" onclick="runJarvisRoutine('code_ast_review')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(168,85,247,0.5); background:rgba(168,85,247,0.16); color:#e9d5ff; font-size:11.5px; font-weight:600; cursor:pointer;">▶ Run AST Review</button>
+                    <button type="button" onclick="runJarvisRoutine('code_ast_review')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(168,85,247,0.5); background:rgba(168,85,247,0.16); color:#e9d5ff; font-size:11.5px; font-weight:600; cursor:pointer;">Run AST Review</button>
                 </div>
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#6ee7b7;">📡 Executive Briefing</div>
+                    <div style="font-size:13px; font-weight:700; color:#6ee7b7;">Executive Briefing</div>
                     <div style="font-size:11.5px; color:#94a3b8;">Synthesizes live weather, AI headlines &amp; workspace telemetry for your city target.</div>
-                    <button type="button" onclick="runJarvisRoutine('executive_briefing')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(16,185,129,0.5); background:rgba(16,185,129,0.16); color:#a7f3d0; font-size:11.5px; font-weight:600; cursor:pointer;">▶ Run Briefing</button>
+                    <button type="button" onclick="runJarvisRoutine('executive_briefing')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(16,185,129,0.5); background:rgba(16,185,129,0.16); color:#a7f3d0; font-size:11.5px; font-weight:600; cursor:pointer;">Run Briefing</button>
                 </div>
             </div>
 
@@ -2231,17 +2433,17 @@
                 Select any JARVIS routine above to execute live audited diagnostics, or engage the Kill Switch to block autonomous execution.
             </div>
 
-            <div style="font-size:12px; font-weight:700; color:#f7e4b4; margin-bottom:6px;">📜 Live Tenant Audit Trail</div>
+            <div style="font-size:12px; font-weight:700; color:#f7e4b4; margin-bottom:6px;">Live Tenant Audit Trail</div>
             <div id="jarvisAuditLogBox" style="background:rgba(7,9,14,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:9px; padding:8px 10px; font-family:var(--font-code); font-size:11px; color:#94a3b8; max-height:110px; overflow-y:auto;">
                 Waiting for telemetry sync...
             </div>
 
             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
-                <span style="font-size:11.5px; color:#94a3b8; align-self:center;">Connected Sovereign Hubs:</span>
-                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('antigravity');">🌌 Antigravity OS Bridge</button>
-                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('bharatcode10');">🏆 Sovereign 10-Nexus</button>
-                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('systems10');">🧠 10-System Omni-Core</button>
-                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('trinity');">🔗 Flagship Trinity</button>
+                <span style="font-size:11.5px; color:#94a3b8; align-self:center;">Connected Specialist Hubs:</span>
+                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('antigravity');">Antigravity OS Bridge</button>
+                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('bharatcode10');">Sovereign 10-Nexus</button>
+                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('systems10');">10-System Omni-Core</button>
+                <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('trinity');">Flagship Trinity</button>
             </div>
         </div>
     </div>
@@ -2277,6 +2479,14 @@
             </div>
 
             <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                <label style="display:inline-flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:#d1d5db; cursor:pointer;">
+                    <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)">
+                    <span>Optional Scroll Space Backdrop</span>
+                </label>
+                <span id="spaceWarpBadge" style="font-family:var(--font-code); font-size:11px; color:#9ca3af;">Warp 1.0x • 0°</span>
+            </div>
+            <span id="globalExecutionChip" style="display:none;"><span class="nav-pill-sub">Auto-Pilot</span></span>
             <div class="model-settings-actions">
                 <button type="button" onclick="closeModelSettings()">Close</button>
                 <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save settings</button>
@@ -2336,23 +2546,26 @@
             <button type="button" onclick="closeAuthModal()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 4px;">✕</button>
             <div class="auth-header">
                 <div class="auth-brand">
-                    <div class="brand-logo-icon">⚡</div>
-                    <span class="auth-title">AURA Agent</span>
+                    <div class="brand-logo-icon" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <span class="auth-title">AURA</span>
                 </div>
-                <div class="auth-subtitle">Personal AI Engineering & Automation Account</div>
-                <p class="auth-desc" id="authStorageDesc">Sign in with your username and password to open your saved chat history and workspace, or create a unique account.</p>
+                <div class="auth-subtitle">Autonomous Workspace Account</div>
+                <p class="auth-desc" id="authStorageDesc">Sign in with your username and password to restore your saved chats and workspace, or create an account.</p>
             </div>
 
             <div class="auth-error-banner" id="authStorageWarning" style="display: none; background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7; font-size: 12px;"></div>
 
             <div style="margin-bottom: 14px;">
-                <button type="button" id="btnGuestInstant" onclick="continueAsGuest()" style="width: 100%; padding: 11px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.25)); border: 1px solid #10b981; border-radius: 8px; color: #6ee7b7; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
-                    ⚡ 1-Click Instant Guest Access (No Signup Needed)
+                <button type="button" id="btnGuestInstant" onclick="continueAsGuest()" style="width: 100%; padding: 11px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.14)); border: 1px solid rgba(16, 185, 129, 0.55); border-radius: 8px; color: #a7f3d0; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Continue as Guest</span>
                 </button>
             </div>
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; opacity:0.6;">
                 <div style="flex:1; height:1px; background:rgba(255,255,255,0.2);"></div>
-                <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px;">or log in with password</span>
+                <span style="font-size:11px; text-transform:uppercase; letter-spacing:1px;">or sign in with account</span>
                 <div style="flex:1; height:1px; background:rgba(255,255,255,0.2);"></div>
             </div>
             <div class="auth-tabs">
@@ -2365,14 +2578,14 @@
             <form id="authForm" onsubmit="handleAuthSubmit(event)">
                 <div class="auth-field">
                     <label for="authUsername">Username</label>
-                    <input type="text" id="authUsername" class="auth-input" placeholder="Username (e.g. ahmed_builder)" autocomplete="username" required minlength="3">
+                    <input type="text" id="authUsername" class="auth-input" placeholder="Username" autocomplete="username" required minlength="3">
                 </div>
                 <div class="auth-field">
                     <label for="authPassword" style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Password</span>
                         <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#34d399; font-size:11.5px; cursor:pointer; padding:0;">Show</button>
                     </label>
-                    <input type="password" id="authPassword" class="auth-input" placeholder="Password (min 8 chars, letters + numbers)" autocomplete="current-password" required minlength="8">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="current-password" required minlength="1">
                 </div>
                 <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">Log In</button>
             </form>
@@ -2382,7 +2595,7 @@
             </div>
 
             <div class="auth-footer-note" style="margin-top: 12px;">
-                🔒 Unique Username Enforcement • Scrypt Hashing • Private History Vault
+                Unique Username Enforcement • Scrypt Hashing • Private History Vault
             </div>
         </div>
     </div>
@@ -3272,7 +3485,17 @@
                 }
                 const labels = { gemini: 'Gemini', ollama: 'Ollama' };
                 if (labels[settings.active_provider] && settings.active_model) {
-                    activeModelLabel.textContent = `• ${labels[settings.active_provider]} · ${settings.active_model}`;
+                    const prettyModel = settings.active_provider === 'ollama'
+                        ? `Ollama · ${settings.active_model}`
+                        : settings.active_model.replace(/-/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+                    activeModelLabel.textContent = prettyModel;
+                    const quickSel = document.getElementById('quickModelSelect');
+                    if (quickSel) {
+                        const combo = `${settings.active_provider}:${settings.active_model}`;
+                        if (Array.from(quickSel.options).some(o => o.value === combo)) {
+                            quickSel.value = combo;
+                        }
+                    }
                 }
             } catch (error) {
                 console.warn('Could not refresh the active model label:', error);
@@ -3972,6 +4195,11 @@
             authMode = mode;
             authErrorMsg.style.display = 'none';
             const bottomRow = document.getElementById('authBottomSwitchRow');
+            if (authPassword) {
+                authPassword.minLength = (mode === 'login') ? 1 : 8;
+                authPassword.placeholder = (mode === 'login') ? 'Password' : 'Password (min 8 chars, letters + numbers)';
+                authPassword.autocomplete = (mode === 'login') ? 'current-password' : 'new-password';
+            }
             if (mode === 'login') {
                 tabSignIn.classList.add('active');
                 tabSignUp.classList.remove('active');
@@ -4083,7 +4311,10 @@
                     }
                     startPermissionPolling();
                 } else {
-                    authErrorMsg.innerText = data.error || 'Authentication failed. Please check your username and password.';
+                    const fallbackHint = (authMode === 'login' && res.status === 401)
+                        ? ' No matching account on this device yet? Switch to Create Account to register or restore from backup.'
+                        : '';
+                    authErrorMsg.innerText = (data.error || 'Authentication failed.') + fallbackHint;
                     authErrorMsg.style.display = 'block';
                 }
             } catch (err) {
@@ -4102,6 +4333,9 @@
             userAvatar.innerText = name[0].toUpperCase();
             if (typeof syncIdeRoleBadges === 'function') {
                 syncIdeRoleBadges(user);
+            }
+            if (typeof updateTimeGreeting === 'function') {
+                updateTimeGreeting();
             }
         }
 
@@ -4659,6 +4893,7 @@
             welcomeHero.style.display = 'flex';
             userName.innerText = 'User';
             userAvatar.innerText = 'U';
+            if (typeof updateTimeGreeting === 'function') updateTimeGreeting();
             authOverlay.style.display = 'flex';
             switchAuthTab('login');
         }
@@ -5264,7 +5499,7 @@
 
             const header = document.createElement('div');
             header.className = 'msg-header';
-            header.innerHTML = '<span style="color: var(--accent-primary);">⚡ AURA Core</span>';
+            header.innerHTML = '<span style="color: var(--accent-gold); font-weight: 600;">AURA</span>';
             turn.appendChild(header);
 
             const toolsContainer = document.createElement('div');
@@ -5539,7 +5774,7 @@
                             turn.className = 'msg-turn agent';
                             const hdr = document.createElement('div');
                             hdr.className = 'msg-header';
-                            hdr.innerHTML = '<span style="color: var(--accent-primary);">⚡ AURA Core</span>';
+                            hdr.innerHTML = '<span style="color: var(--accent-gold); font-weight: 600;">AURA</span>';
                             turn.appendChild(hdr);
 
                             if (Array.isArray(tools) && tools.length > 0) {
@@ -5771,7 +6006,7 @@
                 }
                 const badge = document.getElementById('spaceWarpBadge');
                 if (badge) {
-                    badge.textContent = `🌌 SPACE WARP: ${warpVelocity.toFixed(1)}x • ORBIT ${Math.round(Math.abs(orbitalAngle))}°`;
+                    badge.textContent = `Warp ${warpVelocity.toFixed(1)}x • ${Math.round(Math.abs(orbitalAngle))}°`;
                 }
             }
 
@@ -5837,7 +6072,7 @@
                     warpVelocity = Math.max(1.0, warpVelocity * 0.92);
                     const badge = document.getElementById('spaceWarpBadge');
                     if (badge && warpVelocity <= 1.08) {
-                        badge.textContent = `🌌 SPACE WARP: 1.0x • ORBIT ${Math.round(Math.abs(orbitalAngle))}°`;
+                        badge.textContent = `Warp 1.0x • ${Math.round(Math.abs(orbitalAngle))}°`;
                     }
                 }
                 requestAnimationFrame(renderSpaceFrame);
@@ -6821,11 +7056,81 @@
             voiceHudState.animFrame = requestAnimationFrame(_drawVoiceOrbFrame);
         }
 
+        function _primeVoiceAudio() {
+            if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+            try {
+                window.speechSynthesis.resume();
+                window.speechSynthesis.getVoices();
+                const warmup = new SpeechSynthesisUtterance(' ');
+                warmup.volume = 0;
+                warmup.rate = 10;
+                window.speechSynthesis.speak(warmup);
+            } catch (_) {}
+        }
+
+        function _pickPreferredVoice() {
+            if (!window.speechSynthesis || !window.speechSynthesis.getVoices) return null;
+            const voices = window.speechSynthesis.getVoices() || [];
+            if (!voices.length) return null;
+            return voices.find(v => /en-IN|en-US|Google|Natural|David|Zira/i.test(v.name || v.lang || '')) || voices[0];
+        }
+
+        function _speakVoiceSentences(plainSpeech, onDone) {
+            if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined' || !plainSpeech || voiceHudState.muted) {
+                if (onDone) onDone();
+                return;
+            }
+            const rawChunks = String(plainSpeech).match(/[^.!?]+[.!?]*\s*/g) || [String(plainSpeech)];
+            const chunks = [];
+            let cur = '';
+            rawChunks.forEach(part => {
+                const trimmed = part.trim();
+                if (!trimmed) return;
+                if ((cur + ' ' + trimmed).trim().length <= 190) {
+                    cur = (cur ? cur + ' ' : '') + trimmed;
+                } else {
+                    if (cur) chunks.push(cur);
+                    cur = trimmed.slice(0, 190);
+                }
+            });
+            if (cur) chunks.push(cur);
+            if (!chunks.length) {
+                if (onDone) onDone();
+                return;
+            }
+            const voice = _pickPreferredVoice();
+            const genId = (voiceHudState._speechGen = (voiceHudState._speechGen || 0) + 1);
+            let idx = 0;
+            _setVoiceHudMode('speaking', 'SPEAKING • Tap Interrupt anytime');
+
+            function speakNext() {
+                if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted || idx >= chunks.length) {
+                    if (genId === voiceHudState._speechGen && onDone) onDone();
+                    return;
+                }
+                const utt = new SpeechSynthesisUtterance(chunks[idx++]);
+                if (voice) utt.voice = voice;
+                utt.lang = (voice && voice.lang) ? voice.lang : 'en-IN';
+                utt.rate = 1.02;
+                utt.volume = 1.0;
+                utt.onend = () => speakNext();
+                utt.onerror = () => speakNext();
+                try {
+                    window.speechSynthesis.resume();
+                    window.speechSynthesis.speak(utt);
+                } catch (_) {
+                    if (onDone) onDone();
+                }
+            }
+            speakNext();
+        }
+
         function openVoiceCallHud() {
             if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
             }
+            _primeVoiceAudio();
             const overlay = document.getElementById('voiceCallOverlay');
             if (!overlay) return;
             overlay.style.display = 'flex';
@@ -6846,6 +7151,7 @@
         }
 
         function interruptVoicePlayback() {
+            voiceHudState._speechGen = (voiceHudState._speechGen || 0) + 1;
             if (window.speechSynthesis && typeof window.speechSynthesis.cancel === 'function') {
                 try { window.speechSynthesis.cancel(); } catch (_) {}
             }
@@ -6859,16 +7165,21 @@
         function toggleVoiceCallMute() {
             voiceHudState.muted = !voiceHudState.muted;
             const btn = document.getElementById('btnVoiceCallMute');
-            if (btn) btn.textContent = voiceHudState.muted ? '🔈 Unmute' : '🔇 Mute';
-            if (voiceHudState.muted && voiceHudState.recognition) {
-                try { voiceHudState.recognition.stop(); } catch (_) {}
+            if (btn) btn.textContent = voiceHudState.muted ? 'Unmute' : 'Mute';
+            if (voiceHudState.muted) {
+                interruptVoicePlayback();
+                if (voiceHudState.recognition) {
+                    try { voiceHudState.recognition.stop(); } catch (_) {}
+                }
                 _setVoiceHudMode('standby', 'MUTED • Click Unmute or Type');
             } else if (!voiceHudState.muted && voiceHudState.callActive) {
+                _primeVoiceAudio();
                 _startVoiceRecognitionTurn();
             }
         }
 
         function toggleVoiceCallSession() {
+            _primeVoiceAudio();
             if (voiceHudState.callActive) {
                 stopVoiceCallSession();
             } else {
@@ -6881,7 +7192,7 @@
             voiceHudState.muted = false;
             const btn = document.getElementById('btnVoiceCallToggleMic');
             if (btn) {
-                btn.textContent = '⏹️ End Call';
+                btn.textContent = 'End Call';
                 btn.style.borderColor = 'rgba(239,68,68,0.6)';
                 btn.style.background = 'rgba(239,68,68,0.2)';
                 btn.style.color = '#fecaca';
@@ -6896,7 +7207,7 @@
             }
             const btn = document.getElementById('btnVoiceCallToggleMic');
             if (btn) {
-                btn.textContent = '🎙️ Start Call';
+                btn.textContent = 'Start Call';
                 btn.style.borderColor = 'rgba(16,185,129,0.55)';
                 btn.style.background = 'rgba(16,185,129,0.2)';
                 btn.style.color = '#6ee7b7';
@@ -6934,6 +7245,7 @@
         }
 
         async function sendVoiceHudTextTurn() {
+            _primeVoiceAudio();
             const inp = document.getElementById('voiceHudTextInput');
             if (!inp) return;
             const txt = inp.value.trim();
@@ -6961,22 +7273,19 @@
                 const data = await safeParseJson(res);
                 const replyText = (data && data.reply) ? String(data.reply) : ((data && data.error) || 'Completed.');
                 _appendVoiceTranscript('AURA', replyText);
-                const plainSpeech = replyText.replace(/```[\s\S]*?```/g, ' Code block generated in workspace. ').replace(/[*#`>_]/g, ' ').trim().slice(0, 600);
-                if (window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined' && plainSpeech) {
-                    const utt = new SpeechSynthesisUtterance(plainSpeech);
-                    utt.rate = 1.04;
-                    _setVoiceHudMode('speaking', 'SPEAKING • Tap Interrupt anytime');
-                    utt.onend = () => {
-                        if (voiceHudState.open && voiceHudState.callActive && !voiceHudState.muted) {
-                            _startVoiceRecognitionTurn();
-                        } else if (voiceHudState.open) {
-                            _setVoiceHudMode('standby', 'STANDBY • Turn complete');
-                        }
-                    };
-                    window.speechSynthesis.speak(utt);
-                } else {
-                    _setVoiceHudMode('standby', 'STANDBY • Turn complete');
-                }
+                const plainSpeech = replyText
+                    .replace(/```[\s\S]*?```/g, ' Code block generated in workspace. ')
+                    .replace(/[*#`>_]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .slice(0, 750);
+                _speakVoiceSentences(plainSpeech, () => {
+                    if (voiceHudState.open && voiceHudState.callActive && !voiceHudState.muted) {
+                        _startVoiceRecognitionTurn();
+                    } else if (voiceHudState.open) {
+                        _setVoiceHudMode('standby', 'STANDBY • Turn complete');
+                    }
+                });
             } catch (err) {
                 _appendVoiceTranscript('SYSTEM', 'Voice turn failed: ' + err.message);
                 _setVoiceHudMode('standby', 'ERROR • Retry');
@@ -7003,12 +7312,19 @@
             const banner = document.getElementById('jarvisStatusBanner');
             const execChip = document.getElementById('globalExecutionChip');
             const auditBox = document.getElementById('jarvisAuditLogBox');
+            const composerDot = document.getElementById('composerJarvisDot');
+            const popoverBadge = document.getElementById('jarvisPopoverStatusBadge');
 
             if (navBtn) navBtn.classList.toggle('halted', halted);
             if (navLbl) navLbl.textContent = halted ? 'HALTED' : 'ARMED';
+            if (composerDot) composerDot.classList.toggle('halted', halted);
+            if (popoverBadge) {
+                popoverBadge.style.color = halted ? '#fca5a5' : '#6ee7b7';
+                popoverBadge.textContent = halted ? 'HALTED' : 'ARMED';
+            }
             if (panelBtn) {
                 panelBtn.classList.toggle('halted', halted);
-                panelBtn.textContent = halted ? '🟢 RE-ARM SYSTEM' : '🛑 ENGAGE KILL SWITCH';
+                panelBtn.textContent = halted ? 'RE-ARM SYSTEM' : 'ENGAGE KILL SWITCH';
             }
             if (banner) {
                 banner.style.color = halted ? '#fecaca' : '#6ee7b7';
@@ -7087,8 +7403,8 @@
                     const box = document.getElementById('jarvisResultBox');
                     if (box) {
                         box.innerHTML = nextHalted
-                            ? '<strong style="color:#fecaca;">🛑 KILL SWITCH ENGAGED:</strong> All autonomous JARVIS routines blocked and chat execution downgraded to strict Ask-First verification.'
-                            : '<strong style="color:#6ee7b7;">🟢 SYSTEM RE-ARMED:</strong> Autonomous JARVIS routines restored cleanly.';
+                            ? '<strong style="color:#fecaca;">KILL SWITCH ENGAGED:</strong> All autonomous JARVIS routines blocked and chat execution downgraded to strict Ask-First verification.'
+                            : '<strong style="color:#6ee7b7;">SYSTEM RE-ARMED:</strong> Autonomous JARVIS routines restored cleanly.';
                     }
                 }
             } catch (err) {
@@ -7104,7 +7420,7 @@
             const inp = document.getElementById('jarvisTargetInput');
             const box = document.getElementById('jarvisResultBox');
             const target = inp ? inp.value.trim() : '';
-            if (box) box.textContent = `⏳ Running JARVIS routine [${routineKey}]...`;
+            if (box) box.textContent = `Running JARVIS routine [${routineKey}]...`;
             try {
                 const res = await apiFetch('/api/jarvis/run', {
                     method: 'POST',
@@ -7123,7 +7439,95 @@
             }
         }
 
+        // ---------------- 4. Time-of-Day Hero, Composer Popovers & Optional Space Toggle ----------------
+        function updateTimeGreeting() {
+            const titleEl = document.getElementById('heroGreetingTitle');
+            const subEl = document.getElementById('heroGreetingSubtitle');
+            if (!titleEl) return;
+            const h = new Date().getHours();
+            let base = 'Good evening';
+            let sub = 'What are we building this evening?';
+            if (h >= 5 && h < 12) {
+                base = 'Good morning';
+                sub = 'What are we building today?';
+            } else if (h >= 12 && h < 17) {
+                base = 'Good afternoon';
+                sub = 'How can I help you move faster today?';
+            } else if (h >= 21 || h < 5) {
+                base = 'Good night';
+                sub = 'Quiet night session — what should we build?';
+            }
+            const name = (typeof currentUser !== 'undefined' && currentUser && !currentUser.isGuest && (currentUser.display_name || currentUser.username))
+                ? String(currentUser.display_name || currentUser.username).trim()
+                : '';
+            titleEl.textContent = name ? `${base}, ${name}` : base;
+            if (subEl) subEl.textContent = sub;
+        }
+
+        function closeComposerPopovers() {
+            const mp = document.getElementById('composerModelPopover');
+            const jp = document.getElementById('composerJarvisPopover');
+            if (mp) mp.classList.remove('open');
+            if (jp) jp.classList.remove('open');
+        }
+
+        function toggleComposerPopover(which, ev) {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            const mp = document.getElementById('composerModelPopover');
+            const jp = document.getElementById('composerJarvisPopover');
+            if (which === 'model' && mp) {
+                const next = !mp.classList.contains('open');
+                closeComposerPopovers();
+                if (next) mp.classList.add('open');
+            } else if (which === 'jarvis' && jp) {
+                const next = !jp.classList.contains('open');
+                closeComposerPopovers();
+                if (next) jp.classList.add('open');
+            }
+        }
+
+        async function applyQuickModelSelection(comboValue) {
+            if (!comboValue || !comboValue.includes(':')) return;
+            const [provider, model] = comboValue.split(':', 2);
+            if (!isAuthenticated()) {
+                authOverlay.style.display = 'flex';
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active_provider: provider, active_model: model })
+                });
+                if (res.ok && typeof refreshActiveModelLabel === 'function') {
+                    await refreshActiveModelLabel();
+                }
+            } catch (_) {}
+        }
+
+        function toggleSpaceBackdropSetting(enabled) {
+            try {
+                localStorage.setItem('aura_space_bg', enabled ? 'on' : 'off');
+            } catch (_) {}
+            const canvas = document.getElementById('spaceCanvas');
+            const ring = document.getElementById('spaceOrbitalRingOverlay');
+            const bar = document.getElementById('spaceScrollProgressBar');
+            if (canvas) canvas.style.display = enabled ? 'block' : 'none';
+            if (ring) ring.style.display = enabled ? 'block' : 'none';
+            if (bar) bar.style.display = enabled ? 'block' : 'none';
+        }
+
         (function initSovereignV5OverlayBindings() {
+            updateTimeGreeting();
+            setInterval(updateTimeGreeting, 60000);
+            try {
+                const savedSpace = localStorage.getItem('aura_space_bg');
+                const spaceEnabled = (savedSpace !== 'off');
+                const chk = document.getElementById('toggleSpaceBackdropCheckbox');
+                if (chk) chk.checked = spaceEnabled;
+                toggleSpaceBackdropSetting(spaceEnabled);
+            } catch (_) {}
+
             const voiceOverlay = document.getElementById('voiceCallOverlay');
             const jarvisOverlay = document.getElementById('jarvisOverlay');
             if (voiceOverlay) {
@@ -7136,8 +7540,15 @@
                     if (e.target === jarvisOverlay) closeJarvisConsole();
                 });
             }
+            document.addEventListener('click', (e) => {
+                const dock = document.getElementById('inputDockCard');
+                if (dock && !dock.contains(e.target)) {
+                    closeComposerPopovers();
+                }
+            });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
+                    closeComposerPopovers();
                     if (voiceOverlay && voiceOverlay.style.display === 'flex') closeVoiceCallHud();
                     if (jarvisOverlay && jarvisOverlay.style.display === 'flex') closeJarvisConsole();
                 }

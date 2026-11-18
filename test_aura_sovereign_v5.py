@@ -229,22 +229,47 @@ class TestAuraSovereignHttpAndUi(unittest.TestCase):
         for req_id in (
             'id="reasoningModeSelect"',
             'id="btnGlobalKillSwitch"',
+            'id="btnComposerModelMenu"',
+            'id="btnComposerJarvis"',
+            'id="composerModelPopover"',
+            'id="composerJarvisPopover"',
+            'id="heroGreetingTitle"',
             'id="artifactSplitPane"',
             'id="artifactPreviewFrame"',
             'id="voiceCallOverlay"',
             'id="voiceCallOrb"',
             'id="jarvisOverlay"',
-            'placeholder="Username (e.g. ahmed_builder)"',
+            'placeholder="Username"',
         ):
             self.assertIn(req_id, html, f"Missing required Sovereign v5 UI marker: {req_id}")
 
         self.assertIn('sandbox="allow-scripts"', html)
         self.assertNotIn("touffeq", html.lower())
+        self.assertNotIn("ahmed_builder", html.lower())
 
         no_scripts = re.sub(r"<script\b[^>]*>.*?</script>", "", html, flags=re.S | re.I)
         no_styles = re.sub(r"<style\b[^>]*>.*?</style>", "", no_scripts, flags=re.S | re.I)
         visible_text = re.sub(r"<[^>]+>", " ", no_styles)
         self.assertEqual(len(re.findall(r"BharatCode|Build League", visible_text, flags=re.I)), 0)
+
+    def test_account_dot_username_login_roundtrip_and_offline_datetime(self):
+        uname = f"demo.user.{secrets.token_hex(3)}"
+        pw = "UserPass99!"
+        reg = aura_db.register_user(uname, pw)
+        self.assertTrue(reg.get("success"), reg)
+
+        log = aura_db.login_user(uname.upper(), pw)
+        self.assertTrue(log.get("success"), log)
+        self.assertEqual(log["user"]["username"], uname)
+
+        brain = aura_web._create_user_brain({"id": reg["user"]["id"], "settings": {}})
+        out = brain._offline_autonomous_dispatch(
+            [{"role": "user", "parts": [{"text": "What is today's time and date?"}]}],
+            [],
+        )
+        txt = out["candidates"][0]["content"]["parts"][0]["text"]
+        self.assertNotIn("temporarily slow", txt.lower())
+        self.assertIn(str(time.localtime().tm_year), txt)
 
 
 if __name__ == "__main__":

@@ -3669,6 +3669,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 reply = "Catch you later! Your chat history and workspace are saved cleanly."
             elif re.search(r"\b(who are you|what are you|who r u|kaun ho)\b", lower):
                 reply = "I am AURA Core, created by Mohd Ahmed (Lyberty / AURA Technologies Inc.) — your autonomous coding, game engine, and developer workspace copilot."
+            elif re.search(r"\b(time|date|day|today|tarikh|samay|waqt|aaj kya din)\b", lower) and not re.search(r"\b(code|python|script|function|file|api|update|fix)\b", lower):
+                now_local = time.strftime("%A, %d %B %Y at %I:%M %p")
+                reply = f"Today is {now_local}."
             else:
                 recent_topics = []
                 for item in contents[-6:]:
@@ -3802,11 +3805,13 @@ The unified pipeline processed your instruction across all core engines (**Time:
         compacted = self._compact_contents_for_api(contents, strip_tools_history=False)
         include_tools = self._should_include_tools_for_contents(compacted, tools)
 
+        now_context = time.strftime("%A, %d %B %Y, %I:%M %p %Z")
         sys_instruction = {
             "parts": [{
                 "text": (
                     "You are AURA Core, an elite conversational and autonomous developer workspace AI assistant "
                     "created and architected by Mohd Ahmed (Founder of Lyberty / AURA Technologies Inc.). "
+                    f"Current local date and time: {now_context}. "
                     "When asked who built, coded, or created you, proudly credit Mohd Ahmed (Lyberty). "
                     "You communicate with natural warmth, intelligence, and conversational continuity in English or Hinglish as appropriate. "
                     "Always read the full conversation history carefully and stay directly on topic—never parrot the user or repeat generic greetings. "
@@ -3851,16 +3856,18 @@ The unified pipeline processed your instruction across all core engines (**Time:
             with urllib.request.urlopen(req, timeout=timeout_s) as resp:
                 return json.loads(resp.read().decode())
 
-        total_budget = 11.5 if include_tools else 8.0
+        is_vercel = bool(os.environ.get("VERCEL"))
+        total_budget = (9.5 if is_vercel else 26.0) if include_tools else (7.5 if is_vercel else 18.0)
         deadline = time.monotonic() + total_budget
         primary_payload = _make_payload(compacted, use_tools=include_tools)
 
         for mod in models_to_try:
             for k_val in key_pool:
                 remaining = deadline - time.monotonic()
-                if remaining < 1.8:
+                if remaining < 2.2:
                     break
-                attempt_timeout = max(2.2, min(9.5 if include_tools else 6.0, remaining))
+                max_att = (8.0 if include_tools else 6.0) if is_vercel else (14.0 if include_tools else 11.0)
+                attempt_timeout = max(3.5, min(max_att, remaining))
                 try:
                     return _post_gemini(mod, k_val, primary_payload, attempt_timeout)
                 except urllib.error.HTTPError as e:
@@ -3872,14 +3879,14 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
                     break  # Timeout/network -> move to next model or fast salvage
 
-        # Fast tool-free conversational salvage call (~1.3s) so multi-turn memory chats NEVER degrade into robotic offline lines
+        # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
         if include_tools:
             salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
             salvage_payload = _make_payload(salvage_contents, use_tools=False)
-            for mod in ("gemini-flash-lite-latest", "gemini-3.5-flash-lite"):
+            for mod in ("gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
                 for k_val in key_pool[:2]:
                     try:
-                        return _post_gemini(mod, k_val, salvage_payload, 4.5)
+                        return _post_gemini(mod, k_val, salvage_payload, 8.5)
                     except Exception:
                         continue
 
