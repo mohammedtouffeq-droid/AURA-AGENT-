@@ -103,11 +103,21 @@ class PhotorealCameraEngine:
     @classmethod
     def compose_photoreal_prompt(cls, user_prompt: str, camera_style: str = "auto") -> Tuple[str, str]:
         lower_prompt = user_prompt.lower()
-        
+        needs_sharp_bg = any(
+            k in lower_prompt
+            for k in (
+                "burj", "dubai", "tower", "building", "skyline", "city", "mountain",
+                "landscape", "background", "sharp", "clear", "crisp", "3d", "pixar",
+                "cartoon", "animated", "dreamworks", "landmark", "wide",
+            )
+        )
+
         # Auto-detect camera style if requested as 'auto'
         if camera_style == "auto":
             if any(k in lower_prompt for k in ["iphone", "mobile", "phone", "candid", "selfie"]):
                 camera_style = "iphone"
+            elif needs_sharp_bg:
+                camera_style = "dslr"
             elif any(k in lower_prompt for k in ["portrait", "face", "headshot", "beauty", "person"]):
                 camera_style = "portrait"
             elif any(k in lower_prompt for k in ["cinematic", "movie", "film", "hollywood", "dramatic"]):
@@ -117,10 +127,18 @@ class PhotorealCameraEngine:
             elif any(k in lower_prompt for k in ["cyberpunk", "neon", "sci-fi", "futuristic"]):
                 camera_style = "cyberpunk"
             else:
-                camera_style = "portrait"
+                camera_style = "dslr"
+        elif needs_sharp_bg and camera_style == "portrait":
+            camera_style = "dslr"
 
-        preset_addon = cls.PRESETS.get(camera_style, cls.PRESETS["portrait"])
-        composed_prompt = f"{user_prompt}, {preset_addon}, ultra photoreal, 8k resolution, unedited RAW photography"
+        preset_addon = cls.PRESETS.get(camera_style, cls.PRESETS["dslr"])
+        if needs_sharp_bg:
+            composed_prompt = (
+                f"{user_prompt}, crisp deep-focus f/8 photography, sharp foreground subjects and razor-sharp distant landmarks, "
+                "clear sunny atmosphere, zero background blur, high detail, clean framing"
+            )
+        else:
+            composed_prompt = f"{user_prompt}, {preset_addon}, ultra sharp, high resolution, clean framing"
         return composed_prompt, cls.NEGATIVE_PROMPT
 
 
@@ -168,8 +186,9 @@ class CloudFluxDiffusionEngine:
 
         seed = int(time.time() * 1000) % 999999
         candidate_urls = [
-            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean)}?nologo=true",
+            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean)}?width={width}&height={height}&model=flux&seed={seed}&nologo=true&enhance=false",
             f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean)}?width={width}&height={height}&seed={seed}&nologo=true",
+            f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean)}?nologo=true",
         ]
         for url in candidate_urls:
             try:

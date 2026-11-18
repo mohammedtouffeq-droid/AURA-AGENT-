@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from aura_engine_base import BaseAuraModelEngine, EngineDispatchPlan
+from aura_engine_base import BaseAuraModelEngine, EngineDispatchPlan, is_casual_or_greeting_prompt
 
 
 class Aura23ArchitectEngine(BaseAuraModelEngine):
@@ -25,19 +25,27 @@ class Aura23ArchitectEngine(BaseAuraModelEngine):
         sample_files = ", ".join((ws_info.get("files") or [])[:5]) or "clean workspace"
 
         steps = [
-            f"Deep Context Scan: parsed {word_count} input token-words; reasoning={reasoning_mode}; workspace={file_count} files ({langs}).",
-            f"Workspace Topology Anchor: inspected [{sample_files}] for modular reuse & dependency boundaries.",
-            "Architecture Strategy: decompose into crisp interfaces, edge-case guards, visual architecture SVG, and verification steps.",
+            f"Deep Context Scan: parsed {word_count} token-words; reasoning={reasoning_mode}; workspace={file_count} files ({langs}).",
+            f"Workspace Topology Anchor: inspected [{sample_files}] for modular interfaces & dependency boundaries.",
+            "Engineering Strategy: deliver verified technical architecture and omit decorative fluff.",
         ]
+
+        casual_rule = (
+            "- CASUAL TURN MODE: This is a short conversational greeting. Reply sharply and naturally in plain prose (1-2 sentences) asking what engineering or debugging task is next. "
+            "Do NOT output SVGs, fake Studio Telemetry charts, callout banners, or empty Architecture Plans.\n"
+            if is_casual_or_greeting_prompt(prompt)
+            else ""
+        )
 
         framing = (
             "[ENGINE PROFILE: AURA 2.3 — DEEP ARCHITECT & CODING STUDIO]\n"
             "You are AURA 2.3, an elite software architect and multi-language engineering brain.\n"
             f"Workspace State: {file_count} file(s) present ({sample_files}).\n"
-            "Behavior & Explanation Standards:\n"
-            "- Think deeply BEFORE answering — even on short greetings or quick prompts, proactively check context, propose concrete architectural value, and expose zero shallow filler.\n"
-            "- Structure technical deliverables cleanly with `## Architecture Plan`, `## Implementation`, and `## Verification`.\n"
-            "- Include semantic colored callouts (`> [!ARCH]`, `> [!WARN]`) and whenever explaining a system, pipeline, API flow, or data structure, render a crisp **Visual System Diagram** inside a fenced ```svg``` block (`viewBox=\"0 0 720 260\"`, dark obsidian style) alongside the code/text!\n"
-            "- Prefer surgical file edits and modular helpers over fragile monolithic scripts."
+            "Behavior & Formatting Standards:\n"
+            f"{casual_rule}"
+            "- Deliver senior-engineer precision: zero self-promotional telemetry, zero fabricated benchmark numbers.\n"
+            "- Structure substantial technical deliverables cleanly with `## Architecture Plan`, `## Implementation`, and `## Verification`.\n"
+            "- ONLY when designing a multi-component system, API flow, or data pipeline, emit ONE crisp top-level ```svg``` system diagram (column 0, NEVER prefixed with `> ` blockquote markers!, `viewBox=\"0 0 720 260\"`).\n"
+            "- Prefer surgical, modular code over boilerplate."
         )
         return framing, steps, "AURA 2.3 Architectural Reasoning"

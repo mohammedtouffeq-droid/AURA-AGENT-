@@ -6108,7 +6108,8 @@
 
         function _buildSafeAuraChartHtml(rawJson) {
             try {
-                const obj = JSON.parse(String(rawJson || '').trim());
+                const dequoted = String(rawJson || '').replace(/^\s*(?:>\s*)+/gm, '').trim();
+                const obj = JSON.parse(dequoted);
                 if (!obj || !Array.isArray(obj.labels) || !Array.isArray(obj.values) || obj.labels.length === 0) {
                     return '';
                 }
@@ -6214,10 +6215,16 @@
                 return `\x00AURA_TH_${idx}\x00`;
             });
 
+            // 0b. Unwrap blockquoted fenced code blocks (> ```lang ... > ```) before extracting fences
+            text = text.replace(/^(?:>\s*)+```([a-zA-Z0-9_-]*)[ \t]*\n([\s\S]*?)^(?:>\s*)+```[ \t]*$/gm, (m, lang, inner) => {
+                const cleanInner = String(inner || '').replace(/^(?:>\s*)+/gm, '');
+                return '```' + (lang || '') + '\n' + cleanInner + '\n```';
+            });
+
             // 1. Extract fenced code blocks first (contents strictly HTML-escaped; charts/visuals cleanly wrapped)
-            text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            text = text.replace(/```([a-zA-Z0-9_-]*)[ \t]*\n([\s\S]*?)```/g, (match, lang, code) => {
                 const rawLang = (lang || 'code').toLowerCase();
-                const trimmedCode = code.trim();
+                const trimmedCode = String(code || '').replace(/^\s*(?:>\s*)+/gm, '').trim();
                 const idx = codeBlocks.length;
 
                 if (rawLang === 'aura-chart') {
@@ -6230,7 +6237,8 @@
 
                 const langLabel = escapeHtml(rawLang);
                 const escapedCode = escapeHtml(trimmedCode);
-                const isInlineVisual = (rawLang === 'svg' || rawLang === 'aura-visual' || rawLang === 'aura-anim' ||
+                const isValidSvg = rawLang === 'svg' && /<svg\b/i.test(trimmedCode) && /<(rect|circle|path|polygon|ellipse|line|polyline|text|g)\b/i.test(trimmedCode);
+                const isInlineVisual = (isValidSvg || rawLang === 'aura-visual' || rawLang === 'aura-anim' ||
                     (rawLang === 'html' && (trimmedCode.split('\n').length >= 5 || /<(svg|canvas|html|div|section|style)\b/i.test(trimmedCode))));
 
                 if (isInlineVisual) {
@@ -7254,16 +7262,17 @@
 
         function _buildSandboxedArtifactDocument(code, lang) {
             const lower = (lang || '').toLowerCase();
-            if (lower === 'svg' || (/^\s*<svg\b/i.test(code) && !/<html\b/i.test(code))) {
-                return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#090a0e;color:#f3f4f6;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
+            const cleanCode = String(code || '').replace(/^\s*(?:>\s*)+/gm, '').trim();
+            if (lower === 'svg' || (/^\s*<svg\b/i.test(cleanCode) && !/<html\b/i.test(cleanCode))) {
+                return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:10px;box-sizing:border-box;width:100%;height:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#090a0e;color:#f3f4f6;font-family:sans-serif;overflow:hidden;}svg{max-width:100%;max-height:100%;width:auto;height:auto;display:block;}</style></head><body>${cleanCode}</body></html>`;
             }
-            if (/<html\b|<!doctype\s+html/i.test(code)) {
-                return code;
+            if (/<html\b|<!doctype\s+html/i.test(cleanCode)) {
+                return cleanCode;
             }
             if (lower === 'html' || lower === 'htm' || lower === 'xml') {
-                return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:18px;background:#0c0f17;color:#f3f4f6;font-family:Inter,system-ui,sans-serif;}</style></head><body>${code}</body></html>`;
+                return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:18px;background:#0c0f17;color:#f3f4f6;font-family:Inter,system-ui,sans-serif;}</style></head><body>${cleanCode}</body></html>`;
             }
-            const safeEscaped = String(code).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const safeEscaped = cleanCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:18px;background:#090b10;color:#e5e7eb;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.55;}pre{margin:0;white-space:pre-wrap;word-break:break-word;}.badge{display:inline-block;padding:3px 9px;border-radius:999px;background:rgba(226,185,111,0.16);color:#e2b96f;font-size:11px;margin-bottom:12px;border:1px solid rgba(226,185,111,0.4);}</style></head><body><div class="badge">${lower.toUpperCase()} ARTIFACT PREVIEW</div><pre>${safeEscaped}</pre></body></html>`;
         }
 
@@ -7307,11 +7316,12 @@
 
         function maybeAutoOpenArtifact(markdown) {
             if (!markdown || window.innerWidth <= 960) return;
-            const match = String(markdown).match(/```(html|svg)\n([\s\S]*?)```/i);
+            // Only auto-open the Split Studio for substantial runnable HTML apps/games; SVGs already render cleanly inline.
+            const match = String(markdown).match(/```html\n([\s\S]*?)```/i);
             if (!match) return;
-            const code = (match[2] || '').trim();
-            if (code.split('\n').length >= 4 || /<(html|svg|canvas|section|main)\b/i.test(code)) {
-                openArtifactPane(code, match[1].toLowerCase(), `Generated ${match[1].toUpperCase()} Artifact`);
+            const code = (match[1] || '').trim();
+            if (code.split('\n').length >= 8 && /<(html|canvas|script|section|main)\b/i.test(code)) {
+                openArtifactPane(code, 'html', 'Live Web Artifact');
             }
         }
 

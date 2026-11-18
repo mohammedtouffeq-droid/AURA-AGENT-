@@ -175,6 +175,31 @@ class TestAuraModelEnginesHttpAndUi(unittest.TestCase):
         ):
             self.assertIn(marker, html, f"Missing UI marker: {marker}")
 
+    def test_casual_greetings_and_image_clarity_regressions(self):
+        from aura_brain import AuraBrain
+        from aura_engine_base import is_casual_or_greeting_prompt
+        from aura_media_engine import PhotorealCameraEngine
+
+        self.assertTrue(is_casual_or_greeting_prompt("yooo"))
+        self.assertTrue(is_casual_or_greeting_prompt("yoooo"))
+        self.assertFalse(is_casual_or_greeting_prompt("Compare Python vs Rust performance"))
+
+        plan26 = Aura26ApexEngine().build_dispatch_plan(999104, "yooo")
+        self.assertIn("CASUAL TURN MODE", plan26.system_framing)
+
+        composed, _ = PhotorealCameraEngine.compose_photoreal_prompt(
+            "3 Pixar characters standing in front of Burj Khalifa Dubai sunny sky",
+            camera_style="portrait",
+        )
+        self.assertIn("deep-focus f/8", composed)
+        self.assertNotIn("optical bokeh", composed)
+
+        prior_contents = [
+            {"role": "model", "parts": [{"text": "![Dubai](/media/generated_images/aura_cinema_123.png)"}]},
+            {"role": "user", "parts": [{"text": "pic ko seedha kar aur saaf bhej"}]},
+        ]
+        self.assertTrue(AuraBrain._should_include_tools_for_contents(prior_contents, tools=[{"name": "tool_generate_image"}]))
+
 
 if __name__ == "__main__":
     unittest.main()

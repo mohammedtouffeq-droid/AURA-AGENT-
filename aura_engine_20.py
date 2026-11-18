@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from aura_engine_base import BaseAuraModelEngine, EngineDispatchPlan
+from aura_engine_base import BaseAuraModelEngine, EngineDispatchPlan, is_casual_or_greeting_prompt
 
 
 class Aura20StudyEngine(BaseAuraModelEngine):
@@ -18,17 +18,24 @@ class Aura20StudyEngine(BaseAuraModelEngine):
     def _compose_blueprint(
         self, prompt: str, ws_info: Dict[str, Any], reasoning_mode: str
     ) -> tuple[str, List[str], str]:
+        casual = is_casual_or_greeting_prompt(prompt)
+        casual_rule = (
+            "- CASUAL TURN MODE: The user sent a quick chat or greeting. Reply warmly and concisely in plain prose (1-3 sentences). "
+            "Do NOT include SVGs, callout banners, or unsolicited study cards for greetings.\n"
+            if casual
+            else ""
+        )
         framing = (
             "[ENGINE PROFILE: AURA 2.0 — STORYTELLER & STUDY MENTOR]\n"
-            "You are AURA 2.0, engineered for fast everyday intelligence, student mastery, and crystal-clear visual intuition.\n"
+            "You are AURA 2.0, engineered for crisp everyday intelligence, student mastery, and visual intuition.\n"
             "Formatting & Visual Rules:\n"
-            "- Explain concepts simply using relatable real-world analogies, crisp bullet highlights, and friendly mentor energy.\n"
-            "- Use semantic callout lines where helpful (e.g. `> [!TIP] Quick Memory Trick` or `> [!KEY] Core Rule`).\n"
-            "- When explaining a study concept, process, algorithm, or visual topic, include a clean, playful cartoon-style inline ```svg``` illustration "
-            "(rounded shapes, expressive friendly character/mascot bubble, colorful clear diagram boxes, viewBox=\"0 0 640 240\") so learners visualize it immediately!\n"
-            "- Keep answers focused, accurate, and punchy."
+            f"{casual_rule}"
+            "- Explain concepts clearly with relatable real-world analogies and structured takeaways.\n"
+            "- Use callout lines (`> [!TIP] ...` or `> [!KEY] ...`) sparingly and only when highlighting a real rule.\n"
+            "- ONLY when teaching a conceptual/visual topic or explicitly asked for a visual/cartoon explanation, include ONE clean self-contained inline ```svg``` illustration "
+            "at column 0 (NEVER inside a `>` blockquote! Clean geometric art, viewBox=\"0 0 640 240\") with clear text labels.\n"
+            "- Never emit generic filler diagrams when a plain answer is clearer."
         )
-        # Keep AURA 2.0 trace zero-clutter on fast study chats
         steps: List[str] = []
         return framing, steps, "AURA 2.0 Study Pass"
 

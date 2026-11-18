@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 import time
 from dataclasses import dataclass, field
@@ -10,6 +11,25 @@ from typing import Any, Dict, List
 
 
 ROOT_DIR = Path(__file__).resolve().parent
+
+_SUBSTANTIVE_INTENT_RE = re.compile(
+    r"\b(explain|teach|how|why|what\s+is|difference|compare|vs|chart|graph|plot|metrics|"
+    r"diagram|flowchart|architecture|design|system|pipeline|code|script|python|javascript|"
+    r"html|css|sql|api|bug|debug|fix|refactor|build|create|make|app|game|simulation|"
+    r"svg|visual|animation|analyze|audit|algorithm|math|formula|steps|tutorial)\b",
+    re.IGNORECASE,
+)
+
+
+def is_casual_or_greeting_prompt(prompt: str) -> bool:
+    """Returns True for brief greetings/small-talk where rich SVG/chart/trace visuals would feel spammy."""
+    cleaned = re.sub(r"[^a-zA-Z0-9\s\u0900-\u097F\u0C00-\u0C7F]", " ", prompt or "").strip()
+    if not cleaned:
+        return True
+    if _SUBSTANTIVE_INTENT_RE.search(cleaned):
+        return False
+    words = cleaned.split()
+    return len(words) <= 6
 
 
 def resolve_tenant_workspace(user_id: Any) -> Path:

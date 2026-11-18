@@ -3710,7 +3710,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         web_url = out.get("image_url")
                     if web_url and web_url not in reply and Path(web_url).name not in reply:
                         prompt_label = t.get("args", {}).get("prompt", "Generated Artwork")
-                        reply += f"\n\n![{prompt_label}]({web_url})\n\n*(Click image to view high-resolution render)*"
+                        reply += f"\n\n![{prompt_label}]({web_url})"
                 elif tool_name == "tool_generate_video":
                     vpath = out.get("video_path") or out.get("mp4_path") or out.get("video_player_path")
                     if vpath:
@@ -3772,9 +3772,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
             return False
         if contents:
             last_parts = contents[-1].get("parts", [])
-            if any("functionResponse" in p or "functionCall" in p for p in last_parts if isinstance(p, dict)):
+            if any("functionResponse" in p or "functionCall" in p or "inlineData" in p or "inline_data" in p for p in last_parts if isinstance(p, dict)):
                 return True
             last_text = " ".join(str(p.get("text", "")) for p in last_parts if isinstance(p, dict)).lower()
+            # Keep tools enabled on follow-ups to recent media/image generation turns
+            recent_blob = " ".join(
+                str(p.get("text", ""))
+                for c in contents[-4:]
+                for p in (c.get("parts") or [])
+                if isinstance(p, dict)
+            ).lower()
+            if "/media/generated_" in recent_blob or "tool_generate_image" in recent_blob:
+                if re.search(r"\b(pic|image|photo|blur|blurr|seedha|saaf|saff|clear|sharp|render|dubara|phir|jaldi|again|retry|fix|chart|dikhao|dubai|burj|nazar)\b", last_text):
+                    return True
         else:
             last_text = ""
 
@@ -3785,7 +3795,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
             r"delete|list|memory|remember|recall|search|browse|scrape|url|http|localhost|preview|server|port|ram|"
             r"storage|disk|ssd|cpu|health|specs|terminal|shell|command|powershell|run|execute|code|script|python|"
             r"html|css|app|website|bug|fix|patch|refactor|nexus|trinetra|gitkitty|ashby|learnos|form2fact|orvyn|"
-            r"spare-gpu|payguard|anonymous|image|picture|photo|draw|generate|poster|video|screen|screenshot|click|"
+            r"spare-gpu|payguard|anonymous|image|picture|pic|photo|draw|generate|poster|banner|logo|video|screen|screenshot|click|"
             r"scroll|adb|phone|pipeline|omnipipeline|openhands|autogpt|interpreter|calculat|report)\b"
         )
         return bool(action_pattern.search(last_text))
@@ -3815,6 +3825,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     "When asked who built, coded, or created you, proudly credit Mohd Ahmed (Lyberty). "
                     "LANGUAGE RULE: Reply strictly in clear, natural English by default whenever the user writes or speaks in English—NEVER switch into Hinglish or Hindi unless the user explicitly writes/speaks in Hindi/Hinglish OR a `[LANGUAGE LOCK: ...]` directive requests Hindi, Hinglish, or Telugu. "
                     "Always stay directly focused on the user's current question—never parrot the user, repeat generic greetings, or mention unrequested past confusion. "
+                    "STRICT FACTUALITY: NEVER output fake completion status or image links such as 'Operation completed successfully', '✨ ...', or '(Click to view full size)' unless you ACTUALLY called `tool_generate_image` or `tool_generate_video` in THIS turn and received a verified result. "
                     "You have native tools including tool_client_bridge_action (display brightness, audio volume/mute, or opening apps/URLs cleanly), "
                     "workspace file tools (tool_workspace_list, tool_grep_search, tool_read_file with line ranges, tool_edit_file surgical diff, "
                     "tool_write_file, tool_delete_file, tool_start_local_preview, tool_coderx_build), live news/weather, memory vault, "
