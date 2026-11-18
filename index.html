@@ -2100,6 +2100,147 @@
                 width: calc(100vw - 24px);
             }
         }
+
+        /* ---------------- AURA 2.0 / 2.3 / 2.6 Generative UI, Charts, Traces & Wallpapers ---------------- */
+        .aura-wallpaper-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .aura-wallpaper-layer::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(7, 9, 14, var(--wallpaper-dim, 0.72));
+            backdrop-filter: blur(var(--wallpaper-blur, 6px));
+        }
+        .main-chat-viewport > *:not(.aura-wallpaper-layer) {
+            position: relative;
+            z-index: 2;
+        }
+        .aura-model-option {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.025);
+            color: #f3f4f6;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .aura-model-option:hover {
+            border-color: rgba(226, 185, 111, 0.45);
+            background: rgba(226, 185, 111, 0.09);
+        }
+        .aura-model-option.active {
+            border-color: rgba(226, 185, 111, 0.8);
+            background: linear-gradient(135deg, rgba(226, 185, 111, 0.15), rgba(56, 189, 248, 0.09));
+        }
+        .aura-model-opt-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12.5px;
+            font-weight: 700;
+        }
+        .aura-model-opt-sub {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        .aura-thought-block {
+            margin: 8px 0 14px 0;
+            border: 1px solid rgba(226, 185, 111, 0.25);
+            background: rgba(13, 16, 25, 0.85);
+            border-radius: 11px;
+            overflow: hidden;
+        }
+        .aura-thought-block summary {
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #e2b96f;
+            cursor: pointer;
+            user-select: none;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .aura-thought-block summary::before {
+            content: '▸';
+            font-size: 11px;
+            transition: transform 0.15s ease;
+        }
+        .aura-thought-block[open] summary::before {
+            transform: rotate(90deg);
+        }
+        .aura-thought-body {
+            padding: 8px 14px 12px 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            line-height: 1.55;
+            color: #9ca3af;
+            font-family: var(--font-code);
+        }
+        .aura-callout {
+            margin: 10px 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border-left: 3px solid #e2b96f;
+            background: rgba(226, 185, 111, 0.08);
+            font-size: 13.5px;
+            line-height: 1.55;
+        }
+        .aura-callout-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .aura-callout.callout-arch { border-left-color: #38bdf8; background: rgba(56, 189, 248, 0.08); }
+        .aura-callout.callout-arch .aura-callout-label { color: #7dd3fc; }
+        .aura-callout.callout-tip { border-left-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+        .aura-callout.callout-tip .aura-callout-label { color: #6ee7b7; }
+        .aura-callout.callout-warn { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.09); }
+        .aura-callout.callout-warn .aura-callout-label { color: #fca5a5; }
+        .aura-callout.callout-insight .aura-callout-label { color: #f7e4b4; }
+        .aura-chart-card, .inline-visual-card {
+            margin: 12px 0;
+            border: 1px solid rgba(226, 185, 111, 0.34);
+            border-radius: 12px;
+            background: #0a0d15;
+            overflow: hidden;
+        }
+        .inline-visual-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 7px 12px;
+            background: rgba(255, 255, 255, 0.035);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            font-size: 11.5px;
+            color: #e2b96f;
+            font-weight: 600;
+        }
+        .inline-visual-iframe {
+            width: 100%;
+            height: 290px;
+            border: none;
+            display: block;
+            background: #090b10;
+        }
     </style>
 </head>
 <body>
@@ -2177,6 +2318,7 @@
 
     <!-- ---------------- Main Chat Viewport ---------------- -->
     <main class="main-chat-viewport">
+        <div id="auraWallpaperLayer" class="aura-wallpaper-layer" aria-hidden="true"></div>
         <!-- Minimal Top Header -->
         <header class="top-navbar">
             <div class="navbar-left">
@@ -2231,22 +2373,30 @@
             <div class="slash-palette" id="slashCommandPalette" style="display: none;" role="listbox" aria-label="AURA Slash Commands"></div>
             <div class="input-dock-card" id="inputDockCard">
 
-                <!-- Popover Left: Model & Reasoning Mode Switcher -->
-                <div class="composer-popover composer-popover-left" id="composerModelPopover" role="dialog" aria-label="Model and Reasoning Selection">
-                    <div class="popover-section-title">Active Model</div>
-                    <select id="quickModelSelect" onchange="applyQuickModelSelection(this.value)" style="width:100%; background:#090b11; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:7px 9px; color:#f3f4f6; font-size:12.5px;">
-                        <option value="gemini:gemini-3.5-flash-lite">Gemini 3.5 Flash Lite</option>
-                        <option value="gemini:gemini-flash-lite-latest">Gemini Flash Latest</option>
-                    </select>
-                    <div class="popover-section-title" style="margin-top:4px;">Reasoning Mode</div>
+                <!-- Popover Left: AURA 2.0 / 2.3 / 2.6 Flagship Engine & Reasoning Switcher -->
+                <div class="composer-popover composer-popover-left" id="composerModelPopover" role="dialog" aria-label="AURA Model Selection">
+                    <div class="popover-section-title">Select AURA Engine</div>
+                    <button type="button" class="aura-model-option" id="auraTierBtn_aura-2.0" onclick="selectAuraModelTier('aura-2.0')">
+                        <span class="aura-model-opt-head"><span>AURA 2.0</span><span style="font-size:10.5px;color:#7dd3fc;">Study &amp; Visuals</span></span>
+                        <span class="aura-model-opt-sub">Fast fluent study mentor with cartoon SVG explainers</span>
+                    </button>
+                    <button type="button" class="aura-model-option active" id="auraTierBtn_aura-2.3" onclick="selectAuraModelTier('aura-2.3')">
+                        <span class="aura-model-opt-head"><span>AURA 2.3</span><span style="font-size:10.5px;color:#e2b96f;">Architect Studio</span></span>
+                        <span class="aura-model-opt-sub">Heavy coding, AST diffs &amp; system blueprints</span>
+                    </button>
+                    <button type="button" class="aura-model-option" id="auraTierBtn_aura-2.6" onclick="selectAuraModelTier('aura-2.6')">
+                        <span class="aura-model-opt-head"><span>AURA 2.6</span><span style="font-size:10.5px;color:#6ee7b7;">Apex Flagship</span></span>
+                        <span class="aura-model-opt-sub">Deep trace, live graphs, animations &amp; 1-prompt apps</span>
+                    </button>
+                    <div class="popover-section-title" style="margin-top:4px;">Reasoning Depth</div>
                     <select id="reasoningModeSelect" class="reasoning-select" style="width:100%; border-radius:8px; padding:7px 9px; font-size:12.5px;" aria-label="Reasoning Mode">
                         <option value="fast">Fast Core (Balanced Speed)</option>
                         <option value="architect">Architect Mode (Structured Plan)</option>
                         <option value="verifier">Verifier Mode (Strict Security Audit)</option>
                     </select>
                     <button type="button" class="popover-item" onclick="closeComposerPopovers(); openModelSettings();" style="margin-top:2px;">
-                        <span>All Model &amp; Ollama Settings</span>
-                        <span style="color:var(--text-subtle); font-size:11px;">Open</span>
+                        <span>Providers, Themes &amp; Wallpaper</span>
+                        <span style="color:var(--text-subtle); font-size:11px;">Settings</span>
                     </button>
                 </div>
 
@@ -2295,8 +2445,8 @@
                         <button class="btn-dock-icon" id="btnAttachFile" title="Attach files or images" onclick="document.getElementById('filePicker').click()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                         </button>
-                        <button type="button" class="composer-pill-btn" id="btnComposerModelMenu" onclick="toggleComposerPopover('model', event)" title="Switch Model &amp; Reasoning Mode">
-                            <span id="activeModelLabel" style="font-size:12px;">Gemini 3.5 Flash Lite</span>
+                        <button type="button" class="composer-pill-btn" id="btnComposerModelMenu" onclick="toggleComposerPopover('model', event)" title="Switch AURA Engine (2.0 / 2.3 / 2.6) &amp; Reasoning">
+                            <span id="activeModelLabel" style="font-size:12px;">AURA 2.3</span>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
                         </button>
                         <button class="btn-dock-icon" id="btnSlashPalette" type="button" title="Slash Commands" onclick="toggleSlashPaletteFromButton()" style="font-family: ui-monospace, monospace; font-weight: 700; font-size: 13px; color: var(--text-muted);">
@@ -2479,12 +2629,37 @@
             </div>
 
             <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
-                <label style="display:inline-flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:#d1d5db; cursor:pointer;">
-                    <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)">
-                    <span>Optional Scroll Space Backdrop</span>
-                </label>
-                <span id="spaceWarpBadge" style="font-family:var(--font-code); font-size:11px; color:#9ca3af;">Warp 1.0x • 0°</span>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                    <label style="display:inline-flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:#d1d5db; cursor:pointer; white-space:nowrap;">
+                        <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)" style="width:auto; flex-shrink:0; margin:0;">
+                        <span>Scroll Space Backdrop</span>
+                    </label>
+                    <span id="spaceWarpBadge" style="font-family:var(--font-code); font-size:11px; color:#9ca3af;">Warp 1.0x • 0°</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center;">
+                    <div>
+                        <label for="themePresetSelect" style="font-size:11px; margin-bottom:4px;">Studio Theme</label>
+                        <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="font-size:12px; padding:6px 8px;">
+                            <option value="obsidian">Obsidian Gold</option>
+                            <option value="matte">Pure Matte Black</option>
+                            <option value="cyan">Titanium Cyan</option>
+                            <option value="emerald">Emerald Matrix</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; margin-bottom:4px;">Gallery Wallpaper</label>
+                        <div style="display:flex; gap:6px;">
+                            <input type="file" id="customWallpaperInput" accept="image/*" style="display:none;" onchange="handleCustomWallpaperUpload(event)">
+                            <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(226,185,111,0.45); background:rgba(226,185,111,0.12); color:#f7e4b4; font-size:11.5px; cursor:pointer;">Upload Pic</button>
+                            <button type="button" onclick="clearCustomWallpaper()" style="padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; cursor:pointer;">Reset</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:11px; color:#9ca3af; white-space:nowrap;">Wallpaper Dim</span>
+                    <input type="range" id="wallpaperDimRange" min="0.25" max="0.92" step="0.05" value="0.72" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                </div>
             </div>
             <span id="globalExecutionChip" style="display:none;"><span class="nav-pill-sub">Auto-Pilot</span></span>
             <div class="model-settings-actions">
@@ -3472,31 +3647,41 @@
                 : 'Gemini requires GEMINI_API_KEY to be configured on the AURA server.';
         }
 
+        let activeAuraModelTier = 'aura-2.3';
+
+        function getActiveAuraModelTier() {
+            return activeAuraModelTier || 'aura-2.3';
+        }
+
+        function syncAuraTierUi(tierId) {
+            const norm = ['aura-2.0', 'aura-2.3', 'aura-2.6'].includes(tierId) ? tierId : 'aura-2.3';
+            activeAuraModelTier = norm;
+            const labels = {
+                'aura-2.0': 'AURA 2.0',
+                'aura-2.3': 'AURA 2.3',
+                'aura-2.6': 'AURA 2.6'
+            };
+            if (activeModelLabel) {
+                activeModelLabel.textContent = labels[norm] || 'AURA 2.3';
+            }
+            ['aura-2.0', 'aura-2.3', 'aura-2.6'].forEach(t => {
+                const btn = document.getElementById('auraTierBtn_' + t);
+                if (btn) btn.classList.toggle('active', t === norm);
+            });
+        }
+
         async function refreshActiveModelLabel() {
             if (!isAuthenticated()) return;
             try {
                 const response = await apiFetch('/api/settings');
                 if (!response.ok) return;
                 const data = await safeParseJson(response);
-                const settings = data.brain_settings || {};
                 const prefs = data.user_preferences || {};
                 if (prefs.execution_mode) {
                     activeExecutionMode = prefs.execution_mode;
                 }
-                const labels = { gemini: 'Gemini', ollama: 'Ollama' };
-                if (labels[settings.active_provider] && settings.active_model) {
-                    const prettyModel = settings.active_provider === 'ollama'
-                        ? `Ollama · ${settings.active_model}`
-                        : settings.active_model.replace(/-/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
-                    activeModelLabel.textContent = prettyModel;
-                    const quickSel = document.getElementById('quickModelSelect');
-                    if (quickSel) {
-                        const combo = `${settings.active_provider}:${settings.active_model}`;
-                        if (Array.from(quickSel.options).some(o => o.value === combo)) {
-                            quickSel.value = combo;
-                        }
-                    }
-                }
+                const savedTier = data.active_aura_model || prefs.aura_model || 'aura-2.3';
+                syncAuraTierUi(savedTier);
             } catch (error) {
                 console.warn('Could not refresh the active model label:', error);
             }
@@ -3611,8 +3796,9 @@
                 const data = await safeParseJson(response);
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not save model settings.');
                 activeExecutionMode = execPolicy;
-                const labels = { gemini: 'Gemini', ollama: 'Ollama' };
-                activeModelLabel.textContent = `• ${labels[provider]} · ${model}`;
+                if (typeof syncAuraTierUi === 'function') {
+                    syncAuraTierUi(data.active_aura_model || activeAuraModelTier);
+                }
                 modelSettingsStatus.textContent = 'Saved. Your next message will use these settings.';
                 setTimeout(closeModelSettings, 700);
             } catch (error) {
@@ -4920,7 +5106,7 @@
             }
         });
 
-        // Delegated click handler for code copy and live artifact buttons (avoids inline onclick in Markdown HTML)
+        // Delegated click handler for code copy, inline visuals, and live artifact buttons
         document.addEventListener('click', (e) => {
             const copyBtn = e.target && e.target.closest ? e.target.closest('.btn-copy-code') : null;
             if (copyBtn) {
@@ -4930,6 +5116,27 @@
             const artifactBtn = e.target && e.target.closest ? e.target.closest('.btn-artifact-code') : null;
             if (artifactBtn && typeof openArtifactFromCodeButton === 'function') {
                 openArtifactFromCodeButton(artifactBtn);
+                return;
+            }
+            const expandVisBtn = e.target && e.target.closest ? e.target.closest('.btn-expand-inline-visual') : null;
+            if (expandVisBtn) {
+                const card = expandVisBtn.closest('.inline-visual-card');
+                const srcEl = card ? card.querySelector('.aura-visual-src') : null;
+                if (srcEl && typeof openArtifactPane === 'function') {
+                    const lang = card.getAttribute('data-visual-lang') || 'html';
+                    openArtifactPane(srcEl.value || srcEl.textContent || '', lang, `Interactive ${lang.toUpperCase()}`);
+                }
+                return;
+            }
+            const toggleSrcBtn = e.target && e.target.closest ? e.target.closest('.btn-toggle-inline-src') : null;
+            if (toggleSrcBtn) {
+                const card = toggleSrcBtn.closest('.inline-visual-card');
+                const codeWrap = card ? card.querySelector('.inline-visual-code-wrap') : null;
+                if (codeWrap) {
+                    const showing = codeWrap.style.display !== 'none';
+                    codeWrap.style.display = showing ? 'none' : 'block';
+                    toggleSrcBtn.textContent = showing ? 'Code' : 'Hide Code';
+                }
             }
         });
 
@@ -5330,7 +5537,8 @@
                         thread_id: currentThreadId,
                         attachments: attachedToSend,
                         mode: activeExecutionMode || 'auto_pilot',
-                        reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast'
+                        reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast',
+                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3'
                     })
                 });
 
@@ -5434,6 +5642,9 @@
                     turnData.thinking.style.display = 'none';
                     if (accumulatedMarkdown) {
                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
+                        if (typeof hydrateInlineVisualCards === 'function') {
+                            hydrateInlineVisualCards(turnData.bubble);
+                        }
                         if (typeof maybeAutoOpenArtifact === 'function') {
                             maybeAutoOpenArtifact(accumulatedMarkdown);
                         }
@@ -5794,6 +6005,9 @@
                         }
                     });
                     scrollChatToBottom();
+                    if (typeof hydrateInlineVisualCards === 'function') {
+                        hydrateInlineVisualCards(chatStream);
+                    }
                 } else {
                     chatStream.innerHTML = '';
                     chatStream.appendChild(welcomeHero);
@@ -5843,6 +6057,90 @@
             return '';
         }
 
+        function _buildSafeAuraChartHtml(rawJson) {
+            try {
+                const obj = JSON.parse(String(rawJson || '').trim());
+                if (!obj || !Array.isArray(obj.labels) || !Array.isArray(obj.values) || obj.labels.length === 0) {
+                    return '';
+                }
+                const title = escapeHtml(String(obj.title || 'Analytics Overview'));
+                const subtitle = escapeHtml(String(obj.subtitle || ''));
+                const unit = escapeHtml(String(obj.unit || ''));
+                const n = Math.min(obj.labels.length, obj.values.length, 10);
+                const nums = [];
+                for (let i = 0; i < n; i++) {
+                    const v = Number(obj.values[i]);
+                    nums.push(Number.isFinite(v) ? Math.max(0, v) : 0);
+                }
+                const maxVal = Math.max(1, ...nums);
+                const W = 560;
+                const H = 220;
+                const padL = 44;
+                const padR = 20;
+                const padB = 34;
+                const padT = 22;
+                const plotW = W - padL - padR;
+                const plotH = H - padT - padB;
+                const step = plotW / n;
+                const barW = Math.max(18, Math.min(48, step * 0.56));
+                const palette = ['#e2b96f', '#38bdf8', '#10b981', '#a78bfa', '#f59e0b'];
+
+                let barsSvg = '';
+                for (let i = 0; i < n; i++) {
+                    const val = nums[i];
+                    const h = Math.max(4, Math.round((val / maxVal) * plotH));
+                    const x = Math.round(padL + i * step + (step - barW) / 2);
+                    const y = Math.round(padT + plotH - h);
+                    const color = palette[i % palette.length];
+                    const lbl = escapeHtml(String(obj.labels[i] || '').slice(0, 14));
+                    barsSvg +=
+                        `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${color}" fill-opacity="0.88"/>` +
+                        `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" fill="#f3f4f6" font-size="11" font-weight="700">${escapeHtml(String(val))}${unit}</text>` +
+                        `<text x="${x + barW / 2}" y="${H - 12}" text-anchor="middle" fill="#9ca3af" font-size="10.5">${lbl}</text>`;
+                }
+
+                return (
+                    `<div class="aura-chart-card">` +
+                        `<div class="inline-visual-header">` +
+                            `<span>${title}${subtitle ? ' — ' + subtitle : ''}</span>` +
+                            `<span style="font-size:10.5px; color:#94a3b8; font-family:var(--font-code);">interactive chart</span>` +
+                        `</div>` +
+                        `<div style="padding:10px 12px; overflow-x:auto;">` +
+                            `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block;" xmlns="http://www.w3.org/2000/svg">` +
+                                `<line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>` +
+                                barsSvg +
+                            `</svg>` +
+                        `</div>` +
+                    `</div>`
+                );
+            } catch (_) {
+                return '';
+            }
+        }
+
+        function hydrateInlineVisualCards(rootEl) {
+            if (!rootEl || typeof _buildSandboxedArtifactDocument !== 'function') return;
+            const cards = rootEl.querySelectorAll('.inline-visual-card');
+            cards.forEach(card => {
+                if (card.getAttribute('data-hydrated') === '1') return;
+                const srcEl = card.querySelector('.aura-visual-src');
+                const mount = card.querySelector('.inline-visual-mount');
+                if (!srcEl || !mount) return;
+                const rawCode = srcEl.value || srcEl.textContent || '';
+                const lang = (card.getAttribute('data-visual-lang') || 'html').toLowerCase();
+                const docHtml = _buildSandboxedArtifactDocument(rawCode, lang);
+                const blobUrl = URL.createObjectURL(new Blob([docHtml], { type: 'text/html' }));
+                const iframe = document.createElement('iframe');
+                iframe.className = 'inline-visual-iframe';
+                iframe.setAttribute('sandbox', 'allow-scripts');
+                iframe.setAttribute('title', `Sandboxed ${lang.toUpperCase()} Live Visual`);
+                iframe.src = blobUrl;
+                mount.innerHTML = '';
+                mount.appendChild(iframe);
+                card.setAttribute('data-hydrated', '1');
+            });
+        }
+
         function renderMarkdown(md) {
             if (!md) return '';
             // Strip NUL bytes so placeholder tokens can never be forged by untrusted input
@@ -5851,25 +6149,75 @@
             const codeBlocks = [];
             const inlineCodes = [];
             const safeEmbeds = [];
+            const thoughtBlocks = [];
 
-            // 1. Extract fenced code blocks first (contents strictly HTML-escaped)
+            // 0. Extract structured :::thought title ... ::: traces first (XSS-escaped strictly)
+            text = text.replace(/:::thought([^\n]*)\n([\s\S]*?):::/g, (match, title, body) => {
+                const idx = thoughtBlocks.length;
+                const safeTitle = escapeHtml((title || 'Reasoning Trace').trim());
+                const safeBody = escapeHtml((body || '').trim()).replace(/\n/g, '<br>');
+                thoughtBlocks.push(
+                    `<details class="aura-thought-block">` +
+                        `<summary><span>${safeTitle}</span></summary>` +
+                        `<div class="aura-thought-body">${safeBody}</div>` +
+                    `</details>`
+                );
+                return `\x00AURA_TH_${idx}\x00`;
+            });
+
+            // 1. Extract fenced code blocks first (contents strictly HTML-escaped; charts/visuals cleanly wrapped)
             text = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
                 const rawLang = (lang || 'code').toLowerCase();
-                const langLabel = escapeHtml(rawLang);
-                const escapedCode = escapeHtml(code.trim());
+                const trimmedCode = code.trim();
                 const idx = codeBlocks.length;
-                codeBlocks.push(
-                    `<div class="code-container" data-lang="${langLabel}">` +
-                        `<div class="code-header">` +
-                            `<span class="code-lang-label">${langLabel}</span>` +
-                            `<div class="code-actions-group">` +
-                                `<button type="button" class="btn-artifact-code">Open Artifact</button>` +
-                                `<button type="button" class="btn-copy-code">Copy</button>` +
+
+                if (rawLang === 'aura-chart') {
+                    const chartHtml = _buildSafeAuraChartHtml(trimmedCode);
+                    if (chartHtml) {
+                        codeBlocks.push(chartHtml);
+                        return `\x00AURA_CB_${idx}\x00`;
+                    }
+                }
+
+                const langLabel = escapeHtml(rawLang);
+                const escapedCode = escapeHtml(trimmedCode);
+                const isInlineVisual = (rawLang === 'svg' || rawLang === 'aura-visual' || rawLang === 'aura-anim' ||
+                    (rawLang === 'html' && (trimmedCode.split('\n').length >= 5 || /<(svg|canvas|html|div|section|style)\b/i.test(trimmedCode))));
+
+                if (isInlineVisual) {
+                    const effectiveLang = (rawLang === 'aura-visual' || rawLang === 'aura-anim') ? 'html' : rawLang;
+                    codeBlocks.push(
+                        `<div class="inline-visual-card" data-visual-lang="${escapeHtml(effectiveLang)}">` +
+                            `<textarea class="aura-visual-src" hidden>${escapedCode}</textarea>` +
+                            `<div class="inline-visual-header">` +
+                                `<span>Interactive ${escapeHtml(effectiveLang.toUpperCase())} Render</span>` +
+                                `<div class="code-actions-group">` +
+                                    `<button type="button" class="btn-artifact-code btn-expand-inline-visual">Expand in Studio</button>` +
+                                    `<button type="button" class="btn-copy-code btn-toggle-inline-src">Code</button>` +
+                                `</div>` +
                             `</div>` +
-                        `</div>` +
-                        `<pre class="code-pre"><code>${escapedCode}</code></pre>` +
-                    `</div>`
-                );
+                            `<div class="inline-visual-mount" style="padding:14px; color:#94a3b8; font-size:12px;">Rendering interactive visual...</div>` +
+                            `<div class="inline-visual-code-wrap" style="display:none;">` +
+                                `<div class="code-container" data-lang="${escapeHtml(effectiveLang)}" style="margin:0; border:none; border-top:1px solid rgba(255,255,255,0.08); border-radius:0;">` +
+                                    `<pre class="code-pre"><code>${escapedCode}</code></pre>` +
+                                `</div>` +
+                            `</div>` +
+                        `</div>`
+                    );
+                } else {
+                    codeBlocks.push(
+                        `<div class="code-container" data-lang="${langLabel}">` +
+                            `<div class="code-header">` +
+                                `<span class="code-lang-label">${langLabel}</span>` +
+                                `<div class="code-actions-group">` +
+                                    `<button type="button" class="btn-artifact-code">Open Artifact</button>` +
+                                    `<button type="button" class="btn-copy-code">Copy</button>` +
+                                `</div>` +
+                            `</div>` +
+                            `<pre class="code-pre"><code>${escapedCode}</code></pre>` +
+                        `</div>`
+                    );
+                }
                 return `\x00AURA_CB_${idx}\x00`;
             });
 
@@ -5928,6 +6276,12 @@
             let html = escapeHtml(text);
 
             // 6. Safe structural Markdown transformations on already-escaped text
+            html = html.replace(/^&gt;\s*\[!(INSIGHT|ARCH|ARCHITECTURE|TIP|KEY|WARN|WARNING)\]\s*(.*)$/gim, (m, kind, bodyText) => {
+                const k = kind.toUpperCase();
+                const cls = (k === 'ARCH' || k === 'ARCHITECTURE') ? 'callout-arch' : (k === 'TIP' || k === 'KEY' ? 'callout-tip' : (k === 'WARN' || k === 'WARNING' ? 'callout-warn' : 'callout-insight'));
+                return `<div class="aura-callout ${cls}"><span class="aura-callout-label">${k}</span>${bodyText}</div>`;
+            });
+
             html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
             html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
             html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
@@ -5942,7 +6296,8 @@
             html = html.replace(/\n\n/g, '<p></p>');
             html = html.replace(/\n/g, '<br>');
 
-            // 7. Restore verified safe embeds, inline code, and code blocks
+            // 7. Restore verified safe embeds, thought traces, inline code, and code blocks
+            html = html.replace(/\x00AURA_TH_(\d+)\x00/g, (_, i) => thoughtBlocks[Number(i)] || '');
             html = html.replace(/\x00AURA_EM_(\d+)\x00/g, (_, i) => safeEmbeds[Number(i)] || '');
             html = html.replace(/\x00AURA_IC_(\d+)\x00/g, (_, i) => inlineCodes[Number(i)] || '');
             html = html.replace(/\x00AURA_CB_(\d+)\x00/g, (_, i) => codeBlocks[Number(i)] || '');
@@ -7267,7 +7622,8 @@
                         prompt: spokenText,
                         thread_id: currentThreadId || 'default',
                         mode: activeExecutionMode || 'auto_pilot',
-                        reasoning_mode: getActiveReasoningMode()
+                        reasoning_mode: getActiveReasoningMode(),
+                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3'
                     })
                 });
                 const data = await safeParseJson(res);
@@ -7486,23 +7842,79 @@
             }
         }
 
-        async function applyQuickModelSelection(comboValue) {
-            if (!comboValue || !comboValue.includes(':')) return;
-            const [provider, model] = comboValue.split(':', 2);
-            if (!isAuthenticated()) {
-                authOverlay.style.display = 'flex';
-                return;
-            }
+        async function selectAuraModelTier(tierId) {
+            syncAuraTierUi(tierId);
+            closeComposerPopovers();
+            if (!isAuthenticated()) return;
             try {
-                const res = await apiFetch('/api/settings', {
+                await apiFetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ active_provider: provider, active_model: model })
+                    body: JSON.stringify({ aura_model: activeAuraModelTier })
                 });
-                if (res.ok && typeof refreshActiveModelLabel === 'function') {
-                    await refreshActiveModelLabel();
-                }
             } catch (_) {}
+        }
+
+        function applyAuraThemePreset(preset) {
+            const presets = {
+                obsidian: { bg: '#090a0e', side: '#0d0f15', gold: '#e2b96f', border: 'rgba(226, 185, 111, 0.55)' },
+                matte: { bg: '#050507', side: '#09090c', gold: '#e5e7eb', border: 'rgba(255, 255, 255, 0.35)' },
+                cyan: { bg: '#060c14', side: '#0a121e', gold: '#38bdf8', border: 'rgba(56, 189, 248, 0.5)' },
+                emerald: { bg: '#05100c', side: '#081812', gold: '#34d399', border: 'rgba(52, 211, 153, 0.5)' }
+            };
+            const p = presets[preset] || presets.obsidian;
+            document.documentElement.style.setProperty('--bg-primary', p.bg);
+            document.documentElement.style.setProperty('--bg-sidebar', p.side);
+            document.documentElement.style.setProperty('--accent-gold', p.gold);
+            document.documentElement.style.setProperty('--border-focus', p.border);
+            try { localStorage.setItem('aura_theme_preset', preset); } catch (_) {}
+        }
+
+        function _applyCustomWallpaperUrl(dataUrl) {
+            const layer = document.getElementById('auraWallpaperLayer');
+            if (!layer) return;
+            if (dataUrl) {
+                layer.style.backgroundImage = `url("${dataUrl}")`;
+                layer.style.opacity = '1';
+            } else {
+                layer.style.backgroundImage = 'none';
+                layer.style.opacity = '0';
+            }
+        }
+
+        function handleCustomWallpaperUpload(ev) {
+            const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const maxW = 1280;
+                    const scale = Math.min(1, maxW / Math.max(1, img.width));
+                    const w = Math.max(1, Math.round(img.width * scale));
+                    const h = Math.max(1, Math.round(img.height * scale));
+                    const c = document.createElement('canvas');
+                    c.width = w;
+                    c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const compactUrl = c.toDataURL('image/jpeg', 0.78);
+                    try { localStorage.setItem('aura_custom_wallpaper', compactUrl); } catch (_) {}
+                    _applyCustomWallpaperUrl(compactUrl);
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateWallpaperDim(val) {
+            const num = Math.max(0.25, Math.min(0.92, parseFloat(val || '0.72')));
+            document.documentElement.style.setProperty('--wallpaper-dim', String(num));
+            try { localStorage.setItem('aura_wallpaper_dim', String(num)); } catch (_) {}
+        }
+
+        function clearCustomWallpaper() {
+            try { localStorage.removeItem('aura_custom_wallpaper'); } catch (_) {}
+            _applyCustomWallpaperUrl('');
         }
 
         function toggleSpaceBackdropSetting(enabled) {
@@ -7526,6 +7938,21 @@
                 const chk = document.getElementById('toggleSpaceBackdropCheckbox');
                 if (chk) chk.checked = spaceEnabled;
                 toggleSpaceBackdropSetting(spaceEnabled);
+
+                const savedTheme = localStorage.getItem('aura_theme_preset');
+                if (savedTheme) {
+                    applyAuraThemePreset(savedTheme);
+                    const sel = document.getElementById('themePresetSelect');
+                    if (sel) sel.value = savedTheme;
+                }
+                const savedWall = localStorage.getItem('aura_custom_wallpaper');
+                if (savedWall) _applyCustomWallpaperUrl(savedWall);
+                const savedDim = localStorage.getItem('aura_wallpaper_dim');
+                if (savedDim) {
+                    updateWallpaperDim(savedDim);
+                    const rng = document.getElementById('wallpaperDimRange');
+                    if (rng) rng.value = savedDim;
+                }
             } catch (_) {}
 
             const voiceOverlay = document.getElementById('voiceCallOverlay');

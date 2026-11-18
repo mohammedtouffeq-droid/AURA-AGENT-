@@ -28,6 +28,12 @@
    - 10 deterministic specialist engines (**TRINETRA** Cyber/BNS Legal Defense, **AURA Neural IDE**, **GitKitty**, **Ashby Job Radar**, **LearnOS**, **Form2Fact**, **OrvynAI**, **Spare-GPU**, **PayGuard UPI**, **Anonymous-Campus**).
    - 9 Agentic Slash Commands (`/goal`, `/plan`, `/boost`, `/teamwork`, `/browser`, `/schedule`, `/compact`, `/learn`, `/grill-me`), multi-agent swarm coordination, and browser-safe hardware bridge controls.
 
+6. **Dedicated Modular Flagship Engines & Generative UI (`aura_models_hub.py`, `aura_engine_20.py`, `aura_engine_23.py`, `aura_engine_26.py`)**
+   - **`AURA 2.0` (`aura-2.0`)**: Fast everyday assistant & warm study mentor generating expressive, cartoon-style SVG concept explainers.
+   - **`AURA 2.3` (`aura-2.3`)**: Deep Architect & coding studio with AST/workspace context tracing, architecture SVG blueprints, and low-temperature multi-step verification.
+   - **`AURA 2.6` (`aura-2.6`)**: Apex multi-agent synthesis engine streaming live `:::thought :::` traces, semantic callout banners, interactive `aura-chart` SVG graphs, animated visuals, and 1-prompt sandboxed apps.
+   - **Theme & Wallpaper Studio**: Built-in curated dark presets (`Obsidian Gold`, `Pure Matte Black`, `Titanium Cyan`, `Emerald Matrix`) and client-side gallery wallpaper compression stored privately per browser.
+
 ## Security & Privacy Architecture
 
 - **Authentication & Sessions:** Scrypt password hashing (`aura_db.py`), `HttpOnly; SameSite=Strict` cookies + dynamic CSRF token (`X-CSRF-Token`), unique username enforcement, and 1-click isolated guest sessions.
@@ -50,6 +56,6 @@ Deploy serverless directly on Vercel via [`vercel.json`](vercel.json) and [`api/
 ## Running Verified Test Suites
 
 ```powershell
-python -m unittest test_aura_sovereign_v5 test_aura_workspace_ide -v
-python -m pytest test_aura_reliability_fixes.py test_bharatcode_top10.py test_aura_workspace_ide.py test_aura_sovereign_v5.py -v
+python -m unittest test_aura_models_v2_engines test_aura_sovereign_v5 test_aura_workspace_ide -v
+python -m pytest test_aura_models_v2_engines.py test_aura_reliability_fixes.py test_aura_workspace_ide.py test_aura_sovereign_v5.py test_aura_pipeline.py -v
 ```

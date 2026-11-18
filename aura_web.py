@@ -81,7 +81,9 @@ def _clamp_float(value: Any, default: float, minimum: float, maximum: float) -> 
 
 import aura_db
 from aura_brain import AuraBrain
+from aura_engine_base import EngineDispatchPlan, format_thought_block
 from aura_jarvis_hub import JARVIS_HUB
+from aura_models_hub import AURA_MODEL_ROUTER
 from aura_settings import AuraSettingsManager
 from coderx_engine import _atomic_write_text
 
@@ -137,7 +139,7 @@ def _prepare_chat_dispatch(
     """Applies Sovereign reasoning-mode framing and enforces active JARVIS Kill Switch guardrails."""
     reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
     dispatch_prompt = prompt
-    if prompt:
+    if prompt and not prompt.startswith("/"):
         if reasoning_mode == "architect":
             dispatch_prompt = (
                 "[REASONING MODE: ARCHITECT — Structure concisely with ## Plan, ## Implementation, ## Verification]\n\n"
@@ -152,6 +154,33 @@ def _prepare_chat_dispatch(
 
     effective_permission = "ask_first" if JARVIS_HUB.get_status(user_id).get("halted") else permission_mode
     return dispatch_prompt, effective_permission
+
+
+def _prepare_aura_turn(
+    user: Dict[str, Any],
+    prompt: str,
+    body: Dict[str, Any],
+    permission_mode: str,
+    brain: AuraBrain,
+) -> Tuple[str, str, Optional[EngineDispatchPlan], Optional[str]]:
+    """Applies AURA 2.0 / 2.3 / 2.6 engine profile + reasoning mode + Kill Switch guardrails."""
+    user_id = int(user["id"])
+    prefs = ((user.get("settings") or {}).get("preferences") or {})
+    raw_tier = body.get("aura_model") or prefs.get("aura_model")
+    norm_tier = AURA_MODEL_ROUTER.normalize_tier(raw_tier) if raw_tier else None
+
+    dispatch_prompt, effective_permission = _prepare_chat_dispatch(
+        user_id, prompt, body, permission_mode, brain
+    )
+    if not prompt or prompt.startswith("/") or not norm_tier:
+        return dispatch_prompt, effective_permission, None, norm_tier
+
+    reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
+    plan = AURA_MODEL_ROUTER.prepare_turn(user_id, norm_tier, prompt, reasoning_mode=reasoning_mode)
+    if reasoning_mode == "fast":
+        brain.temperature = plan.temperature
+    framed_prompt = f"{plan.system_framing}\n\n{dispatch_prompt}"
+    return framed_prompt, effective_permission, plan, norm_tier
 
 
 def _build_conversation_history(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
@@ -554,11 +583,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             from aura_permission_system import permission_manager
+            prefs = (user.get("settings") or {}).get("preferences", {})
+            active_aura = AURA_MODEL_ROUTER.normalize_tier(prefs.get("aura_model")) or AURA_MODEL_ROUTER.get_user_tier(user["id"])
             self._send_json({
                 "success": True,
                 "brain_settings": _selected_brain_settings(user),
                 "security_mode": permission_manager.get_security_mode(user["id"]).value,
-                "user_preferences": (user.get("settings") or {}).get("preferences", {}),
+                "user_preferences": prefs,
+                "active_aura_model": active_aura,
+                "aura_models": AURA_MODEL_ROUTER.list_catalog(),
                 "providers": AuraSettingsManager.public_model_catalog(),
                 "gemini_key_configured": bool(BRAIN.api_key and not BRAIN.api_key.startswith("YOUR_")),
             })
@@ -861,6 +894,18 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     except Exception:
                         pass
             self._send_json({"success": True, "runs": runs})
+
+        elif path == "/api/models/aura":
+            user = self._get_auth_user()
+            active_tier = "aura-2.3"
+            if user:
+                prefs = (user.get("settings") or {}).get("preferences") or {}
+                active_tier = AURA_MODEL_ROUTER.normalize_tier(prefs.get("aura_model")) or AURA_MODEL_ROUTER.get_user_tier(user["id"])
+            self._send_json({
+                "success": True,
+                "active_aura_model": active_tier,
+                "models": AURA_MODEL_ROUTER.list_catalog(),
+            })
 
         elif path == "/api/jarvis/status":
             user = self._get_auth_user()
@@ -1220,8 +1265,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             conv_history = _build_conversation_history(user_id, thread_id)
 
             brain = _create_user_brain(user)
-            dispatch_prompt, permission_mode = _prepare_chat_dispatch(
-                user_id, prompt, body, permission_mode, brain
+            dispatch_prompt, permission_mode, engine_plan, active_tier = _prepare_aura_turn(
+                user, prompt, body, permission_mode, brain
             )
             reply = brain.think_and_act(
                 dispatch_prompt,
@@ -1230,12 +1275,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 approved=approved,
                 conversation_history=conv_history,
             )
+            if engine_plan is not None and active_tier:
+                reply = AURA_MODEL_ROUTER.postprocess_reply(active_tier, prompt, reply, engine_plan)
             tools_used = getattr(brain, "last_tools", [])
             aura_db.save_message(user_id, thread_id, "assistant", reply, tools_used)
 
             self._send_json({
                 "reply": reply,
                 "tools": tools_used,
+                "aura_model": active_tier,
                 "status": "completed",
                 "user_vault": aura_db.export_user_vault(user_id),
             })
@@ -1277,13 +1325,23 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             brain = _create_user_brain(user)
-            dispatch_prompt, permission_mode = _prepare_chat_dispatch(
-                user_id, prompt, body, permission_mode, brain
+            dispatch_prompt, permission_mode, engine_plan, active_tier = _prepare_aura_turn(
+                user, prompt, body, permission_mode, brain
             )
             accumulated_text = ""
             tools_used = []
 
             try:
+                if engine_plan is not None and engine_plan.thought_steps:
+                    trace_prefix = format_thought_block(
+                        engine_plan.trace_title,
+                        engine_plan.thought_steps,
+                        engine_plan.elapsed_ms,
+                    )
+                    accumulated_text += trace_prefix
+                    trace_payload = json.dumps({"type": "token", "delta": trace_prefix})
+                    self.wfile.write(f"data: {trace_payload}\n\n".encode("utf-8"))
+                    self.wfile.flush()
                 final_reply_text = ""
                 for chunk in brain.think_and_act_stream(
                     dispatch_prompt,
@@ -1366,18 +1424,30 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not isinstance(requested, dict):
                 self._send_json({"success": False, "error": "Invalid model settings"}, status=400)
                 return
+            saved = dict(user.get("settings") or {})
             provider = requested.get("active_provider")
             model = requested.get("active_model")
-            if not AuraSettingsManager.validate_model_selection(provider, model):
+            raw_aura_model = body.get("aura_model") or requested.get("aura_model") or (body.get("preferences") or {}).get("aura_model")
+            norm_aura_model = AURA_MODEL_ROUTER.normalize_tier(raw_aura_model) if raw_aura_model else None
+
+            if provider is not None or model is not None:
+                if not AuraSettingsManager.validate_model_selection(provider, model):
+                    self._send_json({"success": False, "error": "Unsupported provider or model"}, status=400)
+                    return
+                saved["brain_settings"] = {
+                    "active_provider": provider,
+                    "active_model": model.strip(),
+                }
+            elif norm_aura_model is None:
                 self._send_json({"success": False, "error": "Unsupported provider or model"}, status=400)
                 return
-            saved = dict(user.get("settings") or {})
-            saved["brain_settings"] = {
-                "active_provider": provider,
-                "active_model": model.strip(),
-            }
+            elif "brain_settings" not in saved:
+                saved["brain_settings"] = _selected_brain_settings(user)
+
+            prefs = dict(saved.get("preferences") or {})
+            if norm_aura_model is not None:
+                prefs["aura_model"] = AURA_MODEL_ROUTER.set_user_tier(user["id"], norm_aura_model)
             if isinstance(body.get("preferences"), dict):
-                prefs = dict(saved.get("preferences") or {})
                 if "temperature" in body["preferences"]:
                     prefs["temperature"] = _clamp_float(body["preferences"]["temperature"], 0.3, 0.0, 1.0)
                 if "theme" in body["preferences"]:
@@ -1389,6 +1459,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                         from aura_permission_system import SecurityMode, permission_manager
                         sec_target = SecurityMode.STRICT_APPROVAL if exec_mode == "ask_first" else SecurityMode.WORKSPACE_SAFE
                         permission_manager.set_security_mode(sec_target, user_id=user["id"], is_admin=(user.get("role") in ("admin", "superuser")))
+            if prefs:
                 saved["preferences"] = prefs
             if not aura_db.save_user_settings(user["id"], saved):
                 self._send_json({"success": False, "error": "Could not save model settings"}, status=500)
@@ -1398,6 +1469,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "success": True,
                 "brain_settings": _selected_brain_settings(user),
                 "preferences": saved.get("preferences", {}),
+                "active_aura_model": prefs.get("aura_model", AURA_MODEL_ROUTER.get_user_tier(user["id"])),
             })
 
         elif path == "/api/engines/search":
