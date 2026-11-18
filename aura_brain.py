@@ -2888,6 +2888,8 @@ import threading as _threading
 
 _KEY_MODEL_COOLDOWN: Dict[tuple[str, str], float] = {}
 _KEY_COOLDOWN_LOCK = _threading.Lock()
+_QUICK_RESP_CACHE: Dict[str, tuple[float, Dict[str, Any]]] = {}
+_KEY_RR_SEQ: List[int] = [0]
 
 
 def _is_key_model_cooled_down(api_key_val: str, model_name: str) -> bool:
@@ -3981,9 +3983,11 @@ The unified pipeline processed your instruction across all core engines (**Time:
             k = (candidate_key or "").strip()
             if k and not k.startswith("YOUR_") and k not in key_pool and k not in pool_candidates:
                 pool_candidates.append(k)
-        # Rotate shared keys across concurrent users/requests when using default shared pool
+        # Rotate shared keys evenly per request across concurrent users
         if len(pool_candidates) > 1 and not user_byok and primary_key == API_KEY:
-            rot = (abs(hash(str(getattr(self, "user_id", "") or ""))) + int(time.time() // 2)) % len(pool_candidates)
+            with _KEY_COOLDOWN_LOCK:
+                rot = _KEY_RR_SEQ[0] % len(pool_candidates)
+                _KEY_RR_SEQ[0] += 1
             pool_candidates = pool_candidates[rot:] + pool_candidates[:rot]
         key_pool.extend(pool_candidates)
 
@@ -4031,13 +4035,13 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 return pl_copy
             return base_pl
 
-        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite-preview"}
+        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview"}
         primary_model = "gemini-3-flash-preview" if self.model in deprecated_or_slow else self.model
         models_to_try: List[str] = []
-        for m in (primary_model, "gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+        for m in (primary_model, "gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
             if m and m not in models_to_try:
                 models_to_try.append(m)
-        models_to_try = models_to_try[:4]
+        models_to_try = models_to_try[:3]
 
         def _post_gemini(mod: str, api_key_val: str, pl: Dict[str, Any], timeout_s: float) -> Dict[str, Any]:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent"
@@ -4056,10 +4060,35 @@ The unified pipeline processed your instruction across all core engines (**Time:
         is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
         is_vercel = bool(os.environ.get("VERCEL"))
         voice_fast = bool(getattr(self, "voice_turn_mode", False))
+
+        # Fast in-memory TTL cache for repeated identical single-turn general queries (shields 6,000-user launch spikes)
+        cache_key: Optional[str] = None
+        if not is_mocked_urlopen and not include_tools and not user_byok and deadline_override is None and len(compacted) == 1:
+            parts0 = compacted[0].get("parts") or []
+            if len(parts0) == 1 and isinstance(parts0[0], dict) and "text" in parts0[0]:
+                qtxt = str(parts0[0].get("text") or "").strip()
+                if qtxt and len(qtxt) <= 1800 and not re.search(r"\b(today|time|date|weather|news|now|right now)\b", qtxt.lower()):
+                    import hashlib
+                    raw_sig = f"{primary_model}|{getattr(self, 'thinking_level', '')}|{round(float(self.temperature), 2)}|{qtxt}"
+                    cache_key = hashlib.sha256(raw_sig.encode("utf-8", errors="ignore")).hexdigest()[:24]
+                    now_ts = time.monotonic()
+                    with _KEY_COOLDOWN_LOCK:
+                        hit = _QUICK_RESP_CACHE.get(cache_key)
+                        if hit and (now_ts - hit[0]) < 90.0:
+                            return json.loads(json.dumps(hit[1]))
+
+        def _cache_and_return(resp_obj: Dict[str, Any]) -> Dict[str, Any]:
+            if cache_key and isinstance(resp_obj, dict) and resp_obj.get("candidates"):
+                with _KEY_COOLDOWN_LOCK:
+                    if len(_QUICK_RESP_CACHE) >= 128:
+                        _QUICK_RESP_CACHE.pop(next(iter(_QUICK_RESP_CACHE)), None)
+                    _QUICK_RESP_CACHE[cache_key] = (time.monotonic(), resp_obj)
+            return resp_obj
+
         if voice_fast:
-            total_budget = 8.0
+            total_budget = 12.5
         else:
-            total_budget = (12.5 if is_vercel else 16.0) if include_tools else (9.5 if is_vercel else 12.0)
+            total_budget = (16.5 if is_vercel else 19.5) if include_tools else (15.0 if is_vercel else 16.5)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
@@ -4086,28 +4115,28 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         for mod, k_val in ordered_pairs:
             remaining = deadline - time.monotonic()
-            if remaining < 1.8:
+            if remaining < 2.2:
                 break
             if voice_fast:
-                max_att = 4.2
+                max_att = 6.5
             else:
-                max_att = (6.5 if include_tools else 5.0) if is_vercel else (8.0 if include_tools else 6.0)
-            attempt_timeout = max(1.8, min(max_att, remaining))
+                max_att = (8.5 if include_tools else 7.8) if is_vercel else (9.0 if include_tools else 8.0)
+            attempt_timeout = max(2.2, min(max_att, remaining))
             mod_payload = _payload_for_model(primary_payload, mod, allow_thinking=True)
             try:
-                return _post_gemini(mod, k_val, mod_payload, attempt_timeout)
+                return _cache_and_return(_post_gemini(mod, k_val, mod_payload, attempt_timeout))
             except urllib.error.HTTPError as e:
                 print(f"[*] AURA Gemini live HTTP {e.code} fallback for {mod}: {e}")
                 if e.code == 400 and "thinkingConfig" in (mod_payload.get("generationConfig") or {}):
                     try:
-                        return _post_gemini(mod, k_val, primary_payload, max(1.8, min(max_att, deadline - time.monotonic())))
+                        return _cache_and_return(_post_gemini(mod, k_val, primary_payload, max(2.2, min(max_att, deadline - time.monotonic()))))
                     except Exception:
                         pass
                 if not is_mocked_urlopen:
                     if e.code == 429:
-                        _mark_key_model_cooldown(k_val, mod, 22.0)
+                        _mark_key_model_cooldown(k_val, mod, 12.0)
                     elif e.code in (503, 504):
-                        _mark_key_model_cooldown(k_val, mod, 10.0)
+                        _mark_key_model_cooldown(k_val, mod, 6.0)
                     elif e.code == 404:
                         _mark_key_model_cooldown(k_val, mod, 300.0)
                 if e.code in (429, 403, 503, 404, 400):
@@ -4115,7 +4144,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
             except Exception as e:
                 print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
                 if not is_mocked_urlopen:
-                    _mark_key_model_cooldown(k_val, mod, 8.0)
+                    _mark_key_model_cooldown(k_val, mod, 4.0)
                 continue
 
         # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
