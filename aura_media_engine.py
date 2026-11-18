@@ -573,6 +573,33 @@ class AuraCinemaStudio:
             "supported_cameras": list(PhotorealCameraEngine.PRESETS.keys())
         }
 
+    @staticmethod
+    def encode_compact_data_uri(image_path: Path, max_dim: int = 768, quality: int = 82) -> str:
+        """Encodes a generated image into a compact JPEG data URI for container-portable cloud delivery."""
+        try:
+            import base64
+            import io
+            p = Path(image_path)
+            if not p.exists() or not p.is_file():
+                return ""
+            try:
+                from PIL import Image as _PILImage
+                with _PILImage.open(p) as im:
+                    rgb = im.convert("RGB")
+                    rgb.thumbnail((max_dim, max_dim))
+                    buf = io.BytesIO()
+                    rgb.save(buf, format="JPEG", quality=quality, optimize=True)
+                    raw = buf.getvalue()
+                    return "data:image/jpeg;base64," + base64.b64encode(raw).decode("ascii")
+            except Exception:
+                raw = p.read_bytes()
+                if len(raw) <= 480_000:
+                    mime = "image/jpeg" if p.suffix.lower() in (".jpg", ".jpeg") else "image/png"
+                    return f"data:{mime};base64," + base64.b64encode(raw).decode("ascii")
+        except Exception:
+            pass
+        return ""
+
     def create_cinematic_image(self,
                                prompt: str,
                                camera_style: str = "auto",

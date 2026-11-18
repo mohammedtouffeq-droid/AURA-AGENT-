@@ -2582,7 +2582,7 @@
                 </div>
             </div>
 
-            <div style="width:100%; display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:6px;">
+            <div class="voice-hud-selects" style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px;">
                 <select id="voiceHudLangSelect" onchange="saveVoicePreferences({language:this.value})" aria-label="Voice Language" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
                     <option value="en">English (Default)</option>
                     <option value="auto">Auto (Match)</option>
@@ -4810,21 +4810,41 @@
             });
         }
 
-        function showBridgeToast(message, accentColor) {
+        function showBridgeToast(message, accentColor, actionUrl = '', actionLabel = '') {
             let toast = document.getElementById('auraClientBridgeToast');
             if (!toast) {
                 toast = document.createElement('div');
                 toast.id = 'auraClientBridgeToast';
-                toast.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:99999; padding:12px 18px; border-radius:12px; background:rgba(9,13,22,0.94); border:1px solid #38bdf8; color:#e0f2fe; font-size:12.5px; font-weight:600; box-shadow:0 12px 32px rgba(0,0,0,0.65); transition:opacity 0.25s ease; pointer-events:none;';
+                toast.style.cssText = 'position:fixed; bottom:84px; right:16px; max-width:min(380px, calc(100vw - 32px)); z-index:99999; padding:12px 14px; border-radius:12px; background:rgba(14,17,24,0.96); border:1px solid rgba(255,255,255,0.16); color:#f4f4f5; font-size:12.5px; font-weight:500; box-shadow:0 12px 32px rgba(0,0,0,0.65); transition:opacity 0.25s ease; pointer-events:auto; display:flex; align-items:center; justify-content:space-between; gap:10px;';
                 document.body.appendChild(toast);
             }
-            toast.style.borderColor = accentColor || '#38bdf8';
-            toast.innerHTML = message;
+            toast.style.borderColor = accentColor || 'rgba(255,255,255,0.2)';
+            const safeUrl = actionUrl ? sanitizeSafeUrl(actionUrl) || (/^(whatsapp|vscode|ms-calculator|ms-settings|spotify):/i.test(actionUrl) ? actionUrl : '') : '';
+            let btnHtml = '';
+            if (safeUrl) {
+                btnHtml = `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="padding:5px 10px; border-radius:7px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22); color:#ffffff; text-decoration:none; font-size:11.5px; font-weight:600; white-space:nowrap;">${escapeHtml(actionLabel || 'Open')}</a>`;
+            }
+            toast.innerHTML = `<div style="min-width:0;">${message}</div>${btnHtml}`;
             toast.style.opacity = '1';
             clearTimeout(window.__auraToastTimer);
             window.__auraToastTimer = setTimeout(() => {
                 if (toast) toast.style.opacity = '0';
-            }, 4200);
+            }, safeUrl ? 9000 : 4500);
+        }
+
+        function _applySafeBrightnessOverlay(level) {
+            const clamped = Math.max(10, Math.min(100, Number(level ?? 100)));
+            let veil = document.getElementById('auraBrightnessVeil');
+            if (!veil) {
+                veil = document.createElement('div');
+                veil.id = 'auraBrightnessVeil';
+                veil.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:99990; background:#000; opacity:0; transition:opacity 0.25s ease;';
+                document.body.appendChild(veil);
+            }
+            // Dim smoothly without setting CSS filter on <html> (which breaks position:fixed modals)
+            const dimOpacity = Math.max(0, Math.min(0.72, (100 - clamped) / 100 * 0.78));
+            veil.style.opacity = dimOpacity.toFixed(2);
+            return dimOpacity;
         }
 
         function executeClientBridgeCommand(cmd) {
@@ -4832,15 +4852,13 @@
             const action = String(cmd.action || cmd.type || '').toLowerCase();
             if (action === 'set_brightness') {
                 const level = Math.max(5, Math.min(100, Number(cmd.level ?? 80)));
-                const cssBrightness = Number(cmd.css_filter_brightness || (0.35 + (level / 100.0) * 0.85)).toFixed(2);
-                document.documentElement.style.transition = 'filter 0.3s ease';
-                document.documentElement.style.filter = `brightness(${cssBrightness})`;
+                _applySafeBrightnessOverlay(level);
                 window.__auraScreenBrightness = level;
                 const lbl = document.getElementById('agBrightnessLabel');
                 if (lbl) lbl.textContent = `${level}%`;
                 const pill = document.getElementById('agBridgeStatusPill');
-                if (pill) pill.textContent = `● Brightness Set: ${level}% (CSS Filter ${cssBrightness}x Active)`;
-                showBridgeToast(`☀️ <strong>AURA Display Bridge:</strong> Brightness set to <strong>${level}%</strong>`, '#f59e0b');
+                if (pill) pill.textContent = `Display Dimmer Active: ${level}%`;
+                showBridgeToast(`<strong>Display Bridge:</strong> Brightness set to <strong>${level}%</strong>`, '#38bdf8');
                 if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
                     apiFetch('/api/os/brightness', {
                         method: 'POST',
@@ -4851,7 +4869,7 @@
                 }
             } else if (action === 'get_brightness') {
                 const cur = window.__auraScreenBrightness || 100;
-                showBridgeToast(`☀️ <strong>AURA Display Telemetry:</strong> Current Brightness is <strong>${cur}%</strong>`, '#38bdf8');
+                showBridgeToast(`<strong>Display Telemetry:</strong> Current Brightness is <strong>${cur}%</strong>`, '#38bdf8');
             } else if (action === 'set_volume') {
                 const level = Math.max(0, Math.min(100, Number(cmd.level ?? 80)));
                 window.__auraAudioVolume = level / 100.0;
@@ -4872,7 +4890,7 @@
                         osc.stop(ctx.currentTime + 0.12);
                     }
                 } catch (e) {}
-                showBridgeToast(`🔊 <strong>AURA Audio Bridge:</strong> Volume set to <strong>${level}%</strong>`, '#38bdf8');
+                showBridgeToast(`<strong>Audio Bridge:</strong> Volume set to <strong>${level}%</strong>`, '#38bdf8');
             } else if (action === 'launch_app') {
                 const app = String(cmd.app || 'app').toLowerCase();
                 const uriMap = {
@@ -4882,19 +4900,26 @@
                     calculator: 'ms-calculator:',
                     calc: 'ms-calculator:',
                     settings: 'ms-settings:display',
-                    spotify: 'spotify:',
+                    spotify: 'https://open.spotify.com',
                     chrome: 'https://www.google.com',
                     browser: 'https://www.google.com'
                 };
                 const targetUri = cmd.protocol_uri || uriMap[app] || '';
-                showBridgeToast(`🚀 <strong>AURA App Bridge:</strong> Launching <strong>${escapeHtml(app.toUpperCase())}</strong>...`, '#10b981');
                 if (app === 'notepad') {
-                    const scratch = prompt('📝 AURA Quick Scratchpad (Notepad Bridge): Type note to save in session:', 'AURA Note — Ready');
-                    if (scratch) showBridgeToast(`📝 Saved Note: "${escapeHtml(scratch.slice(0, 45))}"`, '#a855f7');
+                    const scratch = prompt('AURA Quick Scratchpad: Type note to save in session:', 'AURA Note — Ready');
+                    if (scratch) showBridgeToast(`Saved Note: "${escapeHtml(scratch.slice(0, 45))}"`, '#a855f7');
                 } else if (targetUri) {
+                    showBridgeToast(
+                        `<strong>App Bridge:</strong> Ready to open <strong>${escapeHtml(app.toUpperCase())}</strong>`,
+                        '#10b981',
+                        targetUri,
+                        `Open ${app.toUpperCase()}`
+                    );
                     try {
                         window.open(targetUri, '_blank', 'noopener,noreferrer');
                     } catch (e) {}
+                } else {
+                    showBridgeToast(`<strong>App Bridge:</strong> Triggered <strong>${escapeHtml(app.toUpperCase())}</strong>`, '#10b981');
                 }
             }
         }
@@ -5844,7 +5869,17 @@
                     if (data.error) {
                         turnData.bubble.innerHTML = `<span style="color: #fca5a5;">${escapeHtml(data.error)}</span>`;
                     } else {
-                        turnData.bubble.innerHTML = renderMarkdown(data.reply || 'Completed.');
+                        const rep = data.reply || 'Completed.';
+                        if (Array.isArray(data.tools)) {
+                            data.tools.forEach(t => {
+                                if (t && t.output && t.output.client_bridge_command) {
+                                    executeClientBridgeCommand(t.output.client_bridge_command);
+                                }
+                            });
+                        }
+                        turnData.bubble.innerHTML = renderMarkdown(rep);
+                        if (typeof hydrateInlineVisualCards === 'function') hydrateInlineVisualCards(turnData.bubble);
+                        if (typeof maybeAutoOpenArtifact === 'function') maybeAutoOpenArtifact(rep);
                     }
                 }
             } catch (err) {
@@ -6238,6 +6273,10 @@
                 if (cleaned.includes('..') || !/^\/media\/[A-Za-z0-9._\/-]+$/.test(cleaned)) {
                     return '';
                 }
+                return cleaned;
+            }
+            // Allow safe raster base64 data URIs for generated/uploaded images (blocks SVG/HTML XSS)
+            if (/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i.test(cleaned)) {
                 return cleaned;
             }
             // Allow only http:// and https:// URLs
@@ -7710,6 +7749,18 @@
                     throw new Error((data && (data.error || data.detail)) || 'Synthesis failed');
                 }
                 const sp = data.speech;
+                if (sp.engine === 'fallback_pcm' || sp.provider_voice === 'pcm_silence') {
+                    statusEl.style.color = '#93c5fd';
+                    statusEl.textContent = 'Using device browser speech synthesis (cloud neural idle).';
+                    if (window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
+                        const utt = new SpeechSynthesisUtterance(text);
+                        const v = _pickPreferredVoice();
+                        if (v) utt.voice = v;
+                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.speak(utt);
+                    }
+                    return;
+                }
                 const audioRes = await apiFetch(sp.audio_url);
                 if (!audioRes.ok) throw new Error('Audio stream load failed');
                 const blob = await audioRes.blob();

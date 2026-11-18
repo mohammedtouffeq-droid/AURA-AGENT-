@@ -3768,20 +3768,59 @@ The unified pipeline processed your instruction across all core engines (**Time:
             }
 
     def _embed_generated_media(self, reply: str) -> str:
-        """Inspects last executed tools and auto-embeds markdown images/videos if missing."""
+        """
+        Inspects last executed tools and ensures generated images/videos render reliably as
+        Markdown media (preferring compact container-portable data URIs on Vercel serverless
+        instead of ephemeral /tmp `/media/` URLs or raw JSON dumps).
+        """
+        is_vercel = bool(os.environ.get("VERCEL"))
         for t in self.last_tools:
             tool_name = t.get("name", "")
             out = t.get("output", {})
             if isinstance(out, dict):
                 if tool_name in ["tool_generate_image", "tool_transform_image"]:
                     web_url = out.get("web_url")
-                    if not web_url and out.get("file_path"):
-                        web_url = f"/media/generated_images/{Path(out['file_path']).name}"
+                    file_path = out.get("file_path")
+                    if not web_url and file_path:
+                        web_url = f"/media/generated_images/{Path(file_path).name}"
                     if not web_url and out.get("image_url"):
                         web_url = out.get("image_url")
-                    if web_url and web_url not in reply and Path(web_url).name not in reply:
-                        prompt_label = t.get("args", {}).get("prompt", "Generated Artwork")
-                        reply += f"\n\n![{prompt_label}]({web_url})"
+
+                    data_uri = ""
+                    if file_path and (is_vercel or not web_url):
+                        try:
+                            from aura_media_engine import AuraCinemaStudio
+                            data_uri = AuraCinemaStudio.encode_compact_data_uri(Path(file_path))
+                        except Exception:
+                            data_uri = ""
+
+                    embed_url = data_uri or web_url
+                    if not embed_url:
+                        continue
+
+                    # Strip raw JSON dump blocks that wrap image_url before inserting crisp Markdown media
+                    if not re.search(r'!\[[^\]]*\]\([^)]+\)', reply):
+                        reply = re.sub(
+                            r'(?:```json\s*)?\{\s*"image_url"\s*:[\s\S]*?(?:/media/generated_images/|"metadata"\s*:\s*\{[^}]*\})[\s\S]*?\}\s*(?:```)?',
+                            "",
+                            reply,
+                            flags=re.IGNORECASE,
+                        ).strip()
+                    if data_uri and web_url and web_url in reply:
+                        reply = reply.replace(web_url, data_uri)
+
+                    fname = Path(web_url).name if web_url else ""
+                    has_md_img = bool(
+                        re.search(r'!\[[^\]]*\]\([^)]+\)', reply)
+                        and (
+                            (web_url and web_url in reply)
+                            or (fname and fname in reply)
+                            or embed_url in reply
+                        )
+                    )
+                    if not has_md_img:
+                        prompt_label = str(t.get("args", {}).get("prompt", "Generated Artwork")).replace("]", "").strip()[:80] or "Generated Artwork"
+                        reply += f"\n\n![{prompt_label}]({embed_url})"
                 elif tool_name == "tool_generate_video":
                     vpath = out.get("video_path") or out.get("mp4_path") or out.get("video_player_path")
                     if vpath:
@@ -3871,7 +3910,12 @@ The unified pipeline processed your instruction across all core engines (**Time:
         )
         return bool(action_pattern.search(last_text))
 
-    def _call_api(self, contents: List[Dict[str, Any]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    def _call_api(
+        self,
+        contents: List[Dict[str, Any]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        deadline_override: Optional[float] = None,
+    ) -> Dict[str, Any]:
         if self.provider == "ollama":
             return self._call_ollama(contents, tools)
         primary_key = (self.api_key or "").strip()
@@ -3881,12 +3925,18 @@ The unified pipeline processed your instruction across all core engines (**Time:
         key_pool: List[str] = []
         if user_byok and len(user_byok) >= 20 and not user_byok.startswith("YOUR_"):
             key_pool.append(user_byok)
+        pool_candidates: List[str] = []
         if primary_key and not primary_key.startswith("YOUR_") and primary_key not in key_pool:
-            key_pool.append(primary_key)
+            pool_candidates.append(primary_key)
         for candidate_key in API_KEY_POOL:
             k = (candidate_key or "").strip()
-            if k and not k.startswith("YOUR_") and k not in key_pool:
-                key_pool.append(k)
+            if k and not k.startswith("YOUR_") and k not in key_pool and k not in pool_candidates:
+                pool_candidates.append(k)
+        # Rotate shared keys across concurrent users/requests when using default shared pool
+        if len(pool_candidates) > 1 and not user_byok and primary_key == API_KEY:
+            rot = (abs(hash(str(getattr(self, "user_id", "") or ""))) + int(time.time() // 2)) % len(pool_candidates)
+            pool_candidates = pool_candidates[rot:] + pool_candidates[:rot]
+        key_pool.extend(pool_candidates)
 
         compacted = self._compact_contents_for_api(contents, strip_tools_history=False)
         include_tools = self._should_include_tools_for_contents(compacted, tools)
@@ -3905,8 +3955,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     "You have native tools including tool_client_bridge_action (display brightness, audio volume/mute, or opening apps/URLs cleanly), "
                     "workspace file tools (tool_workspace_list, tool_grep_search, tool_read_file with line ranges, tool_edit_file surgical diff, "
                     "tool_write_file, tool_delete_file, tool_start_local_preview, tool_coderx_build), live news/weather, memory vault, "
-                    "Godot 4 game builder, and Sovereign 10-Nexus engines. When editing existing code, prefer tool_grep_search + tool_read_file + "
-                    "tool_edit_file instead of blindly rewriting whole files, and report only verified tool results."
+                    "Godot 4 game builder, and Sovereign 10-Nexus engines. When `tool_generate_image` succeeds, ALWAYS include a standard Markdown image tag `![description](web_url)` instead of printing raw JSON. "
+                    "When `tool_client_bridge_action` opens a web app like WhatsApp/YouTube/Spotify, also include a clickable Markdown link `[Open App](protocol_uri)`. "
+                    "When editing existing code, prefer tool_grep_search + tool_read_file + tool_edit_file cleanly, and report only verified tool results."
                 )
             }]
         }
@@ -3946,6 +3997,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
         is_vercel = bool(os.environ.get("VERCEL"))
         total_budget = (16.0 if is_vercel else 24.0) if include_tools else (14.0 if is_vercel else 18.0)
         deadline = time.monotonic() + total_budget
+        if deadline_override is not None:
+            deadline = min(deadline, float(deadline_override))
         primary_payload = _make_payload(compacted, use_tools=include_tools)
 
         for mod in models_to_try:
@@ -3954,7 +4007,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 if remaining < 2.2:
                     break
                 max_att = (12.0 if include_tools else 10.5) if is_vercel else (14.0 if include_tools else 12.0)
-                attempt_timeout = max(3.5, min(max_att, remaining))
+                attempt_timeout = max(2.2, min(max_att, remaining))
                 try:
                     return _post_gemini(mod, k_val, primary_payload, attempt_timeout)
                 except urllib.error.HTTPError as e:
@@ -3967,13 +4020,15 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     break  # Timeout/network -> move to next model or fast salvage
 
         # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
-        if include_tools:
+        if include_tools and (deadline - time.monotonic()) >= 3.0:
             salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
             salvage_payload = _make_payload(salvage_contents, use_tools=False)
             for mod in ("gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
+                if (deadline - time.monotonic()) < 2.2:
+                    break
                 for k_val in key_pool[:2]:
                     try:
-                        return _post_gemini(mod, k_val, salvage_payload, 12.0)
+                        return _post_gemini(mod, k_val, salvage_payload, min(10.0, max(2.2, deadline - time.monotonic())))
                     except Exception:
                         continue
 
@@ -4369,11 +4424,12 @@ The unified pipeline processed your instruction across all core engines (**Time:
 
         loop_start = time.monotonic()
         for turn in range(max_turns):
-            if turn > 0 and (time.monotonic() - loop_start) > 10.5 and self.last_tools:
+            if turn > 0 and (time.monotonic() - loop_start) > 9.5 and self.last_tools:
                 data = self._offline_autonomous_dispatch(self.history, active_tools_decl)
             else:
                 try:
-                    data = self._call_api(self.history, active_tools_decl)
+                    turn_deadline = (loop_start + 12.0) if (turn > 0 and self.last_tools) else None
+                    data = self._call_api(self.history, active_tools_decl, deadline_override=turn_deadline)
                 except Exception as e:
                     if self.provider == "ollama":
                         return f"Ollama request failed: {e}. Check that Ollama is running locally and the selected model is installed."

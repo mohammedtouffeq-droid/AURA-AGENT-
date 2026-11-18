@@ -519,3 +519,27 @@ def test_offline_tool_fallback_bundles_html_app_for_live_studio():
     assert "```html" in text
     assert "<style>" in text and "console.log('ready');" in text
 
+
+def test_vercel_image_embedding_uses_portable_data_uri_and_strips_raw_json(tmp_path: Path, monkeypatch):
+    """On Vercel serverless, _embed_generated_media replaces /media/... raw JSON dumps with portable JPEG data URIs."""
+    from PIL import Image
+    monkeypatch.setenv("VERCEL", "1")
+    img_p = tmp_path / "aura_cinema_test123.png"
+    Image.new("RGB", (128, 128), color=(30, 80, 190)).save(img_p, format="PNG")
+
+    brain = aura_brain.AuraBrain(provider="gemini", model="gemini-3-flash-preview")
+    brain.last_tools = [{
+        "name": "tool_generate_image",
+        "args": {"prompt": "Futuristic cyber skyline"},
+        "output": {
+            "success": True,
+            "file_path": str(img_p),
+            "web_url": "/media/generated_images/aura_cinema_test123.png",
+        },
+    }]
+    raw_reply = 'Generated artwork:\n```json\n{"image_url": "/media/generated_images/aura_cinema_test123.png"}\n```'
+    embedded = brain._embed_generated_media(raw_reply)
+    assert "![Futuristic cyber skyline](data:image/jpeg;base64," in embedded
+    assert '"image_url"' not in embedded
+
+
