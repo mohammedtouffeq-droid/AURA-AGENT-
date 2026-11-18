@@ -87,6 +87,7 @@ class EngineDispatchPlan:
     trace_title: str = "Reasoning Trace"
     elapsed_ms: float = 0.0
     offline_visual_hint: str = ""
+    preferred_llm: str = "gemini-3-flash-preview"
 
 
 class BaseAuraModelEngine:
@@ -94,9 +95,10 @@ class BaseAuraModelEngine:
 
     tier_id: str = "aura-2.0"
     display_name: str = "AURA 2.0"
-    tagline: str = "Fast Study & Cartoon Visual Storyteller"
+    tagline: str = "Fast Everyday Intelligence"
     tier_rank: int = 1
     default_temperature: float = 0.4
+    preferred_llm: str = "gemini-3.5-flash-lite"
 
     def describe(self) -> Dict[str, Any]:
         """Returns public metadata and footprint details for settings & UI."""
@@ -111,6 +113,7 @@ class BaseAuraModelEngine:
             "tagline": self.tagline,
             "rank": self.tier_rank,
             "default_temperature": self.default_temperature,
+            "preferred_llm": self.preferred_llm,
             "engine_disk_kb": disk_kb,
         }
 
@@ -128,6 +131,7 @@ class BaseAuraModelEngine:
             thought_steps=steps,
             trace_title=trace_title,
             elapsed_ms=elapsed_ms,
+            preferred_llm=self.preferred_llm,
         )
 
     def _compose_blueprint(

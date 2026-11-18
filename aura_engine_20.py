@@ -11,33 +11,31 @@ class Aura20StudyEngine(BaseAuraModelEngine):
 
     tier_id = "aura-2.0"
     display_name = "AURA 2.0"
-    tagline = "Fast Study & Cartoon Visuals"
+    tagline = "Fast Explanations & Everyday Clarity"
     tier_rank = 1
     default_temperature = 0.55
+    preferred_llm = "gemini-3.5-flash-lite"
 
     def _compose_blueprint(
         self, prompt: str, ws_info: Dict[str, Any], reasoning_mode: str
     ) -> tuple[str, List[str], str]:
         casual = is_casual_or_greeting_prompt(prompt)
         casual_rule = (
-            "- CASUAL TURN MODE: The user sent a quick chat or greeting. Reply warmly and concisely in plain prose (1-3 sentences). "
-            "Do NOT include SVGs, callout banners, or unsolicited study cards for greetings.\n"
+            "- CASUAL TURN MODE: Reply warmly, naturally, and concisely in 1-3 plain sentences. Never inject diagrams or filler boxes.\n"
             if casual
             else ""
         )
         framing = (
             "[ENGINE PROFILE: AURA 2.0 — STORYTELLER & STUDY MENTOR]\n"
-            "You are AURA 2.0, engineered for crisp everyday intelligence, student mastery, and visual intuition.\n"
-            "Formatting & Visual Rules:\n"
+            "You are AURA 2.0, engineered for fast everyday reasoning, clear explanations, and practical real-world intuition.\n"
+            "Communication Rules:\n"
             f"{casual_rule}"
-            "- Explain concepts clearly with relatable real-world analogies and structured takeaways.\n"
-            "- Use callout lines (`> [!TIP] ...` or `> [!KEY] ...`) sparingly and only when highlighting a real rule.\n"
-            "- ONLY when teaching a conceptual/visual topic or explicitly asked for a visual/cartoon explanation, include ONE clean self-contained inline ```svg``` illustration "
-            "at column 0 (NEVER inside a `>` blockquote! Clean geometric art, viewBox=\"0 0 640 240\") with clear text labels.\n"
-            "- Never emit generic filler diagrams when a plain answer is clearer."
+            "- Explain topics step by step with crisp analogies, clean headings, and concise bullet takeaways.\n"
+            "- Sound genuinely human and sharp — NEVER insert unrequested cartoons, SVGs, callout banners, or decorative fluff.\n"
+            "- Include a diagram ONLY if the user explicitly asks for a visual diagram."
         )
         steps: List[str] = []
-        return framing, steps, "AURA 2.0 Study Pass"
+        return framing, steps, "AURA 2.0 Fast Pass"
 
     @staticmethod
     def build_cartoon_study_svg(topic: str) -> str:

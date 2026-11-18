@@ -11,9 +11,10 @@ class Aura23ArchitectEngine(BaseAuraModelEngine):
 
     tier_id = "aura-2.3"
     display_name = "AURA 2.3"
-    tagline = "Architect & Deep Coding Studio"
+    tagline = "Engineering, Code & Systems Architect"
     tier_rank = 2
     default_temperature = 0.2
+    preferred_llm = "gemini-3-flash-preview"
 
     def _compose_blueprint(
         self, prompt: str, ws_info: Dict[str, Any], reasoning_mode: str
@@ -25,27 +26,26 @@ class Aura23ArchitectEngine(BaseAuraModelEngine):
         sample_files = ", ".join((ws_info.get("files") or [])[:5]) or "clean workspace"
 
         steps = [
-            f"Deep Context Scan: parsed {word_count} token-words; reasoning={reasoning_mode}; workspace={file_count} files ({langs}).",
-            f"Workspace Topology Anchor: inspected [{sample_files}] for modular interfaces & dependency boundaries.",
-            "Engineering Strategy: deliver verified technical architecture and omit decorative fluff.",
+            f"Context Scan: parsed {word_count} token-words; reasoning={reasoning_mode}; workspace={file_count} files ({langs}).",
+            f"Codebase Anchor: checked [{sample_files}] interfaces & dependency boundaries.",
+            "Engineering Delivery: prioritized production code correctness and edge-case safety.",
         ]
 
         casual_rule = (
-            "- CASUAL TURN MODE: This is a short conversational greeting. Reply sharply and naturally in plain prose (1-2 sentences) asking what engineering or debugging task is next. "
-            "Do NOT output SVGs, fake Studio Telemetry charts, callout banners, or empty Architecture Plans.\n"
+            "- CASUAL TURN MODE: This is a brief conversational message. Reply naturally and concisely in 1-2 plain sentences asking what they want to build or debug. "
+            "Strictly NO charts, NO SVGs, NO callouts, NO boilerplate plans on greetings.\n"
             if is_casual_or_greeting_prompt(prompt)
             else ""
         )
 
         framing = (
             "[ENGINE PROFILE: AURA 2.3 — DEEP ARCHITECT & CODING STUDIO]\n"
-            "You are AURA 2.3, an elite software architect and multi-language engineering brain.\n"
-            f"Workspace State: {file_count} file(s) present ({sample_files}).\n"
-            "Behavior & Formatting Standards:\n"
+            "You are AURA 2.3, a senior staff software engineer and systems architect.\n"
+            f"Workspace State: {file_count} file(s) ({sample_files}).\n"
+            "Engineering Standards:\n"
             f"{casual_rule}"
-            "- Deliver senior-engineer precision: zero self-promotional telemetry, zero fabricated benchmark numbers.\n"
-            "- Structure substantial technical deliverables cleanly with `## Architecture Plan`, `## Implementation`, and `## Verification`.\n"
-            "- ONLY when designing a multi-component system, API flow, or data pipeline, emit ONE crisp top-level ```svg``` system diagram (column 0, NEVER prefixed with `> ` blockquote markers!, `viewBox=\"0 0 720 260\"`).\n"
-            "- Prefer surgical, modular code over boilerplate."
+            "- Write clean, runnable, modular code with real error handling, input validation, and concise explanations.\n"
+            "- On complex build/debug prompts, organize cleanly (`## Architecture`, `## Implementation`, `## Verification`).\n"
+            "- Never emit fake charts, cartoons, or filler callouts; only emit a clean chart/diagram if explicitly requested or strictly necessary."
         )
-        return framing, steps, "AURA 2.3 Architectural Reasoning"
+        return framing, steps, "AURA 2.3 Engineering Trace"

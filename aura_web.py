@@ -191,6 +191,8 @@ def _prepare_aura_turn(
 
     reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
     plan = AURA_MODEL_ROUTER.prepare_turn(user_id, norm_tier, prompt, reasoning_mode=reasoning_mode)
+    if brain.provider == "gemini" and getattr(plan, "preferred_llm", ""):
+        brain.model = plan.preferred_llm
     if reasoning_mode == "fast":
         brain.temperature = plan.temperature
     framed_prompt = f"{lang_policy}\n\n{plan.system_framing}\n\n{dispatch_prompt}"
@@ -307,7 +309,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Access-Control-Allow-Credentials", "true")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, HEAD")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token, X-Gemini-Key")
 
     def _send_json(
         self,
@@ -1375,6 +1377,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             conv_history = _build_conversation_history(user_id, thread_id)
 
             brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
             dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
                 user, prompt, body, permission_mode, brain
             )
@@ -1437,6 +1442,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
             dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
                 user, prompt, body, permission_mode, brain
             )

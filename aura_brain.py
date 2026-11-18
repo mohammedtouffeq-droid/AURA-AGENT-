@@ -3672,6 +3672,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
             elif re.search(r"\b(time|date|day|today|tarikh|samay|waqt|aaj kya din)\b", lower) and not re.search(r"\b(code|python|script|function|file|api|update|fix)\b", lower):
                 now_local = time.strftime("%A, %d %B %Y at %I:%M %p")
                 reply = f"Today is {now_local}."
+            elif re.fullmatch(r"\s*[0-9+\-*/().\s]{3,80}=?\s*", user_text.strip()):
+                expr = user_text.strip().rstrip("=").strip()
+                reply = self._safe_eval_arithmetic(expr)
             else:
                 recent_topics = []
                 for item in contents[-6:]:
@@ -3679,10 +3682,10 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         txt = str(part.get("text", "") or "").strip()
                         if txt and not txt.startswith("Notice:"):
                             recent_topics.append(txt[:90].replace("\n", " "))
-                topic_hint = f" (Current thread topic: *\"{recent_topics[-2][:70]}\"*)" if len(recent_topics) >= 2 else ""
+                topic_hint = f" (Topic: *\"{recent_topics[-2][:70]}\"*)" if len(recent_topics) >= 2 else ""
                 reply = (
-                    f"The live cloud LLM request was temporarily slow or unavailable{topic_hint}, while your session and workspace history remain safely intact. "
-                    "You can retry in a moment or run direct workspace tools (`/help`, `/files`, `/code`, `/calc`, `/nexus`)."
+                    f"High student traffic temporarily throttled the shared cloud model{topic_hint}. "
+                    "Please retry in a few seconds, run workspace commands (`/help`, `/calc`, `/files`, `/nexus`), or add a free personal Gemini API key in Settings for dedicated speed."
                 )
 
             return {
@@ -3804,9 +3807,14 @@ The unified pipeline processed your instruction across all core engines (**Time:
         if self.provider == "ollama":
             return self._call_ollama(contents, tools)
         primary_key = (self.api_key or "").strip()
-        if not primary_key or primary_key.startswith("YOUR_"):
+        user_byok = str(getattr(self, "user_api_key", "") or "").strip()
+        if (not primary_key or primary_key.startswith("YOUR_")) and not user_byok:
             return self._offline_autonomous_dispatch(contents, tools)
-        key_pool: List[str] = [primary_key]
+        key_pool: List[str] = []
+        if user_byok and len(user_byok) >= 20 and not user_byok.startswith("YOUR_"):
+            key_pool.append(user_byok)
+        if primary_key and not primary_key.startswith("YOUR_") and primary_key not in key_pool:
+            key_pool.append(primary_key)
         for candidate_key in API_KEY_POOL:
             k = (candidate_key or "").strip()
             if k and not k.startswith("YOUR_") and k not in key_pool:
@@ -3846,12 +3854,12 @@ The unified pipeline processed your instruction across all core engines (**Time:
             return pl
 
         deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite"}
-        primary_model = "gemini-3.5-flash-lite" if self.model in deprecated_or_slow else self.model
+        primary_model = "gemini-3-flash-preview" if self.model in deprecated_or_slow else self.model
         models_to_try: List[str] = []
-        for m in (primary_model, "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
+        for m in (primary_model, "gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-flash-lite-latest"):
             if m and m not in models_to_try:
                 models_to_try.append(m)
-        models_to_try = models_to_try[:2]
+        models_to_try = models_to_try[:3]
 
         def _post_gemini(mod: str, api_key_val: str, pl: Dict[str, Any], timeout_s: float) -> Dict[str, Any]:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent"

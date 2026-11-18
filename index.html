@@ -90,25 +90,25 @@
         }
 
         :root {
-            --bg-primary: #090a0e;
-            --bg-sidebar: #0d0f15;
-            --bg-card: #12151e;
-            --bg-input: #141822;
+            --bg-primary: #09090b;
+            --bg-sidebar: #0d0d10;
+            --bg-card: #141418;
+            --bg-input: #141418;
             --bg-hover: rgba(255, 255, 255, 0.05);
-            --bg-active: rgba(255, 255, 255, 0.09);
-            --border-subtle: rgba(255, 255, 255, 0.075);
-            --border-focus: rgba(226, 185, 111, 0.55);
-            --accent-primary: #0066ff;
-            --accent-gold: #e2b96f;
-            --accent-gold-soft: rgba(226, 185, 111, 0.14);
-            --accent-gold-border: rgba(226, 185, 111, 0.42);
-            --accent-glow: rgba(0, 102, 255, 0.25);
+            --bg-active: rgba(255, 255, 255, 0.085);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(255, 255, 255, 0.28);
+            --accent-primary: #3b82f6;
+            --accent-gold: #e4e4e7;
+            --accent-gold-soft: rgba(255, 255, 255, 0.07);
+            --accent-gold-border: rgba(255, 255, 255, 0.16);
+            --accent-glow: rgba(59, 130, 246, 0.18);
             --accent-emerald: #10b981;
             --accent-purple: #8b5cf6;
             --accent-red: #ef4444;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --text-subtle: #6b7280;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --text-subtle: #71717a;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --font-code: 'JetBrains Mono', monospace;
         }
@@ -757,7 +757,7 @@
             flex-direction: column;
             align-items: center;
             padding: 0 20px 16px 20px;
-            background: linear-gradient(180deg, rgba(13, 14, 18, 0) 0%, rgba(13, 14, 18, 0.95) 30%, rgba(13, 14, 18, 1) 100%);
+            background: linear-gradient(180deg, rgba(9, 9, 11, 0) 0%, rgba(9, 9, 11, 0.94) 30%, rgba(9, 9, 11, 1) 100%);
             z-index: 10;
         }
 
@@ -1265,34 +1265,29 @@
             transition: transform 0.08s linear;
         }
         .sidebar {
-            background-color: rgba(13, 16, 26, 0.82) !important;
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background-color: var(--bg-sidebar);
         }
         .main-chat-viewport {
             position: relative;
             z-index: 5;
-            background: transparent !important;
+            background: var(--bg-primary);
         }
         .top-navbar {
-            background: rgba(10, 13, 22, 0.72) !important;
+            background: rgba(9, 9, 11, 0.88);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(56, 189, 248, 0.14) !important;
+            border-bottom: 1px solid var(--border-subtle);
         }
         .starter-card, .bharatcode-winner-card {
             position: relative;
             overflow: hidden;
-            background: linear-gradient(145deg, rgba(20, 25, 40, 0.82), rgba(12, 15, 26, 0.9)) !important;
-            border: 1px solid rgba(56, 189, 248, 0.22) !important;
-            backdrop-filter: blur(10px);
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease !important;
-            transform-style: preserve-3d;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            transition: border-color 0.2s ease, background-color 0.2s ease;
         }
         .starter-card:hover, .bharatcode-winner-card:hover {
-            transform: perspective(800px) translateY(-5px) rotateX(3deg) scale(1.015) !important;
-            border-color: rgba(56, 189, 248, 0.65) !important;
-            box-shadow: 0 14px 34px rgba(0, 102, 255, 0.22), 0 0 20px rgba(56, 189, 248, 0.18) !important;
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.05);
         }
         .space-scroll-reveal {
             opacity: 0;
@@ -1307,10 +1302,9 @@
             position: fixed;
             top: 0;
             left: 0;
-            height: 3px;
+            height: 2px;
             width: calc(var(--space-scroll-progress, 0) * 100%);
-            background: linear-gradient(90deg, #0066ff, #00d4ff, #a855f7, #10b981);
-            box-shadow: 0 0 12px rgba(0, 212, 255, 0.8);
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
             z-index: 99999;
             transition: width 0.08s linear;
         }
@@ -1320,29 +1314,28 @@
         #threadSearchInput {
             width: 100%;
             box-sizing: border-box;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(56, 189, 248, 0.22);
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid var(--border-subtle);
             border-radius: 8px;
-            color: var(--text-primary);
+            color: var(--text-main);
             font-size: 12px;
             padding: 7px 10px;
             outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: border-color 0.2s ease;
         }
         #threadSearchInput:focus {
-            border-color: rgba(56, 189, 248, 0.65);
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.16);
+            border-color: var(--border-focus);
         }
         .thread-count-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             padding: 1px 6px;
             border-radius: 999px;
-            background: rgba(56, 189, 248, 0.15);
-            color: #7dd3fc;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-muted);
             border: 1px solid rgba(56, 189, 248, 0.28);
             margin-left: 6px;
         }
@@ -1956,9 +1949,9 @@
             transition: all 0.16s ease;
         }
         .hero-chip:hover {
-            background: rgba(226, 185, 111, 0.1);
-            border-color: rgba(226, 185, 111, 0.42);
-            color: #f9fafb;
+            background: rgba(255, 255, 255, 0.075);
+            border-color: rgba(255, 255, 255, 0.24);
+            color: #fafafa;
             transform: translateY(-1px);
         }
         .input-dock-card {
@@ -1986,9 +1979,9 @@
             transition: all 0.15s ease;
         }
         .composer-pill-btn:hover {
-            background: rgba(255, 255, 255, 0.09);
-            border-color: rgba(226, 185, 111, 0.45);
-            color: #f9fafb;
+            background: rgba(255, 255, 255, 0.085);
+            border-color: rgba(255, 255, 255, 0.24);
+            color: #fafafa;
         }
         .jarvis-status-dot {
             width: 6px;
@@ -2051,8 +2044,8 @@
             transition: all 0.14s ease;
         }
         .popover-item:hover {
-            background: rgba(226, 185, 111, 0.12);
-            border-color: rgba(226, 185, 111, 0.35);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.18);
             color: #ffffff;
         }
         .nav-icon-btn {
@@ -2069,8 +2062,8 @@
             transition: all 0.15s ease;
         }
         .nav-icon-btn:hover {
-            color: #f9fafb;
-            border-color: rgba(226, 185, 111, 0.4);
+            color: #fafafa;
+            border-color: rgba(255, 255, 255, 0.24);
             background: rgba(255, 255, 255, 0.07);
         }
         @media (max-width: 560px) {
@@ -2138,12 +2131,12 @@
             transition: all 0.14s ease;
         }
         .aura-model-option:hover {
-            border-color: rgba(226, 185, 111, 0.45);
-            background: rgba(226, 185, 111, 0.09);
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.06);
         }
         .aura-model-option.active {
-            border-color: rgba(226, 185, 111, 0.8);
-            background: linear-gradient(135deg, rgba(226, 185, 111, 0.15), rgba(56, 189, 248, 0.09));
+            border-color: rgba(255, 255, 255, 0.36);
+            background: rgba(255, 255, 255, 0.085);
         }
         .aura-model-opt-head {
             display: flex;
@@ -2154,20 +2147,20 @@
         }
         .aura-model-opt-sub {
             font-size: 11px;
-            color: #9ca3af;
+            color: #a1a1aa;
         }
         .aura-thought-block {
-            margin: 8px 0 14px 0;
-            border: 1px solid rgba(226, 185, 111, 0.25);
-            background: rgba(13, 16, 25, 0.85);
-            border-radius: 11px;
+            margin: 6px 0 12px 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.025);
+            border-radius: 10px;
             overflow: hidden;
         }
         .aura-thought-block summary {
-            padding: 8px 12px;
+            padding: 7px 12px;
             font-size: 12px;
-            font-weight: 600;
-            color: #e2b96f;
+            font-weight: 500;
+            color: #a1a1aa;
             cursor: pointer;
             user-select: none;
             list-style: none;
@@ -2188,38 +2181,39 @@
             border-top: 1px solid rgba(255, 255, 255, 0.06);
             font-size: 12px;
             line-height: 1.55;
-            color: #9ca3af;
+            color: #a1a1aa;
             font-family: var(--font-code);
         }
         .aura-callout {
             margin: 10px 0;
             padding: 10px 14px;
-            border-radius: 10px;
-            border-left: 3px solid #e2b96f;
-            background: rgba(226, 185, 111, 0.08);
+            border-radius: 8px;
+            border-left: 2px solid #a1a1aa;
+            background: rgba(255, 255, 255, 0.03);
             font-size: 13.5px;
             line-height: 1.55;
         }
         .aura-callout-label {
             font-size: 10.5px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.6px;
             margin-bottom: 4px;
             display: block;
+            color: #d4d4d8;
         }
-        .aura-callout.callout-arch { border-left-color: #38bdf8; background: rgba(56, 189, 248, 0.08); }
+        .aura-callout.callout-arch { border-left-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
         .aura-callout.callout-arch .aura-callout-label { color: #7dd3fc; }
-        .aura-callout.callout-tip { border-left-color: #10b981; background: rgba(16, 185, 129, 0.08); }
+        .aura-callout.callout-tip { border-left-color: #10b981; background: rgba(16, 185, 129, 0.05); }
         .aura-callout.callout-tip .aura-callout-label { color: #6ee7b7; }
-        .aura-callout.callout-warn { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.09); }
+        .aura-callout.callout-warn { border-left-color: #f87171; background: rgba(239, 68, 68, 0.06); }
         .aura-callout.callout-warn .aura-callout-label { color: #fca5a5; }
-        .aura-callout.callout-insight .aura-callout-label { color: #f7e4b4; }
+        .aura-callout.callout-insight .aura-callout-label { color: #e4e4e7; }
         .aura-chart-card, .inline-visual-card {
             margin: 12px 0;
-            border: 1px solid rgba(226, 185, 111, 0.34);
-            border-radius: 12px;
-            background: #0a0d15;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 10px;
+            background: #111114;
             overflow: hidden;
         }
         .inline-visual-header {
@@ -2228,11 +2222,11 @@
             justify-content: space-between;
             gap: 8px;
             padding: 7px 12px;
-            background: rgba(255, 255, 255, 0.035);
+            background: rgba(255, 255, 255, 0.03);
             border-bottom: 1px solid rgba(255, 255, 255, 0.07);
             font-size: 11.5px;
-            color: #e2b96f;
-            font-weight: 600;
+            color: #d4d4d8;
+            font-weight: 500;
         }
         .inline-visual-iframe {
             width: 100%;
@@ -2377,16 +2371,16 @@
                 <div class="composer-popover composer-popover-left" id="composerModelPopover" role="dialog" aria-label="AURA Model Selection">
                     <div class="popover-section-title">Select AURA Engine</div>
                     <button type="button" class="aura-model-option" id="auraTierBtn_aura-2.0" onclick="selectAuraModelTier('aura-2.0')">
-                        <span class="aura-model-opt-head"><span>AURA 2.0</span><span style="font-size:10.5px;color:#7dd3fc;">Study &amp; Visuals</span></span>
-                        <span class="aura-model-opt-sub">Fast fluent study mentor with cartoon SVG explainers</span>
+                        <span class="aura-model-opt-head"><span>AURA 2.0</span><span style="font-size:10.5px;color:#93c5fd;">Fast &amp; Clear</span></span>
+                        <span class="aura-model-opt-sub">Instant everyday reasoning, study &amp; clean explanations</span>
                     </button>
                     <button type="button" class="aura-model-option active" id="auraTierBtn_aura-2.3" onclick="selectAuraModelTier('aura-2.3')">
-                        <span class="aura-model-opt-head"><span>AURA 2.3</span><span style="font-size:10.5px;color:#e2b96f;">Architect Studio</span></span>
-                        <span class="aura-model-opt-sub">Heavy coding, AST diffs &amp; system blueprints</span>
+                        <span class="aura-model-opt-head"><span>AURA 2.3</span><span style="font-size:10.5px;color:#e4e4e7;">Engineering</span></span>
+                        <span class="aura-model-opt-sub">Production code, debugging &amp; systems architecture</span>
                     </button>
                     <button type="button" class="aura-model-option" id="auraTierBtn_aura-2.6" onclick="selectAuraModelTier('aura-2.6')">
-                        <span class="aura-model-opt-head"><span>AURA 2.6</span><span style="font-size:10.5px;color:#6ee7b7;">Apex Flagship</span></span>
-                        <span class="aura-model-opt-sub">Deep trace, live graphs, animations &amp; 1-prompt apps</span>
+                        <span class="aura-model-opt-head"><span>AURA 2.6</span><span style="font-size:10.5px;color:#6ee7b7;">Autonomous Co.</span></span>
+                        <span class="aura-model-opt-sub">Multi-agent strategist, builder &amp; QA company engine</span>
                     </button>
                     <div class="popover-section-title" style="margin-top:4px;">Reasoning Depth</div>
                     <select id="reasoningModeSelect" class="reasoning-select" style="width:100%; border-radius:8px; padding:7px 9px; font-size:12.5px;" aria-label="Reasoning Mode">
@@ -2467,7 +2461,7 @@
                                 <line x1="12" y1="19" x2="12" y2="22"/>
                             </svg>
                         </button>
-                        <button class="btn-dock-icon" id="btnStartVoiceCall" type="button" title="Live Voice Conversation" onclick="openVoiceCallHud()" style="color: var(--accent-gold);">
+                        <button class="btn-dock-icon" id="btnStartVoiceCall" type="button" title="Live Voice Conversation" onclick="openVoiceCallHud()" style="color: var(--text-muted);">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
                         </button>
                         <button class="btn-send-circle" id="btnSend" title="Send message (Enter)">
@@ -2669,9 +2663,9 @@
                     <div>
                         <label for="themePresetSelect" style="font-size:11px; margin-bottom:4px;">Studio Theme</label>
                         <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="font-size:12px; padding:6px 8px;">
-                            <option value="obsidian">Obsidian Gold</option>
-                            <option value="matte">Pure Matte Black</option>
-                            <option value="cyan">Titanium Cyan</option>
+                            <option value="matte">Obsidian Slate (Default)</option>
+                            <option value="obsidian">Warm Amber</option>
+                            <option value="cyan">Titanium Ice</option>
                             <option value="emerald">Emerald Matrix</option>
                         </select>
                     </div>
@@ -2679,14 +2673,18 @@
                         <label style="font-size:11px; margin-bottom:4px;">Gallery Wallpaper</label>
                         <div style="display:flex; gap:6px;">
                             <input type="file" id="customWallpaperInput" accept="image/*" style="display:none;" onchange="handleCustomWallpaperUpload(event)">
-                            <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(226,185,111,0.45); background:rgba(226,185,111,0.12); color:#f7e4b4; font-size:11.5px; cursor:pointer;">Upload Pic</button>
-                            <button type="button" onclick="clearCustomWallpaper()" style="padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#cbd5e1; font-size:11.5px; cursor:pointer;">Reset</button>
+                            <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; cursor:pointer;">Upload Pic</button>
+                            <button type="button" onclick="clearCustomWallpaper()" style="padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#a1a1aa; font-size:11.5px; cursor:pointer;">Reset</button>
                         </div>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:11px; color:#9ca3af; white-space:nowrap;">Wallpaper Dim</span>
                     <input type="range" id="wallpaperDimRange" min="0.25" max="0.92" step="0.05" value="0.72" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                </div>
+                <div style="margin-top:4px;">
+                    <label for="byokGeminiKeyInput" style="font-size:11px; margin-bottom:3px; display:block; color:#a1a1aa;">Optional Personal Gemini Key (Browser-Only Traffic Bypass)</label>
+                    <input id="byokGeminiKeyInput" type="password" placeholder="Optional AIza... key (stays in your browser only)" autocomplete="off" oninput="saveByokGeminiKey(this.value)" style="font-size:11.5px; padding:6px 8px; margin:0;">
                 </div>
             </div>
             <span id="globalExecutionChip" style="display:none;"><span class="nav-pill-sub">Auto-Pilot</span></span>
@@ -2695,53 +2693,53 @@
                 <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save settings</button>
             </div>
 
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
             <div id="voiceStudioSection">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
-                    <h3 style="margin:0; font-size:14px; color:#f8fafc;">Permanent Voice Studio &amp; Cloud API</h3>
-                    <label style="display:inline-flex; align-items:center; gap:6px; margin:0; font-size:11.5px; color:#cbd5e1; cursor:pointer; white-space:nowrap;">
+                    <h3 style="margin:0; font-size:14px; color:#f4f4f5;">Permanent Voice Studio &amp; Cloud API</h3>
+                    <label style="display:inline-flex; align-items:center; gap:6px; margin:0; font-size:11.5px; color:#a1a1aa; cursor:pointer; white-space:nowrap;">
                         <input type="checkbox" id="voiceCommercialOnlyCheckbox" onchange="saveVoicePreferences({commercial_only:this.checked})" style="width:auto; flex-shrink:0; margin:0;">
                         <span>Commercial-Safe Only</span>
                     </label>
                 </div>
-                <div id="voiceHardwareSummary" style="font-size:11.5px; color:#94a3b8; font-family:var(--font-code); background:rgba(0,0,0,0.28); padding:7px 9px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); margin-bottom:8px;">Loading voice hardware &amp; licenses...</div>
+                <div id="voiceHardwareSummary" style="font-size:11.5px; color:#a1a1aa; font-family:var(--font-code); background:rgba(0,0,0,0.28); padding:7px 9px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); margin-bottom:8px;">Loading voice hardware &amp; licenses...</div>
                 <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
                     <input id="voiceStudioSampleText" type="text" value="Hello! I am AURA speaking clearly in natural English." placeholder="Enter text for Voice Studio synthesis..." style="flex:1; margin:0;">
-                    <button type="button" id="btnVoiceStudioSynthesize" onclick="testVoiceStudioSynthesis()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(226,185,111,0.5); background:rgba(226,185,111,0.18); color:#f7e4b4; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Generate &amp; Play</button>
+                    <button type="button" id="btnVoiceStudioSynthesize" onclick="testVoiceStudioSynthesis()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.07); color:#f4f4f5; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Generate &amp; Play</button>
                 </div>
                 <audio id="voiceStudioAudioPlayer" controls style="width:100%; height:34px; display:none; margin-top:4px;"></audio>
                 <div id="voiceStudioStatus" style="font-size:11.5px; color:#a7f3d0; margin-top:4px;"></div>
             </div>
 
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
-            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">🧠 Scoped User Memories</h3>
-            <div id="userMemoriesInspector" style="font-size:12px; color:#94a3b8; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.28); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Loading memories...</div>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
+            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f4f4f5;">Scoped User Memories</h3>
+            <div id="userMemoriesInspector" style="font-size:12px; color:#a1a1aa; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.28); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Loading memories...</div>
 
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
-            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">💾 Persistent Account History (100+ Chats Safe)</h3>
-            <p style="font-size:11.5px; color:#94a3b8; margin:0 0 8px 0;">Chats are stored in an account-isolated IndexedDB vault and automatically re-synced for your username only. Export a portable backup anytime to keep chats permanently across devices.</p>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
+            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f4f4f5;">Persistent Account History (100+ Chats Safe)</h3>
+            <p style="font-size:11.5px; color:#a1a1aa; margin:0 0 8px 0;">Chats are stored in an account-isolated IndexedDB vault and automatically re-synced for your username only. Export a portable backup anytime to keep chats permanently across devices.</p>
             <div class="history-backup-row">
-                <button type="button" id="btnExportHistoryBackup" class="btn-backup-action" onclick="exportMyHistoryBackup()">💾 Export History Backup (.json)</button>
-                <button type="button" id="btnImportHistoryBackup" class="btn-backup-action" onclick="document.getElementById('historyImportFile').click()">📥 Import / Restore Backup</button>
+                <button type="button" id="btnExportHistoryBackup" class="btn-backup-action" onclick="exportMyHistoryBackup()">Export History Backup (.json)</button>
+                <button type="button" id="btnImportHistoryBackup" class="btn-backup-action" onclick="document.getElementById('historyImportFile').click()">Import / Restore Backup</button>
                 <input type="file" id="historyImportFile" accept=".json,application/json" style="display:none;" onchange="importMyHistoryBackup(event)">
             </div>
             <div id="historyBackupStatus" style="font-size:11.5px; margin-top:6px; color:#a7f3d0;"></div>
 
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
-            <h3 style="margin:0 0 8px 0; font-size:14px; color:#f8fafc;">🔐 Account Security</h3>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
+            <h3 style="margin:0 0 8px 0; font-size:14px; color:#f4f4f5;">Account Security</h3>
             <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center;">
                 <input id="acctCurrentPwd" type="password" placeholder="Current password" autocomplete="current-password">
                 <input id="acctNewPwd" type="password" minlength="8" placeholder="New password (8+ chars)" autocomplete="new-password">
-                <button type="button" onclick="changeAccountPassword()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(52,211,153,0.45); background:rgba(16,185,129,0.18); color:#a7f3d0; cursor:pointer; font-size:12px; font-weight:600;">Update</button>
+                <button type="button" onclick="changeAccountPassword()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(52,211,153,0.4); background:rgba(16,185,129,0.16); color:#a7f3d0; cursor:pointer; font-size:12px; font-weight:600;">Update</button>
             </div>
             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                <span style="font-size:11.5px; color:#94a3b8;">Permanently delete account, threads & memories:</span>
-                <button type="button" onclick="deleteMyAccount()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.15); color:#fca5a5; cursor:pointer; font-size:11.5px; font-weight:600;">Delete Account</button>
+                <span style="font-size:11.5px; color:#a1a1aa;">Permanently delete account, threads &amp; memories:</span>
+                <button type="button" onclick="deleteMyAccount()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.14); color:#fca5a5; cursor:pointer; font-size:11.5px; font-weight:600;">Delete Account</button>
             </div>
-            <div id="accountSecurityStatus" style="font-size:12px; margin-top:6px; color:#cbd5e1;"></div>
+            <div id="accountSecurityStatus" style="font-size:12px; margin-top:6px; color:#d4d4d8;"></div>
 
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
-            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f8fafc;">🛠️ Host Terminal Role (<span id="settingsRoleBadge">user</span>)</h3>
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
+            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f4f4f5;">Host Terminal Role (<span id="settingsRoleBadge">user</span>)</h3>
             <p style="font-size:11.5px; color:#94a3b8; margin:0 0 8px 0;">Workspace files, safe CLI, grep, edit, and static previews work for every signed-in account. To unlock full OS PowerShell/bash terminal commands locally, enter your server <code>AURA_ADMIN_BOOTSTRAP_TOKEN</code>.</p>
             <div style="display:flex; gap:8px; align-items:center;">
                 <input id="adminBootstrapSecret" type="password" placeholder="AURA_ADMIN_BOOTSTRAP_TOKEN" autocomplete="off" style="flex:1;">
@@ -3632,6 +3630,14 @@
                 if (csrfToken && !headers['X-CSRF-Token']) {
                     headers['X-CSRF-Token'] = csrfToken;
                 }
+                if (String(url).startsWith('/api/chat')) {
+                    try {
+                        const byok = (localStorage.getItem('aura_byok_gemini_key') || '').trim();
+                        if (byok && !headers['X-Gemini-Key']) {
+                            headers['X-Gemini-Key'] = byok;
+                        }
+                    } catch (_) {}
+                }
                 opts.headers = headers;
                 return fetch(url, opts);
             };
@@ -3813,10 +3819,22 @@
                 if (typeof syncVoiceStudioSettingsUi === 'function') {
                     syncVoiceStudioSettingsUi();
                 }
+                const byokEl = document.getElementById('byokGeminiKeyInput');
+                if (byokEl) {
+                    try { byokEl.value = localStorage.getItem('aura_byok_gemini_key') || ''; } catch (_) {}
+                }
                 await loadUserMemoriesInspector();
             } catch (error) {
                 modelSettingsStatus.textContent = error.message;
             }
+        }
+
+        function saveByokGeminiKey(val) {
+            try {
+                const cleaned = String(val || '').trim();
+                if (cleaned) localStorage.setItem('aura_byok_gemini_key', cleaned);
+                else localStorage.removeItem('aura_byok_gemini_key');
+            } catch (_) {}
         }
 
         function closeModelSettings() {
@@ -5339,7 +5357,7 @@
             pal.innerHTML = '';
             const hdr = document.createElement('div');
             hdr.className = 'slash-palette-header';
-            hdr.innerHTML = '<span>⚡ AURA Command System (Tab / Enter / Click)</span><span>Esc to close</span>';
+            hdr.innerHTML = '<span>AURA Command Palette (Tab / Enter / Click)</span><span>Esc to close</span>';
             pal.appendChild(hdr);
 
             slashFilteredItems.forEach((item, idx) => {
@@ -5504,7 +5522,7 @@
             if (!hasAttachments && lowerCmd === '/export') {
                 userPrompt.value = '';
                 await exportMyHistoryBackup();
-                showBridgeToast('💾 Account history backup downloaded.', '#34d399');
+                showBridgeToast('Account history backup downloaded.', '#34d399');
                 return;
             }
             if (!hasAttachments && lowerCmd === '/ide') {
@@ -5606,7 +5624,7 @@
                     restoreDraftOnFailure();
                     const errBody = await safeParseJson(res);
                     turnData.thinking.style.display = 'none';
-                    turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ Request failed (HTTP ${res.status}): ${escapeHtml(errBody.error || 'Unable to process message.')}</span>`;
+                    turnData.bubble.innerHTML = `<span style="color: #fca5a5;">Request failed (HTTP ${res.status}): ${escapeHtml(errBody.error || 'Unable to process message.')}</span>`;
                     return;
                 }
 
@@ -5637,7 +5655,7 @@
                                     if (eventData.type === 'tool') {
                                         const badge = document.createElement('div');
                                         badge.className = 'tool-badge-pill';
-                                        badge.textContent = `⚙️ Executed ${eventData.name || 'tool'}`;
+                                        badge.textContent = `Executed ${eventData.name || 'tool'}`;
                                         turnData.toolsContainer.appendChild(badge);
                                         if (eventData.output) {
                                             try {
@@ -5676,7 +5694,7 @@
                                         streamErrored = true;
                                         turnData.thinking.style.display = 'none';
                                         const errMsg = eventData.error || eventData.message || 'An unexpected error occurred during generation.';
-                                        turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ Stream Error: ${escapeHtml(errMsg)}</span>`;
+                                        turnData.bubble.innerHTML = `<span style="color: #fca5a5;">Stream Error: ${escapeHtml(errMsg)}</span>`;
                                         streamFinished = true;
                                         break;
                                     }
@@ -5704,7 +5722,7 @@
                     const data = await safeParseJson(res);
                     turnData.thinking.style.display = 'none';
                     if (data.error) {
-                        turnData.bubble.innerHTML = `<span style="color: #fca5a5;">⚠️ ${escapeHtml(data.error)}</span>`;
+                        turnData.bubble.innerHTML = `<span style="color: #fca5a5;">${escapeHtml(data.error)}</span>`;
                     } else {
                         turnData.bubble.innerHTML = renderMarkdown(data.reply || 'Completed.');
                     }
@@ -5888,17 +5906,25 @@
                 const titleSpan = document.createElement('span');
                 titleSpan.className = 'thread-title';
                 titleSpan.title = threadTitle;
-                titleSpan.textContent = (isPinned ? '📌 ' : '') + threadTitle;
+                if (isPinned) {
+                    const pinBadge = document.createElement('span');
+                    pinBadge.style.cssText = 'display:inline-flex;align-items:center;margin-right:5px;color:#93c5fd;vertical-align:middle;';
+                    pinBadge.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
+                    titleSpan.appendChild(pinBadge);
+                }
+                titleSpan.appendChild(document.createTextNode(threadTitle));
                 item.appendChild(titleSpan);
 
                 const actionsWrap = document.createElement('div');
-                actionsWrap.style.cssText = 'display:flex; align-items:center; gap:2px; flex-shrink:0;';
+                actionsWrap.style.cssText = 'display:flex; align-items:center; gap:3px; flex-shrink:0;';
 
                 const pinBtn = document.createElement('button');
                 pinBtn.type = 'button';
                 pinBtn.className = 'thread-del-btn';
                 pinBtn.title = isPinned ? 'Unpin conversation' : 'Pin conversation';
-                pinBtn.textContent = isPinned ? '📍' : '📌';
+                pinBtn.innerHTML = isPinned
+                    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>'
+                    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>';
                 pinBtn.addEventListener('click', (event) => {
                     event.stopPropagation();
                     togglePinThread(threadId, !isPinned);
@@ -5909,7 +5935,7 @@
                 renBtn.type = 'button';
                 renBtn.className = 'thread-del-btn';
                 renBtn.title = 'Rename conversation';
-                renBtn.textContent = '✏️';
+                renBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
                 renBtn.addEventListener('click', (event) => {
                     event.stopPropagation();
                     renameThreadPrompt(threadId, threadTitle);
@@ -5920,7 +5946,7 @@
                 delBtn.type = 'button';
                 delBtn.className = 'thread-del-btn';
                 delBtn.title = 'Delete conversation';
-                delBtn.textContent = '✕';
+                delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
                 delBtn.addEventListener('click', (event) => {
                     event.stopPropagation();
                     deleteThread(threadId);
@@ -6041,7 +6067,7 @@
                                 tools.forEach(t => {
                                     const badge = document.createElement('div');
                                     badge.className = 'tool-badge-pill';
-                                    badge.textContent = `⚙️ Executed ${(t && t.name) ? t.name : 'tool'}`;
+                                    badge.textContent = `Executed ${(t && t.name) ? t.name : 'tool'}`;
                                     turn.appendChild(badge);
                                 });
                             }
@@ -6133,7 +6159,7 @@
                 const plotH = H - padT - padB;
                 const step = plotW / n;
                 const barW = Math.max(18, Math.min(48, step * 0.56));
-                const palette = ['#e2b96f', '#38bdf8', '#10b981', '#a78bfa', '#f59e0b'];
+                const palette = ['#60a5fa', '#34d399', '#a78bfa', '#38bdf8', '#94a3b8'];
 
                 let barsSvg = '';
                 for (let i = 0; i < n; i++) {
@@ -6247,9 +6273,9 @@
                         `<div class="inline-visual-card" data-visual-lang="${escapeHtml(effectiveLang)}">` +
                             `<textarea class="aura-visual-src" hidden>${escapedCode}</textarea>` +
                             `<div class="inline-visual-header">` +
-                                `<span>Interactive ${escapeHtml(effectiveLang.toUpperCase())} Render</span>` +
+                                `<span>${escapeHtml(effectiveLang.toUpperCase())} Render</span>` +
                                 `<div class="code-actions-group">` +
-                                    `<button type="button" class="btn-artifact-code btn-expand-inline-visual">Expand in Studio</button>` +
+                                    `<button type="button" class="btn-artifact-code btn-expand-inline-visual">Studio</button>` +
                                     `<button type="button" class="btn-copy-code btn-toggle-inline-src">Code</button>` +
                                 `</div>` +
                             `</div>` +
@@ -6267,7 +6293,7 @@
                             `<div class="code-header">` +
                                 `<span class="code-lang-label">${langLabel}</span>` +
                                 `<div class="code-actions-group">` +
-                                    `<button type="button" class="btn-artifact-code">Open Artifact</button>` +
+                                    `<button type="button" class="btn-artifact-code">Preview</button>` +
                                     `<button type="button" class="btn-copy-code">Copy</button>` +
                                 `</div>` +
                             `</div>` +
@@ -6307,8 +6333,8 @@
                                 `<img src="${escapedSrc}" alt="${escapedAlt}" class="chat-generated-image" loading="lazy">` +
                             `</a>` +
                             `<div class="chat-image-caption">` +
-                                `<span>✨ ${escapedAlt}</span>` +
-                                `<span style="font-size:11px; opacity:0.7;">(Click to view full size)</span>` +
+                                `<span>${escapedAlt}</span>` +
+                                `<span style="font-size:11px; opacity:0.7;">Click to open</span>` +
                             `</div>` +
                         `</div>`
                     );
@@ -8152,12 +8178,12 @@
 
         function applyAuraThemePreset(preset) {
             const presets = {
-                obsidian: { bg: '#090a0e', side: '#0d0f15', gold: '#e2b96f', border: 'rgba(226, 185, 111, 0.55)' },
-                matte: { bg: '#050507', side: '#09090c', gold: '#e5e7eb', border: 'rgba(255, 255, 255, 0.35)' },
-                cyan: { bg: '#060c14', side: '#0a121e', gold: '#38bdf8', border: 'rgba(56, 189, 248, 0.5)' },
-                emerald: { bg: '#05100c', side: '#081812', gold: '#34d399', border: 'rgba(52, 211, 153, 0.5)' }
+                matte: { bg: '#09090b', side: '#0d0d10', gold: '#e4e4e7', border: 'rgba(255, 255, 255, 0.28)' },
+                obsidian: { bg: '#090a0e', side: '#0d0f15', gold: '#e2b96f', border: 'rgba(226, 185, 111, 0.45)' },
+                cyan: { bg: '#060c14', side: '#0a121e', gold: '#38bdf8', border: 'rgba(56, 189, 248, 0.4)' },
+                emerald: { bg: '#05100c', side: '#081812', gold: '#34d399', border: 'rgba(52, 211, 153, 0.4)' }
             };
-            const p = presets[preset] || presets.obsidian;
+            const p = presets[preset] || presets.matte;
             document.documentElement.style.setProperty('--bg-primary', p.bg);
             document.documentElement.style.setProperty('--bg-sidebar', p.side);
             document.documentElement.style.setProperty('--accent-gold', p.gold);
@@ -8229,17 +8255,15 @@
             setInterval(updateTimeGreeting, 60000);
             try {
                 const savedSpace = localStorage.getItem('aura_space_bg');
-                const spaceEnabled = (savedSpace !== 'off');
+                const spaceEnabled = (savedSpace === 'on');
                 const chk = document.getElementById('toggleSpaceBackdropCheckbox');
                 if (chk) chk.checked = spaceEnabled;
                 toggleSpaceBackdropSetting(spaceEnabled);
 
-                const savedTheme = localStorage.getItem('aura_theme_preset');
-                if (savedTheme) {
-                    applyAuraThemePreset(savedTheme);
-                    const sel = document.getElementById('themePresetSelect');
-                    if (sel) sel.value = savedTheme;
-                }
+                const savedTheme = localStorage.getItem('aura_theme_preset') || 'matte';
+                applyAuraThemePreset(savedTheme);
+                const sel = document.getElementById('themePresetSelect');
+                if (sel) sel.value = savedTheme;
                 const savedWall = localStorage.getItem('aura_custom_wallpaper');
                 if (savedWall) _applyCustomWallpaperUrl(savedWall);
                 const savedDim = localStorage.getItem('aura_wallpaper_dim');
