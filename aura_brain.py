@@ -4011,7 +4011,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 return json.loads(resp.read().decode())
 
         is_vercel = bool(os.environ.get("VERCEL"))
-        total_budget = (22.0 if is_vercel else 24.0) if include_tools else (20.0 if is_vercel else 18.0)
+        total_budget = (19.0 if is_vercel else 22.0) if include_tools else (15.5 if is_vercel else 17.5)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
@@ -4022,18 +4022,20 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 remaining = deadline - time.monotonic()
                 if remaining < 2.2:
                     break
-                max_att = (15.0 if include_tools else 14.0) if is_vercel else (14.0 if include_tools else 12.0)
+                max_att = (10.5 if include_tools else 8.5) if is_vercel else (12.0 if include_tools else 9.5)
                 attempt_timeout = max(2.2, min(max_att, remaining))
                 try:
                     return _post_gemini(mod, k_val, primary_payload, attempt_timeout)
                 except urllib.error.HTTPError as e:
                     print(f"[*] AURA Gemini live HTTP {e.code} fallback for {mod}: {e}")
-                    if e.code in (429, 403):
+                    if e.code in (429, 403, 503):
                         continue  # Immediately try next API key in pool
-                    break  # Non-quota error -> try next model
+                    break  # Non-quota error (e.g. 404/400) -> try next model
                 except Exception as e:
                     print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
-                    break  # Timeout/network -> move to next model or fast salvage
+                    if mod == "gemini-3-flash-preview":
+                        continue  # Still try alternate key on fastest primary model
+                    break  # Otherwise advance quickly to next model
 
         # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
         if include_tools and (deadline - time.monotonic()) >= 3.0:
@@ -4044,19 +4046,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     break
                 for k_val in key_pool[:2]:
                     try:
-                        return _post_gemini(mod, k_val, salvage_payload, min(10.0, max(2.2, deadline - time.monotonic())))
+                        return _post_gemini(mod, k_val, salvage_payload, min(8.0, max(2.2, deadline - time.monotonic())))
                     except Exception:
                         continue
 
         # Secondary zero-key cloud LLM failover (Pollinations OpenAI-compatible text)
-        # Only used on genuine live requests when all Gemini quota buckets are temporarily saturated.
+        # Dedicated rescue budget so Gemini timeouts never starve the fallback provider.
         is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
         is_test_key = str(primary_key).lower().startswith(("your_", "key-", "test", "mock"))
-        if not is_mocked_urlopen and not is_test_key and not include_tools and (deadline - time.monotonic()) >= 3.5:
+        if not is_mocked_urlopen and not is_test_key and not include_tools and deadline_override is None:
             secondary = self._try_pollinations_text_fallback(
                 compacted,
                 sys_instruction["parts"][0]["text"],
-                timeout_s=min(9.0, max(3.5, deadline - time.monotonic())),
+                timeout_s=7.5,
             )
             if secondary is not None:
                 return secondary
