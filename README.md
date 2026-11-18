@@ -34,6 +34,11 @@
    - **`AURA 2.6` (`aura-2.6`)**: Apex multi-agent synthesis engine streaming live `:::thought :::` traces, semantic callout banners, interactive `aura-chart` SVG graphs, animated visuals, and 1-prompt sandboxed apps.
    - **Theme & Wallpaper Studio**: Built-in curated dark presets (`Obsidian Gold`, `Pure Matte Black`, `Titanium Cyan`, `Emerald Matrix`) and client-side gallery wallpaper compression stored privately per browser.
 
+7. **Universal Voice Cloud & Permanent Hybrid TTS (`aura_voice_cloud.py`, `/v1/*`)**
+   - **Multi-Engine Adapter Orchestrator**: Pluggable `Kokoro-82M` INT8 CPU offline engine (`Apache-2.0`, stored on `D:\PERMANENT-VOICE-SYSTEM` locally), zero-key `Edge Neural` bridge (`English`, `Hindi`, `Hinglish`, `Telugu`), remote `Maya 2 Native` CUDA worker (`MAYA_ENGINE_URL` with `Apache-2.0` + `Mimi CC-BY-4.0` notice), license-guarded `Piper` (`Lessac` commercial block), and Windows `System.Speech` offline fallback.
+   - **Strict English Language Lock & Progressive Audio**: Defaults strictly to natural English unless Hindi/Hinglish/Telugu is detected or chosen in Live Voice HUD / Voice Studio, with sentence-by-sentence neural audio prefetching and instant Barge-In interrupt.
+   - **Versioned Developer & SaaS API**: `/v1/voices`, `/v1/languages`, `/v1/speech`, `/v1/speech/{id}`, `/v1/audio/{id}` (`GET`/`DELETE`), `/v1/calls`, and `/v1/voice/hardware`.
+
 ## Security & Privacy Architecture
 
 - **Authentication & Sessions:** Scrypt password hashing (`aura_db.py`), `HttpOnly; SameSite=Strict` cookies + dynamic CSRF token (`X-CSRF-Token`), unique username enforcement, and 1-click isolated guest sessions.
@@ -56,6 +61,6 @@ Deploy serverless directly on Vercel via [`vercel.json`](vercel.json) and [`api/
 ## Running Verified Test Suites
 
 ```powershell
-python -m unittest test_aura_models_v2_engines test_aura_sovereign_v5 test_aura_workspace_ide -v
-python -m pytest test_aura_models_v2_engines.py test_aura_reliability_fixes.py test_aura_workspace_ide.py test_aura_sovereign_v5.py test_aura_pipeline.py -v
+python -m unittest test_aura_voice_cloud test_aura_models_v2_engines test_aura_sovereign_v5 test_aura_workspace_ide -v
+python -m pytest test_aura_voice_cloud.py test_aura_models_v2_engines.py test_aura_reliability_fixes.py test_aura_workspace_ide.py test_aura_sovereign_v5.py test_aura_pipeline.py -v
 ```

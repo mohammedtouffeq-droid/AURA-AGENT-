@@ -2509,18 +2509,46 @@
     <!-- ---------------- Full-Duplex Voice Call HUD ---------------- -->
     <div class="voice-hud-overlay" id="voiceCallOverlay" role="dialog" aria-modal="true" aria-label="AURA Live Voice HUD">
         <div class="voice-hud-card" onclick="event.stopPropagation()">
-            <div style="width:100%; display:flex; align-items:center; justify-content:space-between;">
+            <div style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;">
                 <div>
                     <div style="font-size:14.5px; font-weight:700; color:#f7e4b4;">AURA Voice Mode</div>
                     <div id="voiceHudStateLabel" style="font-size:11.5px; color:#7dd3fc; font-family:var(--font-code);">STANDBY • Click Start Call or Type</div>
                 </div>
-                <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span id="voiceHudEngineBadge" style="font-size:10.5px; font-family:var(--font-code); padding:3px 8px; border-radius:999px; border:1px solid rgba(52,211,153,0.4); background:rgba(16,185,129,0.12); color:#6ee7b7;">Hybrid HD</span>
+                    <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
+                </div>
+            </div>
+
+            <div style="width:100%; display:grid; grid-template-columns:1fr 1.2fr 1fr; gap:6px;">
+                <select id="voiceHudLangSelect" onchange="saveVoicePreferences({language:this.value})" aria-label="Voice Language" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
+                    <option value="en">English (Default)</option>
+                    <option value="auto">Auto (Match)</option>
+                    <option value="hi">Hindi</option>
+                    <option value="hi-en">Hinglish</option>
+                    <option value="te">Telugu</option>
+                </select>
+                <select id="voiceHudVoiceSelect" onchange="saveVoicePreferences({voice_id:this.value})" aria-label="Voice Profile" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
+                    <option value="male_02">Male 02 (Friendly)</option>
+                    <option value="male_01">Male 01 (Deep Pro)</option>
+                    <option value="female_02">Female 02 (Warm)</option>
+                    <option value="female_01">Female 01 (Calm Pro)</option>
+                    <option value="hi_male_01">Hindi Male 01</option>
+                    <option value="hi_female_01">Hindi Female 01</option>
+                    <option value="te_male_01">Telugu Male 01</option>
+                    <option value="te_female_01">Telugu Female 01</option>
+                </select>
+                <select id="voiceHudEngineSelect" onchange="saveVoicePreferences({engine:this.value})" aria-label="Voice Engine" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
+                    <option value="auto">Auto Hybrid</option>
+                    <option value="kokoro">Kokoro Offline</option>
+                    <option value="edge">Neural HD</option>
+                </select>
             </div>
 
             <canvas id="voiceCallOrb" class="voice-orb-canvas" width="220" height="220"></canvas>
 
             <div id="voiceHudTranscript" class="voice-transcript-box">
-                Say <strong>"Hello AURA"</strong> or type below to start a spoken dialogue with voice playback and interruption support.
+                Say <strong>"Hello AURA"</strong> or type below to start a spoken dialogue in your chosen voice &amp; language.
             </div>
 
             <form onsubmit="event.preventDefault(); sendVoiceHudTextTurn();" style="width:100%; display:flex; gap:8px;">
@@ -2665,6 +2693,24 @@
             <div class="model-settings-actions">
                 <button type="button" onclick="closeModelSettings()">Close</button>
                 <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save settings</button>
+            </div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
+            <div id="voiceStudioSection">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
+                    <h3 style="margin:0; font-size:14px; color:#f8fafc;">Permanent Voice Studio &amp; Cloud API</h3>
+                    <label style="display:inline-flex; align-items:center; gap:6px; margin:0; font-size:11.5px; color:#cbd5e1; cursor:pointer; white-space:nowrap;">
+                        <input type="checkbox" id="voiceCommercialOnlyCheckbox" onchange="saveVoicePreferences({commercial_only:this.checked})" style="width:auto; flex-shrink:0; margin:0;">
+                        <span>Commercial-Safe Only</span>
+                    </label>
+                </div>
+                <div id="voiceHardwareSummary" style="font-size:11.5px; color:#94a3b8; font-family:var(--font-code); background:rgba(0,0,0,0.28); padding:7px 9px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); margin-bottom:8px;">Loading voice hardware &amp; licenses...</div>
+                <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
+                    <input id="voiceStudioSampleText" type="text" value="Hello! I am AURA speaking clearly in natural English." placeholder="Enter text for Voice Studio synthesis..." style="flex:1; margin:0;">
+                    <button type="button" id="btnVoiceStudioSynthesize" onclick="testVoiceStudioSynthesis()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(226,185,111,0.5); background:rgba(226,185,111,0.18); color:#f7e4b4; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Generate &amp; Play</button>
+                </div>
+                <audio id="voiceStudioAudioPlayer" controls style="width:100%; height:34px; display:none; margin-top:4px;"></audio>
+                <div id="voiceStudioStatus" style="font-size:11.5px; color:#a7f3d0; margin-top:4px;"></div>
             </div>
 
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:16px 0;">
@@ -3763,6 +3809,9 @@
                 updateModelSettingsFields();
                 if (typeof syncIdeRoleBadges === 'function') {
                     syncIdeRoleBadges(currentUser);
+                }
+                if (typeof syncVoiceStudioSettingsUi === 'function') {
+                    syncVoiceStudioSettingsUi();
                 }
                 await loadUserMemoriesInspector();
             } catch (error) {
@@ -7411,15 +7460,138 @@
             voiceHudState.animFrame = requestAnimationFrame(_drawVoiceOrbFrame);
         }
 
+        function getVoicePreferences() {
+            let comm = false;
+            try { comm = localStorage.getItem('aura_voice_commercial') === '1'; } catch (_) {}
+            return {
+                language: (localStorage.getItem('aura_voice_lang') || 'en'),
+                voice_id: (localStorage.getItem('aura_voice_id') || 'male_02'),
+                engine: (localStorage.getItem('aura_voice_engine') || 'auto'),
+                commercial_only: comm
+            };
+        }
+
+        function saveVoicePreferences(partial = {}) {
+            const cur = getVoicePreferences();
+            const next = Object.assign(cur, partial);
+            try {
+                localStorage.setItem('aura_voice_lang', next.language);
+                localStorage.setItem('aura_voice_id', next.voice_id);
+                localStorage.setItem('aura_voice_engine', next.engine);
+                localStorage.setItem('aura_voice_commercial', next.commercial_only ? '1' : '0');
+            } catch (_) {}
+            syncVoicePreferencesUi();
+            return next;
+        }
+
+        function syncVoicePreferencesUi() {
+            const prefs = getVoicePreferences();
+            const langEl = document.getElementById('voiceHudLangSelect');
+            const voiceEl = document.getElementById('voiceHudVoiceSelect');
+            const engEl = document.getElementById('voiceHudEngineSelect');
+            const commEl = document.getElementById('voiceCommercialOnlyCheckbox');
+            const badgeEl = document.getElementById('voiceHudEngineBadge');
+            if (langEl) langEl.value = prefs.language;
+            if (voiceEl) voiceEl.value = prefs.voice_id;
+            if (engEl) engEl.value = prefs.engine;
+            if (commEl) commEl.checked = !!prefs.commercial_only;
+            if (badgeEl) {
+                const engLabel = prefs.engine === 'kokoro' ? 'Kokoro Apache-2.0' : (prefs.engine === 'edge' ? 'Neural HD' : 'Hybrid HD');
+                const langLabel = (prefs.language || 'en').toUpperCase();
+                badgeEl.textContent = `${engLabel} · ${langLabel}`;
+            }
+        }
+
+        async function syncVoiceStudioSettingsUi() {
+            syncVoicePreferencesUi();
+            const summary = document.getElementById('voiceHardwareSummary');
+            if (!summary) return;
+            try {
+                const res = await apiFetch('/v1/voice/hardware');
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    summary.textContent = 'Voice hardware check unavailable.';
+                    return;
+                }
+                const hw = data.hardware || {};
+                const engs = data.engines || {};
+                const kokoroNote = (engs.kokoro && engs.kokoro.available) ? 'Kokoro-82M INT8 Ready (Offline Apache-2.0)' : 'Kokoro Standby';
+                const edgeNote = (engs.edge && engs.edge.available) ? 'Neural HD Online' : 'Neural Offline';
+                summary.textContent = `Host: ${hw.host_os || 'Host'} (${hw.cpu_cores || '?'} cores, ${hw.ram_gb || '?'} GB RAM) • ${kokoroNote} • ${edgeNote} • CUDA=${hw.cuda_available ? 'Yes' : 'No (Maya remote worker mode)'}`;
+            } catch (_) {
+                summary.textContent = 'Universal Voice API active (/v1/speech, /v1/voices).';
+            }
+        }
+
+        async function testVoiceStudioSynthesis() {
+            const txtEl = document.getElementById('voiceStudioSampleText');
+            const statusEl = document.getElementById('voiceStudioStatus');
+            const player = document.getElementById('voiceStudioAudioPlayer');
+            const btn = document.getElementById('btnVoiceStudioSynthesize');
+            if (!txtEl || !statusEl || !player) return;
+            const text = txtEl.value.trim();
+            if (!text) return;
+            const prefs = getVoicePreferences();
+            if (btn) btn.disabled = true;
+            statusEl.style.color = '#7dd3fc';
+            statusEl.textContent = 'Synthesizing voice sample...';
+            try {
+                const res = await apiFetch('/v1/speech', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        language: prefs.language,
+                        voice_id: prefs.voice_id,
+                        engine: prefs.engine,
+                        commercial_only: prefs.commercial_only
+                    })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success || !data.speech) {
+                    throw new Error((data && (data.error || data.detail)) || 'Synthesis failed');
+                }
+                const sp = data.speech;
+                const audioRes = await apiFetch(sp.audio_url);
+                if (!audioRes.ok) throw new Error('Audio stream load failed');
+                const blob = await audioRes.blob();
+                const objUrl = URL.createObjectURL(blob);
+                player.src = objUrl;
+                player.style.display = 'block';
+                player.play().catch(() => {});
+                statusEl.style.color = '#6ee7b7';
+                statusEl.textContent = `Engine: ${sp.engine} (${sp.provider_voice}) • Lang: ${sp.language} • ${sp.latency_ms}ms • ${(sp.bytes_len / 1024).toFixed(1)} KB`;
+            } catch (err) {
+                statusEl.style.color = '#fca5a5';
+                statusEl.textContent = 'Error: ' + err.message;
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function _stopCloudAudioElement() {
+            if (voiceHudState._abortCtrl) {
+                try { voiceHudState._abortCtrl.abort(); } catch (_) {}
+                voiceHudState._abortCtrl = null;
+            }
+            if (voiceHudState.activeAudio) {
+                try {
+                    voiceHudState.activeAudio.pause();
+                    voiceHudState.activeAudio.src = '';
+                } catch (_) {}
+                voiceHudState.activeAudio = null;
+            }
+            if (voiceHudState.activeAudioUrl) {
+                try { URL.revokeObjectURL(voiceHudState.activeAudioUrl); } catch (_) {}
+                voiceHudState.activeAudioUrl = '';
+            }
+        }
+
         function _primeVoiceAudio() {
             if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
             try {
                 window.speechSynthesis.resume();
                 window.speechSynthesis.getVoices();
-                const warmup = new SpeechSynthesisUtterance(' ');
-                warmup.volume = 0;
-                warmup.rate = 10;
-                window.speechSynthesis.speak(warmup);
             } catch (_) {}
         }
 
@@ -7427,37 +7599,39 @@
             if (!window.speechSynthesis || !window.speechSynthesis.getVoices) return null;
             const voices = window.speechSynthesis.getVoices() || [];
             if (!voices.length) return null;
-            return voices.find(v => /en-IN|en-US|Google|Natural|David|Zira/i.test(v.name || v.lang || '')) || voices[0];
+            const prefs = getVoicePreferences();
+            if (prefs.language === 'hi') {
+                return voices.find(v => /hi-IN|Hindi/i.test(v.lang || v.name || '')) || voices[0];
+            }
+            return voices.find(v => /en-US|en-IN|Google|Natural|Aria|Andrew|Zira|David/i.test(v.name || v.lang || '')) || voices[0];
         }
 
-        function _speakVoiceSentences(plainSpeech, onDone) {
-            if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined' || !plainSpeech || voiceHudState.muted) {
-                if (onDone) onDone();
-                return;
-            }
-            const rawChunks = String(plainSpeech).match(/[^.!?]+[.!?]*\s*/g) || [String(plainSpeech)];
+        function _splitSpeechSentences(plainSpeech) {
+            const rawChunks = String(plainSpeech || '').match(/[^.!?]+[.!?]*\s*/g) || [String(plainSpeech || '')];
             const chunks = [];
             let cur = '';
             rawChunks.forEach(part => {
                 const trimmed = part.trim();
                 if (!trimmed) return;
-                if ((cur + ' ' + trimmed).trim().length <= 190) {
+                if ((cur + ' ' + trimmed).trim().length <= 220) {
                     cur = (cur ? cur + ' ' : '') + trimmed;
                 } else {
                     if (cur) chunks.push(cur);
-                    cur = trimmed.slice(0, 190);
+                    cur = trimmed.slice(0, 220);
                 }
             });
             if (cur) chunks.push(cur);
-            if (!chunks.length) {
+            return chunks;
+        }
+
+        function _speakBrowserFallback(chunks, genId, onDone) {
+            if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined' || !chunks.length || voiceHudState.muted) {
                 if (onDone) onDone();
                 return;
             }
             const voice = _pickPreferredVoice();
-            const genId = (voiceHudState._speechGen = (voiceHudState._speechGen || 0) + 1);
+            const prefs = getVoicePreferences();
             let idx = 0;
-            _setVoiceHudMode('speaking', 'SPEAKING • Tap Interrupt anytime');
-
             function speakNext() {
                 if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted || idx >= chunks.length) {
                     if (genId === voiceHudState._speechGen && onDone) onDone();
@@ -7465,9 +7639,8 @@
                 }
                 const utt = new SpeechSynthesisUtterance(chunks[idx++]);
                 if (voice) utt.voice = voice;
-                utt.lang = (voice && voice.lang) ? voice.lang : 'en-IN';
+                utt.lang = prefs.language === 'hi' ? 'hi-IN' : 'en-US';
                 utt.rate = 1.02;
-                utt.volume = 1.0;
                 utt.onend = () => speakNext();
                 utt.onerror = () => speakNext();
                 try {
@@ -7480,12 +7653,93 @@
             speakNext();
         }
 
+        async function _fetchSentenceCloudAudio(sentenceText, prefs, signal) {
+            const res = await apiFetch('/v1/speech', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal,
+                body: JSON.stringify({
+                    text: sentenceText,
+                    language: prefs.language,
+                    voice_id: prefs.voice_id,
+                    engine: prefs.engine,
+                    commercial_only: prefs.commercial_only
+                })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success || !data.speech || data.speech.engine === 'fallback_pcm') {
+                return null;
+            }
+            const audioRes = await apiFetch(data.speech.audio_url, { signal });
+            if (!audioRes.ok) return null;
+            const blob = await audioRes.blob();
+            return { blob, meta: data.speech };
+        }
+
+        async function _speakVoiceSentences(plainSpeech, onDone) {
+            const chunks = _splitSpeechSentences(plainSpeech);
+            if (!chunks.length || voiceHudState.muted) {
+                if (onDone) onDone();
+                return;
+            }
+            const genId = (voiceHudState._speechGen = (voiceHudState._speechGen || 0) + 1);
+            const prefs = getVoicePreferences();
+            const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            voiceHudState._abortCtrl = ctrl;
+            _setVoiceHudMode('speaking', 'SYNTHESIZING VOICE • Neural Audio');
+
+            let nextPrefetch = _fetchSentenceCloudAudio(chunks[0], prefs, ctrl ? ctrl.signal : undefined).catch(() => null);
+            for (let i = 0; i < chunks.length; i++) {
+                if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted) return;
+                const item = await nextPrefetch;
+                if (i + 1 < chunks.length && genId === voiceHudState._speechGen && !voiceHudState.muted) {
+                    nextPrefetch = _fetchSentenceCloudAudio(chunks[i + 1], prefs, ctrl ? ctrl.signal : undefined).catch(() => null);
+                }
+                if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted) return;
+
+                if (!item || !item.blob) {
+                    _setVoiceHudMode('speaking', 'SPEAKING (Browser Fallback) • Tap Interrupt anytime');
+                    _speakBrowserFallback(chunks.slice(i), genId, onDone);
+                    return;
+                }
+
+                const meta = item.meta || {};
+                const badgeEl = document.getElementById('voiceHudEngineBadge');
+                if (badgeEl && meta.engine) {
+                    badgeEl.textContent = `${meta.engine} · ${meta.language || prefs.language}`;
+                }
+                _setVoiceHudMode('speaking', `SPEAKING (${meta.engine || 'neural'}) • Tap Interrupt anytime`);
+
+                const playedOk = await new Promise((resolve) => {
+                    const objUrl = URL.createObjectURL(item.blob);
+                    const audio = new Audio(objUrl);
+                    voiceHudState.activeAudio = audio;
+                    voiceHudState.activeAudioUrl = objUrl;
+                    const cleanup = (ok) => {
+                        if (voiceHudState.activeAudio === audio) voiceHudState.activeAudio = null;
+                        if (voiceHudState.activeAudioUrl === objUrl) voiceHudState.activeAudioUrl = '';
+                        try { URL.revokeObjectURL(objUrl); } catch (_) {}
+                        resolve(ok);
+                    };
+                    audio.onended = () => cleanup(true);
+                    audio.onerror = () => cleanup(false);
+                    audio.play().catch(() => cleanup(false));
+                });
+                if (!playedOk && genId === voiceHudState._speechGen) {
+                    _speakBrowserFallback(chunks.slice(i), genId, onDone);
+                    return;
+                }
+            }
+            if (genId === voiceHudState._speechGen && onDone) onDone();
+        }
+
         function openVoiceCallHud() {
             if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
             }
             _primeVoiceAudio();
+            syncVoicePreferencesUi();
             const overlay = document.getElementById('voiceCallOverlay');
             if (!overlay) return;
             overlay.style.display = 'flex';
@@ -7507,6 +7761,7 @@
 
         function interruptVoicePlayback() {
             voiceHudState._speechGen = (voiceHudState._speechGen || 0) + 1;
+            _stopCloudAudioElement();
             if (window.speechSynthesis && typeof window.speechSynthesis.cancel === 'function') {
                 try { window.speechSynthesis.cancel(); } catch (_) {}
             }
@@ -7545,6 +7800,19 @@
         function startVoiceCallSession() {
             voiceHudState.callActive = true;
             voiceHudState.muted = false;
+            const prefs = getVoicePreferences();
+            apiFetch('/v1/calls', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    voice_id: prefs.voice_id,
+                    language: prefs.language === 'auto' ? 'en' : prefs.language,
+                    engine: prefs.engine,
+                    consent_confirmed: true
+                })
+            }).then(r => safeParseJson(r)).then(d => {
+                if (d && d.call && d.call.call_id) voiceHudState.activeCallId = d.call.call_id;
+            }).catch(() => {});
             const btn = document.getElementById('btnVoiceCallToggleMic');
             if (btn) {
                 btn.textContent = 'End Call';
@@ -7557,6 +7825,15 @@
 
         function stopVoiceCallSession() {
             voiceHudState.callActive = false;
+            if (voiceHudState.activeCallId) {
+                const cid = voiceHudState.activeCallId;
+                voiceHudState.activeCallId = '';
+                apiFetch(`/v1/calls/${cid}/state`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'ended' })
+                }).catch(() => {});
+            }
             if (voiceHudState.recognition) {
                 try { voiceHudState.recognition.stop(); } catch (_) {}
             }
@@ -7579,11 +7856,13 @@
             }
             try {
                 const rec = new Rec();
-                rec.lang = 'en-IN';
+                const prefs = getVoicePreferences();
+                const localeMap = { 'en': 'en-US', 'auto': 'en-US', 'hi': 'hi-IN', 'hi-en': 'en-IN', 'te': 'te-IN' };
+                rec.lang = localeMap[prefs.language] || 'en-US';
                 rec.interimResults = false;
                 rec.maxAlternatives = 1;
                 voiceHudState.recognition = rec;
-                _setVoiceHudMode('listening', 'LISTENING • Speak naturally...');
+                _setVoiceHudMode('listening', `LISTENING (${rec.lang}) • Speak naturally...`);
                 rec.onresult = (ev) => {
                     const transcript = (ev.results && ev.results[0] && ev.results[0][0]) ? ev.results[0][0].transcript : '';
                     if (transcript && transcript.trim()) {
@@ -7614,6 +7893,7 @@
             interruptVoicePlayback();
             _appendVoiceTranscript('YOU', spokenText);
             _setVoiceHudMode('thinking', 'THINKING • Synthesizing AURA Core...');
+            const prefs = getVoicePreferences();
             try {
                 const res = await apiFetch('/api/chat', {
                     method: 'POST',
@@ -7623,19 +7903,24 @@
                         thread_id: currentThreadId || 'default',
                         mode: activeExecutionMode || 'auto_pilot',
                         reasoning_mode: getActiveReasoningMode(),
-                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3'
+                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
+                        voice_turn: true,
+                        preferred_language: prefs.language || 'en'
                     })
                 });
                 const data = await safeParseJson(res);
                 const replyText = (data && data.reply) ? String(data.reply) : ((data && data.error) || 'Completed.');
                 _appendVoiceTranscript('AURA', replyText);
-                const plainSpeech = replyText
-                    .replace(/```[\s\S]*?```/g, ' Code block generated in workspace. ')
-                    .replace(/[*#`>_]/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim()
-                    .slice(0, 750);
-                _speakVoiceSentences(plainSpeech, () => {
+                const plainSpeech = (data && data.speech_text)
+                    ? String(data.speech_text)
+                    : replyText
+                        .replace(/:::thought[\s\S]*?:::/g, ' ')
+                        .replace(/```[\s\S]*?```/g, ' Code rendered in workspace. ')
+                        .replace(/[*#`>_]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .slice(0, 750);
+                await _speakVoiceSentences(plainSpeech, () => {
                     if (voiceHudState.open && voiceHudState.callActive && !voiceHudState.muted) {
                         _startVoiceRecognitionTurn();
                     } else if (voiceHudState.open) {

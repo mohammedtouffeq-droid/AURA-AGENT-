@@ -85,6 +85,13 @@ from aura_engine_base import EngineDispatchPlan, format_thought_block
 from aura_jarvis_hub import JARVIS_HUB
 from aura_models_hub import AURA_MODEL_ROUTER
 from aura_settings import AuraSettingsManager
+from aura_voice_cloud import (
+    VOICE_ORCHESTRATOR,
+    audit_voice_hardware,
+    build_language_policy_instruction,
+    detect_preferred_language,
+    prepare_text_for_speech,
+)
 from coderx_engine import _atomic_write_text
 
 BRAIN = AuraBrain()
@@ -162,25 +169,32 @@ def _prepare_aura_turn(
     body: Dict[str, Any],
     permission_mode: str,
     brain: AuraBrain,
-) -> Tuple[str, str, Optional[EngineDispatchPlan], Optional[str]]:
-    """Applies AURA 2.0 / 2.3 / 2.6 engine profile + reasoning mode + Kill Switch guardrails."""
+) -> Tuple[str, str, Optional[EngineDispatchPlan], Optional[str], str]:
+    """Applies AURA 2.0 / 2.3 / 2.6 engine profile, strict language policy, and Kill Switch guardrails."""
     user_id = int(user["id"])
     prefs = ((user.get("settings") or {}).get("preferences") or {})
     raw_tier = body.get("aura_model") or prefs.get("aura_model")
     norm_tier = AURA_MODEL_ROUTER.normalize_tier(raw_tier) if raw_tier else None
+    voice_turn = bool(body.get("voice_turn", False))
+    pref_lang = str(body.get("preferred_language") or body.get("language") or "auto")
+    resolved_lang = detect_preferred_language(prompt, None if pref_lang == "auto" else pref_lang)
 
     dispatch_prompt, effective_permission = _prepare_chat_dispatch(
         user_id, prompt, body, permission_mode, brain
     )
-    if not prompt or prompt.startswith("/") or not norm_tier:
-        return dispatch_prompt, effective_permission, None, norm_tier
+    if not prompt or prompt.startswith("/"):
+        return dispatch_prompt, effective_permission, None, norm_tier, resolved_lang
+
+    lang_policy = build_language_policy_instruction(resolved_lang, voice_turn=voice_turn)
+    if voice_turn or not norm_tier:
+        return f"{lang_policy}\n\n{dispatch_prompt}", effective_permission, None, norm_tier, resolved_lang
 
     reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
     plan = AURA_MODEL_ROUTER.prepare_turn(user_id, norm_tier, prompt, reasoning_mode=reasoning_mode)
     if reasoning_mode == "fast":
         brain.temperature = plan.temperature
-    framed_prompt = f"{plan.system_framing}\n\n{dispatch_prompt}"
-    return framed_prompt, effective_permission, plan, norm_tier
+    framed_prompt = f"{lang_policy}\n\n{plan.system_framing}\n\n{dispatch_prompt}"
+    return framed_prompt, effective_permission, plan, norm_tier, resolved_lang
 
 
 def _build_conversation_history(user_id: int, thread_id: str) -> List[Dict[str, Any]]:
@@ -292,7 +306,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         if cors_origin:
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Access-Control-Allow-Credentials", "true")
-            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, HEAD")
             self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token")
 
     def _send_json(
@@ -369,7 +383,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         if not token:
             return None
 
-        if used_cookie and getattr(self, "command", "GET").upper() == "POST":
+        if used_cookie and getattr(self, "command", "GET").upper() in ("POST", "DELETE"):
             csrf_token = self.headers.get("X-CSRF-Token", "").strip()
             if not csrf_token and body and isinstance(body, dict):
                 csrf_token = str(body.get("csrf_token", "")).strip()
@@ -914,8 +928,104 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             self._send_json(JARVIS_HUB.get_status(user["id"]))
 
+        elif self._handle_voice_get(path, query):
+            return
+
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)
+
+    def _voice_subpath(self, path: str) -> str:
+        return path[4:] if path.startswith("/api/v1/") else path
+
+    def _handle_voice_get(self, path: str, query: Dict[str, List[str]]) -> bool:
+        vp = self._voice_subpath(path)
+        if vp == "/v1/voices":
+            lang_f = query.get("language", [None])[0]
+            gender_f = query.get("gender", [None])[0]
+            comm_only = str(query.get("commercial_only", "")).lower() in ("1", "true", "yes")
+            self._send_json({
+                "success": True,
+                "voices": VOICE_ORCHESTRATOR.list_voices(language=lang_f, gender=gender_f, commercial_only=comm_only),
+                "engines": VOICE_ORCHESTRATOR.get_engine_statuses(),
+            })
+            return True
+        if vp == "/v1/languages":
+            self._send_json({"success": True, "languages": VOICE_ORCHESTRATOR.list_languages()})
+            return True
+        if vp in ("/v1/voice/hardware", "/api/voice/hardware", "/v1/hardware"):
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json({
+                "success": True,
+                "hardware": audit_voice_hardware(),
+                "engines": VOICE_ORCHESTRATOR.get_engine_statuses(),
+            })
+            return True
+        if vp.startswith("/v1/speech/"):
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            sid = vp[len("/v1/speech/"):].strip("/")
+            art = VOICE_ORCHESTRATOR.get_artifact_by_speech_id(sid, user["id"])
+            if not art:
+                self._send_json({"success": False, "error": "Speech job not found"}, status=404)
+                return True
+            self._send_json({"success": True, "speech": art.to_public_dict()})
+            return True
+        if vp.startswith("/v1/audio/"):
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            aid = vp[len("/v1/audio/"):].strip("/")
+            loaded = VOICE_ORCHESTRATOR.get_audio_bytes(aid, user["id"])
+            if not loaded:
+                self._send_json({"success": False, "error": "Audio artifact not found"}, status=404)
+                return True
+            audio_bytes, art = loaded
+            self.send_response(200)
+            self.send_header("Content-Type", art.content_type)
+            self.send_header("Content-Length", str(len(audio_bytes)))
+            self.send_header("Cache-Control", "private, max-age=300")
+            self.send_header("Content-Disposition", f'inline; filename="{art.audio_id}.{art.format}"')
+            self.send_header("Connection", "close")
+            self._apply_security_and_cors_headers()
+            self.end_headers()
+            self.wfile.write(audio_bytes)
+            return True
+        if vp.startswith("/v1/calls/"):
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            cid = vp[len("/v1/calls/"):].strip("/")
+            sess = VOICE_ORCHESTRATOR.get_call_session(cid, user["id"])
+            if not sess:
+                self._send_json({"success": False, "error": "Call session not found"}, status=404)
+                return True
+            self._send_json({"success": True, "call": sess})
+            return True
+        return False
+
+    def do_DELETE(self):
+        try:
+            path, _ = self._extract_request_path()
+            vp = self._voice_subpath(path)
+            if vp.startswith("/v1/audio/"):
+                user = self._get_auth_user()
+                if not user:
+                    self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                    return
+                aid = vp[len("/v1/audio/"):].strip("/")
+                ok = VOICE_ORCHESTRATOR.delete_audio(aid, user["id"])
+                self._send_json({"success": ok, "deleted": aid if ok else None}, status=200 if ok else 404)
+                return
+            self._send_json({"success": False, "error": "Not Found"}, status=404)
+        except Exception as exc:
+            self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
 
     def do_POST(self):
         try:
@@ -1265,7 +1375,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             conv_history = _build_conversation_history(user_id, thread_id)
 
             brain = _create_user_brain(user)
-            dispatch_prompt, permission_mode, engine_plan, active_tier = _prepare_aura_turn(
+            dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
                 user, prompt, body, permission_mode, brain
             )
             reply = brain.think_and_act(
@@ -1275,13 +1385,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 approved=approved,
                 conversation_history=conv_history,
             )
-            if engine_plan is not None and active_tier:
+            if engine_plan is not None and active_tier and not bool(body.get("voice_turn", False)):
                 reply = AURA_MODEL_ROUTER.postprocess_reply(active_tier, prompt, reply, engine_plan)
             tools_used = getattr(brain, "last_tools", [])
             aura_db.save_message(user_id, thread_id, "assistant", reply, tools_used)
 
             self._send_json({
                 "reply": reply,
+                "speech_text": prepare_text_for_speech(reply, resolved_lang),
+                "resolved_language": resolved_lang,
                 "tools": tools_used,
                 "aura_model": active_tier,
                 "status": "completed",
@@ -1325,14 +1437,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             brain = _create_user_brain(user)
-            dispatch_prompt, permission_mode, engine_plan, active_tier = _prepare_aura_turn(
+            dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
                 user, prompt, body, permission_mode, brain
             )
             accumulated_text = ""
             tools_used = []
 
             try:
-                if engine_plan is not None and engine_plan.thought_steps:
+                if engine_plan is not None and engine_plan.thought_steps and not bool(body.get("voice_turn", False)):
                     trace_prefix = format_thought_block(
                         engine_plan.trace_title,
                         engine_plan.thought_steps,
@@ -2161,8 +2273,78 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = JARVIS_HUB.set_kill_switch(user["id"], halted=halted, reason=reason)
             self._send_json(res)
 
+        elif self._handle_voice_post(path, body):
+            return
+
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)
+
+    def _handle_voice_post(self, path: str, body: Dict[str, Any]) -> bool:
+        vp = self._voice_subpath(path)
+        if vp in ("/v1/speech", "/api/voice/speak"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            text = str(body.get("text") or "").strip()
+            if not text:
+                self._send_json({"success": False, "error": "Text is required for speech synthesis"}, status=400)
+                return True
+            language = str(body.get("language") or "auto")[:24]
+            voice_id = str(body.get("voice_id") or "male_02")[:48]
+            engine = str(body.get("engine") or "auto")[:24]
+            speed = _clamp_float(body.get("speed", 1.0), 1.0, 0.65, 1.5)
+            commercial_only = bool(body.get("commercial_only", False))
+            try:
+                art = VOICE_ORCHESTRATOR.synthesize_speech(
+                    user_id=user["id"],
+                    text=text,
+                    language=language,
+                    voice_id=voice_id,
+                    engine=engine,
+                    speed=speed,
+                    commercial_only=commercial_only,
+                )
+                self._send_json({"success": True, "speech": art.to_public_dict()})
+            except PermissionError as exc:
+                self._send_json({"success": False, "error": str(exc)}, status=403)
+            except Exception as exc:
+                self._send_json({"success": False, "error": f"Speech generation error: {exc}"}, status=500)
+            return True
+
+        if vp == "/v1/calls":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            sess = VOICE_ORCHESTRATOR.create_call_session(
+                user_id=user["id"],
+                voice_id=str(body.get("voice_id") or "male_02")[:48],
+                language=str(body.get("language") or "en")[:24],
+                engine=str(body.get("engine") or "auto")[:24],
+                consent_confirmed=bool(body.get("consent_confirmed", True)),
+            )
+            self._send_json({"success": True, "call": sess})
+            return True
+
+        if vp.startswith("/v1/calls/") and vp.endswith("/state"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            cid = vp[len("/v1/calls/"):-len("/state")].strip("/")
+            updates = {}
+            for field in ("status", "voice_id", "language", "engine", "interrupted", "turns"):
+                if field in body:
+                    updates[field] = body[field]
+            sess = VOICE_ORCHESTRATOR.update_call_session(cid, user["id"], **updates)
+            if not sess:
+                self._send_json({"success": False, "error": "Call session not found"}, status=404)
+                return True
+            self._send_json({"success": True, "call": sess})
+            return True
+
+        return False
 
 
 def make_server(host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:

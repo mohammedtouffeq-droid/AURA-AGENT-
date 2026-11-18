@@ -3486,7 +3486,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     }
                 }]
             }
-        elif "whatsapp" in lower_q:
+        elif "whatsapp" in lower_q and not re.match(r"^\s*(yo|hey|hi|hello)\s+whatsapp(\s+(bro|man|buddy|aura))?[!.?\s]*$", lower_q):
             if any(k in lower_q for k in ["send", "message", "bhej", "chat", "likh"]):
                 return {
                     "candidates": [{
@@ -3656,19 +3656,19 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 re.search(r"\b(mohd ahmed|ahmed|lyberty|creator|founder|kisne banaya|developer ka naam|built you)\b", lower)
             )
             if is_creator_query:
-                reply = "AURA Core was architected and built by **Mohd Ahmed** (Founder of **Lyberty** / AURA Technologies Inc.). Main poori tarah aapke current session ke context par synced hoon — bataiye bhai, abhi kya banana ya fix karna hai?"
+                reply = "AURA Core was architected and built by **Mohd Ahmed** (Founder of **Lyberty** / AURA Technologies Inc.). I am fully synced with your workspace session — what would you like to build or fix next?"
             elif is_short_greeting and not (turn_count > 1 or has_prior_replies):
-                reply = "Hey! What's up? I'm AURA, your AI workspace copilot. How can I help you today?"
+                reply = "Hey! I'm AURA, your AI workspace and voice assistant. How can I help you today?"
             elif is_short_greeting:
-                reply = "Haan bhai, online hoon! Batao pichli baat par aage kya karna hai?"
+                reply = "Yes, I am listening cleanly! Tell me what you want to work on next."
             elif re.search(r"\b(sad|upset|angry|frustrated|depressed|problem|bigad|maza)\b", lower):
-                reply = "Sorry bhai agar abhi flow tuta! Ab main seedha aapke topic aur workspace context par focus kar raha hoon — batao agla step kya lena hai?"
+                reply = "Got it — let's stay focused directly on what you need right now. What should we tackle first?"
             elif re.search(r"\b(thanks|thank you|shukriya|dhanyawad)\b", lower):
-                reply = "You're very welcome! Batao aur kya build ya debug karna hai?"
+                reply = "You're very welcome! Let me know what else you want to build or check."
             elif re.search(r"\b(bye|goodbye|cya|see you)\b", lower):
                 reply = "Catch you later! Your chat history and workspace are saved cleanly."
             elif re.search(r"\b(who are you|what are you|who r u|kaun ho)\b", lower):
-                reply = "I am AURA Core, created by Mohd Ahmed (Lyberty / AURA Technologies Inc.) — your autonomous coding, game engine, and developer workspace copilot."
+                reply = "I am AURA Core, created by Mohd Ahmed (Lyberty / AURA Technologies Inc.) — your autonomous coding, voice, and developer workspace copilot."
             elif re.search(r"\b(time|date|day|today|tarikh|samay|waqt|aaj kya din)\b", lower) and not re.search(r"\b(code|python|script|function|file|api|update|fix)\b", lower):
                 now_local = time.strftime("%A, %d %B %Y at %I:%M %p")
                 reply = f"Today is {now_local}."
@@ -3681,8 +3681,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
                             recent_topics.append(txt[:90].replace("\n", " "))
                 topic_hint = f" (Current thread topic: *\"{recent_topics[-2][:70]}\"*)" if len(recent_topics) >= 2 else ""
                 reply = (
-                    f"Abhi live Gemini model request temporarily slow/rate-limited ho gayi thi{topic_hint}, lekin aapka session aur chat history 100% intact hai. "
-                    "Ek baar message phir bhej do ya direct commands (`/help`, `/files`, `/code`, `/calc`, `/nexus`) turant chala sakte ho!"
+                    f"The live cloud LLM request was temporarily slow or unavailable{topic_hint}, while your session and workspace history remain safely intact. "
+                    "You can retry in a moment or run direct workspace tools (`/help`, `/files`, `/code`, `/calc`, `/nexus`)."
                 )
 
             return {
@@ -3813,8 +3813,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     "created and architected by Mohd Ahmed (Founder of Lyberty / AURA Technologies Inc.). "
                     f"Current local date and time: {now_context}. "
                     "When asked who built, coded, or created you, proudly credit Mohd Ahmed (Lyberty). "
-                    "You communicate with natural warmth, intelligence, and conversational continuity in English or Hinglish as appropriate. "
-                    "Always read the full conversation history carefully and stay directly on topic—never parrot the user or repeat generic greetings. "
+                    "LANGUAGE RULE: Reply strictly in clear, natural English by default whenever the user writes or speaks in English—NEVER switch into Hinglish or Hindi unless the user explicitly writes/speaks in Hindi/Hinglish OR a `[LANGUAGE LOCK: ...]` directive requests Hindi, Hinglish, or Telugu. "
+                    "Always stay directly focused on the user's current question—never parrot the user, repeat generic greetings, or mention unrequested past confusion. "
                     "You have native tools including tool_client_bridge_action (display brightness, audio volume/mute, or opening apps/URLs cleanly), "
                     "workspace file tools (tool_workspace_list, tool_grep_search, tool_read_file with line ranges, tool_edit_file surgical diff, "
                     "tool_write_file, tool_delete_file, tool_start_local_preview, tool_coderx_build), live news/weather, memory vault, "
