@@ -2489,6 +2489,479 @@
             display: block;
             background: #090b10;
         }
+
+        /* ---------------- 5-Tier Executive Membership Visual Vibes (Zero Cartoon, Zero Emoji) ---------------- */
+        :root {
+            --tier-accent: #71717a;
+            --tier-accent-soft: rgba(255, 255, 255, 0.08);
+            --tier-border: rgba(255, 255, 255, 0.12);
+            --tier-glow: transparent;
+        }
+        [data-aura-tier="tier_1"] {
+            --tier-accent: #60a5fa;
+            --tier-accent-soft: rgba(59, 130, 246, 0.13);
+            --tier-border: rgba(96, 165, 250, 0.34);
+            --tier-glow: radial-gradient(ellipse 65% 28% at 50% 0%, rgba(59, 130, 246, 0.14), transparent 70%);
+            --accent-gold: #60a5fa;
+        }
+        [data-aura-tier="tier_2"] {
+            --tier-accent: #34d399;
+            --tier-accent-soft: rgba(16, 185, 129, 0.13);
+            --tier-border: rgba(52, 211, 153, 0.34);
+            --tier-glow: radial-gradient(ellipse 65% 28% at 50% 0%, rgba(16, 185, 129, 0.14), transparent 70%);
+            --accent-gold: #34d399;
+        }
+        [data-aura-tier="tier_3"] {
+            --tier-accent: #c4b5fd;
+            --tier-accent-soft: rgba(167, 139, 250, 0.14);
+            --tier-border: rgba(196, 181, 253, 0.36);
+            --tier-glow: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(139, 92, 246, 0.16), transparent 72%);
+            --accent-gold: #c4b5fd;
+        }
+        [data-aura-tier="tier_4"] {
+            --tier-accent: #e5c27a;
+            --tier-accent-soft: rgba(212, 167, 89, 0.15);
+            --tier-border: rgba(229, 194, 122, 0.42);
+            --tier-glow: radial-gradient(ellipse 72% 32% at 50% 0%, rgba(212, 167, 89, 0.17), transparent 72%);
+            --accent-gold: #e5c27a;
+        }
+        [data-aura-tier="tier_5"] {
+            --tier-accent: #f4f4f5;
+            --tier-accent-soft: rgba(244, 244, 245, 0.13);
+            --tier-border: rgba(244, 244, 245, 0.44);
+            --tier-glow: radial-gradient(ellipse 78% 34% at 50% 0%, rgba(226, 232, 240, 0.16), transparent 70%);
+            --accent-gold: #f4f4f5;
+        }
+        [data-aura-tier]:not([data-aura-tier="tier_0"]) .main-chat-viewport::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--tier-glow);
+            pointer-events: none;
+            z-index: 0;
+        }
+        [data-aura-tier]:not([data-aura-tier="tier_0"]) .input-dock-card {
+            border-color: var(--tier-border);
+            box-shadow: 0 12px 38px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        [data-aura-tier="tier_5"] .top-navbar {
+            border-bottom-color: rgba(244, 244, 245, 0.14);
+        }
+        [data-aura-tier="tier_5"] .sidebar {
+            border-right-color: rgba(244, 244, 245, 0.12);
+        }
+
+        .tier-header-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            font-family: var(--font-code);
+            color: var(--tier-accent);
+            background: var(--tier-accent-soft);
+            border: 1px solid var(--tier-border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .tier-header-pill:hover {
+            filter: brightness(1.14);
+        }
+        .quota-header-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 10.5px;
+            font-family: var(--font-code);
+            color: #a1a1aa;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .quota-header-pill.quota-warn {
+            color: #fcd34d;
+            border-color: rgba(251, 191, 36, 0.4);
+            background: rgba(251, 191, 36, 0.1);
+        }
+        .quota-header-pill.quota-exhausted {
+            color: #fca5a5;
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(239, 68, 68, 0.12);
+        }
+        .btn-header-studio {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 11px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #f4f4f5;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--tier-border);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .btn-header-studio:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        [data-aura-tier="tier_5"] .btn-header-studio {
+            background: #f4f4f5;
+            color: #09090b;
+            border-color: #f4f4f5;
+        }
+        [data-aura-tier="tier_5"] .btn-header-studio:hover {
+            background: #e4e4e7;
+        }
+
+        /* Context @file Chips */
+        .context-files-bar {
+            display: none;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 6px 10px 2px 10px;
+        }
+        .context-file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--tier-accent-soft);
+            border: 1px solid var(--tier-border);
+            color: #f4f4f5;
+            font-size: 11px;
+            font-family: var(--font-code);
+        }
+        .context-file-chip button {
+            background: none;
+            border: none;
+            color: #a1a1aa;
+            cursor: pointer;
+            padding: 0 2px;
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        /* Membership Settings Panel */
+        .membership-card-box {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid var(--tier-border);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .membership-tier-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        .membership-tier-item {
+            background: rgba(0, 0, 0, 0.32);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .membership-tier-item.active-tier {
+            border-color: var(--tier-accent);
+            background: var(--tier-accent-soft);
+        }
+
+        /* Pro & Apex Omnis Full-Screen Engineering Studio Modal */
+        .apex-studio-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 6, 9, 0.86);
+            backdrop-filter: blur(14px);
+            z-index: 3200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+        .apex-studio-shell {
+            width: min(1160px, 100%);
+            max-height: 92dvh;
+            background: #0c0d12;
+            border: 1px solid var(--tier-border);
+            border-radius: 16px;
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .apex-studio-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .apex-studio-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.25);
+        }
+        .apex-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: #a1a1aa;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .apex-tab-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--tier-border);
+            color: #fafafa;
+        }
+        .apex-tab-lock {
+            font-size: 9.5px;
+            font-family: var(--font-code);
+            padding: 1px 5px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            color: #a1a1aa;
+        }
+        .apex-studio-body {
+            padding: 16px 18px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .apex-split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .apex-panel {
+            background: #10121a;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+        .apex-code-area {
+            width: 100%;
+            min-height: 150px;
+            background: #090a0f;
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            border-radius: 9px;
+            color: #e4e4e7;
+            font-family: var(--font-code);
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 10px 12px;
+            resize: vertical;
+        }
+        .apex-output-box {
+            background: #08090d;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 9px;
+            padding: 10px 12px;
+            font-family: var(--font-code);
+            font-size: 11.5px;
+            color: #d4d4d8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .apex-btn-primary {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid #f4f4f5;
+            background: #f4f4f5;
+            color: #09090b;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .apex-btn-secondary {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.06);
+            color: #f4f4f5;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .apex-diff-line-add { color: #6ee7b7; background: rgba(16, 185, 129, 0.1); display: block; }
+        .apex-diff-line-del { color: #fca5a5; background: rgba(239, 68, 68, 0.1); display: block; }
+        .apex-diff-line-hdr { color: #93c5fd; font-weight: 700; display: block; }
+        .apex-stage-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 12px;
+        }
+        .apex-lock-banner {
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Executive Upgraded Permission Approval Modal (Action + Target + Command + Clear Reason) */
+        .permission-prompt {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            max-width: none !important;
+            bottom: auto !important;
+            right: auto !important;
+            background: rgba(5, 6, 10, 0.76) !important;
+            backdrop-filter: blur(10px);
+            z-index: 4500 !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            padding: 16px !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        .permission-prompt[hidden] {
+            display: none !important;
+        }
+        .permission-prompt-card {
+            width: min(490px, 100%);
+            background: #101219;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 15px;
+            padding: 18px 20px;
+            box-shadow: 0 28px 72px rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .permission-risk-pill {
+            font-size: 10px;
+            font-family: var(--font-code);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            background: rgba(251, 191, 36, 0.12);
+            color: #fcd34d;
+        }
+        .permission-risk-pill.risk-safe {
+            border-color: rgba(52, 211, 153, 0.4);
+            background: rgba(16, 185, 129, 0.12);
+            color: #6ee7b7;
+        }
+        .permission-risk-pill.risk-critical {
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(239, 68, 68, 0.14);
+            color: #fca5a5;
+        }
+        .permission-reason-box {
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-left: 3px solid var(--tier-accent);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            color: #e4e4e7;
+            line-height: 1.5;
+        }
+        .permission-cmd-preview {
+            background: #08090d;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-family: var(--font-code);
+            font-size: 11.5px;
+            color: #93c5fd;
+            word-break: break-all;
+        }
+        .permission-prompt-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .permission-prompt-actions button {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.06);
+            color: #f4f4f5;
+        }
+        .permission-prompt-actions button.permission-allow {
+            background: #f4f4f5;
+            color: #09090b;
+            border-color: #f4f4f5;
+        }
+        .permission-prompt-actions button#permissionDeny {
+            border-color: rgba(248, 113, 113, 0.4);
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            .apex-split-grid {
+                grid-template-columns: 1fr;
+            }
+            .apex-studio-overlay {
+                padding: 8px;
+            }
+            .apex-studio-header, .apex-studio-tabs, .apex-studio-body {
+                padding: 10px 12px;
+            }
+            .tier-header-pill .tier-hide-xs, .btn-header-studio .studio-hide-xs {
+                display: none;
+            }
+            .quota-header-pill {
+                font-size: 10px;
+                padding: 3px 7px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2579,8 +3052,14 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>AURA</span>
                 </div>
+                <button type="button" id="headerTierBadge" class="tier-header-pill" onclick="openModelSettings('membership')" title="Membership Tier &amp; Activation Key">STANDARD</button>
+                <button type="button" id="headerQuotaPill" class="quota-header-pill" onclick="openModelSettings('membership')" title="Rolling 24-Hour Chat Quota">30/30</button>
             </div>
-            <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                <button type="button" class="btn-header-studio" id="btnHeaderStudio" onclick="openApexStudio()" title="Open AURA Engineering Studio (Tiers 1-5)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    <span class="studio-hide-xs">Studio</span>
+                </button>
                 <button type="button" class="nav-icon-btn" id="btnHeaderWallpaper" onclick="toggleWallpaperQuickPopover(event)" title="Wallpapers &amp; Ambient Themes" aria-label="Wallpapers and Ambient Themes">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 </button>
@@ -2721,6 +3200,8 @@
 
                 <!-- Attached Files Chips Preview -->
                 <div class="attachment-chips-row" id="attachmentChips" style="display: none;"></div>
+                <!-- Tier 1+ Attached @file Workspace Context Chips -->
+                <div class="context-files-bar" id="contextFilesBar"></div>
 
                 <textarea 
                     class="main-textarea" 
@@ -2738,6 +3219,9 @@
                         <button type="button" class="composer-pill-btn" id="btnComposerModelMenu" onclick="toggleComposerPopover('model', event)" title="Switch AURA Engine (2.0 / 2.3 / 2.6) &amp; Reasoning">
                             <span id="activeModelLabel" style="font-size:12px;">AURA 2.3</span>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <button class="btn-dock-icon" id="btnContextFiles" type="button" title="Attach @file Workspace Context (Tier 1+)" onclick="openApexStudio('workspace')" style="font-family: var(--font-code); font-weight: 700; font-size: 13px; color: var(--text-muted);">
+                            @
                         </button>
                         <button class="btn-dock-icon" id="btnSlashPalette" type="button" title="Slash Commands" onclick="toggleSlashPaletteFromButton()" style="font-family: ui-monospace, monospace; font-weight: 700; font-size: 13px; color: var(--text-muted);">
                             /
@@ -3007,6 +3491,25 @@
             </div>
 
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
+            <div id="membershipSettingsSection" class="membership-card-box">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:14px; font-weight:700; color:#f4f4f5; letter-spacing:-0.01em;">Membership &amp; Activation Key</div>
+                        <div style="font-size:11.5px; color:#9ca3af; margin-top:2px;">Enter an authorized key from the administrator to unlock Tier 1–5 engineering tools, themes, and expanded capacity.</div>
+                    </div>
+                    <span id="settingsMembershipBadge" class="tier-header-pill">STANDARD · 1X</span>
+                </div>
+                <div id="settingsQuotaSummary" style="font-size:11.5px; font-family:var(--font-code); color:#d4d4d8; background:rgba(0,0,0,0.34); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Daily Quota: 0 / 30 chats (24h rolling refresh)</div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <input id="membershipKeyInput" type="text" placeholder="AURA-XXXX-XXXX-XXXX-XXXX" autocomplete="off" style="flex:1; min-width:210px; margin:0; font-family:var(--font-code); text-transform:uppercase; letter-spacing:0.04em;">
+                    <button type="button" id="btnActivateMembershipKey" class="apex-btn-primary" onclick="activateMembershipKeyFromSettings()">Activate Key</button>
+                    <button type="button" id="btnDeactivateMembership" class="apex-btn-secondary" onclick="deactivateMembershipFromSettings()" style="display:none;">Reset Tier</button>
+                </div>
+                <div id="membershipActivateStatus" style="font-size:11.5px; color:#a1a1aa;"></div>
+                <div id="membershipTierMatrix" class="membership-tier-grid"></div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
             <div id="voiceStudioSection">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
                     <h3 style="margin:0; font-size:14px; color:#f4f4f5;">Permanent Voice Studio &amp; Cloud API</h3>
@@ -3062,13 +3565,257 @@
         </section>
     </div>
 
-    <div class="permission-prompt" id="permissionPrompt" role="alertdialog" aria-labelledby="permissionPromptTitle" aria-describedby="permissionPromptDetails" hidden>
-        <h2 id="permissionPromptTitle">AURA needs your approval</h2>
-        <p id="permissionPromptAction"></p>
-        <p id="permissionPromptDetails"></p>
-        <div class="permission-prompt-actions">
-            <button type="button" id="permissionDeny">Deny</button>
-            <button type="button" id="permissionAllow" class="permission-allow">Allow once</button>
+    <!-- ---------------- Pro & Apex Omnis Engineering Studio Modal (Tiers 1–5) ---------------- -->
+    <div class="apex-studio-overlay" id="apexStudioOverlay" role="dialog" aria-modal="true" aria-label="AURA Engineering Studio" onclick="if(event.target===this) closeApexStudio()">
+        <div class="apex-studio-shell" onclick="event.stopPropagation()">
+            <div class="apex-studio-header">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                    <svg width="18" height="18" style="flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="var(--tier-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+                    <div style="min-width:0;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span style="font-size:15px; font-weight:700; color:#f4f4f5; letter-spacing:-0.015em;">AURA Engineering Studio</span>
+                            <span id="studioTierPill" class="tier-header-pill">STANDARD</span>
+                        </div>
+                        <div id="studioHeaderSub" style="font-size:11.5px; color:#9ca3af;">Codebase indexing, unified diffs, polyglot sandbox, self-healing repair, 4-agent War Room, guarded OS automation &amp; Apex Omnis pipeline.</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="apex-btn-secondary" onclick="closeApexStudio(); openModelSettings('membership');">Keys &amp; Tier</button>
+                    <button type="button" class="apex-btn-secondary" onclick="closeApexStudio()">Close</button>
+                </div>
+            </div>
+
+            <div class="apex-studio-tabs" role="tablist">
+                <button type="button" class="apex-tab-btn active" id="apexTabBtn_workspace" onclick="switchApexStudioTab('workspace')">
+                    <span>01 Workspace &amp; Symbols</span><span class="apex-tab-lock" id="apexLock_workspace">T1</span>
+                </button>
+                <button type="button" class="apex-tab-btn" id="apexTabBtn_diff" onclick="switchApexStudioTab('diff')">
+                    <span>02 Diff &amp; Runner</span><span class="apex-tab-lock" id="apexLock_diff">T2</span>
+                </button>
+                <button type="button" class="apex-tab-btn" id="apexTabBtn_heal" onclick="switchApexStudioTab('heal')">
+                    <span>03 Self-Heal &amp; Scaffold</span><span class="apex-tab-lock" id="apexLock_heal">T3</span>
+                </button>
+                <button type="button" class="apex-tab-btn" id="apexTabBtn_warroom" onclick="switchApexStudioTab('warroom')">
+                    <span>04 War Room, Audit &amp; OS</span><span class="apex-tab-lock" id="apexLock_warroom">T4</span>
+                </button>
+                <button type="button" class="apex-tab-btn" id="apexTabBtn_apex" onclick="switchApexStudioTab('apex')">
+                    <span>05 Apex Autonomous Engine</span><span class="apex-tab-lock" id="apexLock_apex">T5</span>
+                </button>
+            </div>
+
+            <div class="apex-studio-body">
+                <!-- TAB 01: TIER 1+ WORKSPACE AST INDEXER & @FILE CONTEXT + TIER 3+ .AURA-RULES -->
+                <div id="apexPane_workspace" style="display:block;">
+                    <div id="apexGate_workspace"></div>
+                    <div class="apex-split-grid">
+                        <div class="apex-panel">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div>
+                                    <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Workspace AST &amp; Symbol Index</div>
+                                    <div id="studioIndexStats" style="font-size:11px; color:#9ca3af;">Click Refresh Index to scan files &amp; symbols.</div>
+                                </div>
+                                <button type="button" class="apex-btn-primary" onclick="loadStudioWorkspaceIndex()">Refresh Index</button>
+                            </div>
+                            <div id="studioFilesList" class="apex-output-box" style="min-height:220px;">No workspace index loaded yet.</div>
+                        </div>
+                        <div class="apex-panel">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div>
+                                    <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Persistent .aura-rules Memory (Tier 3+)</div>
+                                    <div style="font-size:11px; color:#9ca3af;">Custom stack constraints &amp; coding rules automatically injected on every turn.</div>
+                                </div>
+                                <button type="button" class="apex-btn-primary" onclick="saveStudioAuraRules()">Save Rules</button>
+                            </div>
+                            <textarea id="studioAuraRulesInput" class="apex-code-area" placeholder="Example: Always write typed Python 3.12 with pytest unit tests, zero external dependencies, strict input validation, and concise docstrings."></textarea>
+                            <div id="studioAuraRulesStatus" style="font-size:11.5px; color:#a1a1aa;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 02: TIER 2+ POLYGLOT CODE RUNNER & MULTI-FILE UNIFIED DIFF COMPOSER -->
+                <div id="apexPane_diff" style="display:none;">
+                    <div id="apexGate_diff"></div>
+                    <div class="apex-split-grid">
+                        <div class="apex-panel">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Polyglot Code Runner &amp; Verifier</div>
+                                <div style="display:flex; gap:6px; align-items:center;">
+                                    <select id="studioRunnerLang" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:7px; padding:6px 8px; color:#f4f4f5; font-size:12px;">
+                                        <option value="python">Python 3</option>
+                                        <option value="javascript">JavaScript (Node)</option>
+                                        <option value="sql">SQL (SQLite)</option>
+                                        <option value="json">JSON Validator</option>
+                                        <option value="html">HTML Verifier</option>
+                                    </select>
+                                    <button type="button" class="apex-btn-primary" onclick="runStudioPolyglotCode()">Run Code</button>
+                                </div>
+                            </div>
+                            <textarea id="studioRunnerCode" class="apex-code-area" placeholder="Write Python, JavaScript, SQL, JSON, or HTML to execute inside your isolated workspace...">def fibonacci(n):
+    a, b = 0, 1
+    out = []
+    for _ in range(n):
+        out.append(a)
+        a, b = b, a + b
+    return out
+
+print("AURA Sandbox Verified:", fibonacci(10))</textarea>
+                            <div id="studioRunnerOutput" class="apex-output-box">Ready to execute.</div>
+                        </div>
+
+                        <div class="apex-panel">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Multi-File Diff Composer &amp; Rollback</div>
+                                <div style="display:flex; gap:6px;">
+                                    <button type="button" class="apex-btn-secondary" onclick="previewStudioDiff()">Preview Diff</button>
+                                    <button type="button" class="apex-btn-primary" onclick="applyStudioDiff()">Apply &amp; Snapshot</button>
+                                </div>
+                            </div>
+                            <input id="studioDiffFilePath" type="text" value="app_module.py" placeholder="Relative workspace path (e.g. src/service.py)" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:7px 10px; color:#f4f4f5; font-size:12px; font-family:var(--font-code);">
+                            <textarea id="studioDiffContent" class="apex-code-area" placeholder="Enter target file contents to preview unified diff and apply with automatic rollback backup...">def greet_engineer(name: str) -> str:
+    return f"Welcome to AURA Engineering Studio, {name}."
+</textarea>
+                            <div id="studioDiffOutput" class="apex-output-box">Unified diff preview will render here.</div>
+                            <div id="studioSnapshotsRow" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:11px; color:#9ca3af;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 03: TIER 3+ AUTONOMOUS SELF-HEALING LOOP & PRODUCTION REPO SCAFFOLDER -->
+                <div id="apexPane_heal" style="display:none;">
+                    <div id="apexGate_heal"></div>
+                    <div class="apex-split-grid">
+                        <div class="apex-panel">
+                            <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Autonomous Self-Healing Bug &amp; Test Repair</div>
+                            <div style="font-size:11.5px; color:#9ca3af;">Executes your workspace file, captures exact tracebacks, synthesizes a verified patch, re-tests, and backs up before applying.</div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <input id="studioSelfHealPath" type="text" placeholder="Relative file path (e.g. app_module.py)" style="flex:1; min-width:160px; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:7px 10px; color:#f4f4f5; font-size:12px; font-family:var(--font-code);">
+                                <label style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:#d4d4d8;">
+                                    <input type="checkbox" id="studioSelfHealAutoApply" checked> Auto-Apply if Green
+                                </label>
+                                <button type="button" class="apex-btn-primary" onclick="runStudioSelfHeal()">Run Self-Heal</button>
+                            </div>
+                            <div id="studioSelfHealOutput" class="apex-output-box">Select any file in your workspace to diagnose and repair automatically.</div>
+                        </div>
+
+                        <div class="apex-panel">
+                            <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Production Multi-File Project Scaffolder</div>
+                            <div style="font-size:11.5px; color:#9ca3af;">Generate runnable multi-file repositories with built-in tests directly inside your tenant workspace.</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <select id="studioScaffoldTemplate" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:8px; color:#f4f4f5; font-size:12px;">
+                                    <option value="fastapi_service">Python Production REST API</option>
+                                    <option value="modern_webapp">Interactive Obsidian Web App</option>
+                                    <option value="node_api">Node.js ESM Microservice</option>
+                                    <option value="python_cli">Python Structured CLI Package</option>
+                                    <option value="sql_analytics">SQLite KPI Analytics Pipeline</option>
+                                </select>
+                                <input id="studioScaffoldName" type="text" value="aura_service" placeholder="Project folder name" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:8px; color:#f4f4f5; font-size:12px; font-family:var(--font-code);">
+                            </div>
+                            <button type="button" class="apex-btn-primary" onclick="runStudioScaffold()" style="align-self:flex-start;">Generate Project Repository</button>
+                            <div id="studioScaffoldOutput" class="apex-output-box">Choose a stack template above to scaffold into your workspace.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 04: TIER 4+ PARALLEL 4-AGENT WAR ROOM, SECURITY AUDIT & GUARDED OS AUTOMATION -->
+                <div id="apexPane_warroom" style="display:none;">
+                    <div id="apexGate_warroom"></div>
+                    <div class="apex-panel">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Desktop &amp; Laptop OS Automation (Mandatory Allow/Deny Approval Popup)</div>
+                                <div style="font-size:11.5px; color:#9ca3af;">Every desktop/laptop action proposes a signed ticket first and pops an explicit Allow / Deny confirmation dialog explaining the exact command and reason.</div>
+                            </div>
+                            <button type="button" class="apex-btn-secondary" onclick="runStudioSecurityAudit()">Run Workspace Security AST Audit</button>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1.2fr 1.2fr 1.6fr auto; gap:8px;" class="flagship-control-row">
+                            <select id="studioOsActionType" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:8px; color:#f4f4f5; font-size:12px;">
+                                <option value="system_telemetry">Read CPU / RAM / Battery Telemetry</option>
+                                <option value="set_brightness">Adjust Display Brightness (0-100)</option>
+                                <option value="set_volume">Adjust Audio Volume (0-100)</option>
+                                <option value="open_app">Launch Desktop / Web App</option>
+                                <option value="open_url">Open Browser URL</option>
+                                <option value="create_workspace_note">Write Automation Report File</option>
+                                <option value="run_workspace_script">Run Workspace Script</option>
+                            </select>
+                            <input id="studioOsTarget" type="text" value="80" placeholder="Target (e.g. 80, vscode, https://github.com)" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:8px; color:#f4f4f5; font-size:12px;">
+                            <input id="studioOsReason" type="text" value="Automate operator workflow safely with explicit consent." placeholder="Plain-language reason shown in Allow/Deny popup" style="background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:8px; color:#f4f4f5; font-size:12px;">
+                            <button type="button" class="apex-btn-primary" onclick="proposeStudioOsAutomation()">Request Approval</button>
+                        </div>
+                        <div id="studioOsAndAuditOutput" class="apex-output-box">Proposed OS actions will open the Allow / Deny confirmation modal before anything runs.</div>
+                    </div>
+
+                    <div class="apex-panel" style="margin-top:12px;">
+                        <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Parallel 4-Agent War Room (Architect · Implementer · Security · QA)</div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <input id="studioWarRoomObjective" type="text" value="Design and harden a high-throughput multi-tenant JWT session and rate-limiter service." placeholder="Enter complex engineering objective..." style="flex:1; min-width:220px; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:8px 10px; color:#f4f4f5; font-size:12px;">
+                            <button type="button" class="apex-btn-primary" onclick="runStudioWarRoom()">Dispatch 4 Parallel Agents</button>
+                        </div>
+                        <div id="studioWarRoomOutput" class="apex-output-box">All 4 specialist agents execute concurrently and return structured verdicts here.</div>
+                    </div>
+                </div>
+
+                <!-- TAB 05: TIER 5 AURA APEX OMNIS — 6-STAGE AUTONOMOUS ENGINEERING ENGINE -->
+                <div id="apexPane_apex" style="display:none;">
+                    <div id="apexGate_apex"></div>
+                    <div class="apex-panel">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:14px; font-weight:700; color:#f4f4f5;">AURA Apex Omnis — 6-Stage Autonomous Polyglot Engineering Pipeline</div>
+                                <div style="font-size:11.5px; color:#9ca3af;">Repo Scan → Architecture Contract → Zero-Placeholder Multi-File Synthesis → Static/Security Gate → Live Sandbox Test &amp; Auto-Repair → Snapshot Diff Checkpoint.</div>
+                            </div>
+                            <span class="tier-header-pill">TIER 5 · PLATINUM MONOLITH</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 160px auto; gap:8px; align-items:center;" class="flagship-control-row">
+                            <input id="apexPipelineGoal" type="text" value="Build a production-grade token-bucket rate limiter module with thread safety, sliding window metrics, and automated verification tests." placeholder="Describe any application, algorithm, API, or multi-file refactor..." style="background:#090a0f; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:9px 11px; color:#f4f4f5; font-size:12.5px;">
+                            <select id="apexPipelineLang" style="background:#090a0f; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:9px 8px; color:#f4f4f5; font-size:12px;">
+                                <option value="python">Python</option>
+                                <option value="typescript">TypeScript</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="html">HTML / CSS / JS App</option>
+                                <option value="sql">SQL</option>
+                                <option value="rust">Rust</option>
+                                <option value="go">Go</option>
+                                <option value="java">Java</option>
+                                <option value="cpp">C++</option>
+                            </select>
+                            <button type="button" id="btnRunApexPipeline" class="apex-btn-primary" onclick="runApexOmnisPipeline()">Execute 6-Stage Pipeline</button>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:#d4d4d8;">
+                                <input type="checkbox" id="apexPipelineAutoApply"> Auto-apply verified files to workspace (with rollback checkpoint)
+                            </label>
+                            <div id="apexPipelineApplyActions" style="display:none; gap:8px;">
+                                <button type="button" class="apex-btn-primary" onclick="applyLastApexDeliverable()">Approve &amp; Apply Staged Files</button>
+                            </div>
+                        </div>
+                        <div id="apexPipelineStages" style="display:flex; flex-direction:column; gap:6px;"></div>
+                        <div id="apexPipelineOutput" class="apex-output-box">Ready. Launch the 6-stage autonomous engineering pipeline above.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="permission-prompt" id="permissionPrompt" role="alertdialog" aria-modal="true" aria-labelledby="permissionPromptTitle" aria-describedby="permissionPromptDetails" hidden>
+        <div class="permission-prompt-card">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--tier-accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <h2 id="permissionPromptTitle" style="margin:0; font-size:15px; font-weight:700; color:#f4f4f5;">AURA Permission Request</h2>
+                </div>
+                <span id="permissionRiskBadge" class="permission-risk-pill">CAUTION</span>
+            </div>
+            <div id="permissionPromptAction" style="font-size:12.5px; font-weight:600; color:#e4e4e7; margin:0;"></div>
+            <div id="permissionCmdPreview" class="permission-cmd-preview" style="display:none;"></div>
+            <div class="permission-reason-box">
+                <div style="font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#a1a1aa; margin-bottom:3px;">Reason for Request</div>
+                <div id="permissionPromptDetails" style="margin:0;"></div>
+            </div>
+            <div class="permission-prompt-actions">
+                <button type="button" id="permissionDeny">Deny</button>
+                <button type="button" id="permissionAllowSession" onclick="respondToPermission('ALLOW_SESSION')">Allow session</button>
+                <button type="button" id="permissionAllow" class="permission-allow">Allow once</button>
+            </div>
         </div>
     </div>
 
@@ -3952,13 +4699,17 @@
                 if (csrfToken && !headers['X-CSRF-Token']) {
                     headers['X-CSRF-Token'] = csrfToken;
                 }
-                if (String(url).startsWith('/api/chat')) {
+                if (String(url).startsWith('/api/chat') || String(url).startsWith('/api/pro/')) {
                     try {
                         const byok = (localStorage.getItem('aura_byok_gemini_key') || '').trim();
                         if (byok && !headers['X-Gemini-Key']) {
                             headers['X-Gemini-Key'] = byok;
                         }
                     } catch (_) {}
+                }
+                if (typeof getStoredMembershipProof === 'function' && !headers['X-Aura-Membership']) {
+                    const mp = getStoredMembershipProof();
+                    if (mp) headers['X-Aura-Membership'] = mp;
                 }
                 opts.headers = headers;
                 return fetch(url, opts);
@@ -4099,7 +4850,7 @@
             }
         }
 
-        async function openModelSettings() {
+        async function openModelSettings(focusSection = '') {
             if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
@@ -4112,6 +4863,13 @@
                 const response = await apiFetch('/api/settings');
                 const data = await safeParseJson(response);
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not load settings.');
+                if (data.membership && typeof applyMembershipStateUI === 'function') {
+                    applyMembershipStateUI(data.membership, data.quota, data.membership_tiers);
+                }
+                if (focusSection === 'membership') {
+                    const msec = document.getElementById('membershipSettingsSection');
+                    if (msec) setTimeout(() => msec.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+                }
                 modelChoice.innerHTML = '';
                 (data.providers.gemini.models || []).forEach(model => {
                     const option = document.createElement('option');
@@ -4951,6 +5709,9 @@
             if (typeof updateTimeGreeting === 'function') {
                 updateTimeGreeting();
             }
+            if (typeof refreshMembershipStatus === 'function') {
+                refreshMembershipStatus();
+            }
         }
 
         async function verifyAuth() {
@@ -4992,6 +5753,11 @@
                         }
                     }
                     updateUserUI(currentUser);
+                    if (data.membership && typeof applyMembershipStateUI === 'function') {
+                        applyMembershipStateUI(data.membership, data.quota);
+                    } else if (typeof refreshMembershipStatus === 'function') {
+                        refreshMembershipStatus();
+                    }
                     authOverlay.style.display = 'none';
                     return true;
                 }
@@ -5606,8 +6372,33 @@
             }, intervalMs);
         }
 
+        let activeOsProposal = null;
+
+        function openPermissionApprovalDialog({ title, actionText, command, reason, risk }) {
+            const titleEl = document.getElementById('permissionPromptTitle');
+            const riskEl = document.getElementById('permissionRiskBadge');
+            const cmdEl = document.getElementById('permissionCmdPreview');
+            if (titleEl) titleEl.textContent = title || 'AURA Permission Request';
+            const rNorm = String(risk || 'CAUTION').toUpperCase();
+            if (riskEl) {
+                riskEl.textContent = rNorm;
+                riskEl.className = 'permission-risk-pill' + (rNorm === 'SAFE' ? ' risk-safe' : (rNorm === 'CRITICAL' ? ' risk-critical' : ''));
+            }
+            permissionPromptAction.textContent = actionText || 'Requested action';
+            if (cmdEl) {
+                if (command) {
+                    cmdEl.textContent = command;
+                    cmdEl.style.display = 'block';
+                } else {
+                    cmdEl.style.display = 'none';
+                }
+            }
+            permissionPromptDetails.textContent = reason || 'AURA is requesting explicit approval before executing this action.';
+            permissionPrompt.hidden = false;
+        }
+
         async function refreshPermissionRequests() {
-            if (!isAuthenticated() || permissionPollInFlight) return;
+            if (!isAuthenticated() || permissionPollInFlight || activeOsProposal) return;
             permissionPollInFlight = true;
             try {
                 const res = await apiFetch('/api/permission/pending', {
@@ -5619,13 +6410,17 @@
                 const request = data.pending && data.pending[0];
                 if (!request) {
                     activePermissionId = null;
-                    permissionPrompt.hidden = true;
+                    if (!activeOsProposal) permissionPrompt.hidden = true;
                     return;
                 }
                 activePermissionId = request.id;
-                permissionPromptAction.textContent = `${request.action_type} · ${request.target} · expires in ${request.remaining_seconds}s`;
-                permissionPromptDetails.textContent = request.details || request.command || 'This action will modify or access local resources.';
-                permissionPrompt.hidden = false;
+                openPermissionApprovalDialog({
+                    title: 'AURA Permission Request',
+                    actionText: `${request.action_type} · ${request.target} · expires in ${request.remaining_seconds}s`,
+                    command: request.command || '',
+                    reason: request.details || 'This action will modify or access system/workspace resources.',
+                    risk: request.risk || 'CAUTION'
+                });
             } catch (error) {
                 // Silent resilience for background poll
             } finally {
@@ -5634,6 +6429,49 @@
         }
 
         async function respondToPermission(decision) {
+            if (activeOsProposal) {
+                const prop = activeOsProposal;
+                permissionAllow.disabled = true;
+                permissionDeny.disabled = true;
+                const allowSessBtn = document.getElementById('permissionAllowSession');
+                if (allowSessBtn) allowSessBtn.disabled = true;
+                try {
+                    const res = await apiFetch('/api/pro/os_action/commit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            signed_ticket: prop.signed_ticket,
+                            decision: decision,
+                            deny_note: decision === 'DENY' ? 'Operator clicked Deny in approval dialog.' : ''
+                        })
+                    });
+                    const data = await safeParseJson(res);
+                    activeOsProposal = null;
+                    permissionPrompt.hidden = true;
+                    const outBox = document.getElementById('studioOsAndAuditOutput');
+                    if (outBox) {
+                        outBox.textContent = JSON.stringify(data, null, 2);
+                    }
+                    if (data.client_bridge_command && typeof executeClientBridgeCommand === 'function') {
+                        executeClientBridgeCommand(data.client_bridge_command);
+                    }
+                    if (typeof showBridgeToast === 'function') {
+                        showBridgeToast(
+                            data.executed
+                                ? `Approved & executed: ${data.title || prop.action_type}`
+                                : `Denied: ${prop.title || prop.action_type} (nothing executed)`,
+                            data.executed ? '#34d399' : '#f87171'
+                        );
+                    }
+                } catch (err) {
+                    permissionPromptDetails.textContent = `Could not submit OS action decision: ${err.message}`;
+                } finally {
+                    permissionAllow.disabled = false;
+                    permissionDeny.disabled = false;
+                    if (allowSessBtn) allowSessBtn.disabled = false;
+                }
+                return;
+            }
             if (!activePermissionId) return;
             permissionAllow.disabled = true;
             permissionDeny.disabled = true;
@@ -5988,6 +6826,7 @@
                         prompt: text,
                         thread_id: currentThreadId,
                         attachments: attachedToSend,
+                        context_files: typeof getAttachedContextFiles === 'function' ? getAttachedContextFiles() : [],
                         mode: activeExecutionMode || 'auto_pilot',
                         reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast',
                         aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3'
@@ -6002,6 +6841,22 @@
                     csrfToken = '';
                     currentUser = null;
                     authOverlay.style.display = 'flex';
+                    return;
+                }
+
+                if (res.status === 429) {
+                    restoreDraftOnFailure();
+                    const errBody = await safeParseJson(res);
+                    turnData.thinking.style.display = 'none';
+                    if (errBody.membership && typeof applyMembershipStateUI === 'function') {
+                        applyMembershipStateUI(errBody.membership, errBody.quota);
+                    }
+                    const msg = errBody.message || errBody.reply || 'Daily chat limit reached. Quota resets automatically after 24 hours.';
+                    turnData.bubble.innerHTML = `<div style="border:1px solid rgba(251,191,36,0.35); background:rgba(251,191,36,0.08); border-radius:10px; padding:12px 14px; color:#fde68a; font-size:13px;">` +
+                        `<div style="font-weight:700; margin-bottom:4px;">Daily Chat Limit Reached</div>` +
+                        `<div style="color:#e4e4e7; margin-bottom:10px;">${escapeHtml(msg)}</div>` +
+                        `<button type="button" class="apex-btn-primary" onclick="openModelSettings('membership')">Enter Activation Key in Settings</button>` +
+                        `</div>`;
                     return;
                 }
 
@@ -6063,6 +6918,9 @@
                                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
                                         if (eventData.thread_id) {
                                             setScopedActiveThread(eventData.thread_id);
+                                        }
+                                        if ((eventData.membership || eventData.quota) && typeof applyMembershipStateUI === 'function') {
+                                            applyMembershipStateUI(eventData.membership, eventData.quota);
                                         }
                                         if (eventData.user_vault) {
                                             await saveUserVault(eventData.user_vault);
@@ -9033,11 +9891,566 @@
                 if (e.key === 'Escape') {
                     closeComposerPopovers();
                     closeWallpaperQuickPopover();
+                    if (typeof closeApexStudio === 'function') closeApexStudio();
                     if (voiceOverlay && voiceOverlay.style.display === 'flex') closeVoiceCallHud();
                     if (jarvisOverlay && jarvisOverlay.style.display === 'flex') closeJarvisConsole();
                 }
             });
         })();
+
+        // =========================================================================
+        // 5-TIER MEMBERSHIP ENGINE, 24H QUOTA UI & APEX OMNIS ENGINEERING STUDIO
+        // =========================================================================
+        let activeMembershipState = { id: 'tier_0', rank: 0, name: 'AURA Standard', badge: 'STANDARD', multiplier: '1x', daily_limit: 30, unlimited: false, aura_rules: '' };
+        let activeQuotaState = { used: 0, limit: 30, remaining: 30, unlimited: false, reset_label: '24h rolling' };
+        let cachedMembershipTiers = [];
+        let attachedContextFiles = [];
+        let lastApexPipelineResult = null;
+
+        function _membershipProofStorageKey() {
+            const uname = (currentUser && currentUser.username) ? String(currentUser.username).toLowerCase() : 'anon';
+            return `aura_membership_proof_${uname}`;
+        }
+
+        function getStoredMembershipProof() {
+            try {
+                if (activeMembershipState && activeMembershipState.membership_proof) return activeMembershipState.membership_proof;
+                return localStorage.getItem(_membershipProofStorageKey()) || '';
+            } catch (_) { return ''; }
+        }
+
+        function getAttachedContextFiles() {
+            return attachedContextFiles.slice(0, 6);
+        }
+
+        function renderAttachedContextChips() {
+            const bar = document.getElementById('contextFilesBar');
+            if (!bar) return;
+            if (!attachedContextFiles.length) {
+                bar.style.display = 'none';
+                bar.innerHTML = '';
+                return;
+            }
+            bar.style.display = 'flex';
+            bar.innerHTML = attachedContextFiles.map(p => (
+                `<span class="context-file-chip">@${escapeHtml(p)} <button type="button" onclick="toggleAttachContextFile('${escapeHtml(p).replace(/'/g, "\\'")}')" aria-label="Remove context file">×</button></span>`
+            )).join('');
+        }
+
+        function toggleAttachContextFile(relPath) {
+            const clean = String(relPath || '').trim();
+            if (!clean) return;
+            const idx = attachedContextFiles.indexOf(clean);
+            if (idx >= 0) attachedContextFiles.splice(idx, 1);
+            else if (attachedContextFiles.length < 6) attachedContextFiles.push(clean);
+            renderAttachedContextChips();
+            const listEl = document.getElementById('studioFilesList');
+            if (listEl && listEl.dataset.loaded === '1') loadStudioWorkspaceIndex();
+        }
+
+        function applyMembershipStateUI(membership, quota, tiersList) {
+            if (membership && typeof membership === 'object') {
+                activeMembershipState = Object.assign({}, activeMembershipState, membership);
+                try {
+                    if (membership.membership_proof) {
+                        localStorage.setItem(_membershipProofStorageKey(), membership.membership_proof);
+                    } else if (membership.id === 'tier_0') {
+                        localStorage.removeItem(_membershipProofStorageKey());
+                    }
+                } catch (_) {}
+            }
+            if (quota && typeof quota === 'object') {
+                activeQuotaState = Object.assign({}, activeQuotaState, quota);
+            }
+            if (Array.isArray(tiersList) && tiersList.length) {
+                cachedMembershipTiers = tiersList;
+            }
+
+            const tierId = activeMembershipState.id || 'tier_0';
+            const rank = Number(activeMembershipState.rank || 0);
+            document.documentElement.setAttribute('data-aura-tier', tierId);
+
+            const badgeText = activeMembershipState.badge || 'STANDARD';
+            const hdrBadge = document.getElementById('headerTierBadge');
+            if (hdrBadge) hdrBadge.textContent = badgeText;
+            const setBadge = document.getElementById('settingsMembershipBadge');
+            if (setBadge) setBadge.textContent = badgeText;
+            const studioPill = document.getElementById('studioTierPill');
+            if (studioPill) studioPill.textContent = badgeText;
+            const deactBtn = document.getElementById('btnDeactivateMembership');
+            if (deactBtn) deactBtn.style.display = rank > 0 ? 'inline-flex' : 'none';
+
+            const quotaEl = document.getElementById('headerQuotaPill');
+            const setQuotaEl = document.getElementById('settingsQuotaSummary');
+            if (activeQuotaState.unlimited) {
+                if (quotaEl) {
+                    quotaEl.textContent = '∞ Chats';
+                    quotaEl.className = 'quota-header-pill';
+                }
+                if (setQuotaEl) {
+                    setQuotaEl.textContent = `Daily Quota: Unlimited (${activeQuotaState.used || 0} chats used in last 24h · ${activeMembershipState.name})`;
+                }
+            } else {
+                const lim = Number(activeQuotaState.limit || 30);
+                const rem = Number(activeQuotaState.remaining !== undefined ? activeQuotaState.remaining : Math.max(0, lim - (activeQuotaState.used || 0)));
+                if (quotaEl) {
+                    quotaEl.textContent = `${rem}/${lim}`;
+                    quotaEl.className = 'quota-header-pill' + (rem <= 0 ? ' quota-exhausted' : (rem <= 5 ? ' quota-warn' : ''));
+                    quotaEl.title = `${rem} of ${lim} chats remaining (refreshes in ${activeQuotaState.reset_label || '24h'})`;
+                }
+                if (setQuotaEl) {
+                    setQuotaEl.textContent = `Daily Quota: ${activeQuotaState.used || 0} / ${lim} chats used · ${rem} remaining (24h rolling refresh: ${activeQuotaState.reset_label || 'active'})`;
+                }
+            }
+
+            const rulesEl = document.getElementById('studioAuraRulesInput');
+            if (rulesEl && typeof activeMembershipState.aura_rules === 'string' && !rulesEl.dataset.dirty) {
+                rulesEl.value = activeMembershipState.aura_rules;
+            }
+
+            // Update Studio Tab Lock Badges & Gate Banners
+            const tabReqs = { workspace: 1, diff: 2, heal: 3, warroom: 4, apex: 5 };
+            const tabTierNames = { 1: 'Tier 1 · AURA Velocity (10x)', 2: 'Tier 2 · AURA Architect (30x)', 3: 'Tier 3 · AURA Sovereign (60x)', 4: 'Tier 4 · AURA Titan (100x)', 5: 'Tier 5 · AURA Apex Omnis (100x)' };
+            Object.keys(tabReqs).forEach(tabKey => {
+                const reqRank = tabReqs[tabKey];
+                const lockEl = document.getElementById('apexLock_' + tabKey);
+                if (lockEl) {
+                    lockEl.textContent = rank >= reqRank ? 'ACTIVE' : ('T' + reqRank);
+                    lockEl.style.color = rank >= reqRank ? '#6ee7b7' : '#a1a1aa';
+                }
+                const gateEl = document.getElementById('apexGate_' + tabKey);
+                if (gateEl) {
+                    if (rank < reqRank) {
+                        gateEl.innerHTML = `<div class="apex-lock-banner" style="margin-bottom:12px;">` +
+                            `<div><div style="font-size:13px; font-weight:700; color:#f4f4f5;">Requires ${tabTierNames[reqRank]}</div>` +
+                            `<div style="font-size:11.5px; color:#9ca3af; margin-top:2px;">Activate your administrator-issued key in Settings to unlock this module.</div></div>` +
+                            `<button type="button" class="apex-btn-primary" onclick="closeApexStudio(); openModelSettings('membership');">Enter Key in Settings</button>` +
+                            `</div>`;
+                    } else {
+                        gateEl.innerHTML = '';
+                    }
+                }
+            });
+
+            renderMembershipTierMatrix();
+        }
+
+        function renderMembershipTierMatrix() {
+            const box = document.getElementById('membershipTierMatrix');
+            if (!box || !cachedMembershipTiers.length) return;
+            const activeId = activeMembershipState.id || 'tier_0';
+            box.innerHTML = cachedMembershipTiers.filter(t => t.rank >= 1).map(t => {
+                const isActive = t.id === activeId;
+                const capStr = t.unlimited ? 'Unlimited / 24h' : `${t.daily_limit} chats / 24h`;
+                return `<div class="membership-tier-item ${isActive ? 'active-tier' : ''}">` +
+                    `<div style="display:flex; justify-content:space-between; align-items:center; gap:4px;">` +
+                    `<span style="font-size:12px; font-weight:700; color:#f4f4f5;">${escapeHtml(t.name)}</span>` +
+                    `<span style="font-size:10px; font-family:var(--font-code); color:${escapeHtml(t.accent || '#e4e4e7')};">${escapeHtml(t.multiplier)}</span>` +
+                    `</div>` +
+                    `<div style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa;">${escapeHtml(capStr)}</div>` +
+                    `<div style="font-size:10.5px; color:#9ca3af; line-height:1.4;">${escapeHtml((t.features || []).slice(0, 3).join(' · '))}</div>` +
+                    `</div>`;
+            }).join('');
+        }
+
+        async function refreshMembershipStatus() {
+            if (!isAuthenticated()) return;
+            try {
+                const res = await apiFetch('/api/membership/status', { skipAuthRecovery: true, backgroundPoll: true });
+                if (!res.ok) return;
+                const data = await safeParseJson(res);
+                if (data.success) {
+                    applyMembershipStateUI(data.membership, data.quota, data.tiers);
+                }
+            } catch (_) {}
+        }
+
+        async function activateMembershipKeyFromSettings() {
+            const input = document.getElementById('membershipKeyInput');
+            const statusEl = document.getElementById('membershipActivateStatus');
+            const btn = document.getElementById('btnActivateMembershipKey');
+            const rawKey = (input ? input.value : '').trim();
+            if (!rawKey) {
+                if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = 'Please paste your activation key first.'; }
+                return;
+            }
+            if (btn) btn.disabled = true;
+            if (statusEl) { statusEl.style.color = '#a1a1aa'; statusEl.textContent = 'Verifying cryptographic key...'; }
+            try {
+                const res = await apiFetch('/api/membership/activate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: rawKey })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = data.error || 'Key verification failed.'; }
+                    return;
+                }
+                if (input) input.value = '';
+                applyMembershipStateUI(data.membership, data.quota);
+                if (data.user_vault && typeof saveUserVault === 'function') await saveUserVault(data.user_vault);
+                if (statusEl) { statusEl.style.color = '#6ee7b7'; statusEl.textContent = data.message || 'Membership tier activated.'; }
+                if (typeof showBridgeToast === 'function') {
+                    showBridgeToast(`${data.membership.name} (${data.membership.multiplier}) unlocked!`, data.membership.accent || '#f4f4f5');
+                }
+            } catch (err) {
+                if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = err.message; }
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function deactivateMembershipFromSettings() {
+            const statusEl = document.getElementById('membershipActivateStatus');
+            try {
+                const res = await apiFetch('/api/membership/deactivate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const data = await safeParseJson(res);
+                if (data.success) {
+                    applyMembershipStateUI(data.membership, data.quota);
+                    if (data.user_vault && typeof saveUserVault === 'function') await saveUserVault(data.user_vault);
+                    if (statusEl) { statusEl.style.color = '#d4d4d8'; statusEl.textContent = data.message; }
+                }
+            } catch (_) {}
+        }
+
+        function openApexStudio(tab = '') {
+            if (!isAuthenticated()) { authOverlay.style.display = 'flex'; return; }
+            const ov = document.getElementById('apexStudioOverlay');
+            if (!ov) return;
+            ov.style.display = 'flex';
+            const rank = Number(activeMembershipState.rank || 0);
+            const targetTab = tab || (rank >= 5 ? 'apex' : (rank >= 4 ? 'warroom' : (rank >= 3 ? 'heal' : (rank >= 2 ? 'diff' : 'workspace'))));
+            switchApexStudioTab(targetTab);
+            refreshMembershipStatus();
+        }
+
+        function closeApexStudio() {
+            const ov = document.getElementById('apexStudioOverlay');
+            if (ov) ov.style.display = 'none';
+        }
+
+        function switchApexStudioTab(tabName) {
+            const tabs = ['workspace', 'diff', 'heal', 'warroom', 'apex'];
+            tabs.forEach(t => {
+                const pane = document.getElementById('apexPane_' + t);
+                const btn = document.getElementById('apexTabBtn_' + t);
+                if (pane) pane.style.display = (t === tabName) ? 'block' : 'none';
+                if (btn) btn.classList.toggle('active', t === tabName);
+            });
+            if (tabName === 'workspace' && Number(activeMembershipState.rank || 0) >= 1) {
+                loadStudioWorkspaceIndex();
+            }
+            if (tabName === 'diff' && Number(activeMembershipState.rank || 0) >= 2) {
+                refreshStudioSnapshots();
+            }
+        }
+
+        async function loadStudioWorkspaceIndex() {
+            const listEl = document.getElementById('studioFilesList');
+            const statsEl = document.getElementById('studioIndexStats');
+            if (listEl) listEl.textContent = 'Indexing workspace files & AST symbols...';
+            try {
+                const res = await apiFetch('/api/pro/index');
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    if (listEl) listEl.textContent = data.error || 'Could not index workspace.';
+                    return;
+                }
+                if (statsEl) statsEl.textContent = `${data.workspace_files_count} files · ${data.total_lines} lines · ${data.total_symbols} symbols (${data.elapsed_ms} ms)`;
+                if (!data.files || !data.files.length) {
+                    listEl.textContent = 'Workspace is empty. Use Diff Composer, Scaffolder (Tab 03), or Apex Pipeline (Tab 05) to create files.';
+                    return;
+                }
+                listEl.dataset.loaded = '1';
+                listEl.innerHTML = data.files.map(f => {
+                    const isAtt = attachedContextFiles.includes(f.path);
+                    const syms = (f.symbols || []).slice(0, 5).map(s => `${s.kind}:${s.name}`).join(', ');
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.06);">` +
+                        `<div style="min-width:0;"><div style="color:#f4f4f5; font-weight:600;">${escapeHtml(f.path)} <span style="color:#71717a; font-weight:400;">(${escapeHtml(f.language)} · ${f.lines}L)</span></div>` +
+                        (syms ? `<div style="font-size:10.5px; color:#93c5fd; margin-top:2px;">${escapeHtml(syms)}</div>` : '') +
+                        `</div>` +
+                        `<button type="button" class="apex-btn-secondary" style="padding:4px 8px; font-size:10.5px;" onclick="toggleAttachContextFile('${escapeHtml(f.path).replace(/'/g, "\\'")}')">${isAtt ? 'Attached' : '+ @file'}</button>` +
+                        `</div>`;
+                }).join('');
+            } catch (err) {
+                if (listEl) listEl.textContent = err.message;
+            }
+        }
+
+        async function saveStudioAuraRules() {
+            const ta = document.getElementById('studioAuraRulesInput');
+            const st = document.getElementById('studioAuraRulesStatus');
+            try {
+                const res = await apiFetch('/api/membership/rules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rules: ta ? ta.value : '' })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    if (st) { st.style.color = '#fca5a5'; st.textContent = data.error || 'Could not save rules.'; }
+                    return;
+                }
+                activeMembershipState.aura_rules = data.aura_rules;
+                if (data.user_vault && typeof saveUserVault === 'function') await saveUserVault(data.user_vault);
+                if (st) { st.style.color = '#6ee7b7'; st.textContent = 'Saved persistent .aura-rules to your account vault.'; }
+            } catch (err) {
+                if (st) { st.style.color = '#fca5a5'; st.textContent = err.message; }
+            }
+        }
+
+        async function runStudioPolyglotCode() {
+            const lang = document.getElementById('studioRunnerLang').value;
+            const code = document.getElementById('studioRunnerCode').value;
+            const out = document.getElementById('studioRunnerOutput');
+            out.textContent = `Executing ${lang} inside isolated sandbox...`;
+            try {
+                const res = await apiFetch('/api/pro/run_code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ language: lang, code })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok) {
+                    out.textContent = data.error || 'Execution blocked.';
+                    return;
+                }
+                out.textContent = `[exit ${data.returncode} · ${data.elapsed_ms} ms]\n` +
+                    (data.stdout ? `STDOUT:\n${data.stdout}\n` : '') +
+                    (data.stderr ? `STDERR:\n${data.stderr}` : '');
+                if (lang === 'html' && data.preview_html && typeof openArtifactInSplitPane === 'function') {
+                    openArtifactInSplitPane('HTML Sandbox Preview', 'html', data.preview_html);
+                }
+            } catch (err) {
+                out.textContent = err.message;
+            }
+        }
+
+        function _renderUnifiedDiffHtml(diffs) {
+            return (diffs || []).map(d => {
+                const lines = String(d.unified_diff || '').split('\n').map(ln => {
+                    if (ln.startsWith('+++') || ln.startsWith('---') || ln.startsWith('@@')) return `<span class="apex-diff-line-hdr">${escapeHtml(ln)}</span>`;
+                    if (ln.startsWith('+')) return `<span class="apex-diff-line-add">${escapeHtml(ln)}</span>`;
+                    if (ln.startsWith('-')) return `<span class="apex-diff-line-del">${escapeHtml(ln)}</span>`;
+                    return `<span>${escapeHtml(ln)}\n</span>`;
+                }).join('');
+                return `<div style="margin-bottom:8px;"><div style="font-weight:700; color:#f4f4f5; margin-bottom:4px;">${escapeHtml(d.path)} (+${d.added_lines} / -${d.removed_lines})</div>${lines}</div>`;
+            }).join('');
+        }
+
+        async function previewStudioDiff() {
+            const path = document.getElementById('studioDiffFilePath').value.trim();
+            const content = document.getElementById('studioDiffContent').value;
+            const out = document.getElementById('studioDiffOutput');
+            out.textContent = 'Computing unified diff...';
+            const res = await apiFetch('/api/pro/diff_plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ edits: [{ path, content }] })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'Diff failed.'; return; }
+            out.innerHTML = _renderUnifiedDiffHtml(data.diffs);
+        }
+
+        async function applyStudioDiff() {
+            const path = document.getElementById('studioDiffFilePath').value.trim();
+            const content = document.getElementById('studioDiffContent').value;
+            const out = document.getElementById('studioDiffOutput');
+            out.textContent = 'Snapshotting and applying diff...';
+            const res = await apiFetch('/api/pro/apply_diff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ edits: [{ path, content }], label: `Studio Edit ${path}` })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'Apply failed.'; return; }
+            out.innerHTML = `<div style="color:#6ee7b7; font-weight:700; margin-bottom:6px;">Applied cleanly · Rollback Snapshot: ${escapeHtml(data.snapshot_id)}</div>` + _renderUnifiedDiffHtml(data.diffs);
+            refreshStudioSnapshots();
+        }
+
+        async function refreshStudioSnapshots() {
+            const row = document.getElementById('studioSnapshotsRow');
+            if (!row) return;
+            try {
+                const res = await apiFetch('/api/pro/snapshots');
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success || !(data.snapshots || []).length) { row.innerHTML = ''; return; }
+                row.innerHTML = '<span>Rollback checkpoints:</span>' + data.snapshots.slice(0, 4).map(s => (
+                    `<button type="button" class="apex-btn-secondary" style="padding:3px 8px; font-size:10.5px;" onclick="rollbackStudioSnapshot('${escapeHtml(s.snapshot_id)}')">Rollback ${escapeHtml(s.snapshot_id.slice(-8))}</button>`
+                )).join('');
+            } catch (_) {}
+        }
+
+        async function rollbackStudioSnapshot(snapshotId) {
+            const out = document.getElementById('studioDiffOutput');
+            const res = await apiFetch('/api/pro/rollback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snapshot_id: snapshotId })
+            });
+            const data = await safeParseJson(res);
+            if (out) out.textContent = JSON.stringify(data, null, 2);
+            refreshStudioSnapshots();
+        }
+
+        async function runStudioSelfHeal() {
+            const path = document.getElementById('studioSelfHealPath').value.trim();
+            const autoApply = document.getElementById('studioSelfHealAutoApply').checked;
+            const out = document.getElementById('studioSelfHealOutput');
+            out.textContent = `Running diagnostics and self-healing repair loop on ${path || 'file'}...`;
+            const res = await apiFetch('/api/pro/self_heal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, auto_apply: autoApply })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'Self-heal failed.'; return; }
+            out.innerHTML = `<div style="color:${data.healed || data.already_healthy ? '#6ee7b7' : '#fcd34d'}; font-weight:700; margin-bottom:6px;">${escapeHtml(data.summary || '')}</div>` +
+                (data.diffs && data.diffs.length ? _renderUnifiedDiffHtml(data.diffs) : `<pre>${escapeHtml(JSON.stringify(data.initial_run || {}, null, 2))}</pre>`);
+        }
+
+        async function runStudioScaffold() {
+            const template = document.getElementById('studioScaffoldTemplate').value;
+            const project_name = document.getElementById('studioScaffoldName').value.trim() || 'aura_service';
+            const out = document.getElementById('studioScaffoldOutput');
+            out.textContent = `Scaffolding ${template} into ${project_name}/...`;
+            const res = await apiFetch('/api/pro/scaffold', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ template, project_name })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'Scaffold failed.'; return; }
+            out.innerHTML = `<div style="color:#6ee7b7; font-weight:700; margin-bottom:6px;">Created ${data.files_count} files in ${escapeHtml(data.project_dir)}/ · Snapshot: ${escapeHtml(data.snapshot_id)}</div>` +
+                _renderUnifiedDiffHtml(data.diffs);
+        }
+
+        async function runStudioSecurityAudit() {
+            const out = document.getElementById('studioOsAndAuditOutput');
+            out.textContent = 'Scanning workspace AST & static security rules...';
+            const res = await apiFetch('/api/pro/security_audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'Security audit failed.'; return; }
+            out.textContent = `Security Score: ${data.security_score}/100 (Grade ${data.grade}) · Files Scanned: ${data.files_scanned} · Findings: ${data.findings_count}\n\n` +
+                (data.findings && data.findings.length
+                    ? data.findings.map(f => `[${f.severity}] ${f.file}:${f.line} — ${f.rule}\n   Fix: ${f.remediation}`).join('\n')
+                    : 'Zero security or AST defects found across workspace.');
+        }
+
+        async function proposeStudioOsAutomation() {
+            const action_type = document.getElementById('studioOsActionType').value;
+            const target = document.getElementById('studioOsTarget').value.trim();
+            const reason = document.getElementById('studioOsReason').value.trim();
+            const out = document.getElementById('studioOsAndAuditOutput');
+            out.textContent = 'Building signed OS automation proposal...';
+            const res = await apiFetch('/api/pro/os_action/propose', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action_type, target, reason })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'Could not propose OS action.'; return; }
+            const p = data.proposal;
+            activeOsProposal = p;
+            openPermissionApprovalDialog({
+                title: `Approve OS Automation: ${p.title}`,
+                actionText: `${p.action_type} · Target: ${p.target || 'system'}`,
+                command: p.command,
+                reason: p.reason,
+                risk: p.risk
+            });
+            out.textContent = `Awaiting operator Allow / Deny confirmation for: ${p.command}\nReason: ${p.reason}`;
+        }
+
+        async function runStudioWarRoom() {
+            const objective = document.getElementById('studioWarRoomObjective').value.trim();
+            const out = document.getElementById('studioWarRoomOutput');
+            out.textContent = 'Dispatching 4 parallel specialist agents (Architect, Implementer, Security, QA)...';
+            const res = await apiFetch('/api/pro/war_room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ objective })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) { out.textContent = data.error || 'War Room failed.'; return; }
+            out.innerHTML = `<div style="color:#6ee7b7; font-weight:700; margin-bottom:8px;">4 Parallel Agents Completed in ${data.elapsed_s}s</div>` +
+                (data.agents || []).map(a => (
+                    `<div style="margin-bottom:10px; padding:10px; border:1px solid rgba(255,255,255,0.08); border-radius:8px; background:rgba(255,255,255,0.02);">` +
+                    `<div style="font-weight:700; color:#f4f4f5; margin-bottom:4px;">${escapeHtml(a.title)} <span style="color:#71717a; font-weight:400;">(${a.elapsed_s}s)</span></div>` +
+                    `<div style="white-space:pre-wrap; color:#d4d4d8;">${escapeHtml(a.output)}</div>` +
+                    `</div>`
+                )).join('');
+        }
+
+        async function runApexOmnisPipeline() {
+            const goal = document.getElementById('apexPipelineGoal').value.trim();
+            const language = document.getElementById('apexPipelineLang').value;
+            const auto_apply = document.getElementById('apexPipelineAutoApply').checked;
+            const btn = document.getElementById('btnRunApexPipeline');
+            const stagesEl = document.getElementById('apexPipelineStages');
+            const out = document.getElementById('apexPipelineOutput');
+            const applyWrap = document.getElementById('apexPipelineApplyActions');
+            if (btn) btn.disabled = true;
+            if (applyWrap) applyWrap.style.display = 'none';
+            if (stagesEl) stagesEl.innerHTML = '<div class="apex-stage-row"><span>Executing 6-Stage Autonomous Pipeline...</span><span style="color:#93c5fd;">RUNNING</span></div>';
+            out.textContent = 'Synthesizing architecture, multi-file code, AST security gate, and live sandbox verification...';
+            try {
+                const res = await apiFetch('/api/pro/apex_execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ goal, language, auto_apply })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    if (stagesEl) stagesEl.innerHTML = '';
+                    out.textContent = data.error || 'Apex pipeline failed.';
+                    return;
+                }
+                lastApexPipelineResult = data;
+                if (stagesEl) {
+                    stagesEl.innerHTML = (data.stages || []).map(s => (
+                        `<div class="apex-stage-row">` +
+                        `<div><strong style="color:#f4f4f5;">0${s.stage} · ${escapeHtml(s.name)}</strong><div style="color:#a1a1aa; font-size:11px; margin-top:2px;">${escapeHtml(s.detail)}</div></div>` +
+                        `<span style="font-family:var(--font-code); font-size:10.5px; color:${s.status === 'completed' ? '#6ee7b7' : '#fcd34d'};">${escapeHtml(s.status.toUpperCase())} · ${s.elapsed_ms}ms</span>` +
+                        `</div>`
+                    )).join('');
+                }
+                if (applyWrap && !data.applied && (data.files || []).length) {
+                    applyWrap.style.display = 'flex';
+                }
+                const verifyTxt = data.verification
+                    ? `\nSandbox Verification [exit ${data.verification.returncode}]:\n${data.verification.stdout || data.verification.stderr || ''}\n`
+                    : '';
+                out.innerHTML = `<div style="color:#f4f4f5; font-weight:700; margin-bottom:6px;">Completed in ${data.total_elapsed_s}s · ${data.files.length} file(s) synthesized${data.applied ? ' · Applied with Snapshot ' + escapeHtml(data.snapshot_id) : ''}</div>` +
+                    (verifyTxt ? `<pre style="color:#6ee7b7; margin:0 0 8px 0;">${escapeHtml(verifyTxt)}</pre>` : '') +
+                    _renderUnifiedDiffHtml(data.diffs);
+            } catch (err) {
+                out.textContent = err.message;
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function applyLastApexDeliverable() {
+            if (!lastApexPipelineResult || !(lastApexPipelineResult.files || []).length) return;
+            const out = document.getElementById('apexPipelineOutput');
+            const res = await apiFetch('/api/pro/apply_diff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    edits: lastApexPipelineResult.files.map(f => ({ path: f.path, content: f.content })),
+                    label: `Apex Omnis Apply (${lastApexPipelineResult.language})`
+                })
+            });
+            const data = await safeParseJson(res);
+            const applyWrap = document.getElementById('apexPipelineApplyActions');
+            if (res.ok && data.success) {
+                if (applyWrap) applyWrap.style.display = 'none';
+                out.innerHTML = `<div style="color:#6ee7b7; font-weight:700; margin-bottom:6px;">Applied ${data.files_count} file(s) · Rollback Snapshot: ${escapeHtml(data.snapshot_id)}</div>` + _renderUnifiedDiffHtml(data.diffs);
+            }
+        }
     </script>
 </body>
 </html>

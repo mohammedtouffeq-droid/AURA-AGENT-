@@ -80,6 +80,8 @@ def _clamp_float(value: Any, default: float, minimum: float, maximum: float) -> 
 
 
 import aura_db
+import aura_membership
+import aura_pro_studio
 from aura_brain import AuraBrain
 from aura_engine_base import EngineDispatchPlan, format_thought_block
 from aura_jarvis_hub import JARVIS_HUB
@@ -169,8 +171,9 @@ def _prepare_aura_turn(
     body: Dict[str, Any],
     permission_mode: str,
     brain: AuraBrain,
+    membership: Optional[Dict[str, Any]] = None,
 ) -> Tuple[str, str, Optional[EngineDispatchPlan], Optional[str], str]:
-    """Applies AURA 2.0 / 2.3 / 2.6 engine profile, strict language policy, and Kill Switch guardrails."""
+    """Applies AURA 2.0 / 2.3 / 2.6 engine profile, membership rules & @file context, strict language policy, and Kill Switch guardrails."""
     raw_uid = user.get("id")
     try:
         user_id: Any = int(raw_uid)
@@ -193,11 +196,20 @@ def _prepare_aura_turn(
     if not prompt or prompt.startswith("/"):
         return dispatch_prompt, effective_permission, None, norm_tier, resolved_lang
 
+    mem = membership or aura_membership.resolve_user_membership(user)
+    ctx_block = ""
+    raw_ctx_files = body.get("context_files")
+    if int(mem.get("rank", 0)) >= 1 and isinstance(raw_ctx_files, list) and raw_ctx_files and isinstance(user_id, int):
+        ctx_res = aura_pro_studio.read_context_files(_resolve_workspace_dir(user_id), [str(p) for p in raw_ctx_files[:6]])
+        ctx_block = ctx_res.get("context_block") or ""
+    tier_profile = aura_membership.build_tier_system_profile(mem, context_files_block=ctx_block)
+
     lang_policy = build_language_policy_instruction(resolved_lang, voice_turn=voice_turn)
     if voice_turn or not norm_tier:
         if voice_turn and getattr(brain, "provider", "gemini") == "gemini":
             brain.model = "gemini-3-flash-preview"
-        return f"{lang_policy}\n\n{dispatch_prompt}", effective_permission, None, norm_tier, resolved_lang
+        prefix = f"{lang_policy}\n\n{tier_profile}" if (tier_profile and not voice_turn) else lang_policy
+        return f"{prefix}\n\n{dispatch_prompt}", effective_permission, None, norm_tier, resolved_lang
 
     reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
     plan = AURA_MODEL_ROUTER.prepare_turn(user_id, norm_tier, prompt, reasoning_mode=reasoning_mode)
@@ -205,10 +217,13 @@ def _prepare_aura_turn(
         brain.model = plan.preferred_llm
     if reasoning_mode == "fast":
         brain.temperature = plan.temperature
-        brain.thinking_level = "minimal" if norm_tier == "aura-2.0" else "low"
+        brain.thinking_level = "minimal" if (norm_tier == "aura-2.0" or int(mem.get("rank", 0)) >= 1) else "low"
+    elif reasoning_mode == "deep" and int(mem.get("rank", 0)) >= 2:
+        brain.thinking_level = "high"
     elif reasoning_mode == "verifier":
         brain.thinking_level = "low"
-    framed_prompt = f"{lang_policy}\n\n{plan.system_framing}\n\n{dispatch_prompt}"
+    profile_chunk = f"\n\n{tier_profile}" if tier_profile else ""
+    framed_prompt = f"{lang_policy}{profile_chunk}\n\n{plan.system_framing}\n\n{dispatch_prompt}"
     return framed_prompt, effective_permission, plan, norm_tier, resolved_lang
 
 
@@ -328,7 +343,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Access-Control-Allow-Credentials", "true")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, HEAD")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token, X-Gemini-Key")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token, X-Gemini-Key, X-Aura-Membership")
 
     def _send_json(
         self,
@@ -382,6 +397,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         self.send_header("Connection", "close")
         self._apply_security_and_cors_headers()
         self.end_headers()
+
+    def _resolve_membership(self, user: Dict[str, Any], body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        proof = str(self.headers.get("X-Aura-Membership") or "").strip()
+        if not proof and isinstance(body, dict):
+            proof = str(body.get("membership_proof") or "").strip()
+        return aura_membership.resolve_user_membership(user, membership_proof=proof)
 
     def _get_auth_user(self, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
@@ -544,11 +565,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"authenticated": False, "storage_status": storage_status}, status=401)
             else:
+                mem = self._resolve_membership(user)
+                quota = aura_membership.get_user_quota_status(user, mem)
                 self._send_json({
                     "authenticated": True,
                     "user": user,
                     "csrf_token": user.get("csrf_token"),
                     "storage_status": storage_status,
+                    "membership": mem,
+                    "quota": quota,
                     "user_vault": aura_db.export_user_vault(user["id"]),
                     "account_proof": aura_db.get_account_proof_for_user(user["id"]),
                 })
@@ -623,6 +648,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             from aura_permission_system import permission_manager
             prefs = (user.get("settings") or {}).get("preferences", {})
             active_aura = AURA_MODEL_ROUTER.normalize_tier(prefs.get("aura_model")) or AURA_MODEL_ROUTER.get_user_tier(user["id"])
+            mem = self._resolve_membership(user)
+            quota = aura_membership.get_user_quota_status(user, mem)
             self._send_json({
                 "success": True,
                 "brain_settings": _selected_brain_settings(user),
@@ -632,6 +659,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "aura_models": AURA_MODEL_ROUTER.list_catalog(),
                 "providers": AuraSettingsManager.public_model_catalog(),
                 "gemini_key_configured": bool(BRAIN.api_key and not BRAIN.api_key.startswith("YOUR_")),
+                "membership": mem,
+                "quota": quota,
+                "membership_tiers": aura_membership.list_public_tiers(),
             })
 
         elif path == "/api/projects":
@@ -940,6 +970,58 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "service": "aura-core",
                 "models": ["aura-2.0", "aura-2.3", "aura-2.6"],
             })
+
+        elif path == "/api/membership/status":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user)
+            quota = aura_membership.get_user_quota_status(user, mem)
+            self._send_json({
+                "success": True,
+                "membership": mem,
+                "quota": quota,
+                "tiers": aura_membership.list_public_tiers(),
+                "os_actions": aura_pro_studio.OS_ACTION_CATALOG,
+            })
+
+        elif path == "/api/pro/index":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user)
+            if int(mem.get("rank", 0)) < 1:
+                self._send_json({
+                    "success": False,
+                    "error": "Codebase AST & Symbol Indexer requires AURA Velocity (Tier 1) or higher. Activate a key in Settings.",
+                    "required_rank": 1,
+                }, status=403)
+                return
+            self._send_json(aura_pro_studio.index_workspace_symbols(_resolve_workspace_dir(user["id"])))
+
+        elif path == "/api/pro/templates":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            templates = [
+                {"id": tid, "name": spec["name"], "stack": spec["stack"], "files": list(spec["files"].keys())}
+                for tid, spec in aura_pro_studio.PROJECT_TEMPLATES.items()
+            ]
+            self._send_json({"success": True, "templates": templates})
+
+        elif path == "/api/pro/snapshots":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user)
+            if int(mem.get("rank", 0)) < 2:
+                self._send_json({"success": False, "error": "Rollback snapshots require AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+                return
+            self._send_json({"success": True, "snapshots": aura_pro_studio.list_workspace_snapshots(_resolve_workspace_dir(user["id"]))})
 
         elif path == "/api/models/aura":
             user = self._get_auth_user()
@@ -1405,6 +1487,22 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"reply": "Please enter an instruction or attach a file."}, status=400)
                 return
 
+            membership = self._resolve_membership(user, body)
+            quota_ok, quota_status = aura_membership.check_and_consume_chat_quota(user, prompt, membership)
+            if not quota_ok:
+                self._send_json({
+                    "success": False,
+                    "error": "daily_limit_reached",
+                    "reply": (
+                        f"Daily chat limit reached ({quota_status['used']}/{quota_status['limit']} chats on {membership['name']}). "
+                        f"Quota refreshes automatically in {quota_status['reset_label']}. "
+                        f"Activate a membership key in Settings for expanded or unlimited access."
+                    ),
+                    "quota": quota_status,
+                    "membership": membership,
+                }, status=429)
+                return
+
             display_prompt = prompt
             if attachments:
                 att_names = [str(a.get("name", "attachment"))[:80] for a in attachments if isinstance(a, dict)]
@@ -1423,7 +1521,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if byok:
                 brain.user_api_key = byok[:120]
             dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
-                user, prompt, body, permission_mode, brain
+                user, prompt, body, permission_mode, brain, membership=membership
             )
             reply = brain.think_and_act(
                 dispatch_prompt,
@@ -1443,6 +1541,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "resolved_language": resolved_lang,
                 "tools": tools_used,
                 "aura_model": active_tier,
+                "membership": membership,
+                "quota": quota_status,
                 "status": "completed",
                 "user_vault": aura_db.export_user_vault(user_id),
             })
@@ -1466,6 +1566,21 @@ class AuraWebHandler(BaseHTTPRequestHandler):
 
             if not prompt and not attachments:
                 self._send_json({"error": "Prompt or attachments required"}, status=400)
+                return
+
+            membership = self._resolve_membership(user, body)
+            quota_ok, quota_status = aura_membership.check_and_consume_chat_quota(user, prompt, membership)
+            if not quota_ok:
+                self._send_json({
+                    "success": False,
+                    "error": "daily_limit_reached",
+                    "message": (
+                        f"Daily chat limit reached ({quota_status['used']}/{quota_status['limit']} chats on {membership['name']}). "
+                        f"Quota refreshes automatically in {quota_status['reset_label']}."
+                    ),
+                    "quota": quota_status,
+                    "membership": membership,
+                }, status=429)
                 return
 
             display_prompt = prompt
@@ -1493,7 +1608,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if byok:
                 brain.user_api_key = byok[:120]
             dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
-                user, prompt, body, permission_mode, brain
+                user, prompt, body, permission_mode, brain, membership=membership
             )
             accumulated_text = ""
             tools_used = []
@@ -1540,6 +1655,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                             "tools": tools_used,
                             "thread_id": thread_id,
                             "threads": fresh_threads,
+                            "membership": membership,
+                            "quota": quota_status,
                             "user_vault": fresh_vault,
                         })
                         self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
@@ -2329,6 +2446,217 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             reason = str(body.get("reason") or "Operator toggle")[:200]
             res = JARVIS_HUB.set_kill_switch(user["id"], halted=halted, reason=reason)
             self._send_json(res)
+
+        # 13. MEMBERSHIP KEY ACTIVATION & 5-TIER PRO / APEX OMNIS ENGINEERING STUDIO ROUTES
+        elif path == "/api/membership/activate":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            raw_key = str(body.get("key") or body.get("activation_key") or "").strip()
+            res = aura_membership.activate_membership_key(user, raw_key)
+            if res.get("success"):
+                res["user_vault"] = aura_db.export_user_vault(user["id"])
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/membership/deactivate":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            res = aura_membership.deactivate_membership(user)
+            res["user_vault"] = aura_db.export_user_vault(user["id"])
+            self._send_json(res)
+
+        elif path == "/api/membership/rules":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            res = aura_membership.save_user_aura_rules(user, str(body.get("rules") or ""), membership=mem)
+            if res.get("success"):
+                res["user_vault"] = aura_db.export_user_vault(user["id"])
+            self._send_json(res, status=200 if res.get("success") else 403)
+
+        elif path == "/api/pro/context_files":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 1:
+                self._send_json({"success": False, "error": "@file context injection requires AURA Velocity (Tier 1) or higher.", "required_rank": 1}, status=403)
+                return
+            paths = body.get("paths") if isinstance(body.get("paths"), list) else []
+            self._send_json(aura_pro_studio.read_context_files(_resolve_workspace_dir(user["id"]), [str(p) for p in paths[:6]]))
+
+        elif path in ("/api/pro/diff_plan", "/api/pro/apply_diff"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 2:
+                self._send_json({"success": False, "error": "Multi-File Unified Diff Composer requires AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+                return
+            edits = body.get("edits") if isinstance(body.get("edits"), list) else []
+            do_apply = (path == "/api/pro/apply_diff") or bool(body.get("apply", False))
+            label = str(body.get("label") or "Multi-File Diff Apply")[:80]
+            res = aura_pro_studio.plan_and_apply_multifile_diff(_resolve_workspace_dir(user["id"]), edits, apply=do_apply, label=label)
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/pro/rollback":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 2:
+                self._send_json({"success": False, "error": "Snapshot rollback requires AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+                return
+            snap_id = str(body.get("snapshot_id") or "").strip()
+            res = aura_pro_studio.rollback_workspace_snapshot(_resolve_workspace_dir(user["id"]), snap_id)
+            self._send_json(res, status=200 if res.get("success") else 404)
+
+        elif path == "/api/pro/run_code":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 2:
+                self._send_json({"success": False, "error": "Polyglot Code Sandbox requires AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+                return
+            lang = str(body.get("language") or "python")[:32]
+            code = str(body.get("code") or "")
+            stdin_txt = str(body.get("stdin") or "")[:4000]
+            res = aura_pro_studio.execute_polyglot_sandbox(_resolve_workspace_dir(user["id"]), lang, code, stdin_text=stdin_txt)
+            self._send_json(res, status=200 if res.get("error") is None else 400)
+
+        elif path == "/api/pro/self_heal":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "Autonomous Self-Healing Repair requires AURA Sovereign (Tier 3) or higher.", "required_rank": 3}, status=403)
+                return
+            target_file = str(body.get("path") or body.get("file") or "").strip()
+            auto_apply = bool(body.get("auto_apply", False))
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = aura_pro_studio.run_self_heal_loop(_resolve_workspace_dir(user["id"]), target_file, brain, auto_apply=auto_apply)
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/pro/scaffold":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "Production Repo Scaffolder requires AURA Sovereign (Tier 3) or higher.", "required_rank": 3}, status=403)
+                return
+            tmpl = str(body.get("template") or "modern_webapp").strip()
+            pname = str(body.get("project_name") or "aura_starter").strip()
+            res = aura_pro_studio.scaffold_project_template(_resolve_workspace_dir(user["id"]), tmpl, pname)
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/pro/security_audit":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 4:
+                self._send_json({"success": False, "error": "Workspace Security AST Audit requires AURA Titan (Tier 4) or higher.", "required_rank": 4}, status=403)
+                return
+            self._send_json(aura_pro_studio.audit_workspace_security(_resolve_workspace_dir(user["id"])))
+
+        elif path == "/api/pro/war_room":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 4:
+                self._send_json({"success": False, "error": "Parallel 4-Agent War Room requires AURA Titan (Tier 4) or higher.", "required_rank": 4}, status=403)
+                return
+            objective = str(body.get("objective") or body.get("prompt") or "").strip()
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            def _make_b():
+                b = _create_user_brain(user)
+                if byok:
+                    b.user_api_key = byok[:120]
+                return b
+            res = aura_pro_studio.run_parallel_war_room(objective, _resolve_workspace_dir(user["id"]), _make_b, rules_text=mem.get("aura_rules", ""))
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/pro/os_action/propose":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 4:
+                self._send_json({"success": False, "error": "Guarded Desktop/Laptop OS Automation requires AURA Titan (Tier 4) or higher.", "required_rank": 4}, status=403)
+                return
+            res = aura_pro_studio.propose_guarded_os_action(
+                user,
+                action_type=str(body.get("action_type") or ""),
+                target=str(body.get("target") or ""),
+                reason=str(body.get("reason") or ""),
+                params=body.get("params") if isinstance(body.get("params"), dict) else {},
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/pro/os_action/commit":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 4:
+                self._send_json({"success": False, "error": "Guarded Desktop/Laptop OS Automation requires AURA Titan (Tier 4) or higher.", "required_rank": 4}, status=403)
+                return
+            res = aura_pro_studio.commit_guarded_os_action(
+                user,
+                signed_ticket=str(body.get("signed_ticket") or ""),
+                decision=str(body.get("decision") or "DENY"),
+                workspace_dir=_resolve_workspace_dir(user["id"]),
+                deny_note=str(body.get("deny_note") or ""),
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/pro/apex_execute":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 5:
+                self._send_json({"success": False, "error": "AURA Apex Omnis 6-Stage Autonomous Pipeline requires Tier 5 activation.", "required_rank": 5}, status=403)
+                return
+            goal = str(body.get("goal") or body.get("prompt") or "").strip()
+            language = str(body.get("language") or "python").strip()[:32]
+            auto_apply = bool(body.get("auto_apply", False))
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = aura_pro_studio.run_apex_autonomous_pipeline(
+                goal,
+                language,
+                _resolve_workspace_dir(user["id"]),
+                brain,
+                rules_text=mem.get("aura_rules", ""),
+                auto_apply=auto_apply,
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
 
         elif self._handle_voice_post(path, body):
             return

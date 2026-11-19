@@ -564,6 +564,28 @@ def init_database():
     """)
 
     c.execute("""
+        CREATE TABLE IF NOT EXISTS chat_quota_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS membership_activations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            key_hash TEXT NOT NULL,
+            tier_id TEXT NOT NULL,
+            activated_at REAL NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    c.execute("""
         CREATE TABLE IF NOT EXISTS user_revocations (
             username TEXT PRIMARY KEY,
             revoked_before REAL NOT NULL
@@ -1347,6 +1369,23 @@ def delete_user_memory(user_id: int, key: str) -> bool:
     return affected
 
 
+def get_user_settings_dict(user_id: int) -> Dict[str, Any]:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT settings_json FROM users WHERE id = ?", (user_id,))
+        row = c.fetchone()
+        if not row:
+            return {}
+        raw = row["settings_json"] if isinstance(row, (dict, sqlite3.Row)) else row[0]
+        parsed = json.loads(raw or "{}")
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+    finally:
+        conn.close()
+
+
 def save_user_settings(user_id: int, settings: Dict[str, Any]) -> bool:
     conn = get_connection()
     c = conn.cursor()
@@ -1354,6 +1393,56 @@ def save_user_settings(user_id: int, settings: Dict[str, Any]) -> bool:
     conn.commit()
     conn.close()
     return True
+
+
+def record_chat_quota_event(user_id: int, created_at: Optional[float] = None) -> None:
+    ts = float(created_at if created_at is not None else time.time())
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        cutoff = ts - (48 * 3600)
+        c.execute("DELETE FROM chat_quota_events WHERE user_id = ? AND created_at < ?", (int(user_id), cutoff))
+        c.execute(
+            "INSERT INTO chat_quota_events (user_id, created_at) VALUES (?, ?)",
+            (int(user_id), ts),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_rolling_24h_quota_usage(user_id: int, window_seconds: int = 86400) -> Dict[str, Any]:
+    cutoff = time.time() - float(window_seconds)
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "SELECT COUNT(*) AS cnt, MIN(created_at) AS oldest_ts FROM chat_quota_events WHERE user_id = ? AND created_at >= ?",
+            (int(user_id), cutoff),
+        )
+        row = c.fetchone()
+        if not row:
+            return {"used": 0, "oldest_ts": None}
+        used = int(row["cnt"] if isinstance(row, (dict, sqlite3.Row)) else row[0])
+        oldest_ts = row["oldest_ts"] if isinstance(row, (dict, sqlite3.Row)) else row[1]
+        return {"used": used, "oldest_ts": float(oldest_ts) if oldest_ts is not None else None}
+    except Exception:
+        return {"used": 0, "oldest_ts": None}
+    finally:
+        conn.close()
+
+
+def record_membership_activation(user_id: int, username: str, key_hash: str, tier_id: str) -> None:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT INTO membership_activations (user_id, username, key_hash, tier_id, activated_at, is_active) VALUES (?, ?, ?, ?, ?, 1)",
+            (int(user_id), str(username or "").strip().lower(), str(key_hash)[:64], str(tier_id)[:24], time.time()),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # ===================================================================================
@@ -1705,6 +1794,27 @@ def restore_user_vault(vault_envelope: Any, authenticated_user_id: Optional[int]
                 # Never create unauthenticated accounts from vault payloads
                 return False
             target_user_id = int(existing["id"])
+
+        # Restore verified server-signed membership & engineering rules on serverless cold starts
+        try:
+            vault_settings = json.loads(u.get("settings_json") or "{}")
+            if isinstance(vault_settings, dict) and (vault_settings.get("membership") or vault_settings.get("aura_rules")):
+                c.execute("SELECT settings_json FROM users WHERE id = ?", (target_user_id,))
+                cur_s_row = c.fetchone()
+                cur_s = json.loads((cur_s_row["settings_json"] if cur_s_row else "{}") or "{}")
+                if not isinstance(cur_s, dict):
+                    cur_s = {}
+                changed = False
+                if not cur_s.get("membership") and isinstance(vault_settings.get("membership"), dict):
+                    cur_s["membership"] = vault_settings["membership"]
+                    changed = True
+                if not cur_s.get("aura_rules") and isinstance(vault_settings.get("aura_rules"), str):
+                    cur_s["aura_rules"] = vault_settings["aura_rules"][:6000]
+                    changed = True
+                if changed:
+                    c.execute("UPDATE users SET settings_json = ? WHERE id = ?", (json.dumps(cur_s), target_user_id))
+        except Exception:
+            pass
 
         for t in payload.get("threads", []):
             if isinstance(t, dict) and t.get("id") and t.get("title"):
