@@ -98,7 +98,7 @@ class BaseAuraModelEngine:
     tagline: str = "Fast Everyday Intelligence"
     tier_rank: int = 1
     default_temperature: float = 0.4
-    preferred_llm: str = "gemini-3.5-flash-lite"
+    preferred_llm: str = "gemini-3-flash-preview"
 
     def describe(self) -> Dict[str, Any]:
         """Returns public metadata and footprint details for settings & UI."""

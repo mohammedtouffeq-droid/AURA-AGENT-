@@ -673,5 +673,33 @@ def test_edge_voice_orchestrator_caches_short_phrases(monkeypatch):
     assert a1.bytes_len == a2.bytes_len and a2.bytes_len > 64
 
 
+def test_health_endpoint_fast_default_model_and_multi_wallpaper_studio(isolated_server):
+    """Verify /api/health, gemini-3-flash-preview default, and zero-cartoon multi-wallpaper UI assets."""
+    import aura_settings
+
+    base = isolated_server["base_url"]
+    status, _, health = _http_json(f"{base}/api/health")
+    assert status == 200
+    assert health.get("status") == "ok"
+    assert health.get("service") == "aura-core"
+
+    # Settings manager & catalog default to fast live gemini-3-flash-preview
+    assert aura_settings.MODEL_CATALOG["gemini"]["models"][0] == "gemini-3-flash-preview"
+    brain_cfg = aura_web._selected_brain_settings({"id": 0, "username": "probe"})
+    assert brain_cfg["active_provider"] == "gemini"
+    assert brain_cfg["active_model"] == "gemini-3-flash-preview"
+
+    # Multi-wallpaper studio & zero-emoji luxury static HTML check
+    html = (Path(__file__).resolve().parent / "index.html").read_text(encoding="utf-8")
+    assert "AURA_CURATED_WALLPAPERS" in html
+    assert 'id="wallpaperQuickPopover"' in html
+    assert 'id="btnHeaderWallpaper"' in html
+    assert 'id="settingsWallpaperGrid"' in html
+    assert 'id="quickWallpaperBlurRange"' in html
+    assert 'id="wallpaperBlurRange"' in html
+    assert "aura_custom_wallpapers_list" in html
+
+
+
 
 

@@ -35,11 +35,13 @@ MODEL_CATALOG = {
     "gemini": {
         "label": "Google Gemini",
         "models": [
-            "gemini-3.5-flash-lite",
+            "gemini-3-flash-preview",
+            "gemini-3.1-flash-lite",
+            "gemini-3.1-flash-lite-preview",
             "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
             "gemini-3.5-flash",
             "gemini-3.8-flash",
-            "gemini-3.1-flash-lite",
             "gemini-2.5-flash-lite",
             "gemini-2.5-flash",
             "gemini-2.5-pro",
@@ -85,7 +87,7 @@ class AuraSettingsManager:
             "system": {"agent_name": "AURA", "creator": "AURA Technologies Inc.", "version": "4.2.0"},
             "brain_settings": {
                 "active_provider": "gemini",
-                "active_model": "gemini-3.5-flash-lite",
+                "active_model": "gemini-3-flash-preview",
                 "temperature": 0.3,
                 "thinking_budget_level": "medium",
                 "custom_system_instruction": "You are AURA, an elite autonomous AI."

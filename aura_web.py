@@ -109,12 +109,12 @@ def _selected_brain_settings(user: Dict[str, Any]) -> Dict[str, str]:
     )
     model = user_brain.get(
         "active_model",
-        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-3.5-flash-lite"),
+        SETTINGS.config.get("brain_settings", {}).get("active_model", "gemini-3-flash-preview"),
     )
-    if provider == "gemini" and model in ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite"):
-        model = "gemini-3.5-flash-lite"
+    if provider == "gemini" and model in ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash-lite"):
+        model = "gemini-3-flash-preview"
     if not AuraSettingsManager.validate_model_selection(provider, model):
-        provider, model = "gemini", "gemini-3.5-flash-lite"
+        provider, model = "gemini", "gemini-3-flash-preview"
     return {"active_provider": provider, "active_model": model}
 
 
@@ -195,6 +195,8 @@ def _prepare_aura_turn(
 
     lang_policy = build_language_policy_instruction(resolved_lang, voice_turn=voice_turn)
     if voice_turn or not norm_tier:
+        if voice_turn and getattr(brain, "provider", "gemini") == "gemini":
+            brain.model = "gemini-3-flash-preview"
         return f"{lang_policy}\n\n{dispatch_prompt}", effective_permission, None, norm_tier, resolved_lang
 
     reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
@@ -425,6 +427,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self._handle_get()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            return
         except Exception as exc:
             self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
 
@@ -929,6 +933,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                         pass
             self._send_json({"success": True, "runs": runs})
 
+        elif path == "/api/health":
+            self._send_json({
+                "success": True,
+                "status": "ok",
+                "service": "aura-core",
+                "models": ["aura-2.0", "aura-2.3", "aura-2.6"],
+            })
+
         elif path == "/api/models/aura":
             user = self._get_auth_user()
             active_tier = "aura-2.3"
@@ -1044,12 +1056,16 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": ok, "deleted": aid if ok else None}, status=200 if ok else 404)
                 return
             self._send_json({"success": False, "error": "Not Found"}, status=404)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            return
         except Exception as exc:
             self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
 
     def do_POST(self):
         try:
             self._handle_post()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            return
         except Exception as exc:
             self._send_json({"success": False, "error": f"Server error: {exc}"}, status=500)
 

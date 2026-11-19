@@ -67,7 +67,7 @@ def _build_api_key_pool() -> List[str]:
 
 
 API_KEY_POOL = _build_api_key_pool()
-MODEL_NAME = ENV.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+MODEL_NAME = ENV.get("GEMINI_MODEL", "gemini-3-flash-preview")
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
 import ipaddress
 import socket
@@ -4035,13 +4035,13 @@ The unified pipeline processed your instruction across all core engines (**Time:
                 return pl_copy
             return base_pl
 
-        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", "gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview"}
+        deprecated_or_slow = {"gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"}
         primary_model = "gemini-3-flash-preview" if self.model in deprecated_or_slow else self.model
         models_to_try: List[str] = []
-        for m in (primary_model, "gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite"):
+        for m in (primary_model, "gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-flash-lite-latest"):
             if m and m not in models_to_try:
                 models_to_try.append(m)
-        models_to_try = models_to_try[:3]
+        models_to_try = models_to_try[:4]
 
         is_mocked_urlopen = not getattr(urllib.request.urlopen, "__module__", "").startswith("urllib.")
 
@@ -4075,7 +4075,7 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         if cand:
                             last_cand = cand
                         for part in ((cand.get("content") or {}).get("parts") or []):
-                            if not isinstance(part, dict):
+                            if not isinstance(part, dict) or part.get("thought"):
                                 continue
                             if "text" in part and "functionCall" not in part:
                                 if part.get("text"):
@@ -4133,9 +4133,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
             return resp_obj
 
         if voice_fast:
-            total_budget = 14.0
+            total_budget = 12.0
         else:
-            total_budget = (20.0 if is_vercel else 22.0) if include_tools else (19.0 if is_vercel else 20.0)
+            total_budget = (13.0 if is_vercel else 13.5) if include_tools else (17.0 if is_vercel else 18.0)
         deadline = time.monotonic() + total_budget
         if deadline_override is not None:
             deadline = min(deadline, float(deadline_override))
@@ -4160,12 +4160,15 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     seen_mods.add(mod)
                     ordered_pairs.append((mod, k_val))
 
+        timed_out_models: set[str] = set()
         for mod, k_val in ordered_pairs:
+            if not is_mocked_urlopen and mod in timed_out_models:
+                continue
             remaining = deadline - time.monotonic()
-            if remaining < 2.5:
+            if remaining < 2.2:
                 break
-            max_att = 5.2
-            attempt_timeout = max(2.5, min(max_att, remaining))
+            max_att = 4.8 if mod in (primary_model, "gemini-3.1-flash-lite") else 3.8
+            attempt_timeout = max(2.2, min(max_att, remaining))
             mod_payload = _payload_for_model(primary_payload, mod, allow_thinking=True)
             try:
                 return _cache_and_return(_post_gemini(mod, k_val, mod_payload, attempt_timeout))
@@ -4178,9 +4181,9 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         pass
                 if not is_mocked_urlopen:
                     if e.code == 429:
-                        _mark_key_model_cooldown(k_val, mod, 12.0)
+                        _mark_key_model_cooldown(k_val, mod, 25.0)
                     elif e.code in (503, 504):
-                        _mark_key_model_cooldown(k_val, mod, 6.0)
+                        _mark_key_model_cooldown(k_val, mod, 12.0)
                     elif e.code == 404:
                         _mark_key_model_cooldown(k_val, mod, 300.0)
                 if e.code in (429, 403, 503, 404, 400):
@@ -4188,22 +4191,23 @@ The unified pipeline processed your instruction across all core engines (**Time:
             except Exception as e:
                 print(f"[*] AURA Gemini live request fallback for {mod}: {e}")
                 if not is_mocked_urlopen:
-                    _mark_key_model_cooldown(k_val, mod, 4.0)
+                    timed_out_models.add(mod)
+                    _mark_key_model_cooldown(k_val, mod, 15.0)
                 continue
 
         # Fast tool-free conversational salvage call so multi-turn memory chats NEVER degrade into offline lines
         if include_tools and (deadline - time.monotonic()) >= 2.5:
             salvage_contents = self._compact_contents_for_api(contents, strip_tools_history=True)
             salvage_payload = _make_payload(salvage_contents, use_tools=False)
-            for mod in ("gemini-3-flash-preview", "gemini-flash-lite-latest", "gemini-3.5-flash-lite"):
-                if (deadline - time.monotonic()) < 2.0:
+            for mod in ("gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview"):
+                if (deadline - time.monotonic()) < 2.0 or mod in timed_out_models:
                     break
                 for k_val in key_pool[:2]:
                     if not is_mocked_urlopen and _is_key_model_cooled_down(k_val, mod):
                         continue
                     try:
                         pl_s = _payload_for_model(salvage_payload, mod, allow_thinking=True)
-                        return _post_gemini(mod, k_val, pl_s, min(6.0, max(2.0, deadline - time.monotonic())))
+                        return _post_gemini(mod, k_val, pl_s, min(4.5, max(2.0, deadline - time.monotonic())))
                     except Exception:
                         continue
 

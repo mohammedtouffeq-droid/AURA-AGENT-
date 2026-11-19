@@ -14,20 +14,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* ---------------- Antigravity-Style Shining Splash Logo ---------------- */
+        /* ---------------- Minimalist Luxury Splash Screen ---------------- */
         #auraSplash {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: #08090c;
+            height: 100dvh;
+            background: #07080b;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 999999;
-            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
         }
         .splash-logo-container {
             position: relative;
@@ -37,43 +38,39 @@
         }
         .splash-glow-ring {
             position: absolute;
-            width: 140px;
-            height: 140px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(0, 102, 255, 0.4) 0%, rgba(0, 212, 255, 0.15) 50%, transparent 75%);
-            animation: pulseGlow 2.5s infinite ease-in-out;
+            background: radial-gradient(circle, rgba(228, 228, 231, 0.14) 0%, rgba(147, 197, 253, 0.06) 55%, transparent 78%);
+            animation: pulseGlow 2.4s infinite ease-in-out;
         }
         .splash-logo-icon {
-            width: 72px;
-            height: 72px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #0066ff, #00d4ff);
+            width: 62px;
+            height: 62px;
+            border-radius: 16px;
+            background: linear-gradient(145deg, #18181f, #0d0e14);
+            border: 1px solid rgba(255, 255, 255, 0.16);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
-            font-weight: 800;
-            color: #fff;
-            box-shadow: 0 0 35px rgba(0, 102, 255, 0.65), 0 0 70px rgba(0, 212, 255, 0.3);
-            animation: floatLogo 3s ease-in-out infinite;
+            color: #f4f4f5;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
             z-index: 2;
         }
         .splash-title {
-            margin-top: 24px;
-            font-size: 22px;
+            margin-top: 20px;
+            font-size: 18px;
             font-weight: 700;
-            letter-spacing: 3px;
-            background: linear-gradient(135deg, #ffffff 40%, #00d4ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+            color: #f4f4f5;
             text-transform: uppercase;
-            animation: fadeInText 1.5s ease-out;
+            animation: fadeInText 0.45s ease-out;
         }
         .splash-subtitle {
-            margin-top: 8px;
-            font-size: 13px;
-            color: #6b7280;
-            letter-spacing: 1px;
+            margin-top: 6px;
+            font-size: 11.5px;
+            color: #71717a;
+            letter-spacing: 1.2px;
             font-family: 'JetBrains Mono', monospace;
         }
         @keyframes pulseGlow {
@@ -391,11 +388,17 @@
                 top: 0;
                 left: 0;
                 height: 100vh;
+                height: 100dvh;
                 z-index: 100;
-                transform: translateX(-100%);
+                overflow: hidden;
+                visibility: hidden;
+                pointer-events: none;
+                transform: translateX(-105%);
                 box-shadow: 15px 0 40px rgba(0, 0, 0, 0.7);
             }
             .sidebar.mobile-open {
+                visibility: visible;
+                pointer-events: auto;
                 transform: translateX(0);
             }
             .sidebar-backdrop.mobile-open {
@@ -781,8 +784,8 @@
         }
 
         .input-dock-card:focus-within {
-            border-color: rgba(0, 102, 255, 0.4);
-            box-shadow: 0 10px 35px rgba(0, 102, 255, 0.12);
+            border-color: var(--border-focus);
+            box-shadow: 0 12px 38px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(255, 255, 255, 0.08);
         }
 
         /* Attachment Chips Preview */
@@ -2158,7 +2161,7 @@
             }
         }
 
-        /* ---------------- AURA 2.0 / 2.3 / 2.6 Generative UI, Charts, Traces & Wallpapers ---------------- */
+        /* ---------------- AURA 2.0 / 2.3 / 2.6 Generative UI, Charts, Traces & Multiple Wallpaper Studio ---------------- */
         .aura-wallpaper-layer {
             position: absolute;
             inset: 0;
@@ -2166,19 +2169,206 @@
             pointer-events: none;
             background-size: cover;
             background-position: center;
+            background-repeat: no-repeat;
             opacity: 0;
-            transition: opacity 0.35s ease;
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), background-image 0.35s ease;
         }
         .aura-wallpaper-layer::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: rgba(7, 9, 14, var(--wallpaper-dim, 0.72));
-            backdrop-filter: blur(var(--wallpaper-blur, 6px));
+            background: rgba(7, 9, 14, var(--wallpaper-dim, 0.56));
+            backdrop-filter: blur(var(--wallpaper-blur, 0px));
+            -webkit-backdrop-filter: blur(var(--wallpaper-blur, 0px));
+            transition: background 0.2s ease, backdrop-filter 0.2s ease;
         }
-        .main-chat-viewport > *:not(.aura-wallpaper-layer) {
+        .main-chat-viewport > *:not(.aura-wallpaper-layer):not(.wallpaper-quick-popover) {
             position: relative;
             z-index: 2;
+        }
+        .wallpaper-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 7px;
+            margin-top: 6px;
+        }
+        @media (max-width: 520px) {
+            .wallpaper-gallery-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        .wallpaper-thumb {
+            position: relative;
+            aspect-ratio: 16 / 10;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            overflow: hidden;
+            padding: 0;
+            transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+        .wallpaper-thumb:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.36);
+        }
+        .wallpaper-thumb.active {
+            border-color: var(--accent-gold, #f4f4f5);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22);
+        }
+        .wallpaper-thumb-label {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 3px 5px;
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            color: #f4f4f5;
+            background: linear-gradient(180deg, transparent, rgba(5, 6, 10, 0.88));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+        }
+        .wallpaper-thumb-del {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(9, 10, 14, 0.85);
+            color: #e4e4e7;
+            font-size: 10px;
+            line-height: 16px;
+            text-align: center;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .wallpaper-thumb-del:hover {
+            background: rgba(239, 68, 68, 0.88);
+            color: #fff;
+        }
+        .wallpaper-quick-popover {
+            position: fixed;
+            top: 58px;
+            right: 14px;
+            width: min(372px, calc(100vw - 28px));
+            max-height: calc(100dvh - 80px);
+            overflow-y: auto;
+            z-index: 260;
+            background: rgba(14, 15, 20, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.72);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .wallpaper-quick-popover.open {
+            display: flex;
+        }
+        .flagship-control-row {
+            display: grid;
+            grid-template-columns: 1.8fr 1.1fr auto auto;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .flagship-control-row-3 {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .flagship-tab-btn {
+            flex: 1 1 170px;
+            min-width: 150px;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: all 0.15s ease;
+        }
+        .flagship-tab-btn:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.22);
+            color: #f8fafc;
+        }
+        .flagship-panel-card {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .flagship-subcard {
+            background: rgba(9, 10, 15, 0.65);
+            padding: 9px 11px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .flagship-subcard:hover {
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .flagship-num-tag {
+            font-family: var(--font-code);
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            color: #a1a1aa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .flagship-control-row .btn-auth-submit,
+        .flagship-control-row-3 .btn-auth-submit {
+            min-height: 40px;
+            padding: 9px 15px !important;
+            box-shadow: none !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @media (max-width: 768px) {
+            .flagship-control-row,
+            .flagship-control-row-3 {
+                grid-template-columns: 1fr !important;
+            }
+            .flagship-control-row .btn-auth-submit,
+            .flagship-control-row-3 .btn-auth-submit {
+                width: 100% !important;
+                white-space: normal !important;
+                padding: 10px 12px !important;
+            }
+            #flagshipHubOverlay .auth-card {
+                padding: 16px 14px !important;
+            }
+            .flagship-tab-btn {
+                min-width: 120px;
+                font-size: 11.5px;
+                padding: 8px 10px;
+            }
         }
         .aura-model-option {
             width: 100%;
@@ -2307,13 +2497,15 @@
     <canvas id="spaceCanvas" aria-hidden="true"></canvas>
     <div id="spaceOrbitalRingOverlay" aria-hidden="true"></div>
 
-    <!-- Antigravity-Style Shining Splash Screen -->
+    <!-- Minimalist Obsidian Splash Screen -->
     <div id="auraSplash">
         <div class="splash-logo-container">
             <div class="splash-glow-ring"></div>
-            <div class="splash-logo-icon">▲</div>
+            <div class="splash-logo-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
         </div>
-        <div class="splash-title">AURA Core</div>
+        <div class="splash-title">AURA</div>
         <div class="splash-subtitle">Autonomous Intelligence Workspace</div>
     </div>
 
@@ -2389,6 +2581,9 @@
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                <button type="button" class="nav-icon-btn" id="btnHeaderWallpaper" onclick="toggleWallpaperQuickPopover(event)" title="Wallpapers &amp; Ambient Themes" aria-label="Wallpapers and Ambient Themes">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </button>
                 <button type="button" class="nav-icon-btn" onclick="openVoiceCallHud()" title="Open Live Voice Call" aria-label="Open Live Voice Call">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
                 </button>
@@ -2397,6 +2592,39 @@
                 </button>
             </div>
         </header>
+
+        <!-- Live Floating Wallpaper & Ambient Studio Popover -->
+        <div class="wallpaper-quick-popover" id="wallpaperQuickPopover" role="dialog" aria-label="Wallpaper Studio" onclick="event.stopPropagation()">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div>
+                    <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Wallpaper Studio</div>
+                    <div style="font-size:11px; color:#71717a;">10 luxury backdrops + personal multi-upload</div>
+                </div>
+                <button type="button" onclick="closeWallpaperQuickPopover()" aria-label="Close Wallpaper Studio" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#d4d4d8; border-radius:7px; padding:4px 9px; font-size:11px; cursor:pointer;">Done</button>
+            </div>
+            <div id="quickWallpaperGrid" class="wallpaper-gallery-grid"></div>
+            <div id="quickCustomWallpapersWrap" style="display:none;">
+                <div style="font-size:10.5px; color:#a1a1aa; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px;">Your Uploaded Wallpapers</div>
+                <div id="quickCustomWallpapersGrid" class="wallpaper-gallery-grid"></div>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">+ Add Custom Wallpaper</button>
+                <button type="button" onclick="cycleNextWallpaper()" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#d4d4d8; font-size:11.5px; cursor:pointer;">Next</button>
+                <button type="button" onclick="clearCustomWallpaper()" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#a1a1aa; font-size:11.5px; cursor:pointer;">Reset</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:11px; color:#9ca3af; width:64px;">Dimmer</span>
+                    <input type="range" id="quickWallpaperDimRange" min="0.15" max="0.90" step="0.05" value="0.52" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                    <span id="quickWallpaperDimVal" style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa; width:34px; text-align:right;">52%</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:11px; color:#9ca3af; width:64px;">Glass Blur</span>
+                    <input type="range" id="quickWallpaperBlurRange" min="0" max="18" step="1" value="0" oninput="updateWallpaperBlur(this.value)" style="flex:1; margin:0; padding:0;">
+                    <span id="quickWallpaperBlurVal" style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa; width:34px; text-align:right;">0px</span>
+                </div>
+            </div>
+        </div>
 
         <!-- Chat Stream -->
         <div class="chat-stream-container" id="chatContainer">
@@ -2573,24 +2801,24 @@
         <div class="voice-hud-card" onclick="event.stopPropagation()">
             <div style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;">
                 <div>
-                    <div style="font-size:14.5px; font-weight:700; color:#f7e4b4;">AURA Voice Mode</div>
-                    <div id="voiceHudStateLabel" style="font-size:11.5px; color:#7dd3fc; font-family:var(--font-code);">STANDBY • Click Start Call or Type</div>
+                    <div style="font-size:15px; font-weight:700; color:#f4f4f5; letter-spacing:-0.01em;">AURA Voice Mode</div>
+                    <div id="voiceHudStateLabel" style="font-size:11px; color:#93c5fd; font-family:var(--font-code); margin-top:2px;">STANDBY • Click Start Call or Type</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <span id="voiceHudEngineBadge" style="font-size:10.5px; font-family:var(--font-code); padding:3px 8px; border-radius:999px; border:1px solid rgba(52,211,153,0.4); background:rgba(16,185,129,0.12); color:#6ee7b7;">Hybrid HD</span>
-                    <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
+                    <span id="voiceHudEngineBadge" style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; border:1px solid rgba(52,211,153,0.35); background:rgba(16,185,129,0.1); color:#6ee7b7;">Hybrid HD</span>
+                    <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#f4f4f5; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
                 </div>
             </div>
 
             <div class="voice-hud-selects" style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:6px;">
-                <select id="voiceHudLangSelect" onchange="saveVoicePreferences({language:this.value})" aria-label="Voice Language" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
+                <select id="voiceHudLangSelect" onchange="saveVoicePreferences({language:this.value})" aria-label="Voice Language" style="background:#0a0b10; border:1px solid rgba(255,255,255,0.13); border-radius:8px; padding:7px 8px; color:#e4e4e7; font-size:11.5px;">
                     <option value="en">English (Default)</option>
                     <option value="auto">Auto (Match)</option>
                     <option value="hi">Hindi</option>
                     <option value="hi-en">Hinglish</option>
                     <option value="te">Telugu</option>
                 </select>
-                <select id="voiceHudVoiceSelect" onchange="saveVoicePreferences({voice_id:this.value})" aria-label="Voice Profile" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
+                <select id="voiceHudVoiceSelect" onchange="saveVoicePreferences({voice_id:this.value})" aria-label="Voice Profile" style="background:#0a0b10; border:1px solid rgba(255,255,255,0.13); border-radius:8px; padding:7px 8px; color:#e4e4e7; font-size:11.5px;">
                     <option value="male_02">Male 02 (Friendly)</option>
                     <option value="male_01">Male 01 (Deep Pro)</option>
                     <option value="female_02">Female 02 (Warm)</option>
@@ -2600,7 +2828,7 @@
                     <option value="te_male_01">Telugu Male 01</option>
                     <option value="te_female_01">Telugu Female 01</option>
                 </select>
-                <select id="voiceHudEngineSelect" onchange="saveVoicePreferences({engine:this.value})" aria-label="Voice Engine" style="background:#080c15; border:1px solid rgba(255,255,255,0.16); border-radius:8px; padding:6px 8px; color:#e2e8f0; font-size:11.5px;">
+                <select id="voiceHudEngineSelect" onchange="saveVoicePreferences({engine:this.value})" aria-label="Voice Engine" style="background:#0a0b10; border:1px solid rgba(255,255,255,0.13); border-radius:8px; padding:7px 8px; color:#e4e4e7; font-size:11.5px;">
                     <option value="auto">Auto Hybrid</option>
                     <option value="kokoro">Kokoro Offline</option>
                     <option value="edge">Neural HD</option>
@@ -2614,15 +2842,15 @@
             </div>
 
             <form onsubmit="event.preventDefault(); sendVoiceHudTextTurn();" style="width:100%; display:flex; gap:8px;">
-                <input id="voiceHudTextInput" type="text" placeholder="Type voice turn..." autocomplete="off" style="flex:1; background:#070a12; border:1px solid rgba(226,185,111,0.38); border-radius:9px; padding:9px 12px; color:#f8fafc; font-size:13px;">
-                <button type="submit" style="padding:0 14px; border-radius:9px; border:none; background:linear-gradient(135deg, #e2b96f, #0066ff); color:#090a0e; font-weight:700; font-size:12.5px; cursor:pointer;">Speak Turn</button>
+                <input id="voiceHudTextInput" type="text" placeholder="Type voice turn..." autocomplete="off" style="flex:1; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:9px 12px; color:#f4f4f5; font-size:13px;">
+                <button type="submit" style="padding:0 16px; border-radius:10px; border:none; background:#f4f4f5; color:#09090b; font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap;">Speak Turn</button>
             </form>
 
             <div style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
-                <button type="button" id="btnVoiceCallToggleMic" onclick="toggleVoiceCallSession()" style="padding:8px 14px; border-radius:999px; border:1px solid rgba(16,185,129,0.55); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12px; font-weight:700; cursor:pointer;">Start Call</button>
-                <button type="button" id="btnVoiceCallMute" onclick="toggleVoiceCallMute()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">Mute</button>
-                <button type="button" onclick="interruptVoicePlayback()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(245,158,11,0.45); background:rgba(245,158,11,0.16); color:#fde68a; font-size:12px; cursor:pointer;">Interrupt</button>
-                <button type="button" onclick="toggleGlobalKillSwitch()" style="padding:8px 12px; border-radius:999px; border:1px solid rgba(239,68,68,0.55); background:rgba(239,68,68,0.18); color:#fecaca; font-size:12px; font-weight:700; cursor:pointer;">Kill Switch</button>
+                <button type="button" id="btnVoiceCallToggleMic" onclick="toggleVoiceCallSession()" style="padding:8px 15px; border-radius:999px; border:1px solid rgba(16,185,129,0.5); background:rgba(16,185,129,0.16); color:#6ee7b7; font-size:12px; font-weight:700; cursor:pointer;">Start Call</button>
+                <button type="button" id="btnVoiceCallMute" onclick="toggleVoiceCallMute()" style="padding:8px 13px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#d4d4d8; font-size:12px; cursor:pointer;">Mute</button>
+                <button type="button" onclick="interruptVoicePlayback()" style="padding:8px 13px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#e4e4e7; font-size:12px; cursor:pointer;">Interrupt</button>
+                <button type="button" onclick="toggleGlobalKillSwitch()" style="padding:8px 13px; border-radius:999px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.14); color:#fca5a5; font-size:12px; font-weight:600; cursor:pointer;">Kill Switch</button>
             </div>
         </div>
     </div>
@@ -2630,56 +2858,56 @@
     <!-- ---------------- JARVIS Automations & Hardware Kill Switch Console ---------------- -->
     <div class="jarvis-overlay" id="jarvisOverlay" role="dialog" aria-modal="true" aria-label="JARVIS Command Console">
         <div class="jarvis-panel" onclick="event.stopPropagation()">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.09);">
                 <div>
-                    <div style="font-size:16px; font-weight:700; color:#f7e4b4;">JARVIS Automations &amp; Safety Guardrails</div>
+                    <div style="font-size:16px; font-weight:700; color:#f4f4f5; letter-spacing:-0.015em;">JARVIS Automations &amp; Safety Guardrails</div>
                     <div id="jarvisStatusBanner" style="font-size:11.5px; color:#6ee7b7; font-family:var(--font-code); margin-top:2px;">SYSTEM ARMED • Per-Tenant Guardrails Active</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
                     <button type="button" id="btnJarvisPanelKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()">ENGAGE KILL SWITCH</button>
-                    <button type="button" onclick="closeJarvisConsole()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); color:#f8fafc; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
+                    <button type="button" onclick="closeJarvisConsole()" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#f4f4f5; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
                 </div>
             </div>
 
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; align-items:center;">
-                <input id="jarvisTargetInput" type="text" placeholder="Optional routine target (e.g. coderx_engine.py, Hyderabad, or UPI URI)..." style="flex:1; min-width:220px; background:#070a12; border:1px solid rgba(226,185,111,0.32); border-radius:9px; padding:8px 12px; color:#f8fafc; font-size:12.5px;">
-                <button type="button" onclick="syncJarvisStatus()" style="padding:8px 12px; border-radius:9px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#cbd5e1; font-size:12px; cursor:pointer;">Refresh Telemetry</button>
+                <input id="jarvisTargetInput" type="text" placeholder="Optional routine target (e.g. coderx_engine.py, Hyderabad, or UPI URI)..." style="flex:1; min-width:200px; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:9px; padding:8px 12px; color:#f4f4f5; font-size:12.5px;">
+                <button type="button" onclick="syncJarvisStatus()" style="padding:8px 12px; border-radius:9px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#d4d4d8; font-size:12px; cursor:pointer;">Refresh Telemetry</button>
             </div>
 
             <div class="jarvis-routines-grid">
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#93c5fd;">Workspace Health Audit</div>
-                    <div style="font-size:11.5px; color:#94a3b8;">Scans all Python modules via AST, verifies secret hygiene &amp; inventories test suites.</div>
-                    <button type="button" onclick="runJarvisRoutine('repo_health_audit')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(56,189,248,0.5); background:rgba(56,189,248,0.16); color:#bae6fd; font-size:11.5px; font-weight:600; cursor:pointer;">Run Health Audit</button>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#60a5fa;"></span>Workspace Health Audit</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Scans Python modules via AST, verifies secret hygiene &amp; inventories test suites.</div>
+                    <button type="button" onclick="runJarvisRoutine('repo_health_audit')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run Health Audit</button>
                 </div>
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#fde68a;">Security &amp; UPI Threat Scan</div>
-                    <div style="font-size:11.5px; color:#94a3b8;">Dispatches TRINETRA Cyber Forensics + PayGuard UPI phishing detector on payload.</div>
-                    <button type="button" onclick="runJarvisRoutine('security_threat_scan')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(245,158,11,0.5); background:rgba(245,158,11,0.16); color:#fde68a; font-size:11.5px; font-weight:600; cursor:pointer;">Run Security Scan</button>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#e2b96f;"></span>Security &amp; UPI Threat Scan</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Dispatches TRINETRA Cyber Forensics + PayGuard UPI phishing detector on payload.</div>
+                    <button type="button" onclick="runJarvisRoutine('security_threat_scan')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run Security Scan</button>
                 </div>
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#d8b4fe;">Native Code AST Review</div>
-                    <div style="font-size:11.5px; color:#94a3b8;">Audits docstring coverage, function counts &amp; unsafe call patterns via Python AST.</div>
-                    <button type="button" onclick="runJarvisRoutine('code_ast_review')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(168,85,247,0.5); background:rgba(168,85,247,0.16); color:#e9d5ff; font-size:11.5px; font-weight:600; cursor:pointer;">Run AST Review</button>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#a78bfa;"></span>Native Code AST Review</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Audits docstring coverage, function counts &amp; unsafe call patterns via Python AST.</div>
+                    <button type="button" onclick="runJarvisRoutine('code_ast_review')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run AST Review</button>
                 </div>
                 <div class="jarvis-routine-card">
-                    <div style="font-size:13px; font-weight:700; color:#6ee7b7;">Executive Briefing</div>
-                    <div style="font-size:11.5px; color:#94a3b8;">Synthesizes live weather, AI headlines &amp; workspace telemetry for your city target.</div>
-                    <button type="button" onclick="runJarvisRoutine('executive_briefing')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(16,185,129,0.5); background:rgba(16,185,129,0.16); color:#a7f3d0; font-size:11.5px; font-weight:600; cursor:pointer;">Run Briefing</button>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#34d399;"></span>Executive Briefing</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Synthesizes live weather, AI headlines &amp; workspace telemetry for your city target.</div>
+                    <button type="button" onclick="runJarvisRoutine('executive_briefing')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run Briefing</button>
                 </div>
             </div>
 
-            <div id="jarvisResultBox" style="background:rgba(7,9,14,0.92); color:#e2e8f0; padding:12px; border-radius:10px; font-size:12px; max-height:220px; overflow:auto; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px;">
+            <div id="jarvisResultBox" style="background:rgba(7,9,14,0.92); color:#e4e4e7; padding:12px; border-radius:10px; font-size:12px; max-height:220px; overflow:auto; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px;">
                 Select any JARVIS routine above to execute live audited diagnostics, or engage the Kill Switch to block autonomous execution.
             </div>
 
-            <div style="font-size:12px; font-weight:700; color:#f7e4b4; margin-bottom:6px;">Live Tenant Audit Trail</div>
+            <div style="font-size:12px; font-weight:700; color:#d4d4d8; margin-bottom:6px;">Live Tenant Audit Trail</div>
             <div id="jarvisAuditLogBox" style="background:rgba(7,9,14,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:9px; padding:8px 10px; font-family:var(--font-code); font-size:11px; color:#94a3b8; max-height:110px; overflow-y:auto;">
                 Waiting for telemetry sync...
             </div>
 
             <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08);">
-                <span style="font-size:11.5px; color:#94a3b8; align-self:center;">Connected Specialist Hubs:</span>
+                <span style="font-size:11.5px; color:#a1a1aa; align-self:center;">Connected Specialist Hubs:</span>
                 <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('antigravity');">Antigravity OS Bridge</button>
                 <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('bharatcode10');">Sovereign 10-Nexus</button>
                 <button type="button" class="nav-pill-btn" onclick="closeJarvisConsole(); openFlagshipHub('systems10');">10-System Omni-Core</button>
@@ -2719,9 +2947,9 @@
             </div>
 
             <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
-            <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.09);">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                    <label style="display:inline-flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:#d1d5db; cursor:pointer; white-space:nowrap;">
+                    <label style="display:inline-flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:#d4d4d8; cursor:pointer; white-space:nowrap;">
                         <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)" style="width:auto; flex-shrink:0; margin:0;">
                         <span>Scroll Space Backdrop</span>
                     </label>
@@ -2729,28 +2957,45 @@
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center;">
                     <div>
-                        <label for="themePresetSelect" style="font-size:11px; margin-bottom:4px;">Studio Theme</label>
+                        <label for="themePresetSelect" style="font-size:11px; margin-bottom:4px;">Studio Accent Theme</label>
                         <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="font-size:12px; padding:6px 8px;">
                             <option value="matte">Obsidian Slate (Default)</option>
-                            <option value="obsidian">Warm Amber</option>
+                            <option value="obsidian">Sovereign Champagne</option>
                             <option value="cyan">Titanium Ice</option>
                             <option value="emerald">Emerald Matrix</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:11px; margin-bottom:4px;">Gallery Wallpaper</label>
+                        <label style="font-size:11px; margin-bottom:4px;">Personal Wallpapers (Multi-Upload)</label>
                         <div style="display:flex; gap:6px;">
-                            <input type="file" id="customWallpaperInput" accept="image/*" style="display:none;" onchange="handleCustomWallpaperUpload(event)">
-                            <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; cursor:pointer;">Upload Pic</button>
+                            <input type="file" id="customWallpaperInput" accept="image/*" multiple style="display:none;" onchange="handleCustomWallpaperUpload(event)">
+                            <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">+ Upload Pic</button>
                             <button type="button" onclick="clearCustomWallpaper()" style="padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#a1a1aa; font-size:11.5px; cursor:pointer;">Reset</button>
                         </div>
                     </div>
                 </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:11px; color:#9ca3af; white-space:nowrap;">Wallpaper Dim</span>
-                    <input type="range" id="wallpaperDimRange" min="0.25" max="0.92" step="0.05" value="0.72" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                <div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                        <span style="font-size:11px; font-weight:600; color:#d4d4d8;">Multiple Luxury Wallpapers</span>
+                        <button type="button" onclick="cycleNextWallpaper()" style="background:none; border:none; color:#93c5fd; font-size:11px; cursor:pointer; padding:0;">Cycle Next</button>
+                    </div>
+                    <div id="settingsWallpaperGrid" class="wallpaper-gallery-grid"></div>
+                    <div id="settingsCustomWallpapersWrap" style="display:none; margin-top:8px;">
+                        <span style="font-size:10.5px; color:#a1a1aa; display:block; margin-bottom:4px;">Saved Custom Wallpapers</span>
+                        <div id="settingsCustomWallpapersGrid" class="wallpaper-gallery-grid"></div>
+                    </div>
                 </div>
-                <div style="margin-top:4px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:11px; color:#9ca3af; width:78px; white-space:nowrap;">Wallpaper Dim</span>
+                    <input type="range" id="wallpaperDimRange" min="0.15" max="0.90" step="0.05" value="0.52" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                    <span id="wallpaperDimVal" style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa; width:34px; text-align:right;">52%</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:11px; color:#9ca3af; width:78px; white-space:nowrap;">Glass Blur</span>
+                    <input type="range" id="wallpaperBlurRange" min="0" max="18" step="1" value="0" oninput="updateWallpaperBlur(this.value)" style="flex:1; margin:0; padding:0;">
+                    <span id="wallpaperBlurVal" style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa; width:34px; text-align:right;">0px</span>
+                </div>
+                <div style="margin-top:2px;">
                     <label for="byokGeminiKeyInput" style="font-size:11px; margin-bottom:3px; display:block; color:#a1a1aa;">Optional Personal Gemini Key (Browser-Only Traffic Bypass)</label>
                     <input id="byokGeminiKeyInput" type="password" placeholder="Optional AIza... key (stays in your browser only)" autocomplete="off" oninput="saveByokGeminiKey(this.value)" style="font-size:11.5px; padding:6px 8px; margin:0;">
                 </div>
@@ -2845,7 +3090,7 @@
                 <div class="auth-cap-strip">
                     <div class="auth-cap-pill">Live App Studio</div>
                     <div class="auth-cap-pill">TRINETRA Shield</div>
-                    <div class="auth-cap-pill">2.0 / 2.3 / 2.6 + Voice</div>
+                    <div class="auth-cap-pill">2.0 / 2.3 / 2.6</div>
                 </div>
             </div>
 
@@ -2878,7 +3123,7 @@
                 <div class="auth-field">
                     <label for="authPassword" style="display:flex; justify-content:space-between; align-items:center;">
                         <span>Password</span>
-                        <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#34d399; font-size:11.5px; cursor:pointer; padding:2px 4px;">Show</button>
+                        <button type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()" style="background:none; border:none; color:#93c5fd; font-size:11.5px; cursor:pointer; padding:2px 4px;">Show</button>
                     </label>
                     <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="current-password" required minlength="1">
                     <div class="auth-field-hint" id="authPasswordHint" style="display:none;">Minimum 8 characters including both letters and numbers.</div>
@@ -2887,7 +3132,7 @@
             </form>
 
             <div style="margin-top: 14px; text-align: center; font-size: 12.5px; color: var(--text-muted);" id="authBottomSwitchRow">
-                Don't have an account? <button type="button" onclick="switchAuthTab('register')" style="background:none; border:none; color:#34d399; font-weight:600; cursor:pointer; padding:0;">Sign up</button>
+                Don't have an account? <button type="button" onclick="switchAuthTab('register')" style="background:none; border:none; color:#93c5fd; font-weight:600; cursor:pointer; padding:0;">Sign up</button>
             </div>
 
             <div class="auth-footer-note" style="margin-top: 12px;">
@@ -2898,79 +3143,79 @@
 
     <!-- ---------------- Flagship Repositories Hub Modal (OpenHands • Open Interpreter • AutoGPT • Trinity) ---------------- -->
     <div class="auth-modal-overlay" id="flagshipHubOverlay" style="display: none; z-index: 9500;">
-        <div class="auth-card" style="max-width: 980px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px; margin-bottom: 16px;">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 22px;">🚀</span>
-                        <h2 style="margin: 0; font-size: 19px; color: #f8fafc;">AURA Flagship Repositories Hub (A-to-Z Connected Pipeline)</h2>
+        <div class="auth-card" style="max-width: 980px; width: 95%; max-height: 90dvh; overflow-y: auto; padding: 24px; background: #0c0d12; border: 1px solid rgba(255,255,255,0.12);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.09); padding-bottom: 14px; margin-bottom: 16px;">
+                <div style="min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 9px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold, #e4e4e7)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+                        <h2 style="margin: 0; font-size: 17px; font-weight: 700; color: #f4f4f5; letter-spacing: -0.02em;">AURA Flagship Specialist Hub</h2>
                     </div>
-                    <p style="margin: 4px 0 0 0; font-size: 12.5px; color: #94a3b8;">Dedicated architectural sections & unified pipeline for <strong>OpenHands</strong>, <strong>Open Interpreter</strong>, and <strong>AutoGPT</strong>.</p>
+                    <p style="margin: 4px 0 0 0; font-size: 12px; color: #a1a1aa;">Dedicated architectural consoles &amp; unified execution pipelines across all specialist engines.</p>
                 </div>
-                <button type="button" onclick="closeFlagshipHub()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600;">✕ Close</button>
+                <button type="button" onclick="closeFlagshipHub()" style="flex-shrink: 0; white-space: nowrap; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #f4f4f5; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 600; font-size: 12px;">Close</button>
             </div>
 
-            <!-- 4 Section Tabs -->
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;">
-                <button type="button" id="fTab_openhands" onclick="switchFlagshipTab('openhands')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(16,185,129,0.5); background: rgba(16,185,129,0.18); color: #ecfdf5; font-weight: 600; font-size: 12.5px; cursor: pointer;">
-                    1. 🛠️ OpenHands (SWE Platform)
+            <!-- 7 Specialist Section Tabs -->
+            <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px;">
+                <button type="button" class="flagship-tab-btn" id="fTab_openhands" onclick="switchFlagshipTab('openhands')">
+                    <span class="flagship-num-tag">01</span><span>OpenHands SWE</span>
                 </button>
-                <button type="button" id="fTab_open_interpreter" onclick="switchFlagshipTab('open_interpreter')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #cbd5e1; font-weight: 600; font-size: 12.5px; cursor: pointer;">
-                    2. 💻 Open Interpreter (Computer Use)
+                <button type="button" class="flagship-tab-btn" id="fTab_open_interpreter" onclick="switchFlagshipTab('open_interpreter')">
+                    <span class="flagship-num-tag">02</span><span>Open Interpreter</span>
                 </button>
-                <button type="button" id="fTab_autogpt" onclick="switchFlagshipTab('autogpt')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #cbd5e1; font-weight: 600; font-size: 12.5px; cursor: pointer;">
-                    3. 🤖 AutoGPT (4-Surface Workflow)
+                <button type="button" class="flagship-tab-btn" id="fTab_autogpt" onclick="switchFlagshipTab('autogpt')">
+                    <span class="flagship-num-tag">03</span><span>AutoGPT Workflows</span>
                 </button>
-                <button type="button" id="fTab_trinity" onclick="switchFlagshipTab('trinity')" style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #cbd5e1; font-weight: 600; font-size: 12.5px; cursor: pointer;">
-                    4. 🔗 A-to-Z Pipeline & Comparison
+                <button type="button" class="flagship-tab-btn" id="fTab_trinity" onclick="switchFlagshipTab('trinity')">
+                    <span class="flagship-num-tag">04</span><span>A-to-Z Pipeline</span>
                 </button>
-                <button type="button" id="fTab_systems10" onclick="switchFlagshipTab('systems10')" style="flex: 1; min-width: 210px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(56,189,248,0.45); background: rgba(56,189,248,0.12); color: #bae6fd; font-weight: 700; font-size: 12.5px; cursor: pointer;">
-                    5. 🧠 10-System Omni-Core (100 AI)
+                <button type="button" class="flagship-tab-btn" id="fTab_systems10" onclick="switchFlagshipTab('systems10')">
+                    <span class="flagship-num-tag">05</span><span>10-System Omni-Core</span>
                 </button>
-                <button type="button" id="fTab_bharatcode10" onclick="switchFlagshipTab('bharatcode10')" style="flex: 1; min-width: 220px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(245,158,11,0.65); background: rgba(245,158,11,0.18); color: #fde68a; font-weight: 700; font-size: 12.5px; cursor: pointer;">
-                    6. 🏆 Sovereign 10-Nexus Suite
+                <button type="button" class="flagship-tab-btn" id="fTab_bharatcode10" onclick="switchFlagshipTab('bharatcode10')">
+                    <span class="flagship-num-tag">06</span><span>Sovereign 10-Nexus</span>
                 </button>
-                <button type="button" id="fTab_antigravity" onclick="switchFlagshipTab('antigravity')" style="flex: 1; min-width: 235px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(56,189,248,0.75); background: rgba(56,189,248,0.18); color: #bae6fd; font-weight: 700; font-size: 12.5px; cursor: pointer;">
-                    7. 🌌 Antigravity Mission Control & OS Bridge
+                <button type="button" class="flagship-tab-btn" id="fTab_antigravity" onclick="switchFlagshipTab('antigravity')">
+                    <span class="flagship-num-tag">07</span><span>Mission Control &amp; OS Bridge</span>
                 </button>
             </div>
 
             <!-- SECTION 1: OPENHANDS -->
             <div id="fSection_openhands" style="display: block;">
-                <div style="background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.28); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                <div class="flagship-panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
-                            <strong style="color:#6ee7b7; font-size:14px;">OpenHands — All-Hands-AI/OpenHands (OpenHands/OpenHands)</strong>
-                            <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">AI Software Engineer Platform: Inspects files, builds AST, fixes bugs, executes terminal commands, runs unit tests & self-heals.</div>
+                            <strong style="color:#f4f4f5; font-size:14px;">OpenHands — Autonomous Software Engineer Platform</strong>
+                            <div style="font-size:12px; color:#a1a1aa; margin-top:2px;">Inspects files, builds AST, patches bugs, runs terminal commands, executes unit tests &amp; self-heals.</div>
                         </div>
-                        <span style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(16,185,129,0.2); color:#a7f3d0;">MIT Core + Enterprise</span>
+                        <span style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7;">MIT Core • SWE SDK</span>
                     </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#34d399; font-weight:600;">1. Agent Canvas</div>
-                            <div style="color:#94a3b8;">UI control center & 3rd-party coding agent manager (OpenHands, Aider, Cline, OpenCode)</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">01. Agent Canvas</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">UI control center &amp; coding agent manager (OpenHands, Aider, Cline, OpenCode)</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#34d399; font-weight:600;">2. Software Agent SDK</div>
-                            <div style="color:#94a3b8;">7-Step SWE Loop: Inspect ➔ AST ➔ Patch ➔ Terminal ➔ Test ➔ Self-Heal ➔ Report</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">02. Software Agent SDK</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">7-Step SWE Loop: Inspect → AST → Patch → Terminal → Test → Heal → Report</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#34d399; font-weight:600;">3. Agent Server</div>
-                            <div style="color:#94a3b8;">Multi-turn coding sessions & Action/Observation event stream API</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">03. Agent Server</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Multi-turn coding sessions &amp; Action/Observation event stream API</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#34d399; font-weight:600;">4. Workspaces</div>
-                            <div style="color:#94a3b8;">Isolated project directories + Dockerfile.openhands-sandbox generator</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">04. Workspaces</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Isolated project directories + Dockerfile sandbox generator</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#34d399; font-weight:600;">5. Automation Server</div>
-                            <div style="color:#94a3b8;">Scheduled cron & webhook-triggered repo maintenance jobs</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">05. Automation Server</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Scheduled cron &amp; webhook-triggered repo maintenance jobs</div>
                         </div>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <input id="ohTaskPrompt" class="auth-input" type="text" value="Mere project me login bug fix karo, duplicate username block karo, aur unit tests run karo">
-                    <select id="ohCanvasAgent" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                <div class="flagship-control-row-3">
+                    <input id="ohTaskPrompt" class="auth-input" type="text" value="Audit login authentication flow, block duplicate usernames, and run unit tests">
+                    <select id="ohCanvasAgent" class="auth-input" style="background:#0a0b10; color:#f4f4f5;">
                         <option value="openhands_codeact">Agent Canvas: OpenHands CodeAct SWE</option>
                         <option value="aider_architect">Agent Canvas: Aider Diff-Patcher</option>
                         <option value="cline_autonomous">Agent Canvas: Cline Autonomous</option>
@@ -2978,141 +3223,141 @@
                     </select>
                     <input id="ohProjectName" class="auth-input" type="text" value="aura_login_bugfix" placeholder="Workspace Name">
                 </div>
-                <button type="button" class="btn-auth-submit" onclick="runOpenHandsTask()" style="margin-bottom:12px;">🛠️ Run OpenHands 7-Step SWE Pipeline</button>
-                <div id="ohResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:380px; overflow:auto; border:1px solid rgba(16,185,129,0.28);">Click <strong>"Run OpenHands 7-Step SWE Pipeline"</strong> to execute across Agent Canvas, Workspaces, Agent Server, and Software Agent SDK.</div>
+                <button type="button" class="btn-auth-submit" onclick="runOpenHandsTask()" style="margin-bottom:12px;">Run OpenHands 7-Step SWE Pipeline</button>
+                <div id="ohResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:380px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click <strong>"Run OpenHands 7-Step SWE Pipeline"</strong> to execute across Agent Canvas, Workspaces, Agent Server, and Software Agent SDK.</div>
             </div>
 
             <!-- SECTION 2: OPEN INTERPRETER -->
             <div id="fSection_open_interpreter" style="display: none;">
-                <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                <div class="flagship-panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
-                            <strong style="color:#93c5fd; font-size:14px;">Open Interpreter — open-interpreter/open-interpreter</strong>
-                            <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">Modern Rust-Based Coding Harness & Classic Python Computer-Use Engine with MCP, ACP 1.0, Skills & Safety Hooks.</div>
+                            <strong style="color:#f4f4f5; font-size:14px;">Open Interpreter — Coding Harness &amp; Computer-Use Engine</strong>
+                            <div style="font-size:12px; color:#a1a1aa; margin-top:2px;">Rust-based diff harness &amp; Python computer-use execution engine with MCP, ACP 1.0, Skills &amp; Safety Hooks.</div>
                         </div>
-                        <span style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(59,130,246,0.2); color:#bfdbfe;">Rust + Python • MCP & ACP</span>
+                        <span style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#93c5fd;">Rust + Python • MCP &amp; ACP</span>
                     </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#60a5fa; font-weight:600;">1. Natural Language Terminal</div>
-                            <div style="color:#94a3b8;">Inspects folders, ranks largest files, runs Python/shell scripts & creates files</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">01. Natural Language Terminal</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Inspects folders, ranks largest files, runs Python/shell scripts &amp; creates artifacts</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#60a5fa; font-weight:600;">2. Rust/Codex Harness</div>
-                            <div style="color:#94a3b8;">Fast diff harness + low-cost model switching (Gemini Flash / Ollama)</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">02. Rust/Codex Harness</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Fast diff harness + low-latency model switching (Gemini Flash / Ollama)</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#60a5fa; font-weight:600;">3. MCP & ACP 1.0 Bridge</div>
-                            <div style="color:#94a3b8;">Model Context Protocol tools + Agent Client Protocol envelopes</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">03. MCP &amp; ACP 1.0 Bridge</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Model Context Protocol tools + Agent Client Protocol envelopes</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#60a5fa; font-weight:600;">4. Skills & Safety Hooks</div>
-                            <div style="color:#94a3b8;">Pre/Post execution PathGuard hooks & computer-use QA assertions</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">04. Skills &amp; Safety Hooks</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Pre/Post execution PathGuard hooks &amp; computer-use QA assertions</div>
                         </div>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <input id="oiPrompt" class="auth-input" type="text" value="Mere workspace folder me sabse badi files kaunsi hain? Unka size dikhao aur summary banao.">
-                    <select id="oiSkill" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                <div class="flagship-control-row-3">
+                    <input id="oiPrompt" class="auth-input" type="text" value="Inspect my workspace folder, rank the largest files by size, and generate a structured summary">
+                    <select id="oiSkill" class="auth-input" style="background:#0a0b10; color:#f4f4f5;">
                         <option value="auto">Skill: Auto-Detect</option>
-                        <option value="folder_size_auditor">Skill: Folder & Largest Files Auditor</option>
+                        <option value="folder_size_auditor">Skill: Folder &amp; Largest Files Auditor</option>
                         <option value="python_sandbox_runner">Skill: Sandboxed Python Runner</option>
                         <option value="webapp_endpoint_qa">Skill: Computer-Use WebApp QA</option>
                     </select>
-                    <select id="oiHarness" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                    <select id="oiHarness" class="auth-input" style="background:#0a0b10; color:#f4f4f5;">
                         <option value="rust_codex_fast">Harness: Rust-Core Codex</option>
                         <option value="python_computer_use">Harness: Classic Python REPL</option>
                     </select>
                 </div>
-                <button type="button" class="btn-auth-submit" onclick="runOpenInterpreterTask()" style="margin-bottom:12px;">💻 Run Open Interpreter Computer-Use Task</button>
-                <div id="oiResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:380px; overflow:auto; border:1px solid rgba(59,130,246,0.3);">Click <strong>"Run Open Interpreter Computer-Use Task"</strong> to execute folder/file inspection or Python scripts with ACP/MCP envelopes.</div>
+                <button type="button" class="btn-auth-submit" onclick="runOpenInterpreterTask()" style="margin-bottom:12px;">Run Open Interpreter Computer-Use Task</button>
+                <div id="oiResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:380px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click <strong>"Run Open Interpreter Computer-Use Task"</strong> to execute folder/file inspection or Python scripts with ACP/MCP envelopes.</div>
             </div>
 
             <!-- SECTION 3: AUTOGPT -->
             <div id="fSection_autogpt" style="display: none;">
-                <div style="background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.3); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                <div class="flagship-panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
-                            <strong style="color:#d8b4fe; font-size:14px;">AutoGPT — Significant-Gravitas/AutoGPT</strong>
-                            <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">Continuous Multi-Agent Workflow Automation Platform across AutoPilot, Agents, Marketplace & Visual Builder.</div>
+                            <strong style="color:#f4f4f5; font-size:14px;">AutoGPT — Continuous Multi-Agent Workflow Platform</strong>
+                            <div style="font-size:12px; color:#a1a1aa; margin-top:2px;">Autonomous workflow orchestration across AutoPilot, Agents, Marketplace &amp; Visual Builder.</div>
                         </div>
-                        <span style="font-size:11px; padding:4px 8px; border-radius:6px; background:rgba(245,158,11,0.2); color:#fde68a;" title="classic/ is MIT; autogpt_platform/ uses Polyform Shield">License: classic/ MIT • platform/ Polyform Shield</span>
+                        <span style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.3); color:#d8b4fe;" title="classic/ is MIT; autogpt_platform/ uses Polyform Shield">classic/ MIT • platform/ Shield</span>
                     </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#c084fc; font-weight:600;">1. AutoPilot</div>
-                            <div style="color:#94a3b8;">Creates autonomous multi-step agents directly from natural language goals</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap:8px; margin-top:12px; font-size:11.5px;">
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">01. AutoPilot</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Creates autonomous multi-step agents directly from natural language goals</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#c084fc; font-weight:600;">2. Agents</div>
-                            <div style="color:#94a3b8;">Manages created agents, continuous background runs & monitoring</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">02. Agents</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Manages created agents, continuous background runs &amp; monitoring</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#c084fc; font-weight:600;">3. Marketplace</div>
-                            <div style="color:#94a3b8;">Pre-built agent templates (Customer Outreach, Repo Security, Market Intel)</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">03. Marketplace</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Pre-built agent templates (Customer Outreach, Repo Security, Market Intel)</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.35); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
-                            <div style="color:#c084fc; font-weight:600;">4. Build (Visual Workflow)</div>
-                            <div style="color:#94a3b8;">Node-graph workflow designer (Trigger ➔ Planner ➔ Research ➔ Synthesis ➔ Sink)</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:600;">04. Build (Visual Workflow)</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Node-graph workflow designer (Trigger → Planner → Research → Synthesis → Sink)</div>
                         </div>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-                    <input id="agGoal" class="auth-input" type="text" value="Mere liye potential customers research karo, unki website analyze karo, aur outreach email draft ready karo.">
-                    <select id="agSurface" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                <div class="flagship-control-row-3">
+                    <input id="agGoal" class="auth-input" type="text" value="Research target developer customers, analyze product positioning, and draft a concise outreach sequence">
+                    <select id="agSurface" class="auth-input" style="background:#0a0b10; color:#f4f4f5;">
                         <option value="autopilot">Surface: 1. AutoPilot</option>
                         <option value="build">Surface: 4. Build (Visual Node Graph)</option>
                         <option value="marketplace">Surface: 3. Marketplace Template</option>
                         <option value="agents">Surface: 2. Agents Runner</option>
                     </select>
-                    <select id="agTemplate" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                    <select id="agTemplate" class="auth-input" style="background:#0a0b10; color:#f4f4f5;">
                         <option value="agpt_mkt_customer_outreach">Template: B2B Customer Outreach</option>
                         <option value="agpt_mkt_repo_sec_auditor">Template: Repo Security Auditor</option>
                         <option value="agpt_mkt_market_intel">Template: Competitor Intelligence</option>
                         <option value="agpt_mkt_content_pipeline">Template: Release Notes Publisher</option>
                     </select>
                 </div>
-                <button type="button" class="btn-auth-submit" onclick="runAutoGPTTask()" style="margin-bottom:12px;">🤖 Build & Execute AutoGPT Multi-Step Workflow</button>
-                <div id="agResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:380px; overflow:auto; border:1px solid rgba(168,85,247,0.3);">Click <strong>"Build & Execute AutoGPT Multi-Step Workflow"</strong> to generate the 5-node workflow graph and deliverables.</div>
+                <button type="button" class="btn-auth-submit" onclick="runAutoGPTTask()" style="margin-bottom:12px;">Build &amp; Execute AutoGPT Multi-Step Workflow</button>
+                <div id="agResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:380px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click <strong>"Build &amp; Execute AutoGPT Multi-Step Workflow"</strong> to generate the 5-node workflow graph and deliverables.</div>
             </div>
 
             <!-- SECTION 4: UNIFIED A-TO-Z TRINITY PIPELINE & 9-DIMENSION COMPARISON MATRIX -->
             <div id="fSection_trinity" style="display: none;">
-                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(59,130,246,0.12), rgba(168,85,247,0.12)); border: 1px solid rgba(16,185,129,0.4); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
-                    <strong style="color:#6ee7b7; font-size:14px;">🔗 Connected A-to-Z Flagship Trinity Pipeline (AutoGPT ➔ OpenHands ➔ Open Interpreter)</strong>
-                    <div style="font-size:12px; color:#cbd5e1; margin-top:4px;">
-                        <strong>Stage 1 (AutoGPT):</strong> Decomposes goal & builds 5-node workflow graph ➔
-                        <strong>Stage 2 (OpenHands):</strong> Synthesizes code, AST & runs unit tests in isolated workspace ➔
-                        <strong>Stage 3 (Open Interpreter):</strong> Audits generated workspace files, runs safety hooks & emits ACP/1.0 verification.
+                <div class="flagship-panel-card">
+                    <strong style="color:#f4f4f5; font-size:14px;">Connected A-to-Z Flagship Trinity Pipeline (AutoGPT → OpenHands → Open Interpreter)</strong>
+                    <div style="font-size:12px; color:#a1a1aa; margin-top:5px; line-height:1.5;">
+                        <strong style="color:#e4e4e7;">Stage 1 (AutoGPT):</strong> Decomposes goal &amp; builds 5-node workflow graph →
+                        <strong style="color:#e4e4e7;">Stage 2 (OpenHands):</strong> Synthesizes code, AST &amp; runs unit tests in isolated workspace →
+                        <strong style="color:#e4e4e7;">Stage 3 (Open Interpreter):</strong> Audits generated workspace files, runs safety hooks &amp; emits ACP/1.0 verification.
                     </div>
-                    <div style="display:flex; gap:10px; margin-top:10px;">
-                        <input id="trinityGoalInput" class="auth-input" type="text" value="Engineer an authenticated user workflow service, run unit tests, and audit workspace artifacts end-to-end" style="flex:1;">
-                        <button type="button" class="btn-auth-submit" onclick="runTrinityPipeline()" style="width:auto; padding:0 18px; white-space:nowrap;">⚡ Execute A-to-Z Trinity Pipeline</button>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+                        <input id="trinityGoalInput" class="auth-input" type="text" value="Engineer an authenticated user workflow service, run unit tests, and audit workspace artifacts end-to-end" style="flex:1; min-width:220px;">
+                        <button type="button" class="btn-auth-submit" onclick="runTrinityPipeline()" style="width:auto; padding:0 18px; white-space:nowrap;">Execute A-to-Z Trinity Pipeline</button>
                     </div>
                 </div>
-                <div id="trinityResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:320px; overflow:auto; border:1px solid rgba(16,185,129,0.3); margin-bottom:14px;">Click <strong>"Execute A-to-Z Trinity Pipeline"</strong> to run all 3 flagship engines in sequence.</div>
+                <div id="trinityResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:320px; overflow:auto; border:1px solid rgba(255,255,255,0.1); margin-bottom:14px;">Click <strong>"Execute A-to-Z Trinity Pipeline"</strong> to run all 3 flagship engines in sequence.</div>
 
-                <h3 style="font-size:13.5px; color:#f8fafc; margin: 8px 0;">📊 Direct 9-Dimension Comparison Matrix</h3>
+                <h3 style="font-size:13px; color:#f4f4f5; margin: 8px 0;">Direct 9-Dimension Comparison Matrix</h3>
                 <div style="overflow-x:auto;">
-                    <table style="width:100%; border-collapse:collapse; font-size:11.5px; color:#e2e8f0; background:rgba(0,0,0,0.3); border-radius:8px; overflow:hidden;">
+                    <table style="width:100%; border-collapse:collapse; font-size:11.5px; color:#d4d4d8; background:rgba(7,8,12,0.7); border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.08);">
                         <thead>
-                            <tr style="background:rgba(255,255,255,0.08); text-align:left;">
-                                <th style="padding:8px 10px;">Feature</th>
+                            <tr style="background:rgba(255,255,255,0.05); text-align:left;">
+                                <th style="padding:8px 10px; color:#f4f4f5;">Feature</th>
                                 <th style="padding:8px 10px; color:#6ee7b7;">OpenHands</th>
                                 <th style="padding:8px 10px; color:#93c5fd;">Open Interpreter</th>
                                 <th style="padding:8px 10px; color:#d8b4fe;">AutoGPT</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Coding</td><td style="padding:6px 10px;">Very Strong (SWE SDK + AST + Tests)</td><td style="padding:6px 10px;">Strong (Rust/Codex Harness)</td><td style="padding:6px 10px;">Medium (Via blocks & handoffs)</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Terminal access</td><td style="padding:6px 10px;">Yes (Sandboxed Action stream)</td><td style="padding:6px 10px;">Yes (Core natural-language shell)</td><td style="padding:6px 10px;">Partial / Tool-based</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">File operations</td><td style="padding:6px 10px;">Yes (Surgical AST & file edit)</td><td style="padding:6px 10px;">Yes (Folder & largest files audit)</td><td style="padding:6px 10px;">Workspace-based artifact sinks</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Computer use</td><td style="padding:6px 10px;">Limited (Workspace & browser QA)</td><td style="padding:6px 10px;">Very Strong (Local OS & scripts)</td><td style="padding:6px 10px;">No (Server workflow focus)</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Multi-agent</td><td style="padding:6px 10px;">Yes (Agent Canvas multi-agent)</td><td style="padding:6px 10px;">Partial (Via ACP 1.0 protocol)</td><td style="padding:6px 10px;">Yes (Multi-agent node graphs)</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Workflow automation</td><td style="padding:6px 10px;">Medium-High (Automation Server)</td><td style="padding:6px 10px;">Medium (Skills & lifecycle hooks)</td><td style="padding:6px 10px;">Very Strong (45+ block connectors)</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Visual builder</td><td style="padding:6px 10px;">Agent Canvas UI</td><td style="padding:6px 10px;">No</td><td style="padding:6px 10px;">Yes (Full Visual Node Builder)</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">Developer SDK</td><td style="padding:6px 10px;">Yes (Software Agent SDK)</td><td style="padding:6px 10px;">Yes (Python + Rust + MCP/ACP)</td><td style="padding:6px 10px;">Platform / REST API / Blocks</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600;">General-purpose assistant</td><td style="padding:6px 10px;">Medium (Engineering specialist)</td><td style="padding:6px 10px;">High (Local computer & code)</td><td style="padding:6px 10px;">High (Research, outreach & ops)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Coding</td><td style="padding:6px 10px;">Very Strong (SWE SDK + AST + Tests)</td><td style="padding:6px 10px;">Strong (Rust/Codex Harness)</td><td style="padding:6px 10px;">Medium (Via blocks &amp; handoffs)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Terminal access</td><td style="padding:6px 10px;">Yes (Sandboxed Action stream)</td><td style="padding:6px 10px;">Yes (Core natural-language shell)</td><td style="padding:6px 10px;">Partial / Tool-based</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">File operations</td><td style="padding:6px 10px;">Yes (Surgical AST &amp; file edit)</td><td style="padding:6px 10px;">Yes (Folder &amp; largest files audit)</td><td style="padding:6px 10px;">Workspace-based artifact sinks</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Computer use</td><td style="padding:6px 10px;">Limited (Workspace &amp; browser QA)</td><td style="padding:6px 10px;">Very Strong (Local OS &amp; scripts)</td><td style="padding:6px 10px;">No (Server workflow focus)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Multi-agent</td><td style="padding:6px 10px;">Yes (Agent Canvas multi-agent)</td><td style="padding:6px 10px;">Partial (Via ACP 1.0 protocol)</td><td style="padding:6px 10px;">Yes (Multi-agent node graphs)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Workflow automation</td><td style="padding:6px 10px;">Medium-High (Automation Server)</td><td style="padding:6px 10px;">Medium (Skills &amp; lifecycle hooks)</td><td style="padding:6px 10px;">Very Strong (45+ block connectors)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Visual builder</td><td style="padding:6px 10px;">Agent Canvas UI</td><td style="padding:6px 10px;">No</td><td style="padding:6px 10px;">Yes (Full Visual Node Builder)</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">Developer SDK</td><td style="padding:6px 10px;">Yes (Software Agent SDK)</td><td style="padding:6px 10px;">Yes (Python + Rust + MCP/ACP)</td><td style="padding:6px 10px;">Platform / REST API / Blocks</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.07);"><td style="padding:6px 10px; font-weight:600; color:#f4f4f5;">General assistant</td><td style="padding:6px 10px;">Medium (Engineering specialist)</td><td style="padding:6px 10px;">High (Local computer &amp; code)</td><td style="padding:6px 10px;">High (Research, outreach &amp; ops)</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -3120,266 +3365,266 @@
 
             <!-- SECTION 5: AURA 10-SYSTEM OMNI-CORE ("ONE AURA = 100 AI") -->
             <div id="fSection_systems10" style="display: none;">
-                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(56,189,248,0.14), rgba(168,85,247,0.12)); border: 1px solid rgba(56,189,248,0.45); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                <div class="flagship-panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
-                            <strong style="color:#7dd3fc; font-size:15px;">🧠 AURA Ultimate 10-System Omni-Architecture ("One AURA = 100 AI")</strong>
-                            <div style="font-size:12px; color:#cbd5e1; margin-top:3px;">
-                                All 10 AI architectural layers natively implemented with <strong>clean Permissive/MIT/Apache-2.0 patterns</strong> and wired into a single A-to-Z execution bus:
+                            <strong style="color:#f4f4f5; font-size:14.5px;">AURA 10-System Omni-Architecture</strong>
+                            <div style="font-size:12px; color:#a1a1aa; margin-top:3px;">
+                                All 10 AI architectural layers implemented with permissive open patterns and wired into a unified execution bus.
                             </div>
                         </div>
-                        <span style="font-size:11px; padding:4px 10px; border-radius:999px; background:rgba(16,185,129,0.22); color:#a7f3d0; font-weight:700;">10 Systems • 29 Pillars • License-Clean</span>
+                        <span style="font-size:10.5px; font-family:var(--font-code); padding:3px 10px; border-radius:999px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; font-weight:600;">10 Systems • 29 Pillars</span>
                     </div>
 
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11px;">
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">1. Neural Intelligence Core</div>
-                            <div style="color:#94a3b8;">LiteLLM + DSPy + RouteLLM difficulty router & evaluator</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">01. Neural Intelligence Core</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">LiteLLM + DSPy + RouteLLM difficulty router &amp; evaluator</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">2. Infinite Contextual Memory</div>
-                            <div style="color:#94a3b8;">Mem0 + Letta + Graphiti Bi-Temporal KG + Cognee</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">02. Infinite Contextual Memory</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Mem0 + Letta + Graphiti Bi-Temporal KG + Cognee</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">3. Multi-Agent Swarm</div>
-                            <div style="color:#94a3b8;">LangGraph + MS Agent Framework + CrewAI (7 Specialists)</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">03. Multi-Agent Swarm</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">LangGraph + MS Agent Framework + CrewAI (7 Specialists)</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">4. Autonomous SWE</div>
-                            <div style="color:#94a3b8;">OpenHands + mini-SWE-agent + Aider Git checkpoints</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">04. Autonomous SWE</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">OpenHands + mini-SWE-agent + Aider Git checkpoints</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">5. Universal Computer Use</div>
-                            <div style="color:#94a3b8;">Agent S + Browser Use + Stagehand observe/act/extract</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">05. Universal Computer Use</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Agent S + Browser Use + Stagehand observe/act/extract</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">6. World Model & Sim</div>
-                            <div style="color:#94a3b8;">Cosmos/DreamerV3/Genesis/ML-Agents trajectory rollouts</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">06. World Model &amp; Sim</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Cosmos/DreamerV3/Genesis/ML-Agents trajectory rollouts</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">7. Sandboxed Self-Improve</div>
-                            <div style="color:#94a3b8;">OpenEvolve + Autoresearch + DSPy GEPA (Isolated Sandbox)</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">07. Sandboxed Self-Improve</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">OpenEvolve + Autoresearch + DSPy GEPA (Isolated Sandbox)</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">8. Autonomous Research</div>
-                            <div style="color:#94a3b8;">GPT Researcher + Stanford STORM + DeerFlow citations</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">08. Autonomous Research</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">GPT Researcher + Stanford STORM + DeerFlow citations</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">9. 3D Spatial Pipeline</div>
-                            <div style="color:#94a3b8;">Blender bpy procedural script + MCP for Blender + Godot</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">09. 3D Spatial Pipeline</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Blender bpy procedural script + MCP for Blender + Godot</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.4); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.25);">
-                            <div style="color:#38bdf8; font-weight:700;">10. Trust & Security Core</div>
-                            <div style="color:#94a3b8;">gVisor + NeMo Guardrails + Inspect AI + OpenSSF Scorecard</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">10. Trust &amp; Security Core</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">gVisor + NeMo Guardrails + Inspect AI + OpenSSF Scorecard</div>
                         </div>
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 2fr 1.2fr auto auto; gap:8px; margin-bottom:10px; align-items:center;">
+                <div class="flagship-control-row">
                     <input id="sys10GoalInput" class="auth-input" type="text" value="Engineer, simulate, research, and security-verify a distributed AI platform across all 10 systems">
-                    <select id="sys10Selector" class="auth-input" style="background:#0f172a; color:#f8fafc;">
+                    <select id="sys10Selector" class="auth-input" style="background:#0a0b10; color:#f4f4f5;">
                         <option value="1">System 1: Neural Intelligence Core (LiteLLM/DSPy/RouteLLM)</option>
                         <option value="2">System 2: Infinite Contextual Memory (Mem0/Letta/Graphiti/Cognee)</option>
                         <option value="3">System 3: Multi-Agent Swarm (LangGraph/MS Agent/CrewAI)</option>
                         <option value="4">System 4: Autonomous SWE (OpenHands/mini-SWE/Aider)</option>
                         <option value="5">System 5: Universal Computer Use (Agent S/Browser Use/Stagehand)</option>
-                        <option value="6">System 6: World Model & Simulation (DreamerV3/Genesis/ML-Agents)</option>
+                        <option value="6">System 6: World Model &amp; Simulation (DreamerV3/Genesis/ML-Agents)</option>
                         <option value="7">System 7: Sandboxed Self-Improvement (OpenEvolve/Autoresearch/GEPA)</option>
                         <option value="8">System 8: Autonomous Research (GPT Researcher/STORM/DeerFlow)</option>
-                        <option value="9">System 9: 3D Creative & Spatial Pipeline (Blender bpy + MCP)</option>
-                        <option value="10">System 10: Trust, Security & Verification (gVisor/NeMo/Inspect AI/Scorecard)</option>
+                        <option value="9">System 9: 3D Creative &amp; Spatial Pipeline (Blender bpy + MCP)</option>
+                        <option value="10">System 10: Trust, Security &amp; Verification (gVisor/NeMo/Inspect AI/Scorecard)</option>
                     </select>
-                    <button type="button" class="btn-auth-submit" onclick="runSingleSystem10()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(56,189,248,0.22); border:1px solid rgba(56,189,248,0.55); color:#e0f2fe;">🎯 Run Selected System</button>
-                    <button type="button" class="btn-auth-submit" onclick="runTenSystemsOmniPipeline()" style="width:auto; padding:0 16px; white-space:nowrap;">⚡ Run Full 10-System Omni-Pipeline (A-to-Z)</button>
+                    <button type="button" class="btn-auth-submit" onclick="runSingleSystem10()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#f4f4f5;">Run Selected</button>
+                    <button type="button" class="btn-auth-submit" onclick="runTenSystemsOmniPipeline()" style="width:auto; padding:0 16px; white-space:nowrap;">Run Full 10-System Bus</button>
                 </div>
 
-                <div id="sys10ResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:420px; overflow:auto; border:1px solid rgba(56,189,248,0.28);">Click <strong>"Run Full 10-System Omni-Pipeline (A-to-Z)"</strong> to execute all 10 systems sequentially with System 10 security gating, or run any single system (1..10).</div>
+                <div id="sys10ResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:420px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Click <strong>"Run Full 10-System Bus"</strong> to execute all 10 systems sequentially with System 10 security gating, or run any single system (1–10).</div>
             </div>
 
             <!-- SECTION 6: AURA SOVEREIGN 10-NEXUS SUPER-SUITE -->
             <div id="fSection_bharatcode10" style="display: none;">
-                <div style="background: linear-gradient(135deg, rgba(245,158,11,0.14), rgba(168,85,247,0.14), rgba(56,189,248,0.14)); border: 1px solid rgba(245,158,11,0.55); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                <div class="flagship-panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
-                            <strong style="color:#fde68a; font-size:15px;">🏆 AURA Sovereign 10-Nexus Super-Suite (All 10 Specialist Engines Integrated 100%)</strong>
-                            <div style="font-size:12px; color:#cbd5e1; margin-top:3px;">
-                                Every capability from the 10 Sovereign Specialist Engines natively engineered inside AURA. Click any card below to load its preset and run it live!
+                            <strong style="color:#f4f4f5; font-size:14.5px;">AURA Sovereign 10-Nexus Specialist Suite</strong>
+                            <div style="font-size:12px; color:#a1a1aa; margin-top:3px;">
+                                10 domain-native engineering, cybersecurity, career, and verification engines integrated into AURA. Select any card below to load its preset and run live.
                             </div>
                         </div>
-                        <span style="font-size:11px; padding:4px 10px; border-radius:999px; background:rgba(245,158,11,0.25); color:#fef08a; font-weight:700;">10 / 10 Engines Active • Verified</span>
+                        <span style="font-size:10.5px; font-family:var(--font-code); padding:3px 10px; border-radius:999px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.16); color:#e4e4e7; font-weight:600;">10 / 10 Engines Active</span>
                     </div>
 
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap:8px; margin-top:12px; font-size:11px;">
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('trinetra', 'UPI phishing fraud, credential theft, and deepfake voice impersonation targeting customer accounts')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#1 🛡️ TRINETRA (145/175)</div>
-                            <div style="color:#94a3b8;">Sovereign Cyber Defense • BNS 2023 / IT Act / DPDP Legal Mapping • CERT-In Playbook & Deepfake XAI</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('trinetra', 'UPI phishing fraud, credential theft, and deepfake voice impersonation targeting customer accounts')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">TRINETRA</span><span class="flagship-num-tag">01</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Sovereign Cyber Defense • BNS 2023 / IT Act / DPDP Legal Mapping • CERT-In Playbook &amp; Deepfake XAI</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('bharatcode_ide', 'def login_user(u, p):\n    try:\n        return eval(u)\n    except:\n        return None')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#2 💻 AURA Neural IDE (109.29)</div>
-                            <div style="color:#94a3b8;">Autonomous IDE Agent • AST Bug & Security Detector • Unified Diff Refactorer & Pytest Synthesizer</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('bharatcode_ide', 'def login_user(u, p):\n    try:\n        return eval(u)\n    except:\n        return None')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">AURA Neural IDE</span><span class="flagship-num-tag">02</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Autonomous IDE Agent • AST Bug &amp; Security Detector • Unified Diff Refactorer &amp; Pytest Synthesizer</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('gitkitty', 'rebase_conflict')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#3 🐱 GitKitty (97.02 • Judges #1)</div>
-                            <div style="color:#94a3b8;">Interactive Codebase Architecture Tour & Safe Git Scenario Recovery Simulator (Rebase/Reflog)</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('gitkitty', 'rebase_conflict')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">GitKitty</span><span class="flagship-num-tag">03</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Interactive Codebase Architecture Tour &amp; Safe Git Scenario Recovery Simulator (Rebase/Reflog)</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('ashby_job_radar', 'python, react, typescript, ai agents, docker, sql, security')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#4 🎯 Ashby Multi-ATS (85.65)</div>
-                            <div style="color:#94a3b8;">Ashby • Greenhouse • Lever • Workday Job Radar with Deterministic 0-100 Skill Match Scoring</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('ashby_job_radar', 'python, react, typescript, ai agents, docker, sql, security')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">Ashby Multi-ATS</span><span class="flagship-num-tag">04</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Ashby • Greenhouse • Lever • Workday Job Radar with Deterministic 0–100 Skill Match Scoring</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('learnos', 'AI Agents, Systems Engineering & Cyber Security')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#5 📚 LearnOS (79.99)</div>
-                            <div style="color:#94a3b8;">Student Learning OS • 4-Stage Mastery Roadmap • SM-2 Spaced Repetition Flashcards & Coding Arena</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('learnos', 'AI Agents, Systems Engineering & Cyber Security')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">LearnOS</span><span class="flagship-num-tag">05</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Student Learning OS • 4-Stage Mastery Roadmap • SM-2 Spaced Repetition Flashcards &amp; Coding Arena</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('form2fact', 'Verify applicant name, DOB, ID number, and total marks across application form and official certificate')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#6 📑 Form2Fact (79.24)</div>
-                            <div style="color:#94a3b8;">Evidence-First Institutional Document Cross-Verification & Discrepancy Audit Engine</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('form2fact', 'Verify applicant name, DOB, ID number, and total marks across application form and official certificate')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">Form2Fact</span><span class="flagship-num-tag">06</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Evidence-First Institutional Document Cross-Verification &amp; Discrepancy Audit Engine</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('orvyn_interview', 'Full-Stack AI & Security Engineer')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#7 🎙️ OrvynAI (69.28)</div>
-                            <div style="color:#94a3b8;">Adaptive Technical Interviewer • STAR + Systems Design Rubric Scorer & Resume Gap Analyzer</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('orvyn_interview', 'Full-Stack AI & Security Engineer')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">OrvynAI</span><span class="flagship-num-tag">07</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Adaptive Technical Interviewer • STAR + Systems Design Rubric Scorer &amp; Resume Gap Analyzer</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('spare_gpu', 'dependency_cve_audit')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#8 ⚡ Spare-GPU (45.94)</div>
-                            <div style="color:#94a3b8;">Idle-Capacity Hardware Telemetry Gate & Automated Background Repo Maintenance Chore Scheduler</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('spare_gpu', 'dependency_cve_audit')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">Spare-GPU</span><span class="flagship-num-tag">08</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Idle-Capacity Hardware Telemetry Gate &amp; Automated Background Repo Maintenance Scheduler</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('payguard_upi', 'upi://pay?pa=refund-kyc-helpdesk@ybl&pn=Instant%20Lottery%20Refund&am=49999&mode=02&tn=Urgent%20KYC%20Collect')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#9 💳 PayGuard AI (42.32)</div>
-                            <div style="color:#94a3b8;">Explainable UPI QR Decoder • Collect-Pull Scam Shield & Hospital/Merchant Bill Anomaly Auditor</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('payguard_upi', 'upi://pay?pa=refund-kyc-helpdesk@ybl&pn=Instant%20Lottery%20Refund&am=49999&mode=02&tn=Urgent%20KYC%20Collect')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">PayGuard AI</span><span class="flagship-num-tag">09</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Explainable UPI QR Decoder • Collect-Pull Scam Shield &amp; Merchant Bill Anomaly Auditor</div>
                         </div>
-                        <div class="bharatcode-winner-card" onclick="selectBharatCodeEngine('anonymous_campus', 'Hostel Wi-Fi router on 3rd floor is dropping packets during lab exams. Contact me at student@college.edu or +91 9876543210 Roll No: 22CS104')" style="padding:9px 10px; border-radius:8px; cursor:pointer;">
-                            <div style="color:#fde68a; font-weight:700;">#10 🕵️ Anonymous-Campus (27.35)</div>
-                            <div style="color:#94a3b8;">Zero-Identity PII-Scrubbed Feedback Vault • SHA-256 Ephemeral Receipt & Issue Priority Router</div>
+                        <div class="bharatcode-winner-card flagship-subcard" onclick="selectBharatCodeEngine('anonymous_campus', 'Hostel Wi-Fi router on 3rd floor is dropping packets during lab exams. Contact me at student@college.edu or +91 9876543210 Roll No: 22CS104')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><span style="color:#f4f4f5; font-weight:700;">Anonymous-Campus</span><span class="flagship-num-tag">10</span></div>
+                            <div style="color:#a1a1aa; margin-top:3px;">Zero-Identity PII-Scrubbed Feedback Vault • SHA-256 Ephemeral Receipt &amp; Issue Priority Router</div>
                         </div>
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1.8fr 1.2fr auto auto; gap:8px; margin-bottom:10px; align-items:center;">
+                <div class="flagship-control-row">
                     <input id="bc10PayloadInput" class="auth-input" type="text" value="UPI phishing fraud, credential theft, and deepfake voice impersonation targeting customer accounts">
-                    <select id="bc10EngineSelector" class="auth-input" style="background:#0f172a; color:#fde68a; font-weight:600;">
-                        <option value="trinetra">#1 TRINETRA — Cyber Defense & BNS/IT/DPDP Legal Shield</option>
-                        <option value="bharatcode_ide">#2 AURA Neural IDE — AST Bug Detector & Diff Refactorer</option>
-                        <option value="gitkitty">#3 GitKitty — Repo Architecture Tour & Git Simulator</option>
-                        <option value="ashby_job_radar">#4 Ashby Multi-ATS — Job Radar & Skill Match Scorer</option>
-                        <option value="learnos">#5 LearnOS — Mastery Roadmap & SM-2 Spaced Repetition</option>
-                        <option value="form2fact">#6 Form2Fact — Document Evidence Cross-Verifier</option>
-                        <option value="orvyn_interview">#7 OrvynAI — Adaptive Technical Interviewer & Gap Coach</option>
-                        <option value="spare_gpu">#8 Spare-GPU — Idle Hardware Gate & Chore Scheduler</option>
-                        <option value="payguard_upi">#9 PayGuard AI — Explainable UPI QR & Fraud Shield</option>
-                        <option value="anonymous_campus">#10 Anonymous-Campus — Zero-PII Feedback Vault</option>
+                    <select id="bc10EngineSelector" class="auth-input" style="background:#0a0b10; color:#f4f4f5; font-weight:600;">
+                        <option value="trinetra">01 · TRINETRA — Cyber Defense &amp; Legal Shield</option>
+                        <option value="bharatcode_ide">02 · AURA Neural IDE — AST Bug Detector &amp; Diff Refactorer</option>
+                        <option value="gitkitty">03 · GitKitty — Repo Architecture Tour &amp; Git Simulator</option>
+                        <option value="ashby_job_radar">04 · Ashby Multi-ATS — Job Radar &amp; Skill Match Scorer</option>
+                        <option value="learnos">05 · LearnOS — Mastery Roadmap &amp; SM-2 Flashcards</option>
+                        <option value="form2fact">06 · Form2Fact — Document Evidence Cross-Verifier</option>
+                        <option value="orvyn_interview">07 · OrvynAI — Technical Interviewer &amp; Gap Coach</option>
+                        <option value="spare_gpu">08 · Spare-GPU — Idle Hardware Gate &amp; Scheduler</option>
+                        <option value="payguard_upi">09 · PayGuard AI — Explainable UPI QR &amp; Fraud Shield</option>
+                        <option value="anonymous_campus">10 · Anonymous-Campus — Zero-PII Feedback Vault</option>
                     </select>
-                    <button type="button" class="btn-auth-submit" onclick="runBharatCodeSingleEngine()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(245,158,11,0.22); border:1px solid rgba(245,158,11,0.65); color:#fef08a;">🎯 Run Sovereign Engine</button>
-                    <button type="button" class="btn-auth-submit" onclick="runBharatCodeSuperPipeline()" style="width:auto; padding:0 16px; white-space:nowrap; background:linear-gradient(135deg, #d97706, #7c3aed);">⚡ Run All 10 Sovereign Super-Pipeline</button>
+                    <button type="button" class="btn-auth-submit" onclick="runBharatCodeSingleEngine()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#f4f4f5;">Run Engine</button>
+                    <button type="button" class="btn-auth-submit" onclick="runBharatCodeSuperPipeline()" style="width:auto; padding:0 16px; white-space:nowrap; background:#f4f4f5; color:#09090b;">Run All 10 Pipeline</button>
                 </div>
 
-                <div id="bc10ResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:440px; overflow:auto; border:1px solid rgba(245,158,11,0.35);">Click any of the 10 Sovereign Cards above or click <strong>"⚡ Run All 10 Sovereign Super-Pipeline"</strong> to see clean visual cards, playbooks, security verdicts, and live results.</div>
+                <div id="bc10ResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:440px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Select any of the 10 Sovereign Cards above or click <strong>"Run All 10 Pipeline"</strong> to view structured playbooks, security verdicts, and live results.</div>
             </div>
 
             <!-- SECTION 7: AURA ANTIGRAVITY MISSION CONTROL & CLIENT-OS HARDWARE BRIDGE -->
             <div id="fSection_antigravity" style="display: none;">
-                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(56,189,248,0.18), rgba(168,85,247,0.14)); border: 1px solid rgba(56,189,248,0.65); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+                <div class="flagship-panel-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div>
-                            <strong style="color:#7dd3fc; font-size:15px;">🌌 AURA Antigravity Omni-Core — Google DeepMind Agentic Architecture & Laptop OS Bridge</strong>
-                            <div style="font-size:12px; color:#cbd5e1; margin-top:3px;">
-                                Engineered with Google DeepMind's <strong>Antigravity Platform</strong> tenets (<em>Absolute Transparency, Concurrency & Parallelism, Browser-in-the-Loop, Artifacts & Verification</em>) across <strong>IDE, Antigravity 2.0 Mission Control App, <code>agy</code> CLI & Python SDK</strong> + <strong>Live Client-OS Hardware Bridge</strong>.
+                            <strong style="color:#f4f4f5; font-size:14.5px;">AURA Mission Control &amp; Client-OS Hardware Bridge</strong>
+                            <div style="font-size:12px; color:#a1a1aa; margin-top:3px;">
+                                Multi-agent orchestration across IDE, Mission Control, CLI &amp; Python SDK with direct Client-OS Hardware Bridge controls.
                             </div>
                         </div>
-                        <span style="font-size:11px; padding:4px 10px; border-radius:999px; background:rgba(16,185,129,0.25); color:#a7f3d0; font-weight:700;">4 Surfaces • 9 Slash Cmds • OS Bridge Active</span>
+                        <span style="font-size:10.5px; font-family:var(--font-code); padding:3px 10px; border-radius:999px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; font-weight:600;">4 Surfaces • 9 Slash Cmds • Bridge Active</span>
                     </div>
 
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap:8px; margin-top:12px; font-size:11px;">
-                        <div style="background:rgba(0,0,0,0.42); padding:9px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.35);">
-                            <div style="color:#38bdf8; font-weight:700;">1. 💻 Antigravity IDE Surface</div>
-                            <div style="color:#94a3b8;">AI-first VS Code evolution • Inline Diffs • Next Edit Suggestions • Terminal Sandbox • Sidecar Agent</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">01. IDE Surface</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Inline Diffs • Next Edit Suggestions • Terminal Sandbox • Sidecar Agent</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.42); padding:9px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.35);">
-                            <div style="color:#38bdf8; font-weight:700;">2. 🛰️ Antigravity 2.0 Mission Control</div>
-                            <div style="color:#94a3b8;">Multi-Agent Swarm Board • Planning vs Fast Mode • Implementation Plans • Browser-in-the-Loop</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">02. Mission Control</div>
+                            <div style="color:#a1a1aa; margin-top:2px;">Multi-Agent Swarm Board • Planning vs Fast Mode • Implementation Plans • Live Verification</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.42); padding:9px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.35);">
-                            <div style="color:#38bdf8; font-weight:700;">3. ⚡ agy CLI & Headless Engine</div>
-                            <div style="color:#94a3b8;"><code>agy chat</code> • <code>agy exec</code> CI/CD • <code>agy doctor</code> • <code>.antigravity/</code> Skills, Rules, Hooks & MCP</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">03. CLI &amp; Headless Engine</div>
+                            <div style="color:#a1a1aa; margin-top:2px;"><code>agy chat</code> • <code>agy exec</code> CI/CD • <code>agy doctor</code> • Skills, Rules, Hooks &amp; MCP</div>
                         </div>
-                        <div style="background:rgba(0,0,0,0.42); padding:9px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.35);">
-                            <div style="color:#38bdf8; font-weight:700;">4. 🐍 google-antigravity Python SDK</div>
-                            <div style="color:#94a3b8;"><code>Agent</code> • <code>Swarm</code> • <code>@tool</code> decorators • Subagents (<code>self</code>, <code>research</code>, <code>browser</code>, <code>desktop-operator</code>)</div>
+                        <div class="flagship-subcard">
+                            <div style="color:#f4f4f5; font-weight:700;">04. Python Agent SDK</div>
+                            <div style="color:#a1a1aa; margin-top:2px;"><code>Agent</code> • <code>Swarm</code> • <code>@tool</code> decorators • Subagents (<code>self</code>, <code>research</code>, <code>browser</code>)</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- LIVE LAPTOP / CLIENT-OS HARDWARE BRIDGE CONTROLLER -->
-                <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;">
+                <div class="flagship-panel-card" style="padding: 12px 14px; margin-bottom: 12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
-                        <strong style="color:#6ee7b7; font-size:13.5px;">🖥️ Live Laptop & Client-OS Hardware Bridge Controller (Zero Permission Error • Cloud + Local Sync)</strong>
-                        <span id="agBridgeStatusPill" style="font-size:11px; padding:3px 9px; border-radius:999px; background:rgba(16,185,129,0.2); color:#a7f3d0;">● Bridge Ready (Screen Filter + Native URI + Local Daemon)</span>
+                        <strong style="color:#f4f4f5; font-size:13px;">Live Client-OS Hardware Bridge Controller</strong>
+                        <span id="agBridgeStatusPill" style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; background:rgba(16,185,129,0.14); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7;">● Bridge Ready</span>
                     </div>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
                         <!-- Brightness Control -->
-                        <div style="background:rgba(0,0,0,0.35); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size:12px; font-weight:700; color:#fde68a; margin-bottom:6px;">☀️ Screen Brightness Controller (<span id="agBrightnessLabel">100%</span>)</div>
+                        <div class="flagship-subcard">
+                            <div style="font-size:12px; font-weight:600; color:#e4e4e7; margin-bottom:6px;">Screen Brightness (<span id="agBrightnessLabel">100%</span>)</div>
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 25)" style="border-color:rgba(245,158,11,0.5); color:#fde68a;">25% Night</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 50)" style="border-color:rgba(245,158,11,0.5); color:#fde68a;">50% Comfort</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 80)" style="border-color:rgba(245,158,11,0.5); color:#fde68a;">80% Bright</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 100)" style="border-color:rgba(245,158,11,0.5); color:#fde68a;">100% Max</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 25)">25% Night</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 50)">50% Comfort</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 80)">80% Bright</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_brightness', 100)">100% Max</button>
                             </div>
                         </div>
                         <!-- Volume Control -->
-                        <div style="background:rgba(0,0,0,0.35); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size:12px; font-weight:700; color:#7dd3fc; margin-bottom:6px;">🔊 Audio & Volume Gain (<span id="agVolumeLabel">80%</span>)</div>
+                        <div class="flagship-subcard">
+                            <div style="font-size:12px; font-weight:600; color:#e4e4e7; margin-bottom:6px;">Audio &amp; Volume Gain (<span id="agVolumeLabel">80%</span>)</div>
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 0)" style="border-color:rgba(56,189,248,0.5); color:#bae6fd;">🔇 Mute (0%)</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 35)" style="border-color:rgba(56,189,248,0.5); color:#bae6fd;">🔉 35%</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 75)" style="border-color:rgba(56,189,248,0.5); color:#bae6fd;">🔊 75%</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 100)" style="border-color:rgba(56,189,248,0.5); color:#bae6fd;">📢 100%</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 0)">Mute (0%)</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 35)">35%</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 75)">75%</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('set_volume', 100)">100%</button>
                             </div>
                         </div>
                         <!-- 1-Click Native App Launchers -->
-                        <div style="background:rgba(0,0,0,0.35); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size:12px; font-weight:700; color:#c084fc; margin-bottom:6px;">🚀 1-Click App & OS Protocol Launcher</div>
+                        <div class="flagship-subcard">
+                            <div style="font-size:12px; font-weight:600; color:#e4e4e7; margin-bottom:6px;">1-Click App &amp; Protocol Launcher</div>
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'whatsapp')" style="border-color:rgba(16,185,129,0.5); color:#6ee7b7;">💬 WhatsApp</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'vscode')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">💻 VS Code</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'calculator')" style="border-color:rgba(168,85,247,0.5); color:#e9d5ff;">🧮 Calculator</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'settings')" style="border-color:rgba(245,158,11,0.5); color:#fde68a;">⚙️ OS Settings</button>
-                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'notepad')" style="border-color:rgba(255,255,255,0.35); color:#f8fafc;">📝 Notepad</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'whatsapp')">WhatsApp</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'vscode')">VS Code</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'calculator')">Calculator</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'settings')">OS Settings</button>
+                                <button type="button" class="btn-logout-small" onclick="runAntigravityDesktopAction('launch_app', 'notepad')">Notepad</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 9 ANTIGRAVITY SLASH COMMANDS + MULTI-AGENT SWARM EXECUTION -->
-                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-                    <span style="font-size:11.5px; color:#94a3b8; align-self:center; margin-right:4px;">⚡ 9 Slash Commands:</span>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/goal')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/goal</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/plan')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/plan</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/boost')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/boost</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/teamwork')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/teamwork</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/browser')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/browser</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/schedule')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/schedule</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/compact')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/compact</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/learn')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/learn</button>
-                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/grill-me')" style="border-color:rgba(56,189,248,0.5); color:#7dd3fc;">/grill-me</button>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; align-items:center;">
+                    <span style="font-size:11.5px; color:#a1a1aa; margin-right:4px;">Slash Commands:</span>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/goal')">/goal</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/plan')">/plan</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/boost')">/boost</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/teamwork')">/teamwork</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/browser')">/browser</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/schedule')">/schedule</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/compact')">/compact</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/learn')">/learn</button>
+                    <button type="button" class="btn-logout-small" onclick="runAntigravitySlashCommand('/grill-me')">/grill-me</button>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1.8fr 1fr auto auto; gap:8px; margin-bottom:10px; align-items:center;">
+                <div class="flagship-control-row">
                     <input id="agMissionInput" class="auth-input" type="text" value="Full-stack autonomous engineering, desktop hardware control, and multi-agent verification">
-                    <select id="agSlashSelector" class="auth-input" style="background:#0f172a; color:#7dd3fc; font-weight:600;">
+                    <select id="agSlashSelector" class="auth-input" style="background:#0a0b10; color:#f4f4f5; font-weight:600;">
                         <option value="/goal">/goal — Autonomous Goal Loop Until Verified</option>
                         <option value="/plan">/plan — Step-by-Step Implementation Plan Artifact</option>
-                        <option value="/boost">/boost — Deep Multi-Perspective Reasoning & Audit</option>
+                        <option value="/boost">/boost — Deep Multi-Perspective Reasoning &amp; Audit</option>
                         <option value="/teamwork">/teamwork — Multi-Agent Swarm (Architect + Engineer + Verifier)</option>
-                        <option value="/browser">/browser — Live Webview DOM & Visual Inspector</option>
-                        <option value="/schedule">/schedule — Recurring Cron & Timer Automation</option>
+                        <option value="/browser">/browser — Live Webview DOM &amp; Visual Inspector</option>
+                        <option value="/schedule">/schedule — Recurring Cron &amp; Timer Automation</option>
                         <option value="/compact">/compact — Context Window Token Optimizer</option>
-                        <option value="/learn">/learn — Persistent Skill & Rule Memory Generator</option>
+                        <option value="/learn">/learn — Persistent Skill &amp; Rule Memory Generator</option>
                         <option value="/grill-me">/grill-me — Interactive Design Architecture Alignment</option>
                     </select>
-                    <button type="button" class="btn-auth-submit" onclick="runAntigravitySlashCommand()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(56,189,248,0.22); border:1px solid rgba(56,189,248,0.65); color:#e0f2fe;">⚡ Run Slash Cmd</button>
-                    <button type="button" class="btn-auth-submit" onclick="runAntigravitySwarm()" style="width:auto; padding:0 16px; white-space:nowrap; background:linear-gradient(135deg, #059669, #0284c7);">🐝 Launch Antigravity Swarm</button>
+                    <button type="button" class="btn-auth-submit" onclick="runAntigravitySlashCommand()" style="width:auto; padding:0 14px; white-space:nowrap; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#f4f4f5;">Run Slash Cmd</button>
+                    <button type="button" class="btn-auth-submit" onclick="runAntigravitySwarm()" style="width:auto; padding:0 16px; white-space:nowrap; background:#f4f4f5; color:#09090b;">Launch Swarm</button>
                 </div>
 
-                <div id="agMissionResultBox" style="background:rgba(9,13,22,0.88); color:#e2e8f0; padding:14px; border-radius:12px; font-size:12.5px; max-height:400px; overflow:auto; border:1px solid rgba(56,189,248,0.35);">Click any Brightness/Volume/App button above, click one of the 9 Slash Commands (<code>/goal</code>, <code>/plan</code>, <code>/boost</code>, <code>/teamwork</code>), or click <strong>"🐝 Launch Antigravity Swarm"</strong> to execute live.</div>
+                <div id="agMissionResultBox" style="background:rgba(7,8,12,0.92); color:#e4e4e7; padding:14px; border-radius:12px; font-size:12.5px; max-height:400px; overflow:auto; border:1px solid rgba(255,255,255,0.1);">Use any Brightness, Volume, or App Launcher control above, click one of the 9 Slash Commands (<code>/goal</code>, <code>/plan</code>, <code>/boost</code>, <code>/teamwork</code>), or click <strong>"Launch Swarm"</strong> to execute live.</div>
             </div>
         </div>
     </div>
@@ -3862,6 +4107,7 @@
             modelSettingsStatus.textContent = 'Loading saved settings…';
             if (accountSecurityStatus) accountSecurityStatus.textContent = '';
             modelSettingsOverlay.style.display = 'flex';
+            if (typeof renderWallpaperGalleries === 'function') renderWallpaperGalleries();
             try {
                 const response = await apiFetch('/api/settings');
                 const data = await safeParseJson(response);
@@ -3877,7 +4123,7 @@
                 const prefs = data.user_preferences || {};
                 modelProvider.value = settings.active_provider || 'gemini';
                 if (modelProvider.value === 'ollama') ollamaModel.value = settings.active_model || '';
-                else modelChoice.value = settings.active_model || 'gemini-3.5-flash-lite';
+                else modelChoice.value = settings.active_model || 'gemini-3-flash-preview';
                 if (modelTemperature) {
                     modelTemperature.value = (prefs.temperature !== undefined) ? prefs.temperature : 0.3;
                 }
@@ -4788,23 +5034,13 @@
                 if (sec) sec.style.display = (t === tabName) ? 'block' : 'none';
                 if (btn) {
                     if (t === tabName) {
-                        if (t === 'bharatcode10') {
-                            btn.style.background = 'rgba(245,158,11,0.28)';
-                            btn.style.borderColor = 'rgba(245,158,11,0.8)';
-                            btn.style.color = '#fef08a';
-                        } else if (t === 'antigravity') {
-                            btn.style.background = 'rgba(56,189,248,0.28)';
-                            btn.style.borderColor = 'rgba(56,189,248,0.85)';
-                            btn.style.color = '#e0f2fe';
-                        } else {
-                            btn.style.background = 'rgba(16,185,129,0.22)';
-                            btn.style.borderColor = 'rgba(16,185,129,0.6)';
-                            btn.style.color = '#ecfdf5';
-                        }
+                        btn.style.background = 'rgba(255,255,255,0.12)';
+                        btn.style.borderColor = 'rgba(255,255,255,0.34)';
+                        btn.style.color = '#fafafa';
                     } else {
-                        btn.style.background = 'rgba(255,255,255,0.04)';
-                        btn.style.borderColor = 'rgba(255,255,255,0.12)';
-                        btn.style.color = '#cbd5e1';
+                        btn.style.background = 'rgba(255,255,255,0.03)';
+                        btn.style.borderColor = 'rgba(255,255,255,0.1)';
+                        btn.style.color = '#a1a1aa';
                     }
                 }
             });
@@ -5296,16 +5532,20 @@
         }
 
         // ---------------- Initialization ----------------
+        function _dismissAuraSplash() {
+            const splash = document.getElementById('auraSplash');
+            if (!splash || splash.dataset.dismissed === '1') return;
+            splash.dataset.dismissed = '1';
+            splash.style.pointerEvents = 'none';
+            splash.style.opacity = '0';
+            setTimeout(() => { splash.style.display = 'none'; }, 360);
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
-            setTimeout(() => {
-                const splash = document.getElementById('auraSplash');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => splash.style.display = 'none', 800);
-                }
-            }, 1400);
+            setTimeout(_dismissAuraSplash, 380);
 
             const authed = await verifyAuth();
+            _dismissAuraSplash();
             if (authed) {
                 await refreshActiveModelLabel();
                 await loadThreads(true);
@@ -6308,41 +6548,69 @@
                     nums.push(Number.isFinite(v) ? Math.max(0, v) : 0);
                 }
                 const maxVal = Math.max(1, ...nums);
-                const W = 560;
-                const H = 220;
-                const padL = 44;
-                const padR = 20;
-                const padB = 34;
-                const padT = 22;
+                const W = 580;
+                const H = 236;
+                const padL = 42;
+                const padR = 22;
+                const padB = 38;
+                const padT = 28;
                 const plotW = W - padL - padR;
                 const plotH = H - padT - padB;
                 const step = plotW / n;
-                const barW = Math.max(18, Math.min(48, step * 0.56));
-                const palette = ['#60a5fa', '#34d399', '#a78bfa', '#38bdf8', '#94a3b8'];
+                const barW = Math.max(20, Math.min(46, step * 0.52));
+                const uid = 'ch_' + Math.random().toString(36).slice(2, 8);
+                const stops = [
+                    ['#93c5fd', '#2563eb'],
+                    ['#6ee7b7', '#059669'],
+                    ['#c4b5fd', '#7c3aed'],
+                    ['#e4e4e7', '#71717a'],
+                    ['#7dd3fc', '#0284c7']
+                ];
+                let defsSvg = '<defs>';
+                stops.forEach((pair, idx) => {
+                    defsSvg += `<linearGradient id="${uid}_g${idx}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${pair[0]}" stop-opacity="0.95"/><stop offset="100%" stop-color="${pair[1]}" stop-opacity="0.78"/></linearGradient>`;
+                });
+                defsSvg += '</defs>';
+
+                let gridSvg = '';
+                for (let g = 1; g <= 3; g++) {
+                    const gy = Math.round(padT + plotH - (plotH * g / 4));
+                    gridSvg += `<line x1="${padL}" y1="${gy}" x2="${W - padR}" y2="${gy}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 4" stroke-width="1"/>`;
+                }
+
+                const fmtVal = (v) => {
+                    try {
+                        const s = Number.isInteger(v) ? v.toLocaleString('en-US') : Number(v.toFixed(2)).toLocaleString('en-US');
+                        return unit ? (unit === '%' ? `${s}%` : `${s} ${unit}`) : s;
+                    } catch (_) {
+                        return `${v}${unit ? ' ' + unit : ''}`;
+                    }
+                };
 
                 let barsSvg = '';
                 for (let i = 0; i < n; i++) {
                     const val = nums[i];
-                    const h = Math.max(4, Math.round((val / maxVal) * plotH));
+                    const h = Math.max(5, Math.round((val / maxVal) * plotH));
                     const x = Math.round(padL + i * step + (step - barW) / 2);
                     const y = Math.round(padT + plotH - h);
-                    const color = palette[i % palette.length];
-                    const lbl = escapeHtml(String(obj.labels[i] || '').slice(0, 14));
+                    const gradId = `${uid}_g${i % stops.length}`;
+                    const lbl = escapeHtml(String(obj.labels[i] || '').slice(0, 16));
                     barsSvg +=
-                        `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="6" fill="${color}" fill-opacity="0.88"/>` +
-                        `<text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" fill="#f3f4f6" font-size="11" font-weight="700">${escapeHtml(String(val))}${unit}</text>` +
-                        `<text x="${x + barW / 2}" y="${H - 12}" text-anchor="middle" fill="#9ca3af" font-size="10.5">${lbl}</text>`;
+                        `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="7" fill="url(#${gradId})" stroke="rgba(255,255,255,0.14)" stroke-width="0.75"/>` +
+                        `<text x="${x + barW / 2}" y="${y - 8}" text-anchor="middle" fill="#f4f4f5" font-size="11" font-weight="600" font-family="Inter,sans-serif">${escapeHtml(fmtVal(val))}</text>` +
+                        `<text x="${x + barW / 2}" y="${H - 14}" text-anchor="middle" fill="#a1a1aa" font-size="10.5" font-family="Inter,sans-serif">${lbl}</text>`;
                 }
 
                 return (
                     `<div class="aura-chart-card">` +
                         `<div class="inline-visual-header">` +
-                            `<span>${title}${subtitle ? ' — ' + subtitle : ''}</span>` +
-                            `<span style="font-size:10.5px; color:#94a3b8; font-family:var(--font-code);">interactive chart</span>` +
+                            `<span style="color:#f4f4f5; font-weight:600;">${title}${subtitle ? ' <span style="color:#71717a;font-weight:400;">· ' + subtitle + '</span>' : ''}</span>` +
+                            `<span style="font-size:10px; color:#71717a; font-family:var(--font-code); text-transform:uppercase; letter-spacing:0.6px;">Data Visual</span>` +
                         `</div>` +
-                        `<div style="padding:10px 12px; overflow-x:auto;">` +
+                        `<div style="padding:12px 14px; overflow-x:auto;">` +
                             `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block;" xmlns="http://www.w3.org/2000/svg">` +
-                                `<line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>` +
+                                defsSvg + gridSvg +
+                                `<line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>` +
                                 barsSvg +
                             `</svg>` +
                         `</div>` +
@@ -7613,46 +7881,58 @@
                 ctx.clearRect(0, 0, w, h);
 
                 const mode = voiceHudState.mode;
-                const speed = mode === 'speaking' ? 0.09 : (mode === 'listening' ? 0.06 : (mode === 'thinking' ? 0.11 : 0.025));
-                const amp = mode === 'speaking' ? 14 : (mode === 'listening' ? 9 : (mode === 'thinking' ? 6 : 2.5));
+                const speed = mode === 'speaking' ? 0.085 : (mode === 'listening' ? 0.055 : (mode === 'thinking' ? 0.11 : 0.022));
+                const amp = mode === 'speaking' ? 12 : (mode === 'listening' ? 8 : (mode === 'thinking' ? 5.5 : 2.2));
                 voiceHudState.phase += speed;
 
                 const palette = mode === 'halted'
-                    ? ['#ef4444', 'rgba(239, 68, 68, 0.22)']
+                    ? ['#f87171', 'rgba(239, 68, 68, 0.24)', 'rgba(248, 113, 113, 0.5)']
                     : (mode === 'speaking'
-                        ? ['#e2b96f', 'rgba(226, 185, 111, 0.25)']
+                        ? ['#f4f4f5', 'rgba(147, 197, 253, 0.26)', 'rgba(226, 185, 111, 0.45)']
                         : (mode === 'listening'
-                            ? ['#34d399', 'rgba(52, 211, 153, 0.22)']
-                            : ['#38bdf8', 'rgba(56, 189, 248, 0.18)']));
+                            ? ['#6ee7b7', 'rgba(16, 185, 129, 0.22)', 'rgba(56, 189, 248, 0.4)']
+                            : ['#cbd5e1', 'rgba(147, 197, 253, 0.18)', 'rgba(255, 255, 255, 0.25)']));
 
-                const pulseR = 64 + Math.sin(voiceHudState.phase) * (amp * 0.65);
-                const halo = ctx.createRadialGradient(cx, cy, 12, cx, cy, pulseR + 34);
-                halo.addColorStop(0, palette[0]);
-                halo.addColorStop(0.55, palette[1]);
+                const pulseR = 62 + Math.sin(voiceHudState.phase) * (amp * 0.55);
+                const halo = ctx.createRadialGradient(cx, cy, 8, cx, cy, pulseR + 38);
+                halo.addColorStop(0, palette[1]);
+                halo.addColorStop(0.5, palette[1]);
                 halo.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = halo;
                 ctx.beginPath();
-                ctx.arc(cx, cy, pulseR + 34, 0, Math.PI * 2);
+                ctx.arc(cx, cy, pulseR + 38, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.beginPath();
-                const steps = 64;
-                for (let i = 0; i <= steps; i++) {
-                    const ang = (i / steps) * Math.PI * 2;
-                    const wave = Math.sin(ang * 5 + voiceHudState.phase * 1.4) * (amp * 0.45)
-                               + Math.cos(ang * 3 - voiceHudState.phase) * (amp * 0.35);
-                    const r = 56 + wave;
-                    const x = cx + Math.cos(ang) * r;
-                    const y = cy + Math.sin(ang) * r;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fillStyle = '#090b12';
-                ctx.fill();
-                ctx.lineWidth = 2.5;
-                ctx.strokeStyle = palette[0];
-                ctx.stroke();
+                const drawHarmonicRing = (baseR, freqA, freqB, phaseMul, strokeColor, lw, fillCore) => {
+                    ctx.beginPath();
+                    const steps = 72;
+                    for (let i = 0; i <= steps; i++) {
+                        const ang = (i / steps) * Math.PI * 2;
+                        const wave = Math.sin(ang * freqA + voiceHudState.phase * phaseMul) * (amp * 0.42)
+                                   + Math.cos(ang * freqB - voiceHudState.phase * (phaseMul * 0.72)) * (amp * 0.28);
+                        const r = baseR + wave;
+                        const x = cx + Math.cos(ang) * r;
+                        const y = cy + Math.sin(ang) * r;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    if (fillCore) {
+                        const coreGrad = ctx.createRadialGradient(cx - 14, cy - 16, 4, cx, cy, baseR + 10);
+                        coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.14)');
+                        coreGrad.addColorStop(0.55, 'rgba(18, 22, 34, 0.94)');
+                        coreGrad.addColorStop(1, 'rgba(7, 9, 14, 0.98)');
+                        ctx.fillStyle = coreGrad;
+                        ctx.fill();
+                    }
+                    ctx.lineWidth = lw;
+                    ctx.strokeStyle = strokeColor;
+                    ctx.stroke();
+                };
+
+                drawHarmonicRing(66, 4, 3, -0.9, palette[2], 1.1, false);
+                drawHarmonicRing(56, 5, 3, 1.35, palette[0], 2.0, true);
+                drawHarmonicRing(44, 3, 2, 1.85, 'rgba(255, 255, 255, 0.18)', 0.9, false);
             }
             voiceHudState.animFrame = requestAnimationFrame(_drawVoiceOrbFrame);
         }
@@ -8355,9 +8635,10 @@
                 base = 'Good night';
                 sub = 'Quiet night session — what should we build?';
             }
-            const name = (typeof currentUser !== 'undefined' && currentUser && !currentUser.isGuest && (currentUser.display_name || currentUser.username))
+            const rawName = (typeof currentUser !== 'undefined' && currentUser && !currentUser.isGuest && (currentUser.display_name || currentUser.username))
                 ? String(currentUser.display_name || currentUser.username).trim()
                 : '';
+            const name = rawName.length > 18 ? (rawName.slice(0, 16) + '…') : rawName;
             titleEl.textContent = name ? `${base}, ${name}` : base;
             if (subEl) subEl.textContent = sub;
         }
@@ -8412,10 +8693,99 @@
             try { localStorage.setItem('aura_theme_preset', preset); } catch (_) {}
         }
 
+        const AURA_CURATED_WALLPAPERS = [
+            {
+                id: 'obsidian',
+                name: 'Obsidian',
+                bg: 'none',
+                preview: 'linear-gradient(145deg, #0a0a0d, #14141a)'
+            },
+            {
+                id: 'midnight_aurora',
+                name: 'Aurora',
+                bg: 'radial-gradient(ellipse 85% 60% at 18% 12%, rgba(30, 64, 175, 0.58) 0%, transparent 62%), radial-gradient(ellipse 75% 55% at 84% 20%, rgba(13, 148, 136, 0.42) 0%, transparent 60%), radial-gradient(ellipse 90% 60% at 50% 95%, rgba(15, 23, 42, 0.92) 0%, #05070d 72%)',
+                preview: 'radial-gradient(circle at 20% 20%, #1d4ed8, transparent 65%), radial-gradient(circle at 80% 30%, #0d9488, transparent 60%), #070b14'
+            },
+            {
+                id: 'sovereign_gold',
+                name: 'Gold',
+                bg: 'radial-gradient(ellipse 70% 50% at 78% 14%, rgba(212, 167, 89, 0.34) 0%, transparent 62%), radial-gradient(ellipse 80% 55% at 15% 86%, rgba(120, 82, 36, 0.28) 0%, transparent 62%), linear-gradient(160deg, #0b0a09 0%, #13110e 52%, #08080a 100%)',
+                preview: 'radial-gradient(circle at 75% 22%, rgba(226,185,111,0.75), transparent 62%), linear-gradient(155deg, #17130d, #09090b)'
+            },
+            {
+                id: 'solar_eclipse',
+                name: 'Eclipse',
+                bg: 'radial-gradient(circle at 50% 42%, #050609 0%, #050609 21%, rgba(226, 232, 240, 0.42) 22.3%, rgba(96, 165, 250, 0.24) 26%, rgba(15, 23, 42, 0.28) 42%, #06070b 75%)',
+                preview: 'radial-gradient(circle at 50% 46%, #050609 25%, rgba(226,232,240,0.85) 30%, rgba(59,130,246,0.35) 45%, #07090f 80%)'
+            },
+            {
+                id: 'indigo_nebula',
+                name: 'Indigo',
+                bg: 'radial-gradient(ellipse 75% 58% at 24% 22%, rgba(79, 70, 229, 0.45) 0%, transparent 60%), radial-gradient(ellipse 70% 52% at 82% 76%, rgba(109, 40, 217, 0.38) 0%, transparent 62%), linear-gradient(150deg, #070711 0%, #0d0c1d 55%, #07080e 100%)',
+                preview: 'radial-gradient(circle at 25% 25%, #4f46e5, transparent 62%), radial-gradient(circle at 80% 80%, #7c3aed, transparent 60%), #080814'
+            },
+            {
+                id: 'jade_glass',
+                name: 'Jade',
+                bg: 'radial-gradient(ellipse 80% 55% at 74% 18%, rgba(16, 185, 129, 0.34) 0%, transparent 60%), radial-gradient(ellipse 75% 55% at 18% 82%, rgba(6, 95, 70, 0.42) 0%, transparent 64%), linear-gradient(160deg, #040d0a 0%, #081712 52%, #050908 100%)',
+                preview: 'radial-gradient(circle at 75% 22%, #10b981, transparent 62%), linear-gradient(155deg, #062119, #050a08)'
+            },
+            {
+                id: 'brushed_titanium',
+                name: 'Titanium',
+                bg: 'linear-gradient(128deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.01) 34%, rgba(255,255,255,0.07) 58%, rgba(255,255,255,0.01) 82%), linear-gradient(180deg, #16181f 0%, #0b0c10 55%, #12141b 100%)',
+                preview: 'linear-gradient(130deg, #2b2f3a 0%, #12141a 52%, #242834 100%)'
+            },
+            {
+                id: 'arctic_slate',
+                name: 'Nordic',
+                bg: 'radial-gradient(ellipse 90% 55% at 50% 0%, rgba(56, 189, 248, 0.32) 0%, transparent 62%), radial-gradient(ellipse 75% 50% at 85% 88%, rgba(30, 58, 138, 0.42) 0%, transparent 62%), linear-gradient(180deg, #07111d 0%, #090e18 65%, #06080f 100%)',
+                preview: 'radial-gradient(circle at 50% 10%, #38bdf8, transparent 65%), linear-gradient(180deg, #0c1f35, #070b14)'
+            },
+            {
+                id: 'noir_crimson',
+                name: 'Velvet',
+                bg: 'radial-gradient(ellipse 72% 52% at 22% 18%, rgba(159, 18, 57, 0.42) 0%, transparent 62%), radial-gradient(ellipse 70% 55% at 84% 84%, rgba(88, 28, 135, 0.30) 0%, transparent 62%), linear-gradient(155deg, #0d070a 0%, #140a10 50%, #08070a 100%)',
+                preview: 'radial-gradient(circle at 24% 24%, #9f1239, transparent 65%), linear-gradient(155deg, #1a0b12, #09070b)'
+            },
+            {
+                id: 'monolith_grid',
+                name: 'Monolith',
+                bg: 'radial-gradient(circle at 50% 25%, rgba(147, 197, 253, 0.14) 0%, transparent 55%), linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px), #08090e',
+                bgSize: 'auto, 42px 42px, 42px 42px, auto',
+                preview: 'linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px), #0b0e17'
+            }
+        ];
+
+        function _loadSavedCustomWallpapers() {
+            try {
+                const arr = JSON.parse(localStorage.getItem('aura_custom_wallpapers_list') || '[]');
+                if (Array.isArray(arr)) return arr.filter(x => x && typeof x.dataUrl === 'string').slice(0, 6);
+            } catch (_) {}
+            try {
+                const legacy = localStorage.getItem('aura_custom_wallpaper');
+                if (legacy && legacy.startsWith('data:image/')) {
+                    return [{ id: 'custom_legacy', name: 'Custom 1', dataUrl: legacy }];
+                }
+            } catch (_) {}
+            return [];
+        }
+
+        function _saveCustomWallpapersList(list) {
+            const trimmed = Array.isArray(list) ? list.slice(0, 6) : [];
+            try { localStorage.setItem('aura_custom_wallpapers_list', JSON.stringify(trimmed)); } catch (_) {}
+            return trimmed;
+        }
+
+        function _getActiveWallpaperId() {
+            try { return localStorage.getItem('aura_active_wallpaper_id') || 'obsidian'; } catch (_) { return 'obsidian'; }
+        }
+
         function _applyCustomWallpaperUrl(dataUrl) {
             const layer = document.getElementById('auraWallpaperLayer');
             if (!layer) return;
             if (dataUrl) {
+                layer.style.backgroundSize = 'cover';
                 layer.style.backgroundImage = `url("${dataUrl}")`;
                 layer.style.opacity = '1';
             } else {
@@ -8424,39 +8794,173 @@
             }
         }
 
+        function applyCuratedWallpaper(wallId) {
+            const layer = document.getElementById('auraWallpaperLayer');
+            const customList = _loadSavedCustomWallpapers();
+            const customMatch = customList.find(c => c.id === wallId);
+            if (customMatch) {
+                try {
+                    localStorage.setItem('aura_active_wallpaper_id', customMatch.id);
+                    localStorage.setItem('aura_custom_wallpaper', customMatch.dataUrl);
+                } catch (_) {}
+                _applyCustomWallpaperUrl(customMatch.dataUrl);
+                renderWallpaperGalleries();
+                return;
+            }
+            const preset = AURA_CURATED_WALLPAPERS.find(w => w.id === wallId) || AURA_CURATED_WALLPAPERS[0];
+            try {
+                localStorage.setItem('aura_active_wallpaper_id', preset.id);
+                localStorage.removeItem('aura_custom_wallpaper');
+            } catch (_) {}
+            if (layer) {
+                if (preset.id === 'obsidian' || preset.bg === 'none') {
+                    layer.style.backgroundImage = 'none';
+                    layer.style.backgroundSize = 'cover';
+                    layer.style.opacity = '0';
+                } else {
+                    layer.style.backgroundImage = preset.bg;
+                    layer.style.backgroundSize = preset.bgSize || 'cover';
+                    layer.style.opacity = '1';
+                }
+            }
+            renderWallpaperGalleries();
+        }
+
+        function deleteCustomWallpaperById(customId, ev) {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            const next = _saveCustomWallpapersList(_loadSavedCustomWallpapers().filter(c => c.id !== customId));
+            if (_getActiveWallpaperId() === customId) {
+                applyCuratedWallpaper(next.length ? next[0].id : 'obsidian');
+            } else {
+                renderWallpaperGalleries();
+            }
+        }
+
+        function cycleNextWallpaper() {
+            const allIds = AURA_CURATED_WALLPAPERS.map(w => w.id).concat(_loadSavedCustomWallpapers().map(c => c.id));
+            const cur = _getActiveWallpaperId();
+            const idx = allIds.indexOf(cur);
+            const nextId = allIds[(idx + 1) % allIds.length] || 'obsidian';
+            applyCuratedWallpaper(nextId);
+        }
+
+        function renderWallpaperGalleries() {
+            const activeId = _getActiveWallpaperId();
+            const buildCuratedHtml = () => AURA_CURATED_WALLPAPERS.map(w =>
+                `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${w.id}" onclick="applyCuratedWallpaper('${w.id}')" title="${w.name}" style="background:${w.preview};${w.id === 'monolith_grid' ? 'background-size:10px 10px,10px 10px,auto;' : ''}">` +
+                    `<span class="wallpaper-thumb-label">${w.name}</span>` +
+                `</button>`
+            ).join('');
+
+            ['settingsWallpaperGrid', 'quickWallpaperGrid'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = buildCuratedHtml();
+            });
+
+            const customList = _loadSavedCustomWallpapers();
+            const buildCustomHtml = () => customList.map(c =>
+                `<div class="wallpaper-thumb ${activeId === c.id ? 'active' : ''}" role="button" tabindex="0" onclick="applyCuratedWallpaper('${c.id}')" title="${escapeHtml(c.name || 'Custom')}" style="background-image:url('${c.dataUrl}');">` +
+                    `<button type="button" class="wallpaper-thumb-del" aria-label="Remove wallpaper" onclick="deleteCustomWallpaperById('${c.id}', event)">×</button>` +
+                    `<span class="wallpaper-thumb-label">${escapeHtml(c.name || 'Custom')}</span>` +
+                `</div>`
+            ).join('');
+
+            [
+                ['settingsCustomWallpapersWrap', 'settingsCustomWallpapersGrid'],
+                ['quickCustomWallpapersWrap', 'quickCustomWallpapersGrid']
+            ].forEach(([wrapId, gridId]) => {
+                const wrap = document.getElementById(wrapId);
+                const grid = document.getElementById(gridId);
+                if (wrap && grid) {
+                    wrap.style.display = customList.length ? 'block' : 'none';
+                    grid.innerHTML = customList.length ? buildCustomHtml() : '';
+                }
+            });
+        }
+
+        function toggleWallpaperQuickPopover(ev) {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            const pop = document.getElementById('wallpaperQuickPopover');
+            if (!pop) return;
+            closeComposerPopovers();
+            const willOpen = !pop.classList.contains('open');
+            pop.classList.toggle('open', willOpen);
+            if (willOpen) renderWallpaperGalleries();
+        }
+
+        function closeWallpaperQuickPopover() {
+            const pop = document.getElementById('wallpaperQuickPopover');
+            if (pop) pop.classList.remove('open');
+        }
+
         function handleCustomWallpaperUpload(ev) {
-            const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const maxW = 1280;
-                    const scale = Math.min(1, maxW / Math.max(1, img.width));
-                    const w = Math.max(1, Math.round(img.width * scale));
-                    const h = Math.max(1, Math.round(img.height * scale));
-                    const c = document.createElement('canvas');
-                    c.width = w;
-                    c.height = h;
-                    c.getContext('2d').drawImage(img, 0, 0, w, h);
-                    const compactUrl = c.toDataURL('image/jpeg', 0.78);
-                    try { localStorage.setItem('aura_custom_wallpaper', compactUrl); } catch (_) {}
-                    _applyCustomWallpaperUrl(compactUrl);
+            const files = ev && ev.target && ev.target.files ? Array.from(ev.target.files).slice(0, 4) : [];
+            if (!files.length) return;
+            files.forEach((file, fileIdx) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const maxW = 1120;
+                        const scale = Math.min(1, maxW / Math.max(1, img.width));
+                        const w = Math.max(1, Math.round(img.width * scale));
+                        const h = Math.max(1, Math.round(img.height * scale));
+                        const c = document.createElement('canvas');
+                        c.width = w;
+                        c.height = h;
+                        c.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const compactUrl = c.toDataURL('image/jpeg', 0.74);
+                        const existing = _loadSavedCustomWallpapers();
+                        const newItem = {
+                            id: 'custom_' + Date.now() + '_' + fileIdx,
+                            name: (file.name || 'Custom').replace(/\.[^.]+$/, '').slice(0, 14),
+                            dataUrl: compactUrl
+                        };
+                        const updated = _saveCustomWallpapersList([newItem, ...existing]);
+                        applyCuratedWallpaper(updated[0].id);
+                    };
+                    img.src = reader.result;
                 };
-                img.src = reader.result;
-            };
-            reader.readAsDataURL(file);
+                reader.readAsDataURL(file);
+            });
+            try { ev.target.value = ''; } catch (_) {}
         }
 
         function updateWallpaperDim(val) {
-            const num = Math.max(0.25, Math.min(0.92, parseFloat(val || '0.72')));
+            const num = Math.max(0.15, Math.min(0.90, parseFloat(val || '0.52')));
             document.documentElement.style.setProperty('--wallpaper-dim', String(num));
             try { localStorage.setItem('aura_wallpaper_dim', String(num)); } catch (_) {}
+            const pct = Math.round(num * 100) + '%';
+            ['wallpaperDimRange', 'quickWallpaperDimRange'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = String(num);
+            });
+            ['wallpaperDimVal', 'quickWallpaperDimVal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = pct;
+            });
+        }
+
+        function updateWallpaperBlur(val) {
+            const px = Math.max(0, Math.min(18, Math.round(parseFloat(val || '0'))));
+            document.documentElement.style.setProperty('--wallpaper-blur', px + 'px');
+            try { localStorage.setItem('aura_wallpaper_blur', String(px)); } catch (_) {}
+            ['wallpaperBlurRange', 'quickWallpaperBlurRange'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = String(px);
+            });
+            ['wallpaperBlurVal', 'quickWallpaperBlurVal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = px + 'px';
+            });
         }
 
         function clearCustomWallpaper() {
-            try { localStorage.removeItem('aura_custom_wallpaper'); } catch (_) {}
-            _applyCustomWallpaperUrl('');
+            try {
+                localStorage.removeItem('aura_custom_wallpaper');
+                localStorage.setItem('aura_active_wallpaper_id', 'obsidian');
+            } catch (_) {}
+            applyCuratedWallpaper('obsidian');
         }
 
         function toggleSpaceBackdropSetting(enabled) {
@@ -8485,14 +8989,21 @@
                 applyAuraThemePreset(savedTheme);
                 const sel = document.getElementById('themePresetSelect');
                 if (sel) sel.value = savedTheme;
-                const savedWall = localStorage.getItem('aura_custom_wallpaper');
-                if (savedWall) _applyCustomWallpaperUrl(savedWall);
-                const savedDim = localStorage.getItem('aura_wallpaper_dim');
-                if (savedDim) {
-                    updateWallpaperDim(savedDim);
-                    const rng = document.getElementById('wallpaperDimRange');
-                    if (rng) rng.value = savedDim;
+
+                const savedWallId = localStorage.getItem('aura_active_wallpaper_id');
+                const legacyWall = localStorage.getItem('aura_custom_wallpaper');
+                if (savedWallId) {
+                    applyCuratedWallpaper(savedWallId);
+                } else if (legacyWall) {
+                    _applyCustomWallpaperUrl(legacyWall);
+                    renderWallpaperGalleries();
+                } else {
+                    applyCuratedWallpaper('obsidian');
                 }
+                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.52';
+                updateWallpaperDim(savedDim);
+                const savedBlur = localStorage.getItem('aura_wallpaper_blur') || '0';
+                updateWallpaperBlur(savedBlur);
             } catch (_) {}
 
             const voiceOverlay = document.getElementById('voiceCallOverlay');
@@ -8512,10 +9023,16 @@
                 if (dock && !dock.contains(e.target)) {
                     closeComposerPopovers();
                 }
+                const wpop = document.getElementById('wallpaperQuickPopover');
+                const wbtn = document.getElementById('btnHeaderWallpaper');
+                if (wpop && wpop.classList.contains('open') && !wpop.contains(e.target) && (!wbtn || !wbtn.contains(e.target))) {
+                    closeWallpaperQuickPopover();
+                }
             });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     closeComposerPopovers();
+                    closeWallpaperQuickPopover();
                     if (voiceOverlay && voiceOverlay.style.display === 'flex') closeVoiceCallHud();
                     if (jarvisOverlay && jarvisOverlay.style.display === 'flex') closeJarvisConsole();
                 }

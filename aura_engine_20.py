@@ -1,4 +1,4 @@
-"""AURA 2.0 Engine: Cartoon-Vibe Study Mentor & Fast Everyday Visual Storyteller."""
+"""AURA 2.0 Engine: Fast Everyday Storyteller, Study Mentor & Clean Concept Explainer."""
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -7,7 +7,7 @@ from aura_engine_base import BaseAuraModelEngine, EngineDispatchPlan, is_casual_
 
 
 class Aura20StudyEngine(BaseAuraModelEngine):
-    """Lightweight fast tutor blending conversational clarity with cartoon-style SVG concept visuals."""
+    """Lightweight fast tutor blending conversational clarity with sleek editorial concept visuals."""
 
     tier_id = "aura-2.0"
     display_name = "AURA 2.0"
@@ -39,21 +39,38 @@ class Aura20StudyEngine(BaseAuraModelEngine):
 
     @staticmethod
     def build_cartoon_study_svg(topic: str) -> str:
-        """Builds a clean cartoon-vibe SVG concept card when illustrating study prompts offline."""
+        """Builds a sleek editorial obsidian SVG concept blueprint card when illustrating study prompts offline."""
         safe_topic = (topic or "Concept Breakdown").replace("<", "").replace(">", "").replace("&", "and")[:46]
         return (
             "```svg\n"
             "<svg viewBox=\"0 0 640 230\" xmlns=\"http://www.w3.org/2000/svg\">\n"
-            "  <rect width=\"640\" height=\"230\" rx=\"18\" fill=\"#0f1320\" stroke=\"#e2b96f\" stroke-width=\"2\"/>\n"
-            "  <circle cx=\"95\" cy=\"125\" r=\"46\" fill=\"#1d2b4f\" stroke=\"#38bdf8\" stroke-width=\"3\"/>\n"
-            "  <circle cx=\"80\" cy=\"115\" r=\"6\" fill=\"#ffffff\"/><circle cx=\"110\" cy=\"115\" r=\"6\" fill=\"#ffffff\"/>\n"
-            "  <path d=\"M78 138 Q95 152 112 138\" stroke=\"#e2b96f\" stroke-width=\"3.5\" fill=\"none\" stroke-linecap=\"round\"/>\n"
-            "  <rect x=\"165\" y=\"32\" width=\"445\" height=\"166\" rx=\"16\" fill=\"#161b2e\" stroke=\"#334155\" stroke-width=\"1.5\"/>\n"
-            "  <text x=\"188\" y=\"64\" fill=\"#e2b96f\" font-size=\"13\" font-weight=\"700\" font-family=\"sans-serif\">AURA 2.0 STUDY CARD</text>\n"
-            f"  <text x=\"188\" y=\"96\" fill=\"#f8fafc\" font-size=\"18\" font-weight=\"700\" font-family=\"sans-serif\">{safe_topic}</text>\n"
-            "  <rect x=\"188\" y=\"116\" width=\"122\" height=\"58\" rx=\"10\" fill=\"#1e293b\" stroke=\"#38bdf8\"/><text x=\"249\" y=\"149\" text-anchor=\"middle\" fill=\"#bae6fd\" font-size=\"12\" font-family=\"sans-serif\">1. Intuition</text>\n"
-            "  <rect x=\"326\" y=\"116\" width=\"122\" height=\"58\" rx=\"10\" fill=\"#1e293b\" stroke=\"#10b981\"/><text x=\"387\" y=\"149\" text-anchor=\"middle\" fill=\"#a7f3d0\" font-size=\"12\" font-family=\"sans-serif\">2. Example</text>\n"
-            "  <rect x=\"464\" y=\"116\" width=\"124\" height=\"58\" rx=\"10\" fill=\"#1e293b\" stroke=\"#a855f7\"/><text x=\"526\" y=\"149\" text-anchor=\"middle\" fill=\"#e9d5ff\" font-size=\"12\" font-family=\"sans-serif\">3. Mastery</text>\n"
+            "  <defs>\n"
+            "    <linearGradient id=\"auraCardBg\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">\n"
+            "      <stop offset=\"0%\" stop-color=\"#0b0d14\"/>\n"
+            "      <stop offset=\"100%\" stop-color=\"#131722\"/>\n"
+            "    </linearGradient>\n"
+            "    <linearGradient id=\"auraAccent\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"0\">\n"
+            "      <stop offset=\"0%\" stop-color=\"#e4e4e7\"/>\n"
+            "      <stop offset=\"100%\" stop-color=\"#93c5fd\"/>\n"
+            "    </linearGradient>\n"
+            "  </defs>\n"
+            "  <rect width=\"640\" height=\"230\" rx=\"16\" fill=\"url(#auraCardBg)\" stroke=\"rgba(255,255,255,0.12)\" stroke-width=\"1.2\"/>\n"
+            "  <g transform=\"translate(34,36)\">\n"
+            "    <polygon points=\"32,2 58,17 58,47 32,62 6,47 6,17\" fill=\"rgba(255,255,255,0.04)\" stroke=\"url(#auraAccent)\" stroke-width=\"1.6\"/>\n"
+            "    <circle cx=\"32\" cy=\"32\" r=\"9\" fill=\"none\" stroke=\"#e4e4e7\" stroke-width=\"1.6\"/>\n"
+            "  </g>\n"
+            "  <text x=\"112\" y=\"56\" fill=\"#94a3b8\" font-size=\"11\" font-weight=\"600\" letter-spacing=\"1.6\" font-family=\"Inter,sans-serif\">AURA 2.0 STUDY CARD</text>\n"
+            f"  <text x=\"112\" y=\"84\" fill=\"#f8fafc\" font-size=\"20\" font-weight=\"700\" font-family=\"Inter,sans-serif\">{safe_topic}</text>\n"
+            "  <line x1=\"34\" y1=\"108\" x2=\"606\" y2=\"108\" stroke=\"rgba(255,255,255,0.08)\" stroke-width=\"1\"/>\n"
+            "  <rect x=\"34\" y=\"126\" width=\"176\" height=\"72\" rx=\"10\" fill=\"rgba(255,255,255,0.03)\" stroke=\"rgba(255,255,255,0.12)\"/>\n"
+            "  <text x=\"50\" y=\"150\" fill=\"#93c5fd\" font-size=\"10.5\" font-weight=\"600\" font-family=\"monospace\">01 / INTUITION</text>\n"
+            "  <text x=\"50\" y=\"174\" fill=\"#e4e4e7\" font-size=\"13\" font-weight=\"600\" font-family=\"Inter,sans-serif\">Core Mental Model</text>\n"
+            "  <rect x=\"232\" y=\"126\" width=\"176\" height=\"72\" rx=\"10\" fill=\"rgba(255,255,255,0.03)\" stroke=\"rgba(255,255,255,0.12)\"/>\n"
+            "  <text x=\"248\" y=\"150\" fill=\"#6ee7b7\" font-size=\"10.5\" font-weight=\"600\" font-family=\"monospace\">02 / MECHANICS</text>\n"
+            "  <text x=\"248\" y=\"174\" fill=\"#e4e4e7\" font-size=\"13\" font-weight=\"600\" font-family=\"Inter,sans-serif\">Worked Example</text>\n"
+            "  <rect x=\"430\" y=\"126\" width=\"176\" height=\"72\" rx=\"10\" fill=\"rgba(255,255,255,0.03)\" stroke=\"rgba(255,255,255,0.12)\"/>\n"
+            "  <text x=\"446\" y=\"150\" fill=\"#c4b5fd\" font-size=\"10.5\" font-weight=\"600\" font-family=\"monospace\">03 / MASTERY</text>\n"
+            "  <text x=\"446\" y=\"174\" fill=\"#e4e4e7\" font-size=\"13\" font-weight=\"600\" font-family=\"Inter,sans-serif\">Practice &amp; Trade-offs</text>\n"
             "</svg>\n"
             "```"
         )
