@@ -731,14 +731,14 @@ def git_get_status_and_diffs(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
     _, br_raw, _ = _run_git(ws, ["branch", "--format=%(refname:short)"])
     branches = [b.strip() for b in br_raw.splitlines() if b.strip()] or [branch]
 
-    _, st_raw, _ = _run_git(ws, ["status", "--porcelain"])
+    _, st_raw, _ = _run_git(ws, ["status", "--porcelain", "-uall"])
     changed_files: List[Dict[str, Any]] = []
     for ln in st_raw.splitlines():
         if len(ln) < 4:
             continue
         code = ln[:2]
         rel = ln[3:].strip().strip('"')
-        if not rel or rel.startswith((SNAPSHOT_DIR_NAME, WORKTREE_DIR_NAME, ".aura_")):
+        if not rel or rel.endswith("/") or rel.startswith((SNAPSHOT_DIR_NAME, WORKTREE_DIR_NAME, ".aura_")):
             continue
         tp = safe_resolve_workspace_path(ws, rel, allow_root=False)
         after_txt = tp.read_text(encoding="utf-8", errors="replace")[:12000] if (tp and tp.exists() and tp.is_file()) else ""
@@ -746,10 +746,14 @@ def git_get_status_and_diffs(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
         if rc_b != 0:
             before_txt = ""
         diff_txt = _unified_diff(before_txt, after_txt, rel)
+        added_n = sum(1 for dl in diff_txt.splitlines() if dl.startswith("+") and not dl.startswith("+++"))
+        removed_n = sum(1 for dl in diff_txt.splitlines() if dl.startswith("-") and not dl.startswith("---"))
         changed_files.append({
             "path": rel,
             "status_code": code.strip() or "M",
             "staged": code[0] not in (" ", "?"),
+            "added": added_n,
+            "removed": removed_n,
             "before": before_txt[:6000],
             "after": after_txt[:6000],
             "diff": diff_txt[:8000],

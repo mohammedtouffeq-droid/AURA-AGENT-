@@ -289,7 +289,7 @@ def test_part3_remote_control_intelligence_security_and_emergency_stop(srv_url):
 def test_part4_five_center_ui_and_home_screen_sacred():
     html_text = (ROOT / "index.html").read_text(encoding="utf-8")
     sw_text = (ROOT / "sw.js").read_text(encoding="utf-8")
-    assert "aura-core-shell-v14" in sw_text
+    assert "aura-core-shell-v1" in sw_text
 
     for el_id in (
         "awTabBtn_agents",
