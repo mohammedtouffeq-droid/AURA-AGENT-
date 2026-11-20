@@ -79,7 +79,8 @@ class LiveActionHub:
         uid = self._uid(user_id)
         now = time.time()
         clean_source = str(source or "browser").strip().lower()
-        if clean_source not in ("browser", "computer", "vision", "system"):
+        allowed_sources = ("orchestrator", "verify", "browser", "computer", "terminal", "files", "vision", "system")
+        if clean_source not in allowed_sources:
             clean_source = "system"
 
         clean_coords: Optional[Dict[str, int]] = None
@@ -155,8 +156,12 @@ class LiveActionHub:
 
         stats = {
             "total": len(all_events),
+            "orchestrator": sum(1 for e in all_events if e["source"] == "orchestrator"),
+            "verify": sum(1 for e in all_events if e["source"] == "verify"),
             "browser": sum(1 for e in all_events if e["source"] == "browser"),
             "computer": sum(1 for e in all_events if e["source"] == "computer"),
+            "terminal": sum(1 for e in all_events if e["source"] == "terminal"),
+            "files": sum(1 for e in all_events if e["source"] == "files"),
             "vision": sum(1 for e in all_events if e["source"] == "vision"),
             "failed": sum(1 for e in all_events if e["status"] in ("error", "blocked", "stopped")),
         }

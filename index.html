@@ -3465,8 +3465,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            padding: 9px 12px;
+            gap: 6px;
+            padding: 8px 10px;
             background: rgba(13, 16, 24, 0.96);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             flex-shrink: 0;
@@ -3474,7 +3474,7 @@
         .aw-mode-switcher {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             padding: 3px;
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.04);
@@ -3487,13 +3487,13 @@
         .aw-mode-btn {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 5px 10px;
+            gap: 4px;
+            padding: 5px 7px;
             border-radius: 7px;
             border: 1px solid transparent;
             background: transparent;
             color: #9ca3af;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
@@ -4016,6 +4016,320 @@
         .aw-action-src.browser { border-color: rgba(147, 197, 253, 0.35); color: #93c5fd; background: rgba(59, 130, 246, 0.12); }
         .aw-action-src.computer { border-color: rgba(52, 211, 153, 0.35); color: #6ee7b7; background: rgba(16, 185, 129, 0.12); }
         .aw-action-src.vision { border-color: rgba(226, 185, 111, 0.4); color: #e2b96f; background: rgba(226, 185, 111, 0.12); }
+        .aw-action-src.orchestrator { border-color: rgba(196, 181, 253, 0.42); color: #c4b5fd; background: rgba(139, 92, 246, 0.14); }
+        .aw-action-src.verify { border-color: rgba(52, 211, 153, 0.45); color: #34d399; background: rgba(16, 185, 129, 0.14); }
+        .aw-action-src.terminal { border-color: rgba(251, 191, 36, 0.4); color: #fcd34d; background: rgba(245, 158, 11, 0.12); }
+        .aw-action-src.files { border-color: rgba(161, 161, 170, 0.38); color: #e4e4e7; background: rgba(255, 255, 255, 0.08); }
+
+        /* ---- Pillars 1-5: Multi-Agent Orchestrator, Planner, Agent Manager & Self-Verify ---- */
+        .aw-subnav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(11, 14, 21, 0.96);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .aw-subpills {
+            display: inline-flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .aw-subpill {
+            padding: 4px 10px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            color: #9ca3af;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .aw-subpill.active {
+            color: #fafafa;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(226, 185, 111, 0.45);
+        }
+        .aw-subview {
+            display: none;
+            flex: 1;
+            min-height: 0;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 12px;
+            gap: 10px;
+        }
+        .aw-subview.active {
+            display: flex;
+        }
+        .aw-card {
+            background: rgba(15, 18, 28, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .aw-spec-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .aw-check-pill {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 9px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(255, 255, 255, 0.03);
+            color: #e4e4e7;
+            font-size: 11.5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .aw-check-pill input { accent-color: #e2b96f; margin: 0; }
+        .aw-phase-card {
+            padding: 9px 11px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(9, 11, 17, 0.85);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .aw-tree-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .aw-tree-children {
+            margin-left: 14px;
+            padding-left: 12px;
+            border-left: 1px solid rgba(226, 185, 111, 0.28);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .aw-agent-node {
+            position: relative;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(15, 18, 28, 0.92);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .aw-agent-node.working { border-color: rgba(52, 211, 153, 0.45); }
+        .aw-agent-node.needs_approval { border-color: rgba(251, 191, 36, 0.55); background: rgba(245, 158, 11, 0.06); }
+        .aw-agent-node.error { border-color: rgba(248, 113, 113, 0.48); }
+        .aw-agent-node.completed { border-color: rgba(147, 197, 253, 0.32); }
+        .aw-progress-track {
+            width: 100%;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            overflow: hidden;
+        }
+        .aw-progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #e2b96f, #34d399);
+            transition: width 0.25s ease;
+        }
+        .aw-file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #93c5fd;
+            font-family: var(--font-code);
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .aw-file-chip:hover { border-color: rgba(226, 185, 111, 0.45); color: #ffffff; }
+        .aw-verify-step {
+            padding: 9px 11px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(12, 15, 23, 0.92);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .aw-verify-step.pass { border-color: rgba(52, 211, 153, 0.45); }
+        .aw-verify-step.fail { border-color: rgba(248, 113, 113, 0.42); }
+
+        /* ---- Pillar 9: Integrated Workspace Terminal ---- */
+        .aw-term-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 8px 10px;
+            background: rgba(12, 15, 23, 0.96);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .aw-term-output {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 12px;
+            background: #06080d;
+            font-family: var(--font-code);
+            font-size: 12px;
+            line-height: 1.55;
+            color: #e4e4e7;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .aw-term-block {
+            border-left: 2px solid rgba(255, 255, 255, 0.14);
+            padding-left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .aw-term-block.ok { border-left-color: #34d399; }
+        .aw-term-block.err { border-left-color: #f87171; }
+        .aw-term-pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: var(--font-code);
+            font-size: 11.5px;
+        }
+        .aw-term-diag {
+            display: none;
+            padding: 10px 12px;
+            border-top: 1px solid rgba(226, 185, 111, 0.3);
+            background: rgba(18, 21, 32, 0.96);
+            font-size: 12px;
+            line-height: 1.5;
+            color: #e4e4e7;
+            max-height: 170px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .aw-term-input-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(11, 14, 21, 0.98);
+            flex-shrink: 0;
+        }
+
+        /* ---- Pillar 10: Integrated File Explorer ---- */
+        .aw-explorer-split {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(190px, 0.85fr) minmax(240px, 1.35fr);
+            overflow: hidden;
+        }
+        .aw-explorer-tree-col {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(10, 12, 19, 0.94);
+            overflow: hidden;
+        }
+        .aw-explorer-tree-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .aw-fs-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 5px 7px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            color: #d4d4d8;
+            font-size: 11.5px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+        }
+        .aw-fs-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+        .aw-fs-row.active {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(226, 185, 111, 0.35);
+            color: #ffffff;
+        }
+        .aw-fs-actions {
+            display: inline-flex;
+            gap: 3px;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+        .aw-fs-row:hover .aw-fs-actions { opacity: 1; }
+        .aw-fs-mini-btn {
+            border: none;
+            background: rgba(255, 255, 255, 0.07);
+            color: #cbd5e1;
+            border-radius: 4px;
+            font-size: 9.5px;
+            padding: 2px 5px;
+            cursor: pointer;
+        }
+        .aw-fs-mini-btn:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+        .aw-explorer-editor-col {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            background: #06080d;
+            overflow: hidden;
+        }
+        .aw-code-textarea {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            resize: none;
+            border: none;
+            outline: none;
+            background: #06080d;
+            color: #f4f4f5;
+            font-family: var(--font-code);
+            font-size: 12px;
+            line-height: 1.55;
+            padding: 12px;
+            tab-size: 4;
+        }
+
+        @media (max-width: 1080px) {
+            .aw-explorer-split {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(0, 44%) minmax(0, 56%);
+            }
+            .aw-explorer-tree-col {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+        }
         .aw-action-thumb {
             width: 84px;
             height: 52px;
@@ -4409,21 +4723,33 @@
         </div>
     </aside>
 
-    <!-- ---------------- AURA Agentic Split Workspace: Live Browser | Computer Use | Live Action View ---------------- -->
-    <aside class="agent-workspace-pane" id="agentWorkspacePane" aria-label="AURA Live Browser, Computer Use & Action View">
+    <!-- ---------------- AURA 10-Pillar Agentic Split Workspace ---------------- -->
+    <aside class="agent-workspace-pane" id="agentWorkspacePane" aria-label="AURA Agentic Workspace: Orchestrator, Browser, Computer Use, Terminal, Explorer & Timeline">
         <div class="aw-topbar">
-            <div class="aw-mode-switcher" role="tablist" aria-label="AURA Agentic Capabilities">
+            <div class="aw-mode-switcher" role="tablist" aria-label="AURA 10-Pillar Agentic Capabilities">
+                <button type="button" class="aw-mode-btn" id="awTabBtn_agents" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('agents')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>
+                    <span>Agents</span>
+                </button>
                 <button type="button" class="aw-mode-btn active" id="awTabBtn_browser" role="tab" aria-selected="true" onclick="switchAgentWorkspaceTab('browser')">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    <span>Live Browser</span>
+                    <span>Browser</span>
                 </button>
                 <button type="button" class="aw-mode-btn" id="awTabBtn_computer" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('computer')">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    <span>Computer Use</span>
+                    <span>Computer</span>
+                </button>
+                <button type="button" class="aw-mode-btn" id="awTabBtn_terminal" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('terminal')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                    <span>Terminal</span>
+                </button>
+                <button type="button" class="aw-mode-btn" id="awTabBtn_explorer" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('explorer')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Explorer</span>
                 </button>
                 <button type="button" class="aw-mode-btn" id="awTabBtn_actions" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('actions')">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    <span>Live Action View</span>
+                    <span>Timeline</span>
                     <span class="aw-count-pill" id="awActionCountBadge">0</span>
                 </button>
             </div>
@@ -4432,6 +4758,82 @@
                 <button type="button" class="aw-icon-btn" onclick="closeAgentWorkspace()" title="Close Workspace">Close</button>
             </div>
         </div>
+
+        <!-- PILLARS 1-5: MULTI-AGENT ORCHESTRATOR, PARALLEL EXECUTION, PLANNING MODE, AGENT MANAGER & SELF-VERIFY -->
+        <section class="aw-panel" id="awPanel_agents" aria-label="AURA Multi-Agent Orchestrator & Mission Control">
+            <div class="aw-subnav">
+                <div class="aw-subpills" role="tablist" aria-label="Agent Orchestration Views">
+                    <button type="button" class="aw-subpill active" id="awAgentsSubBtn_plan" onclick="awSwitchAgentsSub('plan')">Plan &amp; Launch</button>
+                    <button type="button" class="aw-subpill" id="awAgentsSubBtn_manager" onclick="awSwitchAgentsSub('manager')">Agent Manager <span id="awMgrWorkingPill" style="font-family:var(--font-code); color:#6ee7b7; margin-left:3px;">0</span></button>
+                    <button type="button" class="aw-subpill" id="awAgentsSubBtn_verify" onclick="awSwitchAgentsSub('verify')">Self-Verify Loop</button>
+                </div>
+                <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awRefreshOrchestrator()">Sync</button>
+            </div>
+
+            <!-- Sub-view 1: Autonomous Planning Mode + Multi-Agent Specialist Breakdown -->
+            <div class="aw-subview active" id="awAgentsSub_plan">
+                <div class="aw-card">
+                    <div class="aw-section-label">
+                        <span>Autonomous Planning Mode &amp; Multi-Agent Split</span>
+                        <span style="font-family:var(--font-code); color:#e2b96f;">PARALLEL DAG</span>
+                    </div>
+                    <textarea id="awPlanGoalInput" rows="2" class="aw-url-input" style="height:auto; padding:8px 10px; resize:none; font-family:var(--font-sans);" placeholder="Describe a multi-part build (e.g. Build an Expense Tracker with Frontend UI, Python API, SQLite DB & automated tests)..."></textarea>
+                    <div class="aw-spec-grid">
+                        <label class="aw-check-pill"><input type="checkbox" id="awSpecFrontend" checked><span>Frontend Specialist</span></label>
+                        <label class="aw-check-pill"><input type="checkbox" id="awSpecBackend" checked><span>Backend Specialist</span></label>
+                        <label class="aw-check-pill"><input type="checkbox" id="awSpecDatabase" checked><span>Database Specialist</span></label>
+                        <label class="aw-check-pill"><input type="checkbox" id="awSpecQa" checked><span>QA &amp; Self-Verify</span></label>
+                    </div>
+                    <label class="aw-check-pill" style="border-color:rgba(251,191,36,0.25);">
+                        <input type="checkbox" id="awPlanRequireQaApproval">
+                        <span>Pause QA Agent for explicit approval inside Agent Manager before verification</span>
+                    </label>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="aw-primary-btn" id="awBtnGeneratePlan" onclick="awCreateOrchestratorPlan(false)" style="flex:1;">Generate Phased Plan</button>
+                        <button type="button" class="aw-icon-btn" onclick="awCreateOrchestratorPlan(true)">Plan &amp; Auto-Launch</button>
+                    </div>
+                </div>
+                <div id="awPlanReviewContainer" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:12px; color:#71717a; text-align:center; padding:18px 10px;">Generate a phased plan to inspect phases, dependencies, parallel specialists, and approve before AURA touches your workspace.</div>
+                </div>
+            </div>
+
+            <!-- Sub-view 2: Agent Manager (Live Hierarchical Tree + Parallel Status + Governance) -->
+            <div class="aw-subview" id="awAgentsSub_manager">
+                <div class="aw-kpi-grid">
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awMgrKpiWorking" style="color:#6ee7b7;">0</div><div class="aw-kpi-lbl">Working</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awMgrKpiApproval" style="color:#fde68a;">0</div><div class="aw-kpi-lbl">Approval</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awMgrKpiCompleted" style="color:#93c5fd;">0</div><div class="aw-kpi-lbl">Done</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awMgrKpiErrors" style="color:#fca5a5;">0</div><div class="aw-kpi-lbl">Errors</div></div>
+                </div>
+                <div id="awAgentTreeContainer" class="aw-tree-wrap">
+                    <div style="font-size:12px; color:#71717a; text-align:center; padding:24px 12px;">No active multi-agent mission yet. Create and approve a plan in <strong>Plan &amp; Launch</strong> to monitor parallel specialists live.</div>
+                </div>
+            </div>
+
+            <!-- Sub-view 3: Self-Verification Loops (Compile -> Test -> Diagnose -> Repair -> Re-Test) -->
+            <div class="aw-subview" id="awAgentsSub_verify">
+                <div class="aw-card">
+                    <div class="aw-section-label">
+                        <span>Self-Verification Loop (Test &rarr; Diagnose &rarr; Fix &rarr; Re-Test)</span>
+                        <span style="font-family:var(--font-code); color:#6ee7b7;">STRICT GATE</span>
+                    </div>
+                    <input type="text" id="awVerifyTargetInput" class="aw-url-input" placeholder="Workspace file or folder (e.g. app.py or missions/...)">
+                    <div style="display:flex; gap:6px;">
+                        <input type="text" id="awVerifyCmdInput" class="aw-url-input" style="flex:1;" placeholder="Optional test command (auto-detects unittest/py_compile)">
+                        <select id="awVerifyMaxAttempts" class="aw-url-input" style="width:92px; flex:none;" aria-label="Max verification attempts">
+                            <option value="3" selected>3 Loops</option>
+                            <option value="2">2 Loops</option>
+                            <option value="4">4 Loops</option>
+                        </select>
+                    </div>
+                    <button type="button" class="aw-primary-btn" id="awBtnRunSelfVerify" onclick="awRunSelfVerifyLoop()">Run Self-Verification Loop</button>
+                </div>
+                <div id="awVerifyResultsContainer" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:12px; color:#71717a; text-align:center; padding:18px 10px;">Run verification on any workspace script or mission directory. AURA compiles, runs tests, diagnoses failures, patches defects, and re-runs until verified PASS.</div>
+                </div>
+            </div>
+        </section>
 
         <!-- CAPABILITY 1: AURA LIVE BROWSER -->
         <section class="aw-panel active" id="awPanel_browser" aria-label="AURA Live Browser">
@@ -4566,30 +4968,96 @@
             </div>
         </section>
 
-        <!-- CAPABILITY 3: AURA LIVE ACTION VIEW -->
-        <section class="aw-panel" id="awPanel_actions" aria-label="AURA Live Action View">
+        <!-- PILLAR 9: INTEGRATED TERMINAL -->
+        <section class="aw-panel" id="awPanel_terminal" aria-label="AURA Integrated Terminal">
+            <div class="aw-term-toolbar">
+                <div style="display:flex; align-items:center; gap:6px; min-width:0;">
+                    <span style="font-family:var(--font-code); font-size:11px; color:#6ee7b7;" id="awTermCwdLabel">/workspace</span>
+                    <span id="awTermLastExit" style="font-family:var(--font-code); font-size:10px; color:#71717a;">READY</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                    <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awExecTerminal('ls')">ls</button>
+                    <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awExecTerminal('tree')">tree</button>
+                    <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awExecTerminal('python --version')">python</button>
+                    <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px; border-color:rgba(226,185,111,0.4); color:#e2b96f;" id="awBtnDiagnoseTerm" onclick="awDiagnoseTerminal()">Diagnose Error</button>
+                    <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awClearTerminalView()">Clear</button>
+                </div>
+            </div>
+            <div class="aw-term-output" id="awTermOutput">
+                <div style="color:#71717a; font-size:11.5px;">AURA Integrated Workspace Terminal ready. Run workspace commands (`ls`, `tree`, `python`, `pytest`, `node`, `mkdir`, `touch`, `grep`, `help`) and click <strong>Diagnose Error</strong> to analyze failures.</div>
+            </div>
+            <div class="aw-term-diag" id="awTermDiagBox"></div>
+            <div class="aw-term-input-row">
+                <span style="font-family:var(--font-code); font-size:12px; color:#e2b96f; flex-shrink:0;">$</span>
+                <input type="text" id="awTermCmdInput" class="aw-url-input" placeholder="Enter command (e.g. ls, python script.py, pytest)..." onkeydown="awHandleTerminalKey(event)">
+                <button type="button" class="aw-primary-btn" id="awBtnRunTerm" onclick="awExecTerminal()">Run</button>
+            </div>
+        </section>
+
+        <!-- PILLAR 10: INTEGRATED FILE EXPLORER -->
+        <section class="aw-panel" id="awPanel_explorer" aria-label="AURA Integrated File Explorer">
+            <div class="aw-term-toolbar">
+                <div style="display:flex; align-items:center; gap:5px; flex:1; min-width:160px;">
+                    <input type="text" id="awExplorerSearchInput" class="aw-url-input" style="height:26px; font-size:11px;" placeholder="Filter files or grep content..." oninput="awRefreshExplorerTree()" onkeydown="if(event.key==='Enter'){awGrepExplorerContent();}">
+                    <button type="button" class="aw-icon-btn" style="height:26px; font-size:10.5px;" onclick="awGrepExplorerContent()" title="Search inside file contents">Grep</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <button type="button" class="aw-icon-btn" style="height:26px; font-size:10.5px;" id="awBtnExpNewFile" onclick="awPromptCreateExplorerFile()">+ File</button>
+                    <button type="button" class="aw-icon-btn" style="height:26px; font-size:10.5px;" id="awBtnExpNewFolder" onclick="awPromptCreateExplorerFolder()">+ Folder</button>
+                    <button type="button" class="aw-icon-btn" style="height:26px; font-size:10.5px;" onclick="awRefreshExplorerTree()">Refresh</button>
+                </div>
+            </div>
+            <div class="aw-explorer-split">
+                <div class="aw-explorer-tree-col">
+                    <div class="aw-screen-hud" style="padding:5px 8px;">
+                        <span id="awExplorerStatsLabel" style="font-family:var(--font-code); font-size:10px;">0 folders · 0 files</span>
+                    </div>
+                    <div class="aw-explorer-tree-list" id="awExplorerTreeList">
+                        <div style="font-size:11px; color:#71717a; padding:8px;">Loading workspace files...</div>
+                    </div>
+                </div>
+                <div class="aw-explorer-editor-col">
+                    <div class="aw-screen-hud" style="padding:5px 8px;">
+                        <span id="awExplorerActivePath" style="font-family:var(--font-code); font-size:10.5px; color:#f4f4f5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select or create a file</span>
+                        <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                            <button type="button" class="aw-icon-btn" style="height:23px; font-size:10px;" id="awBtnExpSave" onclick="awSaveExplorerFile()">Save</button>
+                            <button type="button" class="aw-icon-btn" style="height:23px; font-size:10px; border-color:rgba(52,211,153,0.4); color:#6ee7b7;" onclick="awVerifyActiveExplorerFile()">Verify</button>
+                            <button type="button" class="aw-icon-btn" style="height:23px; font-size:10px;" onclick="awRenameActiveExplorerFile()">Rename</button>
+                        </div>
+                    </div>
+                    <textarea id="awExplorerCodeEditor" class="aw-code-textarea" spellcheck="false" placeholder="Select any file from the workspace tree or click + File to create one..." onkeydown="if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();awSaveExplorerFile();}"></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- PILLAR 8: LIVE ACTION TIMELINE -->
+        <section class="aw-panel" id="awPanel_actions" aria-label="AURA Live Action Timeline">
             <div class="aw-actions-header">
                 <div class="aw-kpi-grid">
                     <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiTotal">0</div><div class="aw-kpi-lbl">Total Steps</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiOrch" style="color:#c4b5fd;">0</div><div class="aw-kpi-lbl">Agents &amp; Verify</div></div>
                     <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiBrowser" style="color:#93c5fd;">0</div><div class="aw-kpi-lbl">Browser</div></div>
-                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiComputer" style="color:#6ee7b7;">0</div><div class="aw-kpi-lbl">Computer</div></div>
-                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiVision" style="color:#e2b96f;">0</div><div class="aw-kpi-lbl">Vision</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiComputer" style="color:#6ee7b7;">0</div><div class="aw-kpi-lbl">OS &amp; Dev</div></div>
                 </div>
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
-                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                        <button type="button" class="aw-icon-btn" id="awFilter_all" onclick="awSetActionFilter('all')">All</button>
-                        <button type="button" class="aw-icon-btn" id="awFilter_browser" onclick="awSetActionFilter('browser')">Browser</button>
-                        <button type="button" class="aw-icon-btn" id="awFilter_computer" onclick="awSetActionFilter('computer')">Computer</button>
-                        <button type="button" class="aw-icon-btn" id="awFilter_vision" onclick="awSetActionFilter('vision')">Vision</button>
+                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_all" onclick="awSetActionFilter('all')">All</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_orchestrator" onclick="awSetActionFilter('orchestrator')">Agents</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_verify" onclick="awSetActionFilter('verify')">Verify</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_browser" onclick="awSetActionFilter('browser')">Browser</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_computer" onclick="awSetActionFilter('computer')">Computer</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_terminal" onclick="awSetActionFilter('terminal')">Terminal</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_files" onclick="awSetActionFilter('files')">Files</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" id="awFilter_vision" onclick="awSetActionFilter('vision')">Vision</button>
                     </div>
                     <div style="display:flex; gap:5px;">
-                        <button type="button" class="aw-icon-btn" onclick="awRefreshActionsFeed()">Refresh</button>
-                        <button type="button" class="aw-icon-btn" onclick="awClearActionsFeed()">Clear</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awRefreshActionsFeed()">Refresh</button>
+                        <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awClearActionsFeed()">Clear</button>
                     </div>
                 </div>
             </div>
             <div class="aw-actions-feed" id="awActionsFeedList">
-                <div style="font-size:12px; color:#71717a; text-align:center; padding:28px 16px;">No live AI actions recorded yet. Navigate in Live Browser or start Computer Use to watch every action execute in real time.</div>
+                <div style="font-size:12px; color:#71717a; text-align:center; padding:28px 16px;">No live AI actions recorded yet. Launch a multi-agent plan, run terminal commands, edit files, browse, or start Computer Use to inspect the live timeline.</div>
             </div>
         </section>
 
@@ -8245,9 +8713,12 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             { cmd: '/plan', template: '/plan ', desc: 'Structured step-by-step architecture & build plan' },
             { cmd: '/boost', template: '/boost ', desc: 'Deep multi-perspective verification & optimization' },
             { cmd: '/teamwork', template: '/teamwork ', desc: 'Coordinate multi-agent swarm team on a task' },
+            { cmd: '/agents', template: '/agents ', desc: 'Open Multi-Agent Orchestrator, Planner & Agent Manager' },
+            { cmd: '/verify', template: '/verify ', desc: 'Run Self-Verification Loop (Test -> Diagnose -> Fix -> Re-Test)' },
+            { cmd: '/explorer', template: '/explorer', desc: 'Open Integrated File Explorer (Folders, Search, Rename, Edit)' },
             { cmd: '/browser', template: '/browser ', desc: 'Open AURA Live Browser & run AI web navigation/actions' },
             { cmd: '/computer', template: '/computer ', desc: 'Open AURA Computer Use (Desktop Automation & Live Screen)' },
-            { cmd: '/actions', template: '/actions', desc: 'Open AURA Live Action View (Real-time AI activity stream)' },
+            { cmd: '/actions', template: '/actions', desc: 'Open AURA Live Action Timeline (Real-time AI activity stream)' },
             { cmd: '/schedule', template: '/schedule ', desc: 'Set recurring cron monitor or one-shot timer' },
             { cmd: '/compact', template: '/compact', desc: 'Summarize & compress long thread context cleanly' },
             { cmd: '/learn', template: '/learn ', desc: 'Extract reusable workflow skill & memory note' },
@@ -8528,10 +8999,41 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 }
                 return;
             }
-            if (!hasAttachments && (lowerCmd === '/actions' || lowerCmd === '/liveactions')) {
+            if (!hasAttachments && (lowerCmd === '/actions' || lowerCmd === '/liveactions' || lowerCmd === '/timeline')) {
                 userPrompt.value = '';
                 userPrompt.style.height = 'auto';
                 await openAgentWorkspace('actions');
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/agents' || lowerCmd.startsWith('/agents ') || lowerCmd === '/orchestrate' || lowerCmd.startsWith('/orchestrate '))) {
+                const missionGoal = text.replace(/^\/(agents|orchestrate)\s*/i, '').trim();
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('agents');
+                if (missionGoal) {
+                    const inp = document.getElementById('awPlanGoalInput');
+                    if (inp) inp.value = missionGoal;
+                    await awCreateOrchestratorPlan(false);
+                }
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/verify' || lowerCmd.startsWith('/verify '))) {
+                const verifyTarget = text.slice(7).trim();
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('agents');
+                awSwitchAgentsSub('verify');
+                if (verifyTarget) {
+                    const inp = document.getElementById('awVerifyTargetInput');
+                    if (inp) inp.value = verifyTarget;
+                    await awRunSelfVerifyLoop();
+                }
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/explorer')) {
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('explorer');
                 return;
             }
             // Synchronized natural chat -> AURA Live Browser shortcut
@@ -12315,9 +12817,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         async function switchAgentWorkspaceTab(mode) {
-            const valid = ['browser', 'computer', 'actions'].includes(mode) ? mode : 'browser';
+            const allTabs = ['agents', 'browser', 'computer', 'terminal', 'explorer', 'actions'];
+            const valid = allTabs.includes(mode) ? mode : 'browser';
             awState.activeTab = valid;
-            ['browser', 'computer', 'actions'].forEach(m => {
+            allTabs.forEach(m => {
                 const btn = document.getElementById('awTabBtn_' + m);
                 const panel = document.getElementById('awPanel_' + m);
                 const isAct = m === valid;
@@ -12327,11 +12830,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 }
                 if (panel) panel.classList.toggle('active', isAct);
             });
-            if (valid === 'browser') {
+            if (valid === 'agents') {
+                await awRefreshOrchestrator();
+            } else if (valid === 'browser') {
                 await awRefreshBrowserState();
             } else if (valid === 'computer') {
                 await awRefreshComputerStatus();
                 await awCaptureComputerFrameOnce();
+            } else if (valid === 'terminal') {
+                await awLoadTerminalHistory();
+            } else if (valid === 'explorer') {
+                await awRefreshExplorerTree();
             } else if (valid === 'actions') {
                 await awRefreshActionsFeed();
             }
@@ -12345,8 +12854,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 awRefreshActionsFeed(true);
                 if (awState.activeTab === 'computer') {
                     awRefreshComputerStatus();
+                } else if (awState.activeTab === 'agents') {
+                    awRefreshOrchestrator();
                 }
-            }, 2200);
+            }, 1800);
             _syncAwScreenTimer();
         }
 
@@ -12786,7 +13297,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 const wins = data.windows || [];
                 let htmlOut = '';
                 wins.slice(0, 6).forEach(w => {
-                    htmlOut += `<button type="button" class="aw-ui-row" onclick="awComputerAction('focus_window', {window_title:${JSON.stringify(w.title)}})">` +
+                    const safeArg = escapeHtml(String(w.title || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+                    htmlOut += `<button type="button" class="aw-ui-row" onclick="awComputerAction('focus_window', {window_title:'${safeArg}'})">` +
                         `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(w.title)}</span>` +
                         `<span style="font-family:var(--font-code); font-size:9.5px; color:#6ee7b7; flex-shrink:0;">WIN</span></button>`;
                 });
@@ -12870,7 +13382,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         // ---------------- Capability 3: AURA Live Action View ----------------
         function awSetActionFilter(src) {
             awState.actionFilter = src;
-            ['all', 'browser', 'computer', 'vision'].forEach(f => {
+            ['all', 'orchestrator', 'verify', 'browser', 'computer', 'terminal', 'files', 'vision'].forEach(f => {
                 const btn = document.getElementById('awFilter_' + f);
                 if (btn) {
                     btn.style.borderColor = f === src ? 'rgba(226,185,111,0.55)' : '';
@@ -12891,13 +13403,13 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 const badge = document.getElementById('awActionCountBadge');
                 if (badge) badge.textContent = String(stats.total || 0);
                 const elTot = document.getElementById('awKpiTotal');
+                const elOr = document.getElementById('awKpiOrch');
                 const elBr = document.getElementById('awKpiBrowser');
                 const elCo = document.getElementById('awKpiComputer');
-                const elVi = document.getElementById('awKpiVision');
                 if (elTot) elTot.textContent = String(stats.total || 0);
+                if (elOr) elOr.textContent = String((stats.orchestrator || 0) + (stats.verify || 0));
                 if (elBr) elBr.textContent = String(stats.browser || 0);
-                if (elCo) elCo.textContent = String(stats.computer || 0);
-                if (elVi) elVi.textContent = String(stats.vision || 0);
+                if (elCo) elCo.textContent = String((stats.computer || 0) + (stats.terminal || 0) + (stats.files || 0) + (stats.vision || 0));
 
                 const actions = data.actions || [];
                 const tickerTxt = document.getElementById('awTickerText');
@@ -12956,8 +13468,652 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (res.ok) {
                 awRefreshActionsFeed(false);
                 const tickerTxt = document.getElementById('awTickerText');
-                if (tickerTxt) tickerTxt.textContent = 'AURA Live Action View cleared';
+                if (tickerTxt) tickerTxt.textContent = 'AURA Live Action Timeline cleared';
             }
+        }
+
+        // ============================================================================
+        // PILLARS 1-5: MULTI-AGENT ORCHESTRATOR, PLANNER, AGENT MANAGER & SELF-VERIFY
+        // ============================================================================
+        const awOrchState = {
+            sub: 'plan',
+            dashboard: null,
+            activeMissionId: '',
+            termHistory: [],
+            termHistIdx: -1,
+            lastTermEntry: null,
+            explorerActivePath: '',
+            explorerDirty: false
+        };
+
+        function awSwitchAgentsSub(sub) {
+            const valid = ['plan', 'manager', 'verify'].includes(sub) ? sub : 'plan';
+            awOrchState.sub = valid;
+            ['plan', 'manager', 'verify'].forEach(s => {
+                const btn = document.getElementById('awAgentsSubBtn_' + s);
+                const view = document.getElementById('awAgentsSub_' + s);
+                if (btn) btn.classList.toggle('active', s === valid);
+                if (view) view.classList.toggle('active', s === valid);
+            });
+            awRefreshOrchestrator();
+        }
+
+        function _getSelectedSpecialists() {
+            const list = [];
+            if (document.getElementById('awSpecFrontend')?.checked) list.push('frontend');
+            if (document.getElementById('awSpecBackend')?.checked) list.push('backend');
+            if (document.getElementById('awSpecDatabase')?.checked) list.push('database');
+            if (document.getElementById('awSpecQa')?.checked) list.push('qa_tester');
+            return list;
+        }
+
+        async function awCreateOrchestratorPlan(autoApprove = false) {
+            const inp = document.getElementById('awPlanGoalInput');
+            const goal = inp ? inp.value.trim() : '';
+            if (!goal) {
+                showBridgeToast('Describe a project or task goal first.', '#fde68a');
+                return;
+            }
+            const btn = document.getElementById('awBtnGeneratePlan');
+            if (btn) { btn.disabled = true; btn.textContent = autoApprove ? 'Launching...' : 'Planning...'; }
+            try {
+                const reqApproval = document.getElementById('awPlanRequireQaApproval')?.checked ? ['qa_tester'] : [];
+                const res = await apiFetch('/api/orchestrator/plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        goal,
+                        enabled_specialists: _getSelectedSpecialists(),
+                        require_approval_agents: reqApproval,
+                        auto_approve: !!autoApprove
+                    })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    showBridgeToast(data.error || 'Could not generate plan', '#f87171');
+                    return;
+                }
+                awOrchState.activeMissionId = data.mission.id;
+                _renderPlanReviewCard(data.mission);
+                await awRefreshOrchestrator();
+                awRefreshActionsFeed(true);
+                if (autoApprove) {
+                    awSwitchAgentsSub('manager');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Generate Phased Plan'; }
+            }
+        }
+
+        function _renderPlanReviewCard(mission) {
+            const box = document.getElementById('awPlanReviewContainer');
+            if (!box || !mission) return;
+            const statusColor = mission.status === 'completed' ? '#6ee7b7' : (mission.status === 'running' ? '#93c5fd' : '#fde68a');
+            const phasesHtml = (mission.phases || []).map(p => {
+                const deps = (p.depends_on_phases || []).length ? `Depends on Phase ${p.depends_on_phases.join(', ')}` : 'Root phase';
+                const modeBadge = p.mode === 'parallel'
+                    ? `<span style="font-family:var(--font-code); font-size:9.5px; color:#6ee7b7; border:1px solid rgba(52,211,153,0.38); padding:1px 6px; border-radius:999px;">PARALLEL</span>`
+                    : `<span style="font-family:var(--font-code); font-size:9.5px; color:#a1a1aa; border:1px solid rgba(255,255,255,0.12); padding:1px 6px; border-radius:999px;">${escapeHtml(String(p.mode || '').toUpperCase())}</span>`;
+                return `<div class="aw-phase-card">` +
+                    `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">` +
+                    `<strong style="font-size:12px; color:#f4f4f5;">${escapeHtml(p.name)}</strong>${modeBadge}` +
+                    `</div>` +
+                    `<div style="font-size:11.5px; color:#a1a1aa;">${escapeHtml(p.description || '')}</div>` +
+                    `<div style="font-family:var(--font-code); font-size:10px; color:#71717a;">Agents: ${escapeHtml((p.agents || []).join(', ') || 'none')} · ${escapeHtml(deps)}</div>` +
+                    `</div>`;
+            }).join('');
+
+            const approveBar = !mission.plan_approved && mission.status === 'awaiting_approval'
+                ? `<div style="display:flex; gap:6px; margin-top:4px;">` +
+                  `<button type="button" class="aw-ctrl-btn start" id="awBtnApprovePlan" style="flex:1; justify-content:center;" onclick="awApproveOrchestratorMission('${escapeHtml(mission.id)}')">Approve &amp; Launch Parallel Mission</button>` +
+                  `<button type="button" class="aw-ctrl-btn stop" onclick="awControlAgent('${escapeHtml(mission.id)}', 'coordinator', 'cancel_mission')">Reject</button>` +
+                  `</div>`
+                : `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:4px;">` +
+                  `<span style="font-family:var(--font-code); font-size:11px; color:${statusColor};">MISSION ${escapeHtml(String(mission.status || '').toUpperCase())}${mission.parallel_peak ? ' · PEAK ' + mission.parallel_peak + ' PARALLEL' : ''}</span>` +
+                  `<button type="button" class="aw-icon-btn" onclick="awSwitchAgentsSub('manager')">Open Agent Manager</button>` +
+                  `</div>`;
+
+            box.innerHTML = `<div class="aw-card">` +
+                `<div class="aw-section-label"><span>Execution Plan · ${escapeHtml(mission.id)}</span><span style="color:${statusColor}; font-family:var(--font-code);">${escapeHtml(String(mission.status || '').toUpperCase())}</span></div>` +
+                `<div style="font-size:12px; color:#e4e4e7;">${escapeHtml(mission.goal)}</div>` +
+                phasesHtml +
+                approveBar +
+                `</div>`;
+        }
+
+        async function awApproveOrchestratorMission(missionId) {
+            const btn = document.getElementById('awBtnApprovePlan');
+            if (btn) { btn.disabled = true; btn.textContent = 'Executing Parallel Agents...'; }
+            try {
+                const reqApproval = document.getElementById('awPlanRequireQaApproval')?.checked ? ['qa_tester'] : [];
+                const res = await apiFetch('/api/orchestrator/mission/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mission_id: missionId,
+                        enabled_specialists: _getSelectedSpecialists(),
+                        require_approval_agents: reqApproval
+                    })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    showBridgeToast(data.error || 'Could not launch mission', '#f87171');
+                    return;
+                }
+                _renderPlanReviewCard(data.mission);
+                awSwitchAgentsSub('manager');
+                await awRefreshOrchestrator();
+                awRefreshActionsFeed(true);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function awControlAgent(missionId, agentId, command) {
+            const res = await apiFetch('/api/orchestrator/agent/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mission_id: missionId, agent_id: agentId, command })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) {
+                showBridgeToast(data.error || 'Agent control failed', '#f87171');
+                return;
+            }
+            await awRefreshOrchestrator();
+            awRefreshActionsFeed(true);
+        }
+
+        async function awRefreshOrchestrator() {
+            try {
+                const res = await apiFetch('/api/orchestrator/dashboard', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+                awOrchState.dashboard = data;
+                const sum = data.summary || {};
+                const wPill = document.getElementById('awMgrWorkingPill');
+                if (wPill) wPill.textContent = String((sum.working || 0) + (sum.needs_approval || 0));
+                const setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = String(v || 0); };
+                setTxt('awMgrKpiWorking', sum.working);
+                setTxt('awMgrKpiApproval', sum.needs_approval);
+                setTxt('awMgrKpiCompleted', sum.completed);
+                setTxt('awMgrKpiErrors', sum.error);
+
+                const mission = data.active_mission;
+                if (mission) {
+                    awOrchState.activeMissionId = mission.id;
+                    _renderPlanReviewCard(mission);
+                    _renderAgentTree(mission);
+                }
+                if ((data.verify_history || []).length && awOrchState.sub === 'verify') {
+                    _renderVerifyResult(data.verify_history[0]);
+                }
+            } catch (_) {}
+        }
+
+        function _renderAgentNodeCard(mission, ag) {
+            const st = String(ag.status || 'waiting').toLowerCase();
+            const colorMap = {
+                working: '#6ee7b7',
+                completed: '#93c5fd',
+                needs_approval: '#fde68a',
+                error: '#fca5a5',
+                cancelled: '#a1a1aa',
+                waiting: '#9ca3af'
+            };
+            const col = colorMap[st] || '#9ca3af';
+            const filesHtml = (ag.files_written || []).map(f =>
+                `<button type="button" class="aw-file-chip" onclick="awOpenFileInExplorer('${escapeHtml(f)}')">${escapeHtml(f.split('/').slice(-2).join('/'))}</button>`
+            ).join('');
+            let ctrlBtns = '';
+            if (st === 'needs_approval') {
+                ctrlBtns = `<button type="button" class="aw-ctrl-btn start" style="height:24px; font-size:10.5px;" onclick="awControlAgent('${escapeHtml(mission.id)}', '${escapeHtml(ag.id)}', 'approve')">Approve</button>` +
+                    `<button type="button" class="aw-ctrl-btn stop" style="height:24px; font-size:10.5px;" onclick="awControlAgent('${escapeHtml(mission.id)}', '${escapeHtml(ag.id)}', 'deny')">Deny</button>`;
+            } else if (st === 'error' || st === 'cancelled') {
+                ctrlBtns = `<button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awControlAgent('${escapeHtml(mission.id)}', '${escapeHtml(ag.id)}', 'retry')">Retry</button>`;
+            } else if (st === 'working' || st === 'waiting') {
+                ctrlBtns = `<button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awControlAgent('${escapeHtml(mission.id)}', '${escapeHtml(ag.id)}', 'cancel')">Cancel</button>`;
+            }
+            const lastLog = (ag.logs || []).length ? ag.logs[ag.logs.length - 1] : '';
+            const depsText = (ag.depends_on || []).length ? `deps: ${ag.depends_on.join(', ')}` : 'root';
+            return `<div class="aw-agent-node ${escapeHtml(st)}">` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">` +
+                `<div><strong style="font-size:12px; color:#f4f4f5;">${escapeHtml(ag.name)}</strong> <span style="font-size:10.5px; color:#71717a;">· ${escapeHtml(ag.role)}</span></div>` +
+                `<div style="display:flex; align-items:center; gap:5px;">` +
+                `<span style="font-family:var(--font-code); font-size:10px; color:${col}; border:1px solid ${col}55; padding:1px 7px; border-radius:999px;">${escapeHtml(st.replace(/_/g, ' ').toUpperCase())}</span>` +
+                `${ag.duration_ms ? `<span style="font-family:var(--font-code); font-size:10px; color:#71717a;">${ag.duration_ms}ms</span>` : ''}` +
+                `</div></div>` +
+                `<div class="aw-progress-track"><div class="aw-progress-fill" style="width:${Number(ag.progress || 0)}%;"></div></div>` +
+                `<div style="font-size:11px; color:#cbd5e1;">${escapeHtml(ag.error || ag.summary || lastLog)}</div>` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">` +
+                `<div style="display:flex; gap:4px; flex-wrap:wrap;">${filesHtml || `<span style="font-family:var(--font-code); font-size:10px; color:#71717a;">Phase ${ag.phase} · ${escapeHtml(depsText)}</span>`}</div>` +
+                `<div style="display:flex; gap:4px;">${ctrlBtns}</div>` +
+                `</div></div>`;
+        }
+
+        function _renderAgentTree(mission) {
+            const box = document.getElementById('awAgentTreeContainer');
+            if (!box || !mission) return;
+            const agents = mission.agents || [];
+            const root = agents.find(a => !a.parent_id) || agents[0];
+            const children = agents.filter(a => a !== root);
+            const verBadge = mission.verification_result
+                ? (mission.verification_result.verified
+                    ? `<span style="font-family:var(--font-code); font-size:10px; color:#6ee7b7;">SELF-VERIFY PASS (${mission.verification_result.attempts} loop)</span>`
+                    : `<span style="font-family:var(--font-code); font-size:10px; color:#fca5a5;">VERIFY FAILED</span>`)
+                : '';
+            const hdr = `<div class="aw-card" style="padding:9px 11px;">` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">` +
+                `<strong style="font-size:12px; color:#f4f4f5;">${escapeHtml(mission.goal)}</strong>` +
+                `<span style="font-family:var(--font-code); font-size:10px; color:#e2b96f;">PEAK ${mission.parallel_peak || 0} PARALLEL</span>` +
+                `</div>` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">` +
+                `<span style="font-size:11px; color:#a1a1aa;">${escapeHtml(mission.combined_summary || ('Workspace: ' + mission.workspace_rel))}</span>` +
+                verBadge +
+                `</div></div>`;
+            box.innerHTML = hdr +
+                (root ? _renderAgentNodeCard(mission, root) : '') +
+                `<div class="aw-tree-children">${children.map(c => _renderAgentNodeCard(mission, c)).join('')}</div>`;
+        }
+
+        async function awRunSelfVerifyLoop(explicitPath) {
+            const pathInp = document.getElementById('awVerifyTargetInput');
+            const cmdInp = document.getElementById('awVerifyCmdInput');
+            const maxSel = document.getElementById('awVerifyMaxAttempts');
+            const targetPath = (typeof explicitPath === 'string' && explicitPath.trim()) ? explicitPath.trim() : (pathInp ? pathInp.value.trim() : '.');
+            const testCmd = cmdInp ? cmdInp.value.trim() : '';
+            const maxAttempts = maxSel ? Number(maxSel.value) : 3;
+            const btn = document.getElementById('awBtnRunSelfVerify');
+            if (btn) { btn.disabled = true; btn.textContent = 'Running Test -> Diagnose -> Fix Loop...'; }
+            try {
+                const res = await apiFetch('/api/orchestrator/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_path: targetPath || '.', test_command: testCmd, max_attempts: maxAttempts })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    showBridgeToast(data.error || 'Self-verification failed', '#f87171');
+                    return;
+                }
+                _renderVerifyResult(data);
+                awRefreshActionsFeed(true);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Run Self-Verification Loop'; }
+            }
+        }
+
+        function _renderVerifyResult(data) {
+            const box = document.getElementById('awVerifyResultsContainer');
+            if (!box || !data) return;
+            const ok = !!data.verified;
+            const banner = `<div class="aw-card" style="border-color:${ok ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'};">` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">` +
+                `<strong style="color:${ok ? '#6ee7b7' : '#fca5a5'}; font-size:12.5px;">${ok ? 'SELF-VERIFICATION PASSED' : 'SELF-VERIFICATION FAILED'}</strong>` +
+                `<span style="font-family:var(--font-code); font-size:10.5px; color:#a1a1aa;">${data.attempts} attempt(s) · ${data.total_duration_ms}ms</span>` +
+                `</div>` +
+                `<div style="font-family:var(--font-code); font-size:11px; color:#cbd5e1;">Target: ${escapeHtml(data.target_path || '.')}</div>` +
+                `</div>`;
+            const stepsHtml = (data.iterations || []).map(it => (
+                `<div class="aw-verify-step ${it.passed ? 'pass' : 'fail'}">` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">` +
+                `<strong style="font-size:11.5px; color:#f4f4f5;">Attempt #${it.attempt} · ${escapeHtml(it.command || 'verify')}</strong>` +
+                `<span style="font-family:var(--font-code); font-size:10px; color:${it.passed ? '#6ee7b7' : '#fca5a5'};">EXIT ${it.exit_code} · ${it.duration_ms}ms</span>` +
+                `</div>` +
+                `<div style="font-size:11.5px; color:#d4d4d8;">${escapeHtml(it.diagnosis || '')}</div>` +
+                (it.repair_applied ? `<div style="font-size:11px; color:#e2b96f; font-family:var(--font-code);">AUTO-FIX: ${escapeHtml(it.repair_applied)}</div>` : '') +
+                ((it.stderr || it.stdout) ? `<pre class="aw-term-pre" style="color:${it.passed ? '#9ca3af' : '#fca5a5'}; max-height:110px; overflow:auto;">${escapeHtml((it.stderr || it.stdout).slice(0, 900))}</pre>` : '') +
+                `</div>`
+            )).join('');
+            box.innerHTML = banner + stepsHtml;
+        }
+
+        // ============================================================================
+        // PILLAR 9: INTEGRATED WORKSPACE TERMINAL + AI ERROR DIAGNOSIS
+        // ============================================================================
+        async function awLoadTerminalHistory() {
+            try {
+                const res = await apiFetch('/api/workspace/terminal/history', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+                const cwdEl = document.getElementById('awTermCwdLabel');
+                if (cwdEl) cwdEl.textContent = data.cwd && data.cwd !== '.' ? '/workspace/' + data.cwd : '/workspace';
+                const hist = data.history || [];
+                awOrchState.termHistory = hist.map(h => h.command);
+                if (hist.length) {
+                    awOrchState.lastTermEntry = hist[hist.length - 1];
+                    const out = document.getElementById('awTermOutput');
+                    if (out) {
+                        out.innerHTML = hist.map(_renderTermEntryHtml).join('');
+                        out.scrollTop = out.scrollHeight;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        function _renderTermEntryHtml(ent) {
+            const ok = Number(ent.exit_code) === 0;
+            return `<div class="aw-term-block ${ok ? 'ok' : 'err'}">` +
+                `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">` +
+                `<span style="color:#f4f4f5;"><span style="color:#e2b96f;">$</span> ${escapeHtml(ent.command)}</span>` +
+                `<span style="font-size:10px; color:${ok ? '#6ee7b7' : '#fca5a5'};">EXIT ${ent.exit_code} · ${ent.duration_ms}ms</span>` +
+                `</div>` +
+                (ent.stdout ? `<pre class="aw-term-pre" style="color:#d4d4d8;">${escapeHtml(ent.stdout)}</pre>` : '') +
+                (ent.stderr ? `<pre class="aw-term-pre" style="color:#fca5a5;">${escapeHtml(ent.stderr)}</pre>` : '') +
+                `</div>`;
+        }
+
+        function awHandleTerminalKey(ev) {
+            const inp = document.getElementById('awTermCmdInput');
+            if (!inp) return;
+            if (ev.key === 'Enter') {
+                ev.preventDefault();
+                awExecTerminal();
+            } else if (ev.key === 'ArrowUp' && awOrchState.termHistory.length) {
+                ev.preventDefault();
+                if (awOrchState.termHistIdx < 0) awOrchState.termHistIdx = awOrchState.termHistory.length - 1;
+                else awOrchState.termHistIdx = Math.max(0, awOrchState.termHistIdx - 1);
+                inp.value = awOrchState.termHistory[awOrchState.termHistIdx] || '';
+            } else if (ev.key === 'ArrowDown' && awOrchState.termHistory.length) {
+                ev.preventDefault();
+                awOrchState.termHistIdx = Math.min(awOrchState.termHistory.length, awOrchState.termHistIdx + 1);
+                inp.value = awOrchState.termHistory[awOrchState.termHistIdx] || '';
+            }
+        }
+
+        async function awExecTerminal(explicitCmd) {
+            const inp = document.getElementById('awTermCmdInput');
+            const cmd = (typeof explicitCmd === 'string' && explicitCmd.trim()) ? explicitCmd.trim() : (inp ? inp.value.trim() : '');
+            if (!cmd) return;
+            if (cmd.toLowerCase() === 'clear') {
+                awClearTerminalView();
+                if (inp) inp.value = '';
+                return;
+            }
+            const btn = document.getElementById('awBtnRunTerm');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await apiFetch('/api/workspace/terminal/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: cmd })
+                });
+                const data = await safeParseJson(res);
+                const out = document.getElementById('awTermOutput');
+                const exitEl = document.getElementById('awTermLastExit');
+                const cwdEl = document.getElementById('awTermCwdLabel');
+                if (!res.ok || !data.success) {
+                    if (out) {
+                        out.insertAdjacentHTML('beforeend', `<div class="aw-term-block err"><span style="color:#fca5a5;">${escapeHtml(data.error || 'Command blocked')}</span></div>`);
+                        out.scrollTop = out.scrollHeight;
+                    }
+                    return;
+                }
+                const ent = data.entry;
+                awOrchState.lastTermEntry = ent;
+                awOrchState.termHistory.push(cmd);
+                awOrchState.termHistIdx = -1;
+                if (cwdEl) cwdEl.textContent = data.cwd && data.cwd !== '.' ? '/workspace/' + data.cwd : '/workspace';
+                if (exitEl) {
+                    exitEl.textContent = `EXIT ${ent.exit_code}`;
+                    exitEl.style.color = ent.exit_code === 0 ? '#6ee7b7' : '#fca5a5';
+                }
+                if (out) {
+                    if (out.children.length === 1 && !out.querySelector('.aw-term-block')) out.innerHTML = '';
+                    out.insertAdjacentHTML('beforeend', _renderTermEntryHtml(ent));
+                    out.scrollTop = out.scrollHeight;
+                }
+                if (inp && !explicitCmd) inp.value = '';
+                awRefreshActionsFeed(true);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function awClearTerminalView() {
+            const out = document.getElementById('awTermOutput');
+            const diag = document.getElementById('awTermDiagBox');
+            if (out) out.innerHTML = `<div style="color:#71717a; font-size:11.5px;">Terminal cleared.</div>`;
+            if (diag) diag.style.display = 'none';
+        }
+
+        async function awDiagnoseTerminal() {
+            const diag = document.getElementById('awTermDiagBox');
+            if (diag) {
+                diag.style.display = 'block';
+                diag.innerHTML = `<span style="color:#a1a1aa;">Analyzing terminal output &amp; tracebacks...</span>`;
+            }
+            const last = awOrchState.lastTermEntry || {};
+            const res = await apiFetch('/api/workspace/terminal/diagnose', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    command: last.command || '',
+                    stdout: last.stdout || '',
+                    stderr: last.stderr || '',
+                    exit_code: typeof last.exit_code === 'number' ? last.exit_code : null
+                })
+            });
+            const data = await safeParseJson(res);
+            if (diag) {
+                diag.innerHTML = (res.ok && data.success)
+                    ? `<div style="display:flex; justify-content:space-between; margin-bottom:4px;"><strong style="color:#e2b96f;">AURA Terminal Diagnosis</strong><button type="button" class="aw-fs-mini-btn" onclick="document.getElementById('awTermDiagBox').style.display='none'">Hide</button></div>${renderMarkdown(data.diagnosis || '')}`
+                    : `<span style="color:#fca5a5;">${escapeHtml(data.error || 'Diagnosis failed')}</span>`;
+            }
+            awRefreshActionsFeed(true);
+        }
+
+        // ============================================================================
+        // PILLAR 10: INTEGRATED FILE EXPLORER (FOLDERS, FILES, SEARCH, RENAME, EDIT)
+        // ============================================================================
+        async function awRefreshExplorerTree() {
+            const searchInp = document.getElementById('awExplorerSearchInput');
+            const q = searchInp ? searchInp.value.trim() : '';
+            try {
+                const res = await apiFetch('/api/workspace/fs/tree?search=' + encodeURIComponent(q), { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+                const stats = document.getElementById('awExplorerStatsLabel');
+                if (stats) stats.textContent = `${data.total_folders} folders · ${data.total_files} files`;
+                const list = document.getElementById('awExplorerTreeList');
+                if (!list) return;
+                const folders = data.folders || [];
+                const files = data.files || [];
+                if (!folders.length && !files.length) {
+                    list.innerHTML = `<div style="font-size:11px; color:#71717a; padding:10px 4px;">Workspace is empty. Click <strong>+ File</strong> or <strong>+ Folder</strong> to create project files.</div>`;
+                    return;
+                }
+                const _jsArg = (s) => escapeHtml(String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+                const folderRows = folders.map(d => {
+                    const arg = _jsArg(d.path);
+                    return `<div class="aw-fs-row" style="padding-left:${7 + (d.depth || 0) * 12}px;" title="${escapeHtml(d.path)}">` +
+                        `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#e2b96f;">[DIR] ${escapeHtml(d.name || d.path)}</span>` +
+                        `<span class="aw-fs-actions">` +
+                        `<button type="button" class="aw-fs-mini-btn" onclick="event.stopPropagation(); awPromptRenameExplorerEntry('${arg}')">Ren</button>` +
+                        `<button type="button" class="aw-fs-mini-btn" onclick="event.stopPropagation(); awDeleteExplorerEntry('${arg}')">Del</button>` +
+                        `</span></div>`;
+                }).join('');
+                const fileRows = files.map(f => {
+                    const isAct = f.path === awOrchState.explorerActivePath;
+                    const arg = _jsArg(f.path);
+                    return `<div class="aw-fs-row${isAct ? ' active' : ''}" style="padding-left:${7 + (f.depth || 0) * 12}px;" onclick="awOpenExplorerFile('${arg}')" title="${escapeHtml(f.path)}">` +
+                        `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(f.name || f.path)}</span>` +
+                        `<span class="aw-fs-actions">` +
+                        `<button type="button" class="aw-fs-mini-btn" onclick="event.stopPropagation(); awPromptRenameExplorerEntry('${arg}')">Ren</button>` +
+                        `<button type="button" class="aw-fs-mini-btn" onclick="event.stopPropagation(); awDeleteExplorerEntry('${arg}')">Del</button>` +
+                        `</span></div>`;
+                }).join('');
+                list.innerHTML = folderRows + fileRows;
+            } catch (_) {}
+        }
+
+        async function awOpenFileInExplorer(relPath) {
+            await switchAgentWorkspaceTab('explorer');
+            await awOpenExplorerFile(relPath);
+        }
+
+        async function awOpenExplorerFile(relPath) {
+            const res = await apiFetch('/api/workspace/file?path=' + encodeURIComponent(relPath), { method: 'GET' });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) {
+                showBridgeToast(data.error || 'Could not open file', '#f87171');
+                return;
+            }
+            awOrchState.explorerActivePath = data.path;
+            const pathLbl = document.getElementById('awExplorerActivePath');
+            const editor = document.getElementById('awExplorerCodeEditor');
+            if (pathLbl) pathLbl.textContent = data.path;
+            if (editor) editor.value = data.content || '';
+            awRefreshExplorerTree();
+        }
+
+        async function awSaveExplorerFile() {
+            const path = awOrchState.explorerActivePath;
+            const editor = document.getElementById('awExplorerCodeEditor');
+            if (!path) {
+                await awPromptCreateExplorerFile();
+                return;
+            }
+            const res = await apiFetch('/api/workspace/fs/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, content: editor ? editor.value : '' })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                showBridgeToast(`Saved ${data.path} (${data.bytes} B)`, '#34d399');
+                awRefreshExplorerTree();
+                awRefreshActionsFeed(true);
+            } else {
+                showBridgeToast(data.error || 'Save failed', '#f87171');
+            }
+        }
+
+        async function awPromptCreateExplorerFile() {
+            const rel = prompt('New file path (e.g. src/app.py or index.html):', 'app.py');
+            if (!rel || !rel.trim()) return;
+            const res = await apiFetch('/api/workspace/fs/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: rel.trim(), content: '' })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                await awRefreshExplorerTree();
+                await awOpenExplorerFile(data.path);
+                awRefreshActionsFeed(true);
+            } else {
+                showBridgeToast(data.error || 'Create file failed', '#f87171');
+            }
+        }
+
+        async function awPromptCreateExplorerFolder() {
+            const rel = prompt('New folder path (e.g. src/components):', 'src');
+            if (!rel || !rel.trim()) return;
+            const res = await apiFetch('/api/workspace/fs/mkdir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: rel.trim() })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                showBridgeToast(`Created folder ${data.path}`, '#34d399');
+                await awRefreshExplorerTree();
+                awRefreshActionsFeed(true);
+            } else {
+                showBridgeToast(data.error || 'Create folder failed', '#f87171');
+            }
+        }
+
+        async function awPromptRenameExplorerEntry(oldPath) {
+            const nextPath = prompt(`Rename '${oldPath}' to:`, oldPath);
+            if (!nextPath || !nextPath.trim() || nextPath.trim() === oldPath) return;
+            const res = await apiFetch('/api/workspace/fs/rename', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ old_path: oldPath, new_path: nextPath.trim() })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                if (awOrchState.explorerActivePath === oldPath) {
+                    awOrchState.explorerActivePath = data.new_path;
+                    const lbl = document.getElementById('awExplorerActivePath');
+                    if (lbl) lbl.textContent = data.new_path;
+                }
+                showBridgeToast(`Renamed to ${data.new_path}`, '#34d399');
+                await awRefreshExplorerTree();
+                awRefreshActionsFeed(true);
+            } else {
+                showBridgeToast(data.error || 'Rename failed', '#f87171');
+            }
+        }
+
+        async function awRenameActiveExplorerFile() {
+            if (!awOrchState.explorerActivePath) {
+                showBridgeToast('Open a file first to rename it.', '#fde68a');
+                return;
+            }
+            await awPromptRenameExplorerEntry(awOrchState.explorerActivePath);
+        }
+
+        async function awDeleteExplorerEntry(relPath) {
+            if (!confirm(`Delete '${relPath}' from your workspace?`)) return;
+            const res = await apiFetch('/api/workspace/fs/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: relPath })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                if (awOrchState.explorerActivePath === relPath) {
+                    awOrchState.explorerActivePath = '';
+                    const lbl = document.getElementById('awExplorerActivePath');
+                    const ed = document.getElementById('awExplorerCodeEditor');
+                    if (lbl) lbl.textContent = 'Select or create a file';
+                    if (ed) ed.value = '';
+                }
+                await awRefreshExplorerTree();
+                awRefreshActionsFeed(true);
+            } else {
+                showBridgeToast(data.error || 'Delete failed', '#f87171');
+            }
+        }
+
+        async function awVerifyActiveExplorerFile() {
+            const target = awOrchState.explorerActivePath || '.';
+            if (awOrchState.explorerActivePath) await awSaveExplorerFile();
+            await switchAgentWorkspaceTab('agents');
+            awSwitchAgentsSub('verify');
+            const inp = document.getElementById('awVerifyTargetInput');
+            if (inp) inp.value = target;
+            await awRunSelfVerifyLoop(target);
+        }
+
+        async function awGrepExplorerContent() {
+            const searchInp = document.getElementById('awExplorerSearchInput');
+            const q = searchInp ? searchInp.value.trim() : '';
+            if (!q) { await awRefreshExplorerTree(); return; }
+            const res = await apiFetch('/api/workspace/grep', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: q })
+            });
+            const data = await safeParseJson(res);
+            const list = document.getElementById('awExplorerTreeList');
+            if (!list || !res.ok || !data.success) return;
+            const hits = data.matches || [];
+            if (!hits.length) {
+                list.innerHTML = `<div style="font-size:11px; color:#71717a; padding:8px;">No content matches for "${escapeHtml(q)}".</div>`;
+                return;
+            }
+            list.innerHTML = hits.slice(0, 40).map(h => {
+                const arg = escapeHtml(String(h.file || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+                return `<div class="aw-fs-row" onclick="awOpenExplorerFile('${arg}')">` +
+                    `<div style="min-width:0; overflow:hidden;">` +
+                    `<div style="font-family:var(--font-code); font-size:10.5px; color:#93c5fd;">${escapeHtml(h.file)}:${h.line}</div>` +
+                    `<div style="font-size:10.5px; color:#a1a1aa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(h.text || '')}</div>` +
+                    `</div></div>`;
+            }).join('');
         }
     </script>
 </body>

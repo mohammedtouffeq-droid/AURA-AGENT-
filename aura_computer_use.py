@@ -779,6 +779,8 @@ class ComputerUseManager:
                 if cands:
                     parts = (cands[0].get("content") or {}).get("parts") or []
                     vision_text = "\n".join(str(p.get("text") or "") for p in parts if isinstance(p, dict) and p.get("text")).strip()
+                    if any(tok in vision_text.lower() for tok in ("high student traffic", "temporarily throttled", "rate limit")):
+                        vision_text = ""
             except Exception:
                 vision_text = ""
 

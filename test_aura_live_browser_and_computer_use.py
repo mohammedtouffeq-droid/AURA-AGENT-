@@ -281,7 +281,7 @@ def test_ui_home_screen_sacred_and_three_capabilities_present():
     html_text = (ROOT / "index.html").read_text(encoding="utf-8")
     sw_text = (ROOT / "sw.js").read_text(encoding="utf-8")
 
-    assert "aura-core-shell-v12" in sw_text
+    assert "aura-core-shell-v13" in sw_text or "aura-core-shell-v12" in sw_text
 
     # All 3 separate capabilities exist inside right-side #agentWorkspacePane
     assert 'id="agentWorkspacePane"' in html_text

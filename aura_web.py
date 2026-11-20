@@ -83,6 +83,7 @@ def _clamp_float(value: Any, default: float, minimum: float, maximum: float) -> 
 import aura_db
 import aura_membership
 import aura_pro_studio
+from aura_agent_orchestrator import AGENT_ORCHESTRATOR
 from aura_brain import AuraBrain
 from aura_computer_use import COMPUTER_USE
 from aura_engine_base import EngineDispatchPlan, format_thought_block
@@ -90,6 +91,14 @@ from aura_jarvis_hub import JARVIS_HUB
 from aura_live_actions import LIVE_ACTION_HUB
 from aura_live_browser import LIVE_BROWSER
 from aura_models_hub import AURA_MODEL_ROUTER
+from aura_workspace_tools import (
+    WORKSPACE_TERMINAL,
+    create_or_save_workspace_file,
+    create_workspace_folder,
+    delete_workspace_entry,
+    list_workspace_fs_tree,
+    rename_workspace_entry,
+)
 from aura_settings import AuraSettingsManager
 from aura_voice_cloud import (
     VOICE_ORCHESTRATOR,
@@ -1210,6 +1219,31 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     include_thumbnails=inc_thumbs,
                 )
             )
+            return True
+
+        if path == "/api/orchestrator/dashboard":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(AGENT_ORCHESTRATOR.get_dashboard(user["id"]))
+            return True
+
+        if path == "/api/workspace/fs/tree":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            search_q = str((query.get("search") or [""])[0])[:120]
+            self._send_json(list_workspace_fs_tree(user["id"], _resolve_workspace_dir(user["id"]), search=search_q))
+            return True
+
+        if path == "/api/workspace/terminal/history":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(WORKSPACE_TERMINAL.get_history(user["id"]))
             return True
 
         return False
@@ -3016,6 +3050,170 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return True
             self._send_json(LIVE_ACTION_HUB.clear(user["id"]))
+            return True
+
+        # --- PILLARS 1-5: MULTI-AGENT ORCHESTRATOR, PLANNER, AGENT MANAGER & SELF-VERIFY ---
+        if path == "/api/orchestrator/plan":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            goal = str(body.get("goal") or body.get("prompt") or "").strip()[:1200]
+            enabled = body.get("enabled_specialists") if isinstance(body.get("enabled_specialists"), list) else None
+            req_ap = body.get("require_approval_agents") if isinstance(body.get("require_approval_agents"), list) else None
+            auto_ap = bool(body.get("auto_approve", False))
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = AGENT_ORCHESTRATOR.create_plan(
+                user["id"],
+                goal,
+                enabled_specialists=[str(x)[:32] for x in enabled] if enabled else None,
+                require_approval_agents=[str(x)[:32] for x in req_ap] if req_ap else None,
+                auto_approve=auto_ap,
+                ws_dir=_resolve_workspace_dir(user["id"]),
+                brain=brain,
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/orchestrator/mission/approve":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            mid = str(body.get("mission_id") or "").strip()[:64]
+            enabled = body.get("enabled_specialists") if isinstance(body.get("enabled_specialists"), list) else None
+            req_ap = body.get("require_approval_agents") if isinstance(body.get("require_approval_agents"), list) else None
+            wait_sync = bool(body.get("wait_sync", False))
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = AGENT_ORCHESTRATOR.approve_and_launch_mission(
+                user["id"],
+                mid,
+                _resolve_workspace_dir(user["id"]),
+                enabled_specialists=[str(x)[:32] for x in enabled] if enabled else None,
+                require_approval_agents=[str(x)[:32] for x in req_ap] if req_ap else None,
+                brain=brain,
+                wait_sync=wait_sync,
+            )
+            self._send_json(res, status=200 if res.get("success") else 404)
+            return True
+
+        if path == "/api/orchestrator/agent/control":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            mid = str(body.get("mission_id") or "").strip()[:64]
+            aid = str(body.get("agent_id") or "").strip()[:32]
+            cmd = str(body.get("command") or "").strip()[:32]
+            brain = _create_user_brain(user)
+            res = AGENT_ORCHESTRATOR.control_agent(
+                user["id"], mid, aid, cmd, _resolve_workspace_dir(user["id"]), brain=brain
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/orchestrator/verify":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            target_path = str(body.get("target_path") or body.get("path") or ".").strip()[:260]
+            test_cmd = str(body.get("test_command") or "").strip()[:260]
+            max_att = _clamp_int(body.get("max_attempts", 3), 3, 1, 4)
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = AGENT_ORCHESTRATOR.run_self_verification_loop(
+                user["id"],
+                _resolve_workspace_dir(user["id"]),
+                target_path,
+                test_command=test_cmd,
+                max_attempts=max_att,
+                brain=brain,
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        # --- PILLAR 9: INTEGRATED WORKSPACE TERMINAL & ERROR DIAGNOSIS ---
+        if path == "/api/workspace/terminal/exec":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            cmd_txt = str(body.get("command") or "").strip()
+            res = WORKSPACE_TERMINAL.execute(user["id"], _resolve_workspace_dir(user["id"]), cmd_txt)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/workspace/terminal/diagnose":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            ec = body.get("exit_code")
+            res = WORKSPACE_TERMINAL.diagnose_error(
+                user["id"],
+                command=str(body.get("command") or "")[:300],
+                stdout=str(body.get("stdout") or "")[:5000],
+                stderr=str(body.get("stderr") or "")[:5000],
+                exit_code=int(ec) if isinstance(ec, int) else None,
+                brain=brain,
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        # --- PILLAR 10: INTEGRATED FILE EXPLORER (MKDIR / CREATE / RENAME / DELETE) ---
+        if path == "/api/workspace/fs/mkdir":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            rel_p = str(body.get("path") or "").strip()
+            res = create_workspace_folder(user["id"], _resolve_workspace_dir(user["id"]), rel_p)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/workspace/fs/create":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            rel_p = str(body.get("path") or "").strip()
+            content = str(body.get("content") or "")
+            res = create_or_save_workspace_file(user["id"], _resolve_workspace_dir(user["id"]), rel_p, content)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/workspace/fs/rename":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            old_p = str(body.get("old_path") or "").strip()
+            new_p = str(body.get("new_path") or "").strip()
+            res = rename_workspace_entry(user["id"], _resolve_workspace_dir(user["id"]), old_p, new_p)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/workspace/fs/delete":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            rel_p = str(body.get("path") or "").strip()
+            res = delete_workspace_entry(user["id"], _resolve_workspace_dir(user["id"]), rel_p)
+            self._send_json(res, status=200 if res.get("success") else 400)
             return True
 
         return False

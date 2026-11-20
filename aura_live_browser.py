@@ -938,6 +938,8 @@ class LiveBrowserManager:
             if cands:
                 out_parts = (cands[0].get("content") or {}).get("parts") or []
                 txt = "\n".join(str(p.get("text") or "") for p in out_parts if isinstance(p, dict) and p.get("text")).strip()
+                if any(tok in txt.lower() for tok in ("high student traffic", "temporarily throttled", "rate limit")):
+                    return ""
                 return txt
         except Exception:
             return ""
