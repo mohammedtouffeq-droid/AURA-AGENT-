@@ -86,11 +86,14 @@ import aura_pro_studio
 from aura_agent_orchestrator import AGENT_ORCHESTRATOR
 from aura_brain import AuraBrain
 from aura_computer_use import COMPUTER_USE
+from aura_control_intelligence import CONTROL_HUB, redact_secrets
+import aura_dev_studio
 from aura_engine_base import EngineDispatchPlan, format_thought_block
 from aura_jarvis_hub import JARVIS_HUB
 from aura_live_actions import LIVE_ACTION_HUB
 from aura_live_browser import LIVE_BROWSER
 from aura_models_hub import AURA_MODEL_ROUTER
+from aura_platform_ext import PLATFORM_EXT
 from aura_workspace_tools import (
     WORKSPACE_TERMINAL,
     create_or_save_workspace_file,
@@ -1244,6 +1247,78 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return True
             self._send_json(WORKSPACE_TERMINAL.get_history(user["id"]))
+            return True
+
+        # --- PART 1-3 GET ROUTES (DEV STUDIO, GIT, DELIVERABLES, AUTOMATION, CONTROL & REMOTE) ---
+        if path == "/api/dev/codebase_map":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(aura_dev_studio.analyze_codebase_architecture(user["id"], _resolve_workspace_dir(user["id"])))
+            return True
+
+        if path == "/api/git/status":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(aura_dev_studio.git_get_status_and_diffs(user["id"], _resolve_workspace_dir(user["id"])))
+            return True
+
+        if path == "/api/snapshots/list":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json({"success": True, "snapshots": aura_dev_studio.list_project_snapshots(_resolve_workspace_dir(user["id"]))})
+            return True
+
+        if path == "/api/deliverables/list":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(aura_dev_studio.VISUAL_DELIVERABLES.list_artifacts(user["id"]))
+            return True
+
+        if path == "/api/platform/overview":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(PLATFORM_EXT.get_overview(user["id"], _resolve_workspace_dir(user["id"])))
+            return True
+
+        if path == "/api/control/overview":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(CONTROL_HUB.get_control_and_intelligence_overview(user["id"], _resolve_workspace_dir(user["id"])))
+            return True
+
+        if path == "/api/control/evaluate":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(CONTROL_HUB.evaluate_agents(user["id"], _resolve_workspace_dir(user["id"])))
+            return True
+
+        if path == "/api/remote/status":
+            rem_tok = str(self.headers.get("X-Remote-Token") or (query.get("token") or [""])[0]).strip()
+            uid = CONTROL_HUB.resolve_remote_token(rem_tok)
+            if not uid:
+                self._send_json({"success": False, "error": "Valid X-Remote-Token required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(int(uid)) if uid.isdigit() else _resolve_workspace_dir(None)
+            self._send_json({
+                "success": True,
+                "remote_authorized": True,
+                "orchestrator": AGENT_ORCHESTRATOR.get_dashboard(uid),
+                "control": CONTROL_HUB.get_control_and_intelligence_overview(uid, ws),
+            })
             return True
 
         return False
@@ -3213,6 +3288,208 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return True
             rel_p = str(body.get("path") or "").strip()
             res = delete_workspace_entry(user["id"], _resolve_workspace_dir(user["id"]), rel_p)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        # --- PART 1: PROFESSIONAL CODING, GIT STUDIO, SNAPSHOTS & VISUAL DELIVERABLES (#13-#28, #40-#45) ---
+        if path in (
+            "/api/dev/autocomplete", "/api/dev/inline_edit", "/api/dev/explain",
+            "/api/dev/bugs", "/api/dev/refactor", "/api/dev/multifile_edit",
+            "/api/dev/smart_search", "/api/dev/generate_tests",
+        ):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(user["id"])
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+
+            if path == "/api/dev/autocomplete":
+                res = aura_dev_studio.ai_autocomplete(user["id"], ws, path=str(body.get("path") or ""), prefix=str(body.get("prefix") or ""), suffix=str(body.get("suffix") or ""), brain=brain)
+            elif path == "/api/dev/inline_edit":
+                res = aura_dev_studio.inline_ai_edit(user["id"], ws, path=str(body.get("path") or ""), selected_code=str(body.get("selected_code") or ""), instruction=str(body.get("instruction") or ""), apply=bool(body.get("apply", False)), brain=brain)
+            elif path == "/api/dev/explain":
+                res = aura_dev_studio.explain_code(user["id"], ws, path=str(body.get("path") or ""), code=str(body.get("code") or ""), brain=brain)
+            elif path == "/api/dev/bugs":
+                res = aura_dev_studio.detect_bugs(user["id"], ws, path=str(body.get("path") or ""))
+            elif path == "/api/dev/refactor":
+                res = aura_dev_studio.refactor_file(user["id"], ws, path=str(body.get("path") or ""), goal=str(body.get("goal") or ""), apply=bool(body.get("apply", False)), brain=brain)
+            elif path == "/api/dev/multifile_edit":
+                edits = body.get("edits") if isinstance(body.get("edits"), list) else []
+                res = aura_dev_studio.apply_multifile_edits(user["id"], ws, edits=edits, label=str(body.get("label") or "Multi-File Edit"), dry_run=bool(body.get("dry_run", False)))
+            elif path == "/api/dev/smart_search":
+                res = aura_dev_studio.smart_search_workspace(user["id"], ws, str(body.get("query") or ""))
+            else:
+                res = aura_dev_studio.generate_unit_tests(user["id"], ws, path=str(body.get("path") or ""), save=bool(body.get("save", True)), brain=brain)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path in ("/api/git/review", "/api/git/worktree", "/api/git/branch", "/api/git/commit", "/api/git/pr"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(user["id"])
+            if path == "/api/git/review":
+                res = aura_dev_studio.git_review_file_decision(user["id"], ws, str(body.get("path") or ""), str(body.get("decision") or "approve"))
+            elif path == "/api/git/worktree":
+                res = aura_dev_studio.git_manage_worktree(user["id"], ws, str(body.get("action") or "create"), str(body.get("name") or ""))
+            elif path == "/api/git/branch":
+                res = aura_dev_studio.git_manage_branch(user["id"], ws, str(body.get("action") or "switch"), str(body.get("branch") or ""))
+            elif path == "/api/git/commit":
+                res = aura_dev_studio.git_commit_and_push(
+                    user["id"], ws,
+                    message=str(body.get("message") or ""),
+                    stage_all=bool(body.get("stage_all", True)),
+                    push=bool(body.get("push", False)),
+                    push_approved=bool(body.get("push_approved", False)),
+                )
+                if res.get("success"):
+                    ev_res = PLATFORM_EXT.fire_event(user["id"], ws, "on_commit")
+                    res["event_triggers_fired"] = ev_res.get("triggered_count", 0)
+            else:
+                brain = _create_user_brain(user)
+                res = aura_dev_studio.git_pull_request_assistant(user["id"], ws, title=str(body.get("title") or ""), review_feedback=str(body.get("review_feedback") or ""), brain=brain)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path in ("/api/snapshots/create", "/api/snapshots/rollback"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(user["id"])
+            if path == "/api/snapshots/create":
+                res = aura_dev_studio.create_project_snapshot(user["id"], ws, label=str(body.get("label") or "Manual Checkpoint"))
+            else:
+                res = aura_dev_studio.rollback_project_snapshot(user["id"], ws, str(body.get("snapshot_id") or ""))
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path in ("/api/deliverables/artifact", "/api/deliverables/report", "/api/browser/record", "/api/browser/feedback"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(user["id"])
+            if path == "/api/deliverables/artifact":
+                res = aura_dev_studio.VISUAL_DELIVERABLES.save_artifact(user["id"], title=str(body.get("title") or "Artifact"), kind=str(body.get("kind") or "doc"), content=str(body.get("content") or ""), source_path=str(body.get("source_path") or ""))
+            elif path == "/api/deliverables/report":
+                res = aura_dev_studio.VISUAL_DELIVERABLES.build_final_execution_report(user["id"], ws, title=str(body.get("title") or "AURA Final Execution Report"))
+            elif path == "/api/browser/record":
+                res = aura_dev_studio.VISUAL_DELIVERABLES.control_browser_recording(user["id"], str(body.get("command") or "start"), label=str(body.get("label") or ""))
+            else:
+                res = aura_dev_studio.VISUAL_DELIVERABLES.add_visual_feedback(user["id"], url=str(body.get("url") or ""), note=str(body.get("note") or ""), screenshot_b64=str(body.get("screenshot_b64") or ""))
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        # --- PART 2: EXTENSIBILITY (SKILLS, MCP, PLUGINS, AGENTS, RULES, PERMS) & AUTOMATIONS (#29-#39) ---
+        if path.startswith("/api/platform/"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(user["id"])
+            sub = path[len("/api/platform/"):]
+            if sub == "skills/save":
+                res = PLATFORM_EXT.save_skill(user["id"], ws, body)
+            elif sub == "skills/delete":
+                res = PLATFORM_EXT.delete_skill(user["id"], ws, str(body.get("id") or ""))
+            elif sub == "mcp/save":
+                res = PLATFORM_EXT.save_mcp_server(user["id"], ws, body)
+            elif sub == "mcp/invoke":
+                res = PLATFORM_EXT.invoke_mcp_tool(user["id"], ws, str(body.get("server_id") or ""), str(body.get("tool") or ""), body.get("params") if isinstance(body.get("params"), dict) else None)
+            elif sub == "plugins/manage":
+                res = PLATFORM_EXT.manage_plugin(user["id"], ws, str(body.get("plugin_id") or ""), str(body.get("action") or "enable"), body.get("config") if isinstance(body.get("config"), dict) else None)
+            elif sub == "agents/save":
+                res = PLATFORM_EXT.save_custom_agent(user["id"], ws, body)
+            elif sub == "agents/delete":
+                res = PLATFORM_EXT.delete_custom_agent(user["id"], ws, str(body.get("id") or ""))
+            elif sub == "rules":
+                res = PLATFORM_EXT.update_rules_and_memory(user["id"], ws, body)
+            elif sub == "permissions":
+                res = PLATFORM_EXT.update_tool_permissions(user["id"], ws, body.get("permissions") if isinstance(body.get("permissions"), dict) else body)
+            elif sub == "workflows/save":
+                res = PLATFORM_EXT.save_workflow(user["id"], ws, body)
+            elif sub == "workflows/run":
+                brain = _create_user_brain(user)
+                res = PLATFORM_EXT.run_workflow(user["id"], ws, str(body.get("workflow_id") or ""), trigger_source=str(body.get("trigger_source") or "manual"), brain=brain)
+            elif sub == "schedules/save":
+                res = PLATFORM_EXT.save_schedule(user["id"], ws, body)
+            elif sub == "triggers/save":
+                res = PLATFORM_EXT.save_event_trigger(user["id"], ws, body)
+            elif sub == "triggers/fire":
+                res = PLATFORM_EXT.fire_event(user["id"], ws, str(body.get("event") or "on_commit"))
+            elif sub == "background/start":
+                res = PLATFORM_EXT.start_background_agent(user["id"], ws, name=str(body.get("name") or "Background Agent"), workflow_id=str(body.get("workflow_id") or "wf_code_quality_pipeline"))
+            elif sub == "notifications/read":
+                res = PLATFORM_EXT.mark_notifications_read(user["id"], ws, clear_all=bool(body.get("clear_all", False)))
+            else:
+                return False
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        # --- PART 3: ADVANCED INTELLIGENCE, REMOTE CONTROL & SECURITY GOVERNANCE (#12, #46-#64) ---
+        if path.startswith("/api/control/"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(user["id"])
+            sub = path[len("/api/control/"):]
+            if sub == "emergency_stop":
+                res = CONTROL_HUB.trigger_emergency_stop(user["id"], ws, reason=str(body.get("reason") or "Operator Emergency Stop"))
+            elif sub == "secrets/scan":
+                res = CONTROL_HUB.scan_workspace_secrets(user["id"], ws)
+            elif sub == "secrets/redact":
+                res = {"success": True, "redacted": redact_secrets(str(body.get("text") or ""))}
+            elif sub == "approvals/request":
+                res = CONTROL_HUB.request_approval(user["id"], ws, action_type=str(body.get("action_type") or "sensitive_action"), target=str(body.get("target") or ""), reason=str(body.get("reason") or ""), agent_name=str(body.get("agent_name") or "AURA Agent"))
+            elif sub == "approvals/decide":
+                res = CONTROL_HUB.decide_approval(user["id"], ws, str(body.get("approval_id") or ""), str(body.get("decision") or "reject"))
+            elif sub == "recovery/save":
+                res = CONTROL_HUB.save_recovery_checkpoint(user["id"], ws, label=str(body.get("label") or "Manual Checkpoint"))
+            elif sub == "recovery/restore":
+                res = CONTROL_HUB.restore_recovery_checkpoint(user["id"], ws)
+            elif sub == "boundaries/update":
+                tools_l = body.get("allowed_tools") if isinstance(body.get("allowed_tools"), list) else []
+                res = CONTROL_HUB.update_agent_boundary(user["id"], str(body.get("agent_id") or ""), str(body.get("allowed_dir") or "."), tools_l)
+            elif sub == "remote/pair":
+                res = CONTROL_HUB.create_remote_pairing(user["id"], label=str(body.get("label") or "Authorized Remote Device"), ttl_minutes=_clamp_int(body.get("ttl_minutes", 30), 30, 5, 120))
+            elif sub == "remote/revoke":
+                res = CONTROL_HUB.revoke_remote_tokens(user["id"])
+            elif sub == "routing":
+                res = CONTROL_HUB.update_model_routing(user["id"], body)
+            elif sub == "handoff":
+                files_l = body.get("files") if isinstance(body.get("files"), list) else []
+                res = CONTROL_HUB.record_task_handoff(user["id"], str(body.get("from_agent") or "coordinator"), str(body.get("to_agent") or "backend"), str(body.get("summary") or ""), files_l)
+            elif sub == "projects":
+                res = CONTROL_HUB.manage_projects(user["id"], ws, action=str(body.get("action") or "list"), name=str(body.get("name") or ""))
+            elif sub == "cost/log":
+                ent = CONTROL_HUB.record_token_usage(user["id"], str(body.get("task") or "task"), str(body.get("model") or "gemini-3-flash-preview"), _clamp_int(body.get("input_tokens", 0), 0, 0, 2_000_000), _clamp_int(body.get("output_tokens", 0), 0, 0, 2_000_000))
+                res = {"success": True, "entry": ent}
+            else:
+                return False
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/remote/action":
+            rem_tok = str(self.headers.get("X-Remote-Token") or body.get("remote_token") or "").strip()
+            uid = CONTROL_HUB.resolve_remote_token(rem_tok)
+            if not uid:
+                self._send_json({"success": False, "error": "Valid X-Remote-Token required"}, status=401)
+                return True
+            ws = _resolve_workspace_dir(int(uid)) if uid.isdigit() else _resolve_workspace_dir(None)
+            act = str(body.get("action") or "").strip().lower()
+            if act == "emergency_stop":
+                res = CONTROL_HUB.trigger_emergency_stop(uid, ws, reason="Remote Device Emergency Stop")
+            elif act in ("approve", "reject"):
+                res = CONTROL_HUB.decide_approval(uid, ws, str(body.get("approval_id") or ""), act, actor="remote_device")
+            else:
+                res = {"success": False, "error": "Remote action must be 'approve', 'reject', or 'emergency_stop'."}
             self._send_json(res, status=200 if res.get("success") else 400)
             return True
 

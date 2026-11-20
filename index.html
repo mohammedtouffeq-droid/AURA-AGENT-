@@ -4723,34 +4723,32 @@
         </div>
     </aside>
 
-    <!-- ---------------- AURA 10-Pillar Agentic Split Workspace ---------------- -->
-    <aside class="agent-workspace-pane" id="agentWorkspacePane" aria-label="AURA Agentic Workspace: Orchestrator, Browser, Computer Use, Terminal, Explorer & Timeline">
+    <!-- ---------------- AURA 5-Center AI Development & Automation Platform ---------------- -->
+    <aside class="agent-workspace-pane" id="agentWorkspacePane" aria-label="AURA 5-Center Agentic Platform">
+        <!-- 5 Major Platform Centers -->
         <div class="aw-topbar">
-            <div class="aw-mode-switcher" role="tablist" aria-label="AURA 10-Pillar Agentic Capabilities">
+            <div class="aw-mode-switcher" role="tablist" aria-label="AURA 5 Platform Centers">
                 <button type="button" class="aw-mode-btn" id="awTabBtn_agents" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('agents')">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>
-                    <span>Agents</span>
+                    <span>Agent Center</span>
                 </button>
-                <button type="button" class="aw-mode-btn active" id="awTabBtn_browser" role="tab" aria-selected="true" onclick="switchAgentWorkspaceTab('browser')">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    <span>Browser</span>
-                </button>
-                <button type="button" class="aw-mode-btn" id="awTabBtn_computer" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('computer')">
+                <button type="button" class="aw-mode-btn active" id="awCenterBtn_computer" role="tab" aria-selected="true" onclick="switchAgentWorkspaceTab('browser')">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                     <span>Computer</span>
                 </button>
-                <button type="button" class="aw-mode-btn" id="awTabBtn_terminal" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('terminal')">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                    <span>Terminal</span>
+                <button type="button" class="aw-mode-btn" id="awCenterBtn_studio" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('explorer')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    <span>Dev Studio</span>
                 </button>
-                <button type="button" class="aw-mode-btn" id="awTabBtn_explorer" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('explorer')">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    <span>Explorer</span>
+                <button type="button" class="aw-mode-btn" id="awCenterBtn_automation" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('automation')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>Automation</span>
+                    <span class="aw-count-pill" id="awUnreadNotifBadge" style="display:none;">0</span>
                 </button>
-                <button type="button" class="aw-mode-btn" id="awTabBtn_actions" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('actions')">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    <span>Timeline</span>
-                    <span class="aw-count-pill" id="awActionCountBadge">0</span>
+                <button type="button" class="aw-mode-btn" id="awCenterBtn_security" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('security')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Security</span>
+                    <span class="aw-count-pill" id="awPendingApprovalBadge" style="display:none; background:rgba(251,191,36,0.18); color:#fde68a;">0</span>
                 </button>
             </div>
             <div class="aw-topbar-actions">
@@ -4759,13 +4757,36 @@
             </div>
         </div>
 
-        <!-- PILLARS 1-5: MULTI-AGENT ORCHESTRATOR, PARALLEL EXECUTION, PLANNING MODE, AGENT MANAGER & SELF-VERIFY -->
-        <section class="aw-panel" id="awPanel_agents" aria-label="AURA Multi-Agent Orchestrator & Mission Control">
+        <!-- Contextual Center Sub-Bar: Computer Center (Browser | Computer Use | Terminal | Timeline) -->
+        <div class="aw-subnav" id="awComputerCenterBar">
+            <div class="aw-subpills" role="tablist" aria-label="Computer Center Tools">
+                <button type="button" class="aw-subpill active" id="awTabBtn_browser" onclick="switchAgentWorkspaceTab('browser')">Live Browser</button>
+                <button type="button" class="aw-subpill" id="awTabBtn_computer" onclick="switchAgentWorkspaceTab('computer')">Computer Use</button>
+                <button type="button" class="aw-subpill" id="awTabBtn_terminal" onclick="switchAgentWorkspaceTab('terminal')">Terminal</button>
+                <button type="button" class="aw-subpill" id="awTabBtn_actions" onclick="switchAgentWorkspaceTab('actions')">Timeline <span class="aw-count-pill" id="awActionCountBadge" style="margin-left:3px;">0</span></button>
+            </div>
+            <button type="button" class="aw-icon-btn" style="height:24px; font-size:10px; border-color:rgba(248,113,113,0.4); color:#fca5a5;" onclick="awTriggerEmergencyStop()" title="Emergency Stop All Agents &amp; Desktop Control">E-Stop</button>
+        </div>
+
+        <!-- Contextual Center Sub-Bar: Developer Studio (Multi-Tab + Explorer | Codebase | Git & Rollback | Deliverables) -->
+        <div class="aw-subnav" id="awDevStudioBar" style="display:none;">
+            <div class="aw-subpills" role="tablist" aria-label="Developer Studio Views">
+                <button type="button" class="aw-subpill active" id="awTabBtn_explorer" onclick="switchAgentWorkspaceTab('explorer')">Explorer &amp; AI Code</button>
+                <button type="button" class="aw-subpill" id="awTabBtn_codebase" onclick="switchAgentWorkspaceTab('codebase')">Codebase &amp; Search</button>
+                <button type="button" class="aw-subpill" id="awTabBtn_git" onclick="switchAgentWorkspaceTab('git')">Git &amp; Rollback</button>
+                <button type="button" class="aw-subpill" id="awTabBtn_deliverables" onclick="switchAgentWorkspaceTab('deliverables')">Artifacts &amp; Reports</button>
+            </div>
+            <div id="awMultiTabStrip" style="display:flex; gap:4px; align-items:center; overflow-x:auto; max-width:100%;"></div>
+        </div>
+
+        <!-- CENTER 1: AGENT CENTER (Orchestrator, Parallel Execution, Planning, Agent Manager, Self-Verify, Intel & Remote) -->
+        <section class="aw-panel" id="awPanel_agents" aria-label="AURA Agent Center">
             <div class="aw-subnav">
-                <div class="aw-subpills" role="tablist" aria-label="Agent Orchestration Views">
+                <div class="aw-subpills" role="tablist" aria-label="Agent Center Views">
                     <button type="button" class="aw-subpill active" id="awAgentsSubBtn_plan" onclick="awSwitchAgentsSub('plan')">Plan &amp; Launch</button>
                     <button type="button" class="aw-subpill" id="awAgentsSubBtn_manager" onclick="awSwitchAgentsSub('manager')">Agent Manager <span id="awMgrWorkingPill" style="font-family:var(--font-code); color:#6ee7b7; margin-left:3px;">0</span></button>
-                    <button type="button" class="aw-subpill" id="awAgentsSubBtn_verify" onclick="awSwitchAgentsSub('verify')">Self-Verify Loop</button>
+                    <button type="button" class="aw-subpill" id="awAgentsSubBtn_verify" onclick="awSwitchAgentsSub('verify')">Self-Verify</button>
+                    <button type="button" class="aw-subpill" id="awAgentsSubBtn_intel" onclick="awSwitchAgentsSub('intel')">Intel &amp; Remote</button>
                 </div>
                 <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awRefreshOrchestrator()">Sync</button>
             </div>
@@ -4833,6 +4854,62 @@
                     <div style="font-size:12px; color:#71717a; text-align:center; padding:18px 10px;">Run verification on any workspace script or mission directory. AURA compiles, runs tests, diagnoses failures, patches defects, and re-runs until verified PASS.</div>
                 </div>
             </div>
+
+            <!-- Sub-view 4: Advanced Intelligence, Model Routing, Eval, Projects, Handoff & Remote Control (#12, #46-#55) -->
+            <div class="aw-subview" id="awAgentsSub_intel">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Model Routing, Fallback, Deep Reasoning &amp; Execution Mode</span><span id="awEvalGradeBadge" style="font-family:var(--font-code); color:#6ee7b7;">EVAL READY</span></div>
+                    <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px;">
+                        <select id="awIntelPrimaryModel" class="aw-url-input" onchange="awSaveModelRouting()" aria-label="Primary Model">
+                            <option value="aura-2.3 (gemini-3-flash-preview)">Primary: AURA 2.3 (Flash)</option>
+                            <option value="aura-2.6 (autonomous-company)">Primary: AURA 2.6 (Company)</option>
+                            <option value="aura-2.0 (fast-core)">Primary: AURA 2.0 (Fast)</option>
+                        </select>
+                        <select id="awIntelFallbackModel" class="aw-url-input" onchange="awSaveModelRouting()" aria-label="Fallback Model">
+                            <option value="aura-2.0 (gemini-3.1-flash-lite)">Fallback: AURA 2.0 Lite</option>
+                            <option value="aura-2.3 (gemini-3-flash-preview)">Fallback: AURA 2.3</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <label class="aw-check-pill" style="flex:1;"><input type="checkbox" id="awIntelDeepReason" onchange="awSaveModelRouting()"><span>Deep Reasoning Mode</span></label>
+                        <select id="awIntelExecMode" class="aw-url-input" style="width:155px; flex:none;" onchange="awSaveModelRouting()" aria-label="Execution Mode">
+                            <option value="local_sandbox">Mode: Local Sandbox</option>
+                            <option value="worktree">Mode: Git Worktree</option>
+                            <option value="cloud_isolated">Mode: Cloud Isolated</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="aw-icon-btn" onclick="awRunAgentEvaluation()">Evaluate Agents</button>
+                        <button type="button" class="aw-icon-btn" onclick="openVoiceCallHud()">Voice Agent Mode</button>
+                        <button type="button" class="aw-icon-btn" onclick="openApexStudio()">CoderX / Pro Studio</button>
+                        <button type="button" class="aw-icon-btn" onclick="openFlagshipHub('bharatcode10')">Sovereign Nexus</button>
+                    </div>
+                    <div id="awIntelEvalBox" style="font-size:11.5px; color:#a1a1aa;"></div>
+                </div>
+
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Cost &amp; Token Monitor (#52) + Multi-Project Switcher (#54)</span></div>
+                    <div id="awCostSummaryLine" style="font-family:var(--font-code); font-size:11px; color:#e2b96f;">0 in / 0 out tokens · $0.000000 est.</div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="awNewProjectName" class="aw-url-input" placeholder="Create sub-project (e.g. lyceum_auth)...">
+                        <button type="button" class="aw-primary-btn" onclick="awCreateWorkspaceProject()">Create</button>
+                    </div>
+                    <div id="awProjectsChips" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+                </div>
+
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Task Handoff (#48) &amp; Remote Agent Control (#12)</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <input type="text" id="awHandoffSummary" class="aw-url-input" style="flex:1; min-width:140px;" placeholder="Handoff note (Frontend -> Backend)...">
+                        <button type="button" class="aw-icon-btn" onclick="awSendTaskHandoff()">Handoff</button>
+                    </div>
+                    <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                        <button type="button" class="aw-primary-btn" id="awBtnRemotePair" onclick="awGenerateRemoteToken()">Generate Remote Pairing Token</button>
+                        <button type="button" class="aw-icon-btn" onclick="awRevokeRemoteTokens()">Revoke All</button>
+                    </div>
+                    <div id="awRemoteTokenBox" style="font-family:var(--font-code); font-size:10.5px; color:#93c5fd; word-break:break-all;"></div>
+                </div>
+            </div>
         </section>
 
         <!-- CAPABILITY 1: AURA LIVE BROWSER -->
@@ -4847,6 +4924,8 @@
                 <input type="text" class="aw-url-input" id="awBrowserUrlInput" placeholder="Enter URL (e.g. wikipedia.org) or search..." onkeydown="if(event.key==='Enter'){awBrowserNavigate();}">
                 <button type="button" class="aw-primary-btn" onclick="awBrowserNavigate()">Go</button>
                 <button type="button" class="aw-icon-btn" id="awBtnToggleElements" onclick="awToggleBrowserElements()" title="Inspect Interactive DOM Elements">DOM</button>
+                <button type="button" class="aw-icon-btn" id="awBtnBrowserRecord" onclick="awToggleBrowserRecording()" title="Record Reviewable Browser Session (#42)">Rec</button>
+                <button type="button" class="aw-icon-btn" onclick="awAddBrowserVisualFeedback()" title="Attach Screenshot Visual Feedback (#43)">Note</button>
                 <button type="button" class="aw-icon-btn" onclick="awUnderstandBrowserPage(true)" title="Capture Screenshot &amp; Sync Page Understanding to Chat">Ask AURA</button>
             </div>
             <div class="aw-browser-stage" id="awBrowserStage">
@@ -5017,15 +5096,219 @@
                     </div>
                 </div>
                 <div class="aw-explorer-editor-col">
-                    <div class="aw-screen-hud" style="padding:5px 8px;">
+                    <div class="aw-screen-hud" style="padding:5px 8px; flex-wrap:wrap;">
                         <span id="awExplorerActivePath" style="font-family:var(--font-code); font-size:10.5px; color:#f4f4f5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Select or create a file</span>
-                        <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
-                            <button type="button" class="aw-icon-btn" style="height:23px; font-size:10px;" id="awBtnExpSave" onclick="awSaveExplorerFile()">Save</button>
-                            <button type="button" class="aw-icon-btn" style="height:23px; font-size:10px; border-color:rgba(52,211,153,0.4); color:#6ee7b7;" onclick="awVerifyActiveExplorerFile()">Verify</button>
-                            <button type="button" class="aw-icon-btn" style="height:23px; font-size:10px;" onclick="awRenameActiveExplorerFile()">Rename</button>
+                        <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" id="awBtnExpSave" onclick="awSaveExplorerFile()">Save</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awDevAiAutocomplete()" title="#13 AI Autocomplete">Complete</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awDevInlineEdit()" title="#14 Inline AI Edit">Inline AI</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awDevExplainFile()" title="#15 Code Explanation">Explain</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awDevBugScan()" title="#16 Bug Detection">Bugs</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awDevRefactorFile()" title="#17 Refactoring">Refactor</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awDevGenerateTests()" title="#21 Test Generation">Gen Tests</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px; border-color:rgba(52,211,153,0.4); color:#6ee7b7;" onclick="awVerifyActiveExplorerFile()">Verify</button>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awRenameActiveExplorerFile()">Rename</button>
                         </div>
                     </div>
                     <textarea id="awExplorerCodeEditor" class="aw-code-textarea" spellcheck="false" placeholder="Select any file from the workspace tree or click + File to create one..." onkeydown="if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();awSaveExplorerFile();}"></textarea>
+                    <div class="aw-term-diag" id="awDevAiOutputBox"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEV STUDIO PANEL 2: CODEBASE UNDERSTANDING (#19), SMART SEARCH (#20) & MULTI-FILE EDIT (#18) -->
+        <section class="aw-panel" id="awPanel_codebase" aria-label="Codebase Understanding & Smart Search">
+            <div class="aw-subview active" style="display:flex;">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Smart Search: Files, Functions, Classes &amp; References (#20)</span></div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="awSmartSearchInput" class="aw-url-input" placeholder="Search symbol, class, function, route, or keyword..." onkeydown="if(event.key==='Enter'){awRunSmartSearch();}">
+                        <button type="button" class="aw-primary-btn" onclick="awRunSmartSearch()">Search</button>
+                        <button type="button" class="aw-icon-btn" onclick="awLoadCodebaseMap()">Map Repo</button>
+                    </div>
+                    <div id="awSmartSearchResults" style="font-size:11.5px; color:#d4d4d8;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Codebase Architecture &amp; Dependency Map (#19)</span><span id="awArchCountPill" style="font-family:var(--font-code); color:#6ee7b7;">0 FILES</span></div>
+                    <div id="awCodebaseMapBox" style="font-size:11.5px; color:#cbd5e1; line-height:1.5;">Click <strong>Map Repo</strong> to inspect Frontend, Backend, Database, and Test layer relationships &amp; cross-file imports.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEV STUDIO PANEL 3: GIT VISUAL REVIEW (#23,#41), WORKTREES (#24), BRANCHES (#25), COMMIT/PUSH (#26), PR (#27) & SNAPSHOTS (#28) -->
+        <section class="aw-panel" id="awPanel_git" aria-label="Git Visual Review, Worktrees, Branches & Snapshots">
+            <div class="aw-subview active" style="display:flex;">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Git Branches (#25) &amp; Isolated Worktrees (#24)</span><span id="awGitBranchBadge" style="font-family:var(--font-code); color:#e2b96f;">main</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <input type="text" id="awGitBranchInput" class="aw-url-input" style="flex:1; min-width:120px;" placeholder="Branch or agent worktree name...">
+                        <button type="button" class="aw-icon-btn" onclick="awGitBranchAction('create')">New Branch</button>
+                        <button type="button" class="aw-icon-btn" onclick="awGitBranchAction('switch')">Switch</button>
+                        <button type="button" class="aw-icon-btn" onclick="awGitWorktreeAction('create')">+ Worktree</button>
+                        <button type="button" class="aw-icon-btn" onclick="awRefreshGitPanel()">Refresh</button>
+                    </div>
+                    <div id="awGitWorktreeList" style="display:flex; gap:5px; flex-wrap:wrap; font-size:11px; color:#a1a1aa;"></div>
+                </div>
+
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Visual Diff Review (#23 / #41) &amp; Commit / PR Assistant (#26 / #27)</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <input type="text" id="awGitCommitMsg" class="aw-url-input" style="flex:1; min-width:140px;" placeholder="Commit message (auto-generated if empty)...">
+                        <button type="button" class="aw-primary-btn" id="awBtnGitCommit" onclick="awGitCommitChanges(false)">Commit</button>
+                        <button type="button" class="aw-icon-btn" onclick="awGitGeneratePr()">PR Draft</button>
+                    </div>
+                    <div id="awGitDiffList" style="display:flex; flex-direction:column; gap:6px;"></div>
+                    <div id="awGitPrOutput" style="display:none; font-size:11.5px; color:#e4e4e7; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;"></div>
+                </div>
+
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Project Snapshots &amp; One-Click Rollback (#28)</span></div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="awSnapLabelInput" class="aw-url-input" placeholder="Checkpoint label (e.g. Before auth refactor)...">
+                        <button type="button" class="aw-primary-btn" onclick="awCreateSnapshot()">Save Snapshot</button>
+                    </div>
+                    <div id="awSnapshotsList" style="display:flex; flex-direction:column; gap:5px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEV STUDIO PANEL 4: INTERACTIVE ARTIFACTS (#40), BROWSER RECORDINGS (#42-#43), BUILD PREVIEW (#44) & FINAL REPORT (#45) -->
+        <section class="aw-panel" id="awPanel_deliverables" aria-label="Visual Deliverables & Execution Reports">
+            <div class="aw-subview active" style="display:flex;">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Final Execution Report (#45) &amp; Live Build Preview (#44)</span></div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="aw-primary-btn" id="awBtnBuildFinalReport" onclick="awGenerateFinalReport()">Generate Final Execution Report</button>
+                        <button type="button" class="aw-icon-btn" onclick="awPreviewWorkspaceBuild()">Live Build Preview</button>
+                        <button type="button" class="aw-icon-btn" onclick="awRefreshDeliverables()">Refresh</button>
+                    </div>
+                    <div id="awFinalReportBox" style="font-size:11.5px; color:#d4d4d8;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Interactive Artifacts (#40) &amp; Recorded Browser Sessions (#42 / #43)</span></div>
+                    <div id="awDeliverablesList" style="display:flex; flex-direction:column; gap:6px; font-size:11.5px; color:#a1a1aa;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER 4: AUTOMATION HUB (Skills #29, MCP #30, Plugins #31, Custom Agents #32, Rules #33, Workflows #35-#39) -->
+        <section class="aw-panel" id="awPanel_automation" aria-label="AURA Automation Hub">
+            <div class="aw-subnav">
+                <div class="aw-subpills" role="tablist" aria-label="Automation Hub Views">
+                    <button type="button" class="aw-subpill active" id="awAutoSubBtn_skills" onclick="awSwitchAutoSub('skills')">Skills &amp; Agents</button>
+                    <button type="button" class="aw-subpill" id="awAutoSubBtn_mcp" onclick="awSwitchAutoSub('mcp')">MCP &amp; Plugins</button>
+                    <button type="button" class="aw-subpill" id="awAutoSubBtn_workflows" onclick="awSwitchAutoSub('workflows')">Workflows &amp; Alerts</button>
+                </div>
+                <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awRefreshAutomationHub()">Sync</button>
+            </div>
+
+            <div class="aw-subview active" id="awAutoSub_skills">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Custom Skills System (#29)</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <input type="text" id="awSkillNameInp" class="aw-url-input" style="flex:1; min-width:120px;" placeholder="Skill name (e.g. FastAPI Security)...">
+                        <input type="text" id="awSkillInstrInp" class="aw-url-input" style="flex:2; min-width:150px;" placeholder="Instructions & reusable workflow rules...">
+                        <button type="button" class="aw-primary-btn" onclick="awSaveCustomSkill()">Save Skill</button>
+                    </div>
+                    <div id="awSkillsList" style="display:flex; flex-direction:column; gap:5px;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Custom Agent Builder (#32)</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <input type="text" id="awCustomAgName" class="aw-url-input" style="flex:1; min-width:110px;" placeholder="Agent name...">
+                        <input type="text" id="awCustomAgRole" class="aw-url-input" style="flex:1; min-width:110px;" placeholder="Role / Specialty...">
+                        <button type="button" class="aw-primary-btn" onclick="awSaveCustomAgent()">Create Agent</button>
+                    </div>
+                    <div id="awCustomAgentsList" style="display:flex; flex-direction:column; gap:5px;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Project Rules &amp; Persistent Memory (#33)</span></div>
+                    <textarea id="awRulesProjectTxt" rows="2" class="aw-url-input" style="height:auto; padding:7px 9px; resize:none; font-family:var(--font-sans);" placeholder="Project rules & coding conventions..."></textarea>
+                    <button type="button" class="aw-icon-btn" onclick="awSaveProjectRules()">Save Project Rules</button>
+                </div>
+            </div>
+
+            <div class="aw-subview" id="awAutoSub_mcp">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>MCP Integration — Model Context Protocol (#30)</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <input type="text" id="awMcpNameInp" class="aw-url-input" style="flex:1; min-width:110px;" placeholder="MCP server name...">
+                        <input type="text" id="awMcpUrlInp" class="aw-url-input" style="flex:2; min-width:140px;" placeholder="https://mcp.example.com/rpc">
+                        <button type="button" class="aw-primary-btn" onclick="awAddMcpServer()">Add MCP</button>
+                    </div>
+                    <div id="awMcpList" style="display:flex; flex-direction:column; gap:5px;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Plugin Marketplace (#31)</span></div>
+                    <div id="awPluginsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+                </div>
+            </div>
+
+            <div class="aw-subview" id="awAutoSub_workflows">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Reusable Workflows (#36) · Schedules (#35) · Background Agents (#37) · Triggers (#39)</span></div>
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <button type="button" class="aw-primary-btn" onclick="awStartBackgroundSweep()">Launch Background Agent</button>
+                        <button type="button" class="aw-icon-btn" onclick="awFireCommitTrigger()">Test Event Trigger (on_commit)</button>
+                    </div>
+                    <div id="awWorkflowsList" style="display:flex; flex-direction:column; gap:6px;"></div>
+                    <div id="awSchedulesTriggersList" style="display:flex; flex-direction:column; gap:5px;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Notifications Center (#38)</span><button type="button" class="aw-fs-mini-btn" onclick="awMarkNotificationsRead(false)">Mark Read</button></div>
+                    <div id="awNotificationsList" style="display:flex; flex-direction:column; gap:5px; max-height:170px; overflow-y:auto;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER 5: CONTROL & SECURITY CENTER (#56-#64) -->
+        <section class="aw-panel" id="awPanel_security" aria-label="AURA Control & Security Center">
+            <div class="aw-hitl-bar">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="aw-ctrl-btn stop" id="awBtnMasterEmergencyStop" style="font-weight:700;" onclick="awTriggerEmergencyStop()">EMERGENCY STOP ALL</button>
+                    <button type="button" class="aw-icon-btn" onclick="awScanSecrets()">Secret Scan</button>
+                    <button type="button" class="aw-icon-btn" onclick="awSaveCrashCheckpoint()">Save Checkpoint</button>
+                    <button type="button" class="aw-icon-btn" onclick="awRestoreCrashCheckpoint()">Recover</button>
+                </div>
+                <span class="aw-state-pill" id="awSecSandboxPill">SANDBOX ACTIVE</span>
+            </div>
+            <div class="aw-subnav">
+                <div class="aw-subpills" role="tablist" aria-label="Security Center Views">
+                    <button type="button" class="aw-subpill active" id="awSecSubBtn_approvals" onclick="awSwitchSecSub('approvals')">Approvals &amp; Perms</button>
+                    <button type="button" class="aw-subpill" id="awSecSubBtn_secrets" onclick="awSwitchSecSub('secrets')">Secrets &amp; Resources</button>
+                    <button type="button" class="aw-subpill" id="awSecSubBtn_audit" onclick="awSwitchSecSub('audit')">Audit Logs</button>
+                </div>
+                <button type="button" class="aw-icon-btn" style="height:24px; font-size:10.5px;" onclick="awRefreshSecurityCenter()">Refresh</button>
+            </div>
+
+            <div class="aw-subview active" id="awSecSub_approvals">
+                <div class="aw-kpi-grid">
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awResCpu">0%</div><div class="aw-kpi-lbl">CPU</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awResRam">0%</div><div class="aw-kpi-lbl">RAM</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awResDisk">0%</div><div class="aw-kpi-lbl">Disk</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awResThreads">0</div><div class="aw-kpi-lbl">Threads</div></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Centralized Human Approval Queue (#56 / #64)</span><button type="button" class="aw-fs-mini-btn" onclick="awRequestDemoApproval()">+ Test Request</button></div>
+                    <div id="awApprovalQueueList" style="display:flex; flex-direction:column; gap:6px;"></div>
+                </div>
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Tool Permission Manager (#34) &amp; Agent Boundaries (#63)</span></div>
+                    <div id="awToolPermissionsGrid" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px;"></div>
+                </div>
+            </div>
+
+            <div class="aw-subview" id="awSecSub_secrets">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Secret Protection Scanner &amp; Crash Recovery (#58 / #62)</span></div>
+                    <div id="awSecretScanResults" style="font-size:11.5px; color:#a1a1aa;">Click <strong>Secret Scan</strong> above to audit your workspace for exposed API keys, tokens, or passwords.</div>
+                </div>
+            </div>
+
+            <div class="aw-subview" id="awSecSub_audit">
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Security &amp; Governance Audit Logs (#59)</span></div>
+                    <div id="awAuditLogsList" style="display:flex; flex-direction:column; gap:5px;"></div>
                 </div>
             </div>
         </section>
@@ -12817,21 +13100,53 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         async function switchAgentWorkspaceTab(mode) {
-            const allTabs = ['agents', 'browser', 'computer', 'terminal', 'explorer', 'actions'];
-            const valid = allTabs.includes(mode) ? mode : 'browser';
+            const aliasMap = {
+                agent_center: 'agents',
+                computer_center: 'browser',
+                dev_studio: 'explorer',
+                studio: 'explorer'
+            };
+            const target = aliasMap[mode] || mode;
+            const allPanels = ['agents', 'browser', 'computer', 'terminal', 'actions', 'explorer', 'codebase', 'git', 'deliverables', 'automation', 'security'];
+            const valid = allPanels.includes(target) ? target : 'browser';
             awState.activeTab = valid;
-            allTabs.forEach(m => {
-                const btn = document.getElementById('awTabBtn_' + m);
-                const panel = document.getElementById('awPanel_' + m);
-                const isAct = m === valid;
-                if (btn) {
-                    btn.classList.toggle('active', isAct);
-                    btn.setAttribute('aria-selected', isAct ? 'true' : 'false');
+
+            const computerTabs = ['browser', 'computer', 'terminal', 'actions'];
+            const studioTabs = ['explorer', 'codebase', 'git', 'deliverables'];
+
+            // Highlight one of the 5 major executive platform centers
+            const centerActive = {
+                awTabBtn_agents: valid === 'agents',
+                awCenterBtn_computer: computerTabs.includes(valid),
+                awCenterBtn_studio: studioTabs.includes(valid),
+                awCenterBtn_automation: valid === 'automation',
+                awCenterBtn_security: valid === 'security'
+            };
+            Object.entries(centerActive).forEach(([id, isAct]) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.toggle('active', isAct);
+                    el.setAttribute('aria-selected', isAct ? 'true' : 'false');
                 }
-                if (panel) panel.classList.toggle('active', isAct);
             });
+
+            // Show/hide contextual sub-bars for Computer Center & Dev Studio
+            const compBar = document.getElementById('awComputerCenterBar');
+            const studioBar = document.getElementById('awDevStudioBar');
+            if (compBar) compBar.style.display = computerTabs.includes(valid) ? 'flex' : 'none';
+            if (studioBar) studioBar.style.display = studioTabs.includes(valid) ? 'flex' : 'none';
+
+            // Toggle sub-bar pills & active panel
+            allPanels.forEach(m => {
+                const subBtn = document.getElementById('awTabBtn_' + m);
+                if (subBtn && m !== 'agents') subBtn.classList.toggle('active', m === valid);
+                const panel = document.getElementById('awPanel_' + m);
+                if (panel) panel.classList.toggle('active', m === valid);
+            });
+
             if (valid === 'agents') {
                 await awRefreshOrchestrator();
+                if (awOrchState.sub === 'intel') await awRefreshControlOverview();
             } else if (valid === 'browser') {
                 await awRefreshBrowserState();
             } else if (valid === 'computer') {
@@ -12841,6 +13156,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 await awLoadTerminalHistory();
             } else if (valid === 'explorer') {
                 await awRefreshExplorerTree();
+            } else if (valid === 'codebase') {
+                await awLoadCodebaseMap();
+            } else if (valid === 'git') {
+                await awRefreshGitPanel();
+            } else if (valid === 'deliverables') {
+                await awRefreshDeliverables();
+            } else if (valid === 'automation') {
+                await awRefreshAutomationHub();
+            } else if (valid === 'security') {
+                await awRefreshSecurityCenter();
             } else if (valid === 'actions') {
                 await awRefreshActionsFeed();
             }
@@ -13487,15 +13812,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         };
 
         function awSwitchAgentsSub(sub) {
-            const valid = ['plan', 'manager', 'verify'].includes(sub) ? sub : 'plan';
+            const valid = ['plan', 'manager', 'verify', 'intel'].includes(sub) ? sub : 'plan';
             awOrchState.sub = valid;
-            ['plan', 'manager', 'verify'].forEach(s => {
+            ['plan', 'manager', 'verify', 'intel'].forEach(s => {
                 const btn = document.getElementById('awAgentsSubBtn_' + s);
                 const view = document.getElementById('awAgentsSub_' + s);
                 if (btn) btn.classList.toggle('active', s === valid);
                 if (view) view.classList.toggle('active', s === valid);
             });
             awRefreshOrchestrator();
+            if (valid === 'intel') awRefreshControlOverview();
         }
 
         function _getSelectedSpecialists() {
@@ -14114,6 +14440,580 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     `<div style="font-size:10.5px; color:#a1a1aa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(h.text || '')}</div>` +
                     `</div></div>`;
             }).join('');
+        }
+
+        // ============================================================================
+        // PARTS 1-4: MULTI-TAB (#11), AI CODING (#13-#21), GIT (#23-#28),
+        // VISUAL DELIVERABLES (#40-#45), AUTOMATION (#29-#39) & SECURITY (#12,#46-#64)
+        // ============================================================================
+        const awPlatformState = {
+            openFileTabs: [],
+            browserRecording: false,
+            autoSub: 'skills',
+            secSub: 'approvals'
+        };
+
+        function _awEscArg(s) {
+            return escapeHtml(String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
+
+        // #11 Multi-Tab Workspace open file tracker
+        function _awTrackOpenFileTab(path) {
+            if (!path) return;
+            if (!awPlatformState.openFileTabs.includes(path)) {
+                awPlatformState.openFileTabs.unshift(path);
+                if (awPlatformState.openFileTabs.length > 6) awPlatformState.openFileTabs.pop();
+            }
+            const strip = document.getElementById('awMultiTabStrip');
+            if (!strip) return;
+            strip.innerHTML = awPlatformState.openFileTabs.map(fp => {
+                const isAct = fp === awOrchState.explorerActivePath;
+                const arg = _awEscArg(fp);
+                return `<button type="button" class="aw-file-chip" style="${isAct ? 'border-color:rgba(226,185,111,0.55); color:#fff;' : ''}" onclick="awOpenFileInExplorer('${arg}')" title="${escapeHtml(fp)}">${escapeHtml(fp.split('/').pop())}</button>`;
+            }).join('');
+        }
+
+        const _origOpenExplorerFile = awOpenExplorerFile;
+        awOpenExplorerFile = async function(relPath) {
+            await _origOpenExplorerFile(relPath);
+            if (awOrchState.explorerActivePath) _awTrackOpenFileTab(awOrchState.explorerActivePath);
+        };
+
+        // --- PART 1: AI Coding Intelligence (#13-#21) ---
+        function _showDevAiOutput(title, htmlBody) {
+            const box = document.getElementById('awDevAiOutputBox');
+            if (!box) return;
+            box.style.display = 'block';
+            box.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;"><strong style="color:#e2b96f;">${escapeHtml(title)}</strong><button type="button" class="aw-fs-mini-btn" onclick="document.getElementById('awDevAiOutputBox').style.display='none'">Hide</button></div>${htmlBody}`;
+        }
+
+        async function awDevAiAutocomplete() {
+            const ed = document.getElementById('awExplorerCodeEditor');
+            if (!ed) return;
+            const pos = ed.selectionStart || ed.value.length;
+            const res = await apiFetch('/api/dev/autocomplete', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: awOrchState.explorerActivePath || 'code.py', prefix: ed.value.slice(0, pos), suffix: ed.value.slice(pos) })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success && data.suggestion) {
+                ed.value = ed.value.slice(0, pos) + '\n' + data.suggestion + ed.value.slice(pos);
+                _showDevAiOutput('AI Autocomplete Inserted', `<pre class="aw-term-pre" style="color:#6ee7b7;">${escapeHtml(data.suggestion)}</pre>`);
+            }
+        }
+
+        async function awDevInlineEdit() {
+            const p = awOrchState.explorerActivePath;
+            const ed = document.getElementById('awExplorerCodeEditor');
+            if (!p || !ed) { showBridgeToast('Open a workspace file first.', '#fde68a'); return; }
+            const instr = prompt('Inline AI Edit instruction (e.g. Add docstring and input validation):', 'Add error handling and clean docstring');
+            if (!instr || !instr.trim()) return;
+            await awSaveExplorerFile();
+            const sel = ed.value.slice(ed.selectionStart, ed.selectionEnd) || ed.value;
+            const res = await apiFetch('/api/dev/inline_edit', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: p, selected_code: sel, instruction: instr.trim(), apply: true })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                ed.value = data.updated_content || ed.value;
+                _showDevAiOutput('Inline AI Edit Applied', `<pre class="aw-term-pre" style="color:#93c5fd;">${escapeHtml(data.diff || 'Updated cleanly.')}</pre>`);
+            }
+        }
+
+        async function awDevExplainFile() {
+            const ed = document.getElementById('awExplorerCodeEditor');
+            const res = await apiFetch('/api/dev/explain', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: awOrchState.explorerActivePath || '', code: ed ? ed.value : '' })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) _showDevAiOutput('Code Explanation (#15)', renderMarkdown(data.explanation || ''));
+        }
+
+        async function awDevBugScan() {
+            const res = await apiFetch('/api/dev/bugs', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: awOrchState.explorerActivePath || '' })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                const items = (data.findings || []).map(f => `<div style="margin-bottom:4px;"><span style="color:#fca5a5; font-family:var(--font-code);">[${escapeHtml(f.severity.toUpperCase())}] ${escapeHtml(f.file)}:${f.line}</span> — ${escapeHtml(f.message)} <span style="color:#6ee7b7;">Fix: ${escapeHtml(f.fix)}</span></div>`).join('');
+                _showDevAiOutput(`Bug Detection (#16) · ${data.total_findings} finding(s)`, items || `<span style="color:#6ee7b7;">Zero static bugs or security risks detected across ${data.files_scanned} file(s).</span>`);
+            }
+        }
+
+        async function awDevRefactorFile() {
+            const p = awOrchState.explorerActivePath;
+            const ed = document.getElementById('awExplorerCodeEditor');
+            if (!p) { showBridgeToast('Open a workspace file first.', '#fde68a'); return; }
+            await awSaveExplorerFile();
+            const res = await apiFetch('/api/dev/refactor', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: p, apply: true })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                if (ed && data.refactored_content) ed.value = data.refactored_content;
+                _showDevAiOutput('Refactoring (#17)', `<pre class="aw-term-pre" style="color:#93c5fd;">${escapeHtml(data.diff || 'Code already clean & formatted.')}</pre>`);
+            }
+        }
+
+        async function awDevGenerateTests() {
+            const p = awOrchState.explorerActivePath;
+            if (!p) { showBridgeToast('Open a Python file first.', '#fde68a'); return; }
+            await awSaveExplorerFile();
+            const res = await apiFetch('/api/dev/generate_tests', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: p, save: true })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                await awRefreshExplorerTree();
+                _showDevAiOutput(`Generated Test Suite: ${data.test_path}`, `<pre class="aw-term-pre" style="color:#6ee7b7;">${escapeHtml((data.test_code || '').slice(0, 900))}</pre>`);
+            }
+        }
+
+        async function awLoadCodebaseMap() {
+            const res = await apiFetch('/api/dev/codebase_map', { method: 'GET' });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) return;
+            const pill = document.getElementById('awArchCountPill');
+            if (pill) pill.textContent = `${data.total_files} FILES · ${data.symbol_count} SYMBOLS`;
+            const box = document.getElementById('awCodebaseMapBox');
+            if (!box) return;
+            const l = data.layers || {};
+            const row = (lbl, arr) => `<div style="margin-bottom:6px;"><strong style="color:#f4f4f5;">${lbl} (${(arr || []).length}):</strong> ${(arr || []).slice(0, 8).map(f => `<button type="button" class="aw-file-chip" style="margin:2px;" onclick="awOpenFileInExplorer('${_awEscArg(f)}')">${escapeHtml(f)}</button>`).join('') || '<span style="color:#71717a;">none</span>'}</div>`;
+            box.innerHTML = row('Frontend', l.frontend) + row('Backend', l.backend) + row('Database', l.database) + row('Tests', l.tests) +
+                `<div style="margin-top:6px; font-family:var(--font-code); font-size:10.5px; color:#93c5fd;">Cross-file imports tracked: ${(data.dependency_edges || []).length}</div>`;
+        }
+
+        async function awRunSmartSearch() {
+            const inp = document.getElementById('awSmartSearchInput');
+            const q = inp ? inp.value.trim() : '';
+            if (!q) return;
+            const res = await apiFetch('/api/dev/smart_search', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: q })
+            });
+            const data = await safeParseJson(res);
+            const box = document.getElementById('awSmartSearchResults');
+            if (!box || !res.ok || !data.success) return;
+            const symHtml = (data.symbols || []).slice(0, 10).map(s => `<button type="button" class="aw-file-chip" style="margin:2px;" onclick="awOpenFileInExplorer('${_awEscArg(s.file)}')">${escapeHtml(s.kind)} ${escapeHtml(s.name)} (${escapeHtml(s.file)}:${s.line})</button>`).join('');
+            const refHtml = (data.references || []).slice(0, 10).map(r => `<div style="font-family:var(--font-code); font-size:10.5px; color:#a1a1aa; margin-top:3px;"><span style="color:#93c5fd; cursor:pointer;" onclick="awOpenFileInExplorer('${_awEscArg(r.file)}')">${escapeHtml(r.file)}:${r.line}</span> ${escapeHtml(r.text)}</div>`).join('');
+            box.innerHTML = `<div style="margin-top:6px;"><strong>Symbols (${(data.symbols || []).length}):</strong> ${symHtml || 'none'}</div><div style="margin-top:6px;"><strong>References (${(data.references || []).length}):</strong>${refHtml || ' none'}</div>`;
+        }
+
+        // --- PART 1B: Git Visual Review, Worktrees, Branches, Commit, PR & Snapshots (#23-#28) ---
+        async function awRefreshGitPanel() {
+            const [resGit, resSnap] = await Promise.all([
+                apiFetch('/api/git/status', { method: 'GET' }),
+                apiFetch('/api/snapshots/list', { method: 'GET' })
+            ]);
+            const git = await safeParseJson(resGit);
+            const snap = await safeParseJson(resSnap);
+
+            if (resGit.ok && git.success) {
+                const br = document.getElementById('awGitBranchBadge');
+                if (br) br.textContent = `${git.branch || 'main'} (${(git.branches || []).length} br)`;
+                const wtEl = document.getElementById('awGitWorktreeList');
+                if (wtEl) {
+                    const wts = git.worktrees || [];
+                    wtEl.innerHTML = wts.map(w => `<span class="aw-file-chip">${escapeHtml(w.branch || w.path)} (${escapeHtml(w.head || 'HEAD')})</span>`).join('') || 'Main workspace active.';
+                }
+                const diffEl = document.getElementById('awGitDiffList');
+                if (diffEl) {
+                    const ch = git.changed_files || [];
+                    if (!ch.length) {
+                        diffEl.innerHTML = `<div style="font-size:11px; color:#6ee7b7;">Working tree clean · ${(git.commits || []).length} commit(s) recorded.</div>`;
+                    } else {
+                        diffEl.innerHTML = ch.slice(0, 12).map(c => {
+                            const arg = _awEscArg(c.path);
+                            return `<div class="aw-phase-card">` +
+                                `<div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">` +
+                                `<span style="font-family:var(--font-code); font-size:11px; color:#f4f4f5;">[${escapeHtml(c.status_code)}] ${escapeHtml(c.path)}</span>` +
+                                `<div style="display:flex; gap:4px;">` +
+                                `<button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awGitReviewFile('${arg}', 'approve')">Approve</button>` +
+                                `<button type="button" class="aw-fs-mini-btn" style="color:#fca5a5;" onclick="awGitReviewFile('${arg}', 'reject')">Reject</button>` +
+                                `</div></div>` +
+                                (c.diff ? `<pre class="aw-term-pre" style="max-height:95px; overflow:auto; color:#93c5fd; font-size:10.5px;">${escapeHtml(c.diff.slice(0, 700))}</pre>` : '') +
+                                `</div>`;
+                        }).join('');
+                    }
+                }
+            }
+            if (resSnap.ok && snap.success) {
+                const sEl = document.getElementById('awSnapshotsList');
+                if (sEl) {
+                    const items = snap.snapshots || [];
+                    sEl.innerHTML = items.length ? items.slice(0, 8).map(s => (
+                        `<div class="aw-ui-row">` +
+                        `<span><strong style="color:#f4f4f5;">${escapeHtml(s.label)}</strong> <span style="color:#71717a; font-family:var(--font-code); font-size:10px;">(${s.files_count} files · ${escapeHtml(s.time_label)})</span></span>` +
+                        `<button type="button" class="aw-fs-mini-btn" style="color:#e2b96f;" onclick="awRollbackSnapshot('${_awEscArg(s.id)}')">Rollback</button>` +
+                        `</div>`
+                    )).join('') : `<div style="font-size:11px; color:#71717a;">No snapshots saved yet.</div>`;
+                }
+            }
+        }
+
+        async function awGitReviewFile(path, decision) {
+            const res = await apiFetch('/api/git/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path, decision }) });
+            if (res.ok) await awRefreshGitPanel();
+        }
+        async function awGitBranchAction(action) {
+            const inp = document.getElementById('awGitBranchInput');
+            const branch = inp ? inp.value.trim() : '';
+            if (!branch) { showBridgeToast('Enter a branch name first.', '#fde68a'); return; }
+            const res = await apiFetch('/api/git/branch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, branch }) });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) showBridgeToast(data.error || 'Branch op failed', '#f87171');
+            else { showBridgeToast(`Branch ${action}: ${branch}`, '#34d399'); await awRefreshGitPanel(); }
+        }
+        async function awGitWorktreeAction(action) {
+            const inp = document.getElementById('awGitBranchInput');
+            const name = inp ? inp.value.trim() : '';
+            if (!name) { showBridgeToast('Enter an agent worktree name first.', '#fde68a'); return; }
+            const res = await apiFetch('/api/git/worktree', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, name }) });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) showBridgeToast(data.error || 'Worktree op failed', '#f87171');
+            else { showBridgeToast(`Worktree ready: ${data.branch}`, '#34d399'); await awRefreshGitPanel(); }
+        }
+        async function awGitCommitChanges(push = false) {
+            const msgInp = document.getElementById('awGitCommitMsg');
+            const res = await apiFetch('/api/git/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msgInp ? msgInp.value.trim() : '', stage_all: true, push, push_approved: push }) });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) showBridgeToast(data.error || 'Nothing to commit', '#fde68a');
+            else {
+                if (msgInp) msgInp.value = '';
+                showBridgeToast(`Committed (${data.files_committed.length} files)` + (data.event_triggers_fired ? ` · ${data.event_triggers_fired} trigger fired` : ''), '#34d399');
+                await awRefreshGitPanel();
+                awRefreshActionsFeed(true);
+            }
+        }
+        async function awGitGeneratePr() {
+            const res = await apiFetch('/api/git/pr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            const data = await safeParseJson(res);
+            const box = document.getElementById('awGitPrOutput');
+            if (box && res.ok && data.success) { box.style.display = 'block'; box.innerHTML = renderMarkdown(data.pr_markdown || ''); }
+        }
+        async function awCreateSnapshot() {
+            const inp = document.getElementById('awSnapLabelInput');
+            const res = await apiFetch('/api/snapshots/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: (inp && inp.value.trim()) || 'Workspace Checkpoint' }) });
+            if (res.ok) { if (inp) inp.value = ''; showBridgeToast('Snapshot saved.', '#34d399'); await awRefreshGitPanel(); }
+        }
+        async function awRollbackSnapshot(snapId) {
+            if (!confirm('Restore workspace files to this saved checkpoint?')) return;
+            const res = await apiFetch('/api/snapshots/rollback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ snapshot_id: snapId }) });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) { showBridgeToast(`Rolled back (${data.restored_count} files).`, '#34d399'); await awRefreshGitPanel(); await awRefreshExplorerTree(); }
+        }
+
+        // --- PART 1C: Deliverables (#40-#45) & Browser Recording (#42-#43) ---
+        async function awToggleBrowserRecording() {
+            const cmd = awPlatformState.browserRecording ? 'stop' : 'start';
+            const res = await apiFetch('/api/browser/record', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: cmd }) });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                awPlatformState.browserRecording = cmd === 'start';
+                const btn = document.getElementById('awBtnBrowserRecord');
+                if (btn) {
+                    btn.textContent = awPlatformState.browserRecording ? 'Stop Rec' : 'Rec';
+                    btn.style.borderColor = awPlatformState.browserRecording ? 'rgba(248,113,113,0.6)' : '';
+                    btn.style.color = awPlatformState.browserRecording ? '#fca5a5' : '';
+                }
+                showBridgeToast(awPlatformState.browserRecording ? 'Recording browser session...' : `Saved recording (${(data.session || {}).steps_count || 0} steps).`, '#93c5fd');
+            }
+        }
+        async function awAddBrowserVisualFeedback() {
+            const note = prompt('Visual feedback / UI correction note for current page:', 'Check alignment and contrast on main CTA button');
+            if (!note || !note.trim()) return;
+            const cur = (awState.browserState && awState.browserState.active_tab) || {};
+            const res = await apiFetch('/api/browser/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: cur.url || '', note: note.trim(), screenshot_b64: cur.screenshot_b64 || '' }) });
+            if (res.ok) { showBridgeToast('Visual feedback note saved.', '#34d399'); awRefreshActionsFeed(true); }
+        }
+        async function awGenerateFinalReport() {
+            const res = await apiFetch('/api/deliverables/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'AURA Final Execution Report' }) });
+            const data = await safeParseJson(res);
+            const box = document.getElementById('awFinalReportBox');
+            if (box && res.ok && data.success) { box.innerHTML = renderMarkdown(data.report_markdown || ''); await awRefreshDeliverables(); }
+        }
+        async function awPreviewWorkspaceBuild() {
+            if (typeof openIdeWorkbench === 'function') await openIdeWorkbench('preview', '');
+            else showBridgeToast('Create an HTML file in Explorer to preview live.', '#93c5fd');
+        }
+        async function awRefreshDeliverables() {
+            const res = await apiFetch('/api/deliverables/list', { method: 'GET' });
+            const data = await safeParseJson(res);
+            const list = document.getElementById('awDeliverablesList');
+            if (!list || !res.ok || !data.success) return;
+            const arts = (data.artifacts || []).map(a => `<div class="aw-phase-card"><strong style="color:#f4f4f5;">[${escapeHtml(a.kind.toUpperCase())}] ${escapeHtml(a.title)}</strong><span style="font-size:10px; color:#71717a;">${escapeHtml(a.time_label)}</span></div>`).join('');
+            const recs = ((data.recording || {}).sessions || []).map(r => `<div class="aw-phase-card"><strong style="color:#93c5fd;">[RECORDING] ${escapeHtml(r.label)}</strong><span style="font-size:10px; color:#a1a1aa;">${r.steps_count} steps · ${r.duration_s}s</span></div>`).join('');
+            list.innerHTML = (arts + recs) || 'Generate a Final Execution Report or record a Live Browser session to populate deliverables.';
+        }
+
+        // --- PART 2: Automation Hub (#29-#39) ---
+        function awSwitchAutoSub(sub) {
+            const valid = ['skills', 'mcp', 'workflows'].includes(sub) ? sub : 'skills';
+            awPlatformState.autoSub = valid;
+            ['skills', 'mcp', 'workflows'].forEach(s => {
+                document.getElementById('awAutoSubBtn_' + s)?.classList.toggle('active', s === valid);
+                document.getElementById('awAutoSub_' + s)?.classList.toggle('active', s === valid);
+            });
+            awRefreshAutomationHub();
+        }
+        async function awRefreshAutomationHub() {
+            const res = await apiFetch('/api/platform/overview', { method: 'GET' });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) return;
+            const badge = document.getElementById('awUnreadNotifBadge');
+            if (badge) { badge.textContent = String(data.unread_notifications || 0); badge.style.display = (data.unread_notifications || 0) > 0 ? 'inline-block' : 'none'; }
+
+            const sEl = document.getElementById('awSkillsList');
+            if (sEl) sEl.innerHTML = (data.skills || []).map(s => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(s.name)}</strong><span style="font-size:10px; color:#e2b96f;">${escapeHtml(s.category || 'Skill')}</span></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(s.instructions || '')}</div></div>`).join('');
+            const agEl = document.getElementById('awCustomAgentsList');
+            if (agEl) agEl.innerHTML = (data.custom_agents || []).map(a => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(a.name)}</strong><span style="font-size:10px; color:#93c5fd;">${escapeHtml(a.model)}</span></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.role)} · Tools: ${escapeHtml((a.tools || []).join(', '))}</div></div>`).join('');
+            const rTxt = document.getElementById('awRulesProjectTxt');
+            if (rTxt && document.activeElement !== rTxt) rTxt.value = (data.rules && data.rules.project_rules) || '';
+
+            const mcpEl = document.getElementById('awMcpList');
+            if (mcpEl) mcpEl.innerHTML = (data.mcp_servers || []).map(m => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(m.name)}</strong><button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awTestMcpServer('${_awEscArg(m.id)}', '${_awEscArg((m.tools || ['fs.tree'])[0])}')">Invoke</button></div><div style="font-size:10.5px; color:#71717a; font-family:var(--font-code);">${escapeHtml(m.transport)} · ${escapeHtml((m.tools || []).join(', '))}</div></div>`).join('');
+
+            const pEl = document.getElementById('awPluginsList');
+            if (pEl) pEl.innerHTML = (data.plugins || []).map(p => {
+                const pid = _awEscArg(p.id);
+                const nextAct = p.enabled ? 'disable' : 'enable';
+                return `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(p.name)} <span style="color:#71717a; font-weight:400;">v${escapeHtml(p.version)}</span></strong><button type="button" class="aw-fs-mini-btn" style="color:${p.enabled ? '#6ee7b7' : '#a1a1aa'};" onclick="awManagePlugin('${pid}', '${nextAct}')">${p.enabled ? 'Enabled' : 'Enable'}</button></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(p.description)}</div></div>`;
+            }).join('');
+
+            const wfEl = document.getElementById('awWorkflowsList');
+            if (wfEl) wfEl.innerHTML = (data.workflows || []).map(w => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(w.name)}</strong><button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awRunReusableWorkflow('${_awEscArg(w.id)}')">Run</button></div><div style="font-size:10.5px; color:#a1a1aa;">Runs: ${w.run_count || 0} · Status: ${escapeHtml(w.last_status || 'idle')}</div></div>`).join('');
+
+            const stEl = document.getElementById('awSchedulesTriggersList');
+            if (stEl) {
+                const sch = (data.schedules || []).map(s => `<div class="aw-ui-row"><span>[SCHEDULE] ${escapeHtml(s.name)} (${escapeHtml(s.cron)})</span><span style="color:#6ee7b7;">${s.enabled ? 'ON' : 'OFF'}</span></div>`).join('');
+                const trg = (data.event_triggers || []).map(t => `<div class="aw-ui-row"><span>[EVENT] ${escapeHtml(t.event)} &rarr; ${escapeHtml(t.workflow_id)}</span><span style="color:#e2b96f;">${t.fire_count || 0}x</span></div>`).join('');
+                const bgs = (data.background_jobs || []).slice(0, 4).map(b => `<div class="aw-ui-row"><span>[BG] ${escapeHtml(b.name)}</span><span style="color:#93c5fd;">${escapeHtml(b.status.toUpperCase())}</span></div>`).join('');
+                stEl.innerHTML = sch + trg + bgs;
+            }
+            const nEl = document.getElementById('awNotificationsList');
+            if (nEl) nEl.innerHTML = (data.notifications || []).length ? data.notifications.slice(0, 15).map(n => `<div class="aw-phase-card" style="${n.read ? 'opacity:0.65;' : 'border-color:rgba(226,185,111,0.35);'}"><div style="display:flex; justify-content:space-between;"><strong style="font-size:11px; color:#f4f4f5;">${escapeHtml(n.title)}</strong><span style="font-size:10px; color:#71717a;">${escapeHtml(n.time_label)}</span></div><div style="font-size:11px; color:#cbd5e1;">${escapeHtml(n.message)}</div></div>`).join('') : `<div style="font-size:11px; color:#71717a;">No notifications yet.</div>`;
+        }
+        async function awSaveCustomSkill() {
+            const n = document.getElementById('awSkillNameInp'), i = document.getElementById('awSkillInstrInp');
+            const res = await apiFetch('/api/platform/skills/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: n?.value || '', instructions: i?.value || '' }) });
+            if (res.ok) { if (n) n.value = ''; if (i) i.value = ''; showBridgeToast('Custom skill saved.', '#34d399'); awRefreshAutomationHub(); }
+        }
+        async function awSaveCustomAgent() {
+            const n = document.getElementById('awCustomAgName'), r = document.getElementById('awCustomAgRole');
+            const res = await apiFetch('/api/platform/agents/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: n?.value || '', role: r?.value || '' }) });
+            if (res.ok) { if (n) n.value = ''; if (r) r.value = ''; showBridgeToast('Custom agent created.', '#34d399'); awRefreshAutomationHub(); }
+        }
+        async function awSaveProjectRules() {
+            const t = document.getElementById('awRulesProjectTxt');
+            const res = await apiFetch('/api/platform/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project_rules: t?.value || '' }) });
+            if (res.ok) showBridgeToast('Project rules saved.', '#34d399');
+        }
+        async function awAddMcpServer() {
+            const n = document.getElementById('awMcpNameInp'), u = document.getElementById('awMcpUrlInp');
+            const res = await apiFetch('/api/platform/mcp/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: n?.value || '', endpoint: u?.value || '', transport: 'http' }) });
+            const d = await safeParseJson(res);
+            if (!res.ok || !d.success) showBridgeToast(d.error || 'MCP save failed', '#f87171');
+            else { if (n) n.value = ''; if (u) u.value = ''; showBridgeToast('MCP server configured.', '#34d399'); awRefreshAutomationHub(); }
+        }
+        async function awTestMcpServer(serverId, tool) {
+            const res = await apiFetch('/api/platform/mcp/invoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ server_id: serverId, tool }) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? `MCP ${tool} executed cleanly.` : (d.error || 'MCP invoke failed'), res.ok ? '#34d399' : '#f87171');
+        }
+        async function awManagePlugin(pluginId, action) {
+            const res = await apiFetch('/api/platform/plugins/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plugin_id: pluginId, action }) });
+            if (res.ok) awRefreshAutomationHub();
+        }
+        async function awRunReusableWorkflow(wfId) {
+            const res = await apiFetch('/api/platform/workflows/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workflow_id: wfId }) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? `Workflow finished (${d.steps.length} steps · ${d.duration_ms}ms)` : (d.error || 'Workflow failed'), res.ok ? '#34d399' : '#f87171');
+            awRefreshAutomationHub();
+            awRefreshActionsFeed(true);
+        }
+        async function awStartBackgroundSweep() {
+            const res = await apiFetch('/api/platform/background/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Background Quality & Security Sweep' }) });
+            if (res.ok) { showBridgeToast('Background agent launched.', '#93c5fd'); setTimeout(awRefreshAutomationHub, 800); }
+        }
+        async function awFireCommitTrigger() {
+            const res = await apiFetch('/api/platform/triggers/fire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'on_commit' }) });
+            const d = await safeParseJson(res);
+            if (res.ok) { showBridgeToast(`Event on_commit fired ${d.triggered_count} workflow(s).`, '#34d399'); awRefreshAutomationHub(); }
+        }
+        async function awMarkNotificationsRead(clearAll) {
+            await apiFetch('/api/platform/notifications/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clear_all: !!clearAll }) });
+            awRefreshAutomationHub();
+        }
+
+        // --- PART 3: Control, Intelligence, Remote & Security Center (#12, #46-#64) ---
+        function awSwitchSecSub(sub) {
+            const valid = ['approvals', 'secrets', 'audit'].includes(sub) ? sub : 'approvals';
+            awPlatformState.secSub = valid;
+            ['approvals', 'secrets', 'audit'].forEach(s => {
+                document.getElementById('awSecSubBtn_' + s)?.classList.toggle('active', s === valid);
+                document.getElementById('awSecSub_' + s)?.classList.toggle('active', s === valid);
+            });
+            awRefreshSecurityCenter();
+        }
+        async function awRefreshControlOverview() {
+            const res = await apiFetch('/api/control/overview', { method: 'GET' });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) return data;
+            const r = data.routing || {};
+            const pSel = document.getElementById('awIntelPrimaryModel'), fSel = document.getElementById('awIntelFallbackModel'), dChk = document.getElementById('awIntelDeepReason'), mSel = document.getElementById('awIntelExecMode');
+            if (pSel && r.primary_model) pSel.value = r.primary_model;
+            if (fSel && r.fallback_model) fSel.value = r.fallback_model;
+            if (dChk) dChk.checked = !!r.deep_reasoning;
+            if (mSel && r.execution_mode) mSel.value = r.execution_mode;
+            const cm = data.cost_monitor || {};
+            const costLine = document.getElementById('awCostSummaryLine');
+            if (costLine) costLine.textContent = `${cm.total_input_tokens || 0} in / ${cm.total_output_tokens || 0} out tokens · $${Number(cm.total_est_cost_usd || 0).toFixed(6)} est.`;
+            const pChips = document.getElementById('awProjectsChips');
+            if (pChips) pChips.innerHTML = (data.projects || []).map(p => `<button type="button" class="aw-file-chip" style="${p.id === data.active_project ? 'border-color:rgba(226,185,111,0.55); color:#fff;' : ''}" onclick="awSwitchWorkspaceProject('${_awEscArg(p.id)}')">${escapeHtml(p.name)}</button>`).join('');
+            return data;
+        }
+        async function awSaveModelRouting() {
+            await apiFetch('/api/control/routing', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    primary_model: document.getElementById('awIntelPrimaryModel')?.value,
+                    fallback_model: document.getElementById('awIntelFallbackModel')?.value,
+                    deep_reasoning: !!document.getElementById('awIntelDeepReason')?.checked,
+                    execution_mode: document.getElementById('awIntelExecMode')?.value
+                })
+            });
+            showBridgeToast('Model routing & reasoning settings saved.', '#34d399');
+        }
+        async function awRunAgentEvaluation() {
+            const res = await apiFetch('/api/control/evaluate', { method: 'GET' });
+            const d = await safeParseJson(res);
+            if (res.ok && d.success) {
+                const badge = document.getElementById('awEvalGradeBadge');
+                const box = document.getElementById('awIntelEvalBox');
+                if (badge) badge.textContent = `GRADE ${d.grade} (${d.overall_score})`;
+                if (box) box.innerHTML = `Score: <strong style="color:#6ee7b7;">${d.overall_score}/100 (${escapeHtml(d.grade)})</strong> · Verify pass rate: ${d.metrics.verify_pass_rate}% · Static bugs: ${d.metrics.static_bug_findings}`;
+            }
+        }
+        async function awCreateWorkspaceProject() {
+            const inp = document.getElementById('awNewProjectName');
+            if (!inp || !inp.value.trim()) return;
+            const res = await apiFetch('/api/control/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', name: inp.value.trim() }) });
+            if (res.ok) { inp.value = ''; showBridgeToast('Sub-project created.', '#34d399'); awRefreshControlOverview(); }
+        }
+        async function awSwitchWorkspaceProject(id) {
+            await apiFetch('/api/control/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'switch', name: id }) });
+            awRefreshControlOverview();
+        }
+        async function awSendTaskHandoff() {
+            const inp = document.getElementById('awHandoffSummary');
+            if (!inp || !inp.value.trim()) return;
+            const res = await apiFetch('/api/control/handoff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_agent: 'frontend', to_agent: 'backend', summary: inp.value.trim() }) });
+            if (res.ok) { inp.value = ''; showBridgeToast('Task handoff logged.', '#93c5fd'); awRefreshActionsFeed(true); }
+        }
+        async function awGenerateRemoteToken() {
+            const res = await apiFetch('/api/control/remote/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: 'Authorized Companion Device' }) });
+            const d = await safeParseJson(res);
+            const box = document.getElementById('awRemoteTokenBox');
+            if (box && res.ok && d.success) box.textContent = `X-Remote-Token: ${d.pairing.token} (30m TTL · /api/remote/status)`;
+        }
+        async function awRevokeRemoteTokens() {
+            const res = await apiFetch('/api/control/remote/revoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            const box = document.getElementById('awRemoteTokenBox');
+            if (box) box.textContent = 'All remote pairing tokens revoked.';
+            if (res.ok) showBridgeToast('Remote tokens revoked.', '#fde68a');
+        }
+        async function awRefreshSecurityCenter() {
+            const [ctrlData, platRes] = await Promise.all([
+                awRefreshControlOverview(),
+                apiFetch('/api/platform/overview', { method: 'GET' })
+            ]);
+            const plat = await safeParseJson(platRes);
+            if (!ctrlData) return;
+
+            const r = ctrlData.resources || {};
+            const setT = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = String(v); };
+            setT('awResCpu', (r.cpu_percent ?? 0) + '%');
+            setT('awResRam', (r.ram_percent ?? 0) + '%');
+            setT('awResDisk', (r.disk_percent ?? 0) + '%');
+            setT('awResThreads', r.active_threads ?? 0);
+
+            const pendBadge = document.getElementById('awPendingApprovalBadge');
+            if (pendBadge) { pendBadge.textContent = String(ctrlData.pending_approvals || 0); pendBadge.style.display = (ctrlData.pending_approvals || 0) > 0 ? 'inline-block' : 'none'; }
+
+            const qEl = document.getElementById('awApprovalQueueList');
+            if (qEl) {
+                const q = ctrlData.approval_queue || [];
+                qEl.innerHTML = q.length ? q.slice(0, 12).map(a => {
+                    const aid = _awEscArg(a.id);
+                    const btns = a.status === 'pending'
+                        ? `<button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awDecideApproval('${aid}', 'approve')">Approve</button><button type="button" class="aw-fs-mini-btn" style="color:#fca5a5;" onclick="awDecideApproval('${aid}', 'reject')">Reject</button>`
+                        : `<span style="font-family:var(--font-code); font-size:10px; color:${a.status === 'approved' ? '#6ee7b7' : '#fca5a5'};">${escapeHtml(a.status.toUpperCase())}</span>`;
+                    return `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(a.action_type)} · ${escapeHtml(a.target)}</strong><div style="display:flex; gap:4px;">${btns}</div></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.agent_name)}: ${escapeHtml(a.reason)}</div></div>`;
+                }).join('') : `<div style="font-size:11px; color:#71717a;">No pending approval requests.</div>`;
+            }
+
+            const tpEl = document.getElementById('awToolPermissionsGrid');
+            if (tpEl && plat && plat.tool_permissions) {
+                tpEl.innerHTML = Object.entries(plat.tool_permissions).map(([tool, mode]) => {
+                    const tk = _awEscArg(tool);
+                    const next = mode === 'allow' ? 'ask_approval' : (mode === 'ask_approval' ? 'deny' : 'allow');
+                    const col = mode === 'allow' ? '#6ee7b7' : (mode === 'ask_approval' ? '#fde68a' : '#fca5a5');
+                    return `<button type="button" class="aw-ui-row" onclick="awCycleToolPermission('${tk}', '${next}')"><span>${escapeHtml(tool)}</span><span style="font-family:var(--font-code); font-size:9.5px; color:${col};">${escapeHtml(mode)}</span></button>`;
+                }).join('');
+            }
+
+            const audEl = document.getElementById('awAuditLogsList');
+            if (audEl) {
+                const logs = ctrlData.audit_logs || [];
+                audEl.innerHTML = logs.length ? logs.slice(0, 20).map(l => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between;"><strong style="font-size:11px; color:${l.severity === 'critical' ? '#fca5a5' : '#f4f4f5'};">${escapeHtml(l.action)}</strong><span style="font-size:10px; color:#71717a; font-family:var(--font-code);">${escapeHtml(l.time_label)}</span></div><div style="font-size:11px; color:#cbd5e1;">${escapeHtml(l.summary)}</div></div>`).join('') : `<div style="font-size:11px; color:#71717a;">No audit logs yet.</div>`;
+            }
+        }
+        async function awRequestDemoApproval() {
+            await apiFetch('/api/control/approvals/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action_type: 'git_push', target: 'origin/main', reason: 'Agent requests approval to push verified commit.', agent_name: 'Merge Synthesizer' }) });
+            awRefreshSecurityCenter();
+        }
+        async function awDecideApproval(id, decision) {
+            await apiFetch('/api/control/approvals/decide', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approval_id: id, decision }) });
+            awRefreshSecurityCenter();
+        }
+        async function awCycleToolPermission(tool, mode) {
+            const p = {}; p[tool] = mode;
+            await apiFetch('/api/platform/permissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ permissions: p }) });
+            awRefreshSecurityCenter();
+        }
+        async function awTriggerEmergencyStop() {
+            const res = await apiFetch('/api/control/emergency_stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: 'Operator clicked Emergency Stop' }) });
+            const d = await safeParseJson(res);
+            if (res.ok && d.success) {
+                showBridgeToast('EMERGENCY STOP ACTIVATED — all agents & desktop actions halted.', '#f87171');
+                if (typeof refreshJarvisStatus === 'function') refreshJarvisStatus();
+                awRefreshSecurityCenter();
+                awRefreshActionsFeed(true);
+            }
+        }
+        async function awScanSecrets() {
+            const res = await apiFetch('/api/control/secrets/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            const d = await safeParseJson(res);
+            const box = document.getElementById('awSecretScanResults');
+            if (box && res.ok && d.success) {
+                box.innerHTML = d.findings_count === 0
+                    ? `<span style="color:#6ee7b7;">Clean: 0 exposed secrets found across ${d.files_scanned} workspace file(s).</span>`
+                    : (d.findings || []).map(f => `<div style="color:#fca5a5; margin-bottom:4px;">[${escapeHtml(f.type)}] ${escapeHtml(f.file)}:${f.line} — <code>${escapeHtml(f.masked_excerpt)}</code></div>`).join('');
+            }
+        }
+        async function awSaveCrashCheckpoint() {
+            const res = await apiFetch('/api/control/recovery/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: 'Manual Crash Recovery Checkpoint' }) });
+            if (res.ok) { showBridgeToast('Crash recovery state saved.', '#34d399'); awRefreshSecurityCenter(); }
+        }
+        async function awRestoreCrashCheckpoint() {
+            const res = await apiFetch('/api/control/recovery/restore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? `Restored state from ${d.restored.saved_at}` : (d.error || 'No checkpoint found'), res.ok ? '#34d399' : '#fde68a');
         }
     </script>
 </body>
