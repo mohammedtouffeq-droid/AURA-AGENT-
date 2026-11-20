@@ -700,6 +700,178 @@ def test_health_endpoint_fast_default_model_and_multi_wallpaper_studio(isolated_
     assert "aura_custom_wallpapers_list" in html
 
 
+def test_shadow_row_does_not_poison_proof_and_allows_relogin_password_change_and_delete(tmp_path: Path, monkeypatch):
+    """
+    Regression test for real Vercel bug:
+    Register on Container A -> Container B creates SHADOW_SESSION_ONLY user row via aura_s2 token ->
+    1) get_account_proof_for_user() MUST return '' (never poison client account_proof with SHADOW_SESSION_ONLY).
+    2) After logout, re-login on Container B (shadow row present!) MUST reject wrong password and succeed with real proof.
+    3) Password change & account deletion on a shadow row MUST succeed when real proof is supplied.
+    """
+    monkeypatch.setenv("AURA_SESSION_SECRET", "shadow-fix-session-secret-0123456789abcdef")
+    monkeypatch.setenv("AURA_VAULT_SECRET", "shadow-fix-vault-secret-0123456789abcdef")
+    monkeypatch.setenv("AURA_CSRF_SECRET", "shadow-fix-csrf-secret-0123456789abcdef")
+    aura_db._RUNTIME_SECRETS_CACHE.clear()
+    db_a = tmp_path / "shadow_a.db"
+    db_b = tmp_path / "shadow_b.db"
+    monkeypatch.setattr(aura_db, "DB_PATH", db_a)
+    aura_db.init_database()
+
+    uname = f"relog_{os.urandom(3).hex()}"
+    reg = aura_db.register_user(uname, "RealPass123!")
+    assert reg["success"] is True
+    token_a = reg["token"]
+    proof_a = reg["account_proof"]
+    assert proof_a.startswith("aura_ap1.")
+
+    # Switch to cold Container B and trigger shadow-row creation via authenticate_token()
+    monkeypatch.setattr(aura_db, "DB_PATH", db_b)
+    aura_db.init_database()
+    authed = aura_db.authenticate_token(token_a)
+    assert authed is not None and authed["username"] == uname
+
+    # Shadow row MUST NOT emit a poisoned account_proof
+    assert aura_db.get_account_proof_for_user(authed["id"]) == ""
+
+    # Logout and attempt re-login on Container B (where SHADOW_SESSION_ONLY row now sits in SQLite)
+    aura_db.revoke_session(token_a)
+    bad = aura_db.login_user(uname, "WrongPass123!", account_proof=proof_a)
+    assert bad["success"] is False
+
+    good = aura_db.login_user(uname, "RealPass123!", account_proof=proof_a)
+    assert good["success"] is True
+    assert good["user"]["id"] == authed["id"]
+    assert good["account_proof"].startswith("aura_ap1.")
+
+    # After login healed the shadow row, normal login without proof also works on Container B
+    plain_login = aura_db.login_user(uname, "RealPass123!")
+    assert plain_login["success"] is True
+
+    # Test password change + delete on a fresh cold Container C shadow row
+    db_c = tmp_path / "shadow_c.db"
+    monkeypatch.setattr(aura_db, "DB_PATH", db_c)
+    aura_db.init_database()
+    authed_c = aura_db.authenticate_token(plain_login["token"])
+    assert authed_c is not None
+    chg = aura_db.change_user_password(authed_c["id"], "RealPass123!", "NewPass456!", account_proof=good["account_proof"])
+    assert chg["success"] is True
+    assert chg["account_proof"].startswith("aura_ap1.")
+    relog_new = aura_db.login_user(uname, "NewPass456!")
+    assert relog_new["success"] is True
+
+    del_res = aura_db.delete_user_account(authed_c["id"], "NewPass456!")
+    assert del_res["success"] is True
+
+
+def test_http_cookie_account_proofs_and_luxury_settings_tabs_intact(isolated_server, tmp_path: Path, monkeypatch):
+    """
+    Verifies persistent HttpOnly `aura_acct_proofs` cookie allows re-login across container wipe even
+    when client localStorage sends NO `account_proof`, and verifies all 6 executive Settings tabs & IDs exist.
+    """
+    import http.cookies
+
+    base = isolated_server["base_url"]
+    uname = f"ckuser_{os.urandom(3).hex()}"
+    req_reg = urllib.request.Request(
+        f"{base}/api/auth/register",
+        data=json.dumps({"username": uname, "password": "CookiePass123!"}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req_reg, timeout=10) as resp:
+        st_reg = resp.status
+        raw_cookies = resp.headers.get_all("Set-Cookie") or []
+        body_reg = json.loads(resp.read().decode("utf-8"))
+    assert st_reg == 200 and body_reg["success"] is True
+
+    jar = http.cookies.SimpleCookie()
+    for sc in raw_cookies:
+        jar.load(sc)
+    assert "aura_session" in jar
+    assert "aura_acct_proofs" in jar
+    acct_proof_cookie = f"aura_acct_proofs={jar['aura_acct_proofs'].value}"
+
+    # Logout clears aura_session but keeps aura_acct_proofs
+    st_out, _, body_out = _http_json(
+        f"{base}/api/auth/logout",
+        method="POST",
+        headers={"Authorization": f"Bearer {body_reg['token']}"},
+        payload={},
+    )
+    assert st_out == 200 and body_out["success"] is True
+
+    # Simulate cold container DB wipe
+    fresh_db = tmp_path / "cold_cookie_container.db"
+    monkeypatch.setattr(aura_db, "DB_PATH", fresh_db)
+    aura_db.init_database()
+
+    # Wrong password with cookie MUST fail 401
+    st_bad, _, _ = _http_json(
+        f"{base}/api/auth/login",
+        method="POST",
+        headers={"Cookie": acct_proof_cookie},
+        payload={"username": uname, "password": "WrongPassword99!"},
+    )
+    assert st_bad == 401
+
+    # Correct password with ONLY HttpOnly cookie (no body account_proof!) MUST succeed 200
+    st_ok, _, body_ok = _http_json(
+        f"{base}/api/auth/login",
+        method="POST",
+        headers={"Cookie": acct_proof_cookie},
+        payload={"username": uname, "password": "CookiePass123!"},
+    )
+    assert st_ok == 200 and body_ok["success"] is True
+
+    # Saving Settings with execution_mode ("auto_pilot" & "ask_first") MUST return 200 (never 500!)
+    for mode_val in ("auto_pilot", "ask_first"):
+        st_set, _, body_set = _http_json(
+            f"{base}/api/settings",
+            method="POST",
+            headers={"Authorization": f"Bearer {body_ok['token']}"},
+            payload={
+                "active_provider": "gemini",
+                "active_model": "gemini-3-flash-preview",
+                "preferences": {"temperature": 0.5, "execution_mode": mode_val},
+            },
+        )
+        assert st_set == 200 and body_set["success"] is True
+        assert body_set["preferences"]["execution_mode"] == mode_val
+
+    # Verify all 6 luxury Settings tabs and every preserved setting control exist in index.html
+    html = (Path(__file__).resolve().parent / "index.html").read_text(encoding="utf-8")
+    for required_id in [
+        'id="settingsTab_ai"',
+        'id="settingsTab_appearance"',
+        'id="settingsTab_membership"',
+        'id="settingsTab_voice"',
+        'id="settingsTab_memory"',
+        'id="settingsTab_security"',
+        'id="modelProvider"',
+        'id="modelChoice"',
+        'id="modelTemperature"',
+        'id="executionPolicySelect"',
+        'id="byokGeminiKeyInput"',
+        'id="toggleSpaceBackdropCheckbox"',
+        'id="themePresetSelect"',
+        'id="settingsWallpaperGrid"',
+        'id="wallpaperDimRange"',
+        'id="wallpaperBlurRange"',
+        'id="membershipKeyInput"',
+        'id="voiceCommercialOnlyCheckbox"',
+        'id="settingsVoiceLangSelect"',
+        'id="voiceStudioSampleText"',
+        'id="userMemoriesInspector"',
+        'id="newMemoryKeyInput"',
+        'id="btnExportHistoryBackup"',
+        'id="acctCurrentPwd"',
+        'id="acctNewPwd"',
+        'id="adminBootstrapSecret"',
+    ]:
+        assert required_id in html, f"Missing preserved setting element: {required_id}"
+
+
+
 
 
 

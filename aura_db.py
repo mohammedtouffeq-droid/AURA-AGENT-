@@ -691,14 +691,21 @@ def _derive_account_proof_keystream(secret_seed: str, nonce: str, username: str,
     return bytes(out[:length])
 
 
+def _is_shadow_credentials(password_hash: Any, salt: Any) -> bool:
+    p_hash = str(password_hash or "").strip()
+    p_salt = str(salt or "").strip()
+    return (not p_hash) or (not p_salt) or p_hash == "SHADOW_SESSION_ONLY" or p_salt == "SHADOW"
+
+
 def _issue_account_proof(username: str, password_hash: str, salt: str) -> str:
     """
     Issues a server-signed, stream-encrypted credential proof (`aura_ap1.<nonce>.<cipher>.<sig>`)
     so ephemeral serverless containers can still verify the user's exact scrypt password across
     cold starts WITHOUT ever exposing raw `password_hash` or `salt` in client storage or `user_vault`.
+    Never issues a proof for ephemeral shadow rows (`SHADOW_SESSION_ONLY`).
     """
     uname = str(username or "").strip().lower()
-    if not uname or not password_hash or not salt:
+    if not uname or _is_shadow_credentials(password_hash, salt):
         return ""
     nonce = secrets.token_hex(12)
     payload_bytes = json.dumps(
@@ -721,8 +728,8 @@ def _issue_account_proof(username: str, password_hash: str, salt: str) -> str:
     return f"{body}.{sig}"
 
 
-def _verify_and_extract_account_proof(account_proof: Any, username: str) -> Optional[Tuple[str, str]]:
-    """Verifies an `aura_ap1` proof and decrypts `(password_hash, salt)` in memory only."""
+def _decrypt_account_proof_raw(account_proof: Any, username: str) -> Optional[Tuple[str, str]]:
+    """Verifies HMAC signature of an `aura_ap1` proof and returns raw `(password_hash, salt)`."""
     if not account_proof or not isinstance(account_proof, str):
         return None
     parts = account_proof.strip().split(".")
@@ -754,14 +761,54 @@ def _verify_and_extract_account_proof(account_proof: Any, username: str) -> Opti
         return None
 
 
+def _verify_and_extract_account_proof(account_proof: Any, username: str) -> Optional[Tuple[str, str]]:
+    """Verifies an `aura_ap1` proof and decrypts real non-shadow `(password_hash, salt)` in memory only."""
+    raw = _decrypt_account_proof_raw(account_proof, username)
+    if not raw:
+        return None
+    p_hash, p_salt = raw
+    if _is_shadow_credentials(p_hash, p_salt):
+        return None
+    return p_hash, p_salt
+
+
+def _is_legacy_shadow_proof(account_proof: Any, username: str) -> bool:
+    """Returns True only if proof has a valid server HMAC signature but holds legacy SHADOW credentials."""
+    raw = _decrypt_account_proof_raw(account_proof, username)
+    return bool(raw and _is_shadow_credentials(raw[0], raw[1]))
+
+
+def heal_shadow_user_credentials(user_id: int, username: str, account_proof: Any) -> bool:
+    """Upgrades an ephemeral shadow user row in-place using a verified real `account_proof`."""
+    creds = _verify_and_extract_account_proof(account_proof, username)
+    if not creds:
+        return False
+    real_hash, real_salt = creds
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT password_hash, salt FROM users WHERE id = ?", (int(user_id),))
+        row = c.fetchone()
+        if not row or not _is_shadow_credentials(row["password_hash"], row["salt"]):
+            return False
+        c.execute(
+            "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+            (real_hash, real_salt, int(user_id)),
+        )
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
+
 def get_account_proof_for_user(user_id: int) -> str:
-    """Returns a fresh signed credential proof for an authenticated user ID."""
+    """Returns a fresh signed credential proof for an authenticated user ID (empty for shadow rows)."""
     conn = get_connection()
     c = conn.cursor()
     try:
         c.execute("SELECT username, password_hash, salt FROM users WHERE id = ?", (user_id,))
         row = c.fetchone()
-        if not row:
+        if not row or _is_shadow_credentials(row["password_hash"], row["salt"]):
             return ""
         return _issue_account_proof(row["username"], row["password_hash"], row["salt"])
     finally:
@@ -827,6 +874,7 @@ def login_user(
     password: str,
     vault_backup: Optional[Dict[str, Any]] = None,
     account_proof: Optional[str] = None,
+    backup_proofs: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Invalid username or password."}
@@ -842,14 +890,39 @@ def login_user(
         (username,)
     )
     row = c.fetchone()
-    if not row:
-        # Resilient multi-instance / serverless cold-start account restoration:
+    row_is_shadow = bool(row and _is_shadow_credentials(row["password_hash"], row["salt"]))
+
+    if not row or row_is_shadow:
+        # Resilient multi-instance / serverless cold-start & shadow-row account restoration:
         # 1) Strict path: verify exact scrypt password via server-signed encrypted `account_proof`
-        proof_creds = _verify_and_extract_account_proof(account_proof, username) if account_proof else None
-        if account_proof and not proof_creds:
+        #    (or persistent HttpOnly `backup_proofs` cookie).
+        candidate_proofs: List[str] = []
+        primary_is_legacy_shadow = False
+        if account_proof and isinstance(account_proof, str) and account_proof.strip():
+            if _is_legacy_shadow_proof(account_proof, username):
+                primary_is_legacy_shadow = True
+            else:
+                candidate_proofs.append(account_proof.strip())
+        if backup_proofs and isinstance(backup_proofs, (list, tuple)):
+            for bp in backup_proofs:
+                if isinstance(bp, str) and bp.strip() and bp.strip() not in candidate_proofs:
+                    if not _is_legacy_shadow_proof(bp, username):
+                        candidate_proofs.append(bp.strip())
+
+        proof_creds: Optional[Tuple[str, str]] = None
+        for cand in candidate_proofs:
+            extracted = _verify_and_extract_account_proof(cand, username)
+            if extracted:
+                proof_creds = extracted
+                break
+
+        # If caller explicitly provided a non-shadow account_proof and it failed HMAC/username checks
+        # (and no valid backup proof succeeded), fail closed immediately (prevents tampered proof fallback).
+        if account_proof and not primary_is_legacy_shadow and not proof_creds:
             conn.close()
             record_login_failure(username)
             return {"success": False, "error": "Invalid username or password."}
+
         if proof_creds:
             stored_hash, stored_salt = proof_creds
             ok, needs_upgrade = verify_password(password, stored_hash, stored_salt)
@@ -858,50 +931,60 @@ def login_user(
                 record_login_failure(username)
                 return {"success": False, "error": "Invalid username or password."}
             eff_hash, eff_salt = hash_password(password) if needs_upgrade else (stored_hash, stored_salt)
-            disp_name = username.capitalize()
             try:
-                c.execute(
-                    """
-                    INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
-                    VALUES (?, ?, ?, ?, ?, 'user')
-                    """,
-                    (username, eff_hash, eff_salt, disp_name, json.dumps({})),
-                )
-                new_uid = c.lastrowid
-                has_vault_threads = (
-                    isinstance(vault_backup, dict)
-                    and isinstance((vault_backup.get("payload") or {}).get("threads"), list)
-                    and len((vault_backup.get("payload") or {}).get("threads") or []) > 0
-                )
-                if not has_vault_threads:
+                if row_is_shadow and row:
+                    target_uid = int(row["id"])
+                    user_role = row["role"] if "role" in row.keys() else "user"
+                    disp_name = row["display_name"] or username.capitalize()
                     c.execute(
-                        "INSERT INTO threads (id, user_id, title, is_pinned) VALUES (?, ?, ?, 1)",
-                        (f"th_{secrets.token_hex(8)}", new_uid, "Welcome & Overview"),
+                        "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+                        (eff_hash, eff_salt, target_uid),
                     )
-                token, expires_at = _issue_signed_session_token(int(new_uid), username, disp_name, "user")
-                c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, new_uid, expires_at))
+                else:
+                    disp_name = username.capitalize()
+                    user_role = "user"
+                    c.execute(
+                        """
+                        INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
+                        VALUES (?, ?, ?, ?, ?, 'user')
+                        """,
+                        (username, eff_hash, eff_salt, disp_name, json.dumps({})),
+                    )
+                    target_uid = int(c.lastrowid)
+                    has_vault_threads = (
+                        isinstance(vault_backup, dict)
+                        and isinstance((vault_backup.get("payload") or {}).get("threads"), list)
+                        and len((vault_backup.get("payload") or {}).get("threads") or []) > 0
+                    )
+                    if not has_vault_threads:
+                        c.execute(
+                            "INSERT INTO threads (id, user_id, title, is_pinned) VALUES (?, ?, ?, 1)",
+                            (f"th_{secrets.token_hex(8)}", target_uid, "Welcome & Overview"),
+                        )
+                token, expires_at = _issue_signed_session_token(target_uid, username, disp_name, user_role)
+                c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, target_uid, expires_at))
                 conn.commit()
             finally:
                 conn.close()
             restored_ok = False
             if vault_backup and isinstance(vault_backup, dict):
-                restored_ok = restore_user_vault(vault_backup, authenticated_user_id=int(new_uid))
+                restored_ok = restore_user_vault(vault_backup, authenticated_user_id=target_uid)
             clear_login_failures(username)
             return {
                 "success": True,
                 "token": token,
                 "account_proof": _issue_account_proof(username, eff_hash, eff_salt),
                 "user": {
-                    "id": int(new_uid),
+                    "id": target_uid,
                     "username": username,
                     "display_name": disp_name,
-                    "role": "user",
+                    "role": user_role,
                 },
                 "vault_restored": restored_ok or bool(vault_backup),
                 "session_restored": True,
             }
 
-        # 2) Legacy compatibility path (signed vault_backup without separate proof token):
+        # 2) Legacy compatibility path (signed vault_backup without separate non-shadow proof token):
         #    NEVER accepts forged/unsigned vaults; verifies vault HMAC signature first.
         if vault_backup and isinstance(vault_backup, dict):
             vault_username = str(vault_backup.get("username", "")).strip().lower()
@@ -915,6 +998,38 @@ def login_user(
                 except Exception:
                     sig_ok = False
             if sig_ok:
+                valid_pw, pw_err = validate_password_strength(password)
+                if not valid_pw:
+                    conn.close()
+                    record_login_failure(username)
+                    return {"success": False, "error": pw_err or "Invalid username or password."}
+                if row_is_shadow and row:
+                    target_uid = int(row["id"])
+                    user_role = row["role"] if "role" in row.keys() else "user"
+                    disp_name = row["display_name"] or username.capitalize()
+                    new_hash, new_salt = hash_password(password)
+                    c.execute(
+                        "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+                        (new_hash, new_salt, target_uid),
+                    )
+                    token, expires_at = _issue_signed_session_token(target_uid, username, disp_name, user_role)
+                    c.execute("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)", (token, target_uid, expires_at))
+                    conn.commit()
+                    conn.close()
+                    restore_user_vault(vault_backup, authenticated_user_id=target_uid)
+                    clear_login_failures(username)
+                    return {
+                        "success": True,
+                        "token": token,
+                        "account_proof": _issue_account_proof(username, new_hash, new_salt),
+                        "user": {
+                            "id": target_uid,
+                            "username": username,
+                            "display_name": disp_name,
+                            "role": user_role,
+                        },
+                        "vault_restored": True,
+                    }
                 conn.close()
                 reg_res = register_user(username, password)
                 if reg_res.get("success"):
@@ -969,7 +1084,12 @@ def login_user(
     }
 
 
-def change_user_password(user_id: int, current_password: str, new_password: str) -> Dict[str, Any]:
+def change_user_password(
+    user_id: int,
+    current_password: str,
+    new_password: str,
+    account_proof: Optional[str] = None,
+) -> Dict[str, Any]:
     """Rotates a user's password after verifying current_password and revokes all prior sessions."""
     valid_pass, pass_err = validate_password_strength(new_password)
     if not valid_pass:
@@ -981,7 +1101,12 @@ def change_user_password(user_id: int, current_password: str, new_password: str)
         row = c.fetchone()
         if not row:
             return {"success": False, "error": "Account not found."}
-        ok, _ = verify_password(current_password, row["password_hash"], row["salt"])
+        stored_hash, stored_salt = row["password_hash"], row["salt"]
+        if _is_shadow_credentials(stored_hash, stored_salt) and account_proof:
+            proof_creds = _verify_and_extract_account_proof(account_proof, row["username"])
+            if proof_creds:
+                stored_hash, stored_salt = proof_creds
+        ok, _ = verify_password(current_password, stored_hash, stored_salt)
         if not ok:
             return {"success": False, "error": "Current password is incorrect."}
         new_hash, new_salt = hash_password(new_password)
@@ -1009,7 +1134,7 @@ def change_user_password(user_id: int, current_password: str, new_password: str)
         conn.close()
 
 
-def delete_user_account(user_id: int, password: str) -> Dict[str, Any]:
+def delete_user_account(user_id: int, password: str, account_proof: Optional[str] = None) -> Dict[str, Any]:
     """Deletes a user's account and cascades removal of all sessions, threads, messages, memories, and projects."""
     conn = get_connection()
     c = conn.cursor()
@@ -1018,7 +1143,12 @@ def delete_user_account(user_id: int, password: str) -> Dict[str, Any]:
         row = c.fetchone()
         if not row:
             return {"success": False, "error": "Account not found."}
-        ok, _ = verify_password(password, row["password_hash"], row["salt"])
+        stored_hash, stored_salt = row["password_hash"], row["salt"]
+        if _is_shadow_credentials(stored_hash, stored_salt) and account_proof:
+            proof_creds = _verify_and_extract_account_proof(account_proof, row["username"])
+            if proof_creds:
+                stored_hash, stored_salt = proof_creds
+        ok, _ = verify_password(password, stored_hash, stored_salt)
         if not ok:
             return {"success": False, "error": "Incorrect password."}
         c.execute(

@@ -10,6 +10,7 @@ Multi-tenant HTTP Workspace Server supporting:
 ===================================================================================
 """
 
+import base64
 import json
 import os
 import re
@@ -384,6 +385,71 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             pass
         return ""
 
+    def _extract_account_proofs_map(self) -> Dict[str, str]:
+        """Reads the persistent HttpOnly `aura_acct_proofs` map of recent encrypted `aura_ap1.` proofs."""
+        raw_cookie = self.headers.get("Cookie", "")
+        if not raw_cookie:
+            return {}
+        try:
+            cookie = SimpleCookie()
+            cookie.load(raw_cookie)
+            if "aura_acct_proofs" not in cookie:
+                return {}
+            val = cookie["aura_acct_proofs"].value.strip()
+            if not val:
+                return {}
+            padded = val + "=" * (-len(val) % 4)
+            decoded = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
+            if not isinstance(decoded, dict):
+                return {}
+            clean: Dict[str, str] = {}
+            for k, v in decoded.items():
+                ku = str(k or "").strip().lower()
+                pv = str(v or "").strip()
+                if ku and pv.startswith("aura_ap1.") and not ku.startswith("guest_"):
+                    clean[ku] = pv
+            return clean
+        except Exception:
+            return {}
+
+    def _get_cookie_account_proof(self, username: str) -> str:
+        uname = str(username or "").strip().lower()
+        if not uname:
+            return ""
+        return self._extract_account_proofs_map().get(uname, "")
+
+    def _build_account_proofs_cookie(self, proofs_map: Dict[str, str]) -> str:
+        is_https = bool(os.environ.get("VERCEL")) or (self.headers.get("X-Forwarded-Proto", "").lower() == "https")
+        secure_attr = "; Secure" if is_https else ""
+        # Cap at 5 most recent named accounts so cookie stays compact (< 2.5 KB)
+        items = [
+            (str(k).strip().lower(), str(v).strip())
+            for k, v in (proofs_map or {}).items()
+            if str(k).strip() and str(v).strip().startswith("aura_ap1.") and not str(k).strip().lower().startswith("guest_")
+        ][-5:]
+        if not items:
+            return f"aura_acct_proofs=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict{secure_attr}"
+        encoded = base64.urlsafe_b64encode(
+            json.dumps(dict(items), separators=(",", ":")).encode("utf-8")
+        ).decode("ascii").rstrip("=")
+        return f"aura_acct_proofs={encoded}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict{secure_attr}"
+
+    def _build_updated_account_proof_cookie(self, username: str, proof: str = "", remove: bool = False) -> Optional[str]:
+        uname = str(username or "").strip().lower()
+        if not uname or uname.startswith("guest_"):
+            return None
+        cur = self._extract_account_proofs_map()
+        if remove:
+            if uname not in cur:
+                return None
+            cur.pop(uname, None)
+            return self._build_account_proofs_cookie(cur)
+        if not proof or not str(proof).startswith("aura_ap1."):
+            return None
+        cur.pop(uname, None)
+        cur[uname] = str(proof).strip()
+        return self._build_account_proofs_cookie(cur)
+
     def do_HEAD(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -565,9 +631,19 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"authenticated": False, "storage_status": storage_status}, status=401)
             else:
+                # Auto-heal ephemeral shadow row on cold serverless container using HttpOnly account proof cookie
+                cookie_proof = self._get_cookie_account_proof(user["username"])
+                if cookie_proof:
+                    aura_db.heal_shadow_user_credentials(user["id"], user["username"], cookie_proof)
+                real_proof = aura_db.get_account_proof_for_user(user["id"])
+                extra_headers = []
+                if real_proof:
+                    ap_cookie = self._build_updated_account_proof_cookie(user["username"], real_proof)
+                    if ap_cookie:
+                        extra_headers.append(("Set-Cookie", ap_cookie))
                 mem = self._resolve_membership(user)
                 quota = aura_membership.get_user_quota_status(user, mem)
-                self._send_json({
+                payload = {
                     "authenticated": True,
                     "user": user,
                     "csrf_token": user.get("csrf_token"),
@@ -575,8 +651,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     "membership": mem,
                     "quota": quota,
                     "user_vault": aura_db.export_user_vault(user["id"]),
-                    "account_proof": aura_db.get_account_proof_for_user(user["id"]),
-                })
+                }
+                if real_proof:
+                    payload["account_proof"] = real_proof
+                self._send_json(payload, extra_headers=extra_headers or None)
 
         elif path.startswith("/media/"):
             user = self._get_auth_user()
@@ -1204,6 +1282,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
                 res["user_vault"] = aura_db.export_user_vault(uid)
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
+                ap_cookie = self._build_updated_account_proof_cookie(res["user"]["username"], res.get("account_proof", ""))
+                if ap_cookie:
+                    extra.append(("Set-Cookie", ap_cookie))
                 self._send_json(res, status=200, extra_headers=extra)
             else:
                 status = 503 if res.get("storage_unavailable") else 400
@@ -1214,7 +1295,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             password = str(body.get("password", ""))
             vault_backup = body.get("vault_backup") if isinstance(body.get("vault_backup"), dict) else None
             account_proof = str(body.get("account_proof", "") or "") or None
-            res = aura_db.login_user(username, password, vault_backup=vault_backup, account_proof=account_proof)
+            cookie_proof = self._get_cookie_account_proof(username)
+            backup_proofs = [cookie_proof] if cookie_proof else None
+            res = aura_db.login_user(
+                username,
+                password,
+                vault_backup=vault_backup,
+                account_proof=account_proof,
+                backup_proofs=backup_proofs,
+            )
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
                 uid = int(res["user"]["id"])
@@ -1225,6 +1314,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 res["csrf_token"] = aura_db.compute_csrf_token(res["token"])
                 res["user_vault"] = aura_db.export_user_vault(uid)
                 extra = [("Set-Cookie", self._build_session_cookie(res["token"]))]
+                ap_cookie = self._build_updated_account_proof_cookie(res["user"]["username"], res.get("account_proof", ""))
+                if ap_cookie:
+                    extra.append(("Set-Cookie", ap_cookie))
                 self._send_json(res, status=200, extra_headers=extra)
             else:
                 status = 429 if "Too many failed" in str(res.get("error", "")) else (503 if res.get("storage_unavailable") else 401)
@@ -1257,7 +1349,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             current_pw = str(body.get("current_password", ""))
             new_pw = str(body.get("new_password", ""))
-            res = aura_db.change_user_password(user["id"], current_pw, new_pw)
+            acct_proof = str(body.get("account_proof", "") or "") or self._get_cookie_account_proof(user["username"]) or None
+            res = aura_db.change_user_password(user["id"], current_pw, new_pw, account_proof=acct_proof)
             if not res.get("success"):
                 self._send_json(res, status=400)
                 return
@@ -1270,6 +1363,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 if relogin.get("account_proof"):
                     res["account_proof"] = relogin["account_proof"]
                 extra.append(("Set-Cookie", self._build_session_cookie(relogin["token"])))
+            ap_cookie = self._build_updated_account_proof_cookie(user["username"], res.get("account_proof", ""))
+            if ap_cookie:
+                extra.append(("Set-Cookie", ap_cookie))
             self._send_json(res, status=200, extra_headers=extra)
 
         elif path == "/api/auth/delete_account":
@@ -1279,13 +1375,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             pw = str(body.get("password", ""))
             uid = int(user["id"])
-            res = aura_db.delete_user_account(uid, pw)
+            acct_proof = str(body.get("account_proof", "") or "") or self._get_cookie_account_proof(user["username"]) or None
+            res = aura_db.delete_user_account(uid, pw, account_proof=acct_proof)
             if not res.get("success"):
                 self._send_json(res, status=400)
                 return
             user_ws = _resolve_workspace_dir(uid)
             shutil.rmtree(user_ws, ignore_errors=True)
             extra = [("Set-Cookie", self._build_session_cookie("", clear=True))]
+            rm_cookie = self._build_updated_account_proof_cookie(user["username"], remove=True)
+            if rm_cookie:
+                extra.append(("Set-Cookie", rm_cookie))
             self._send_json(res, status=200, extra_headers=extra)
 
         elif path == "/api/auth/bootstrap_admin":
@@ -1741,7 +1841,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     if exec_mode in ("ask_first", "auto_pilot"):
                         prefs["execution_mode"] = exec_mode
                         from aura_permission_system import SecurityMode, permission_manager
-                        sec_target = SecurityMode.STRICT_APPROVAL if exec_mode == "ask_first" else SecurityMode.WORKSPACE_SAFE
+                        sec_target = SecurityMode.PARANOID.value if exec_mode == "ask_first" else SecurityMode.PROMPT_HIGH_RISK.value
                         permission_manager.set_security_mode(sec_target, user_id=user["id"], is_admin=(user.get("role") in ("admin", "superuser")))
             if prefs:
                 saved["preferences"] = prefs

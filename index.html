@@ -1014,43 +1014,505 @@
             align-items: center;
             justify-content: center;
             padding: 18px;
-            background: rgba(10, 11, 14, 0.82);
-            backdrop-filter: blur(10px);
+            background: rgba(5, 6, 10, 0.80);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
         }
 
         .model-settings-card {
-            width: min(440px, 100%);
-            padding: 24px;
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            background: #171a22;
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+            position: relative;
+            width: min(920px, 96vw);
+            height: min(670px, 88dvh);
+            max-width: 920px;
+            max-height: 88dvh;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            border-radius: 20px;
+            background: linear-gradient(165deg, rgba(15, 17, 24, 0.97) 0%, rgba(8, 9, 14, 0.985) 100%);
+            box-shadow: 0 36px 96px rgba(0, 0, 0, 0.84), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: authFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
-        .model-settings-card h2 { margin: 0 0 7px; font-size: 19px; }
-        .model-settings-card p { color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
-        .model-settings-card label { display: block; margin: 16px 0 6px; font-size: 12px; color: var(--text-muted); }
+        .model-settings-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--tier-border, rgba(255,255,255,0.22)), var(--tier-accent, #e4e4e7), var(--tier-border, rgba(255,255,255,0.22)), transparent);
+            opacity: 0.85;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .settings-shell-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 16px 22px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+            background: rgba(255, 255, 255, 0.015);
+            flex-shrink: 0;
+        }
+        .settings-brand-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+        .settings-brand-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--tier-accent, #f4f4f5);
+            flex-shrink: 0;
+        }
+        .settings-header-title {
+            margin: 0;
+            font-size: 15.5px;
+            font-weight: 700;
+            color: #fafafa;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        .settings-header-sub {
+            margin: 2px 0 0 0;
+            font-size: 11.5px;
+            color: #71717a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .settings-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .settings-user-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            font-size: 11.5px;
+            color: #d4d4d8;
+            font-family: var(--font-code);
+        }
+        .settings-user-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #34d399;
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.65);
+        }
+        .settings-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.16s ease;
+        }
+        .settings-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fafafa;
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+        .settings-shell-body {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 218px 1fr;
+            overflow: hidden;
+        }
+        .settings-nav-rail {
+            background: rgba(6, 7, 11, 0.72);
+            border-right: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 14px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+        }
+        .settings-nav-section-lbl {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #52525b;
+            padding: 8px 11px 4px;
+        }
+        .settings-nav-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 11px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: #a1a1aa;
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.16s ease;
+            white-space: nowrap;
+        }
+        .settings-nav-btn svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
+        .settings-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.045);
+            color: #f4f4f5;
+        }
+        .settings-nav-btn.active {
+            background: rgba(255, 255, 255, 0.085);
+            border-color: rgba(255, 255, 255, 0.13);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .settings-nav-btn.active svg {
+            opacity: 1;
+            color: var(--tier-accent, #ffffff);
+        }
+        .settings-pane-viewport {
+            overflow-y: auto;
+            padding: 22px 26px 26px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+        .settings-tab-pane {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            animation: authFadeIn 0.16s ease-out;
+        }
+        .settings-tab-pane.active {
+            display: flex;
+        }
+        .settings-pane-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+        }
+        .settings-pane-head h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fafafa;
+            letter-spacing: -0.02em;
+        }
+        .settings-pane-head p {
+            margin: 3px 0 0 0;
+            font-size: 12px;
+            color: #71717a;
+            line-height: 1.45;
+        }
+        .settings-panel-card {
+            background: rgba(255, 255, 255, 0.024);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .settings-panel-card.danger-card {
+            background: rgba(239, 68, 68, 0.045);
+            border-color: rgba(239, 68, 68, 0.22);
+        }
+        .settings-card-eyebrow {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: #71717a;
+            font-family: var(--font-code);
+        }
+        .settings-field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .settings-field-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .settings-memory-add-row {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+        .settings-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+        .model-settings-card label {
+            display: block;
+            margin: 0;
+            font-size: 12px;
+            font-weight: 500;
+            color: #d4d4d8;
+        }
+        .model-settings-card p { color: #9ca3af; font-size: 12px; line-height: 1.5; margin: 0; }
         .model-settings-card select,
-        .model-settings-card input {
+        .model-settings-card input[type="text"],
+        .model-settings-card input[type="password"],
+        .model-settings-card input[type="number"] {
             box-sizing: border-box;
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            color: var(--text-main);
-            background: #101218;
+            padding: 9px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            border-radius: 10px;
+            color: #f4f4f5;
+            background: rgba(6, 7, 11, 0.78);
+            font-size: 12.5px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            outline: none;
         }
-        .model-settings-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
-        .model-settings-actions button {
-            padding: 9px 13px;
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            color: var(--text-main);
-            background: var(--bg-hover);
+        .model-settings-card select:focus,
+        .model-settings-card input[type="text"]:focus,
+        .model-settings-card input[type="password"]:focus,
+        .model-settings-card input[type="number"]:focus {
+            border-color: rgba(255, 255, 255, 0.34);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+            background: rgba(9, 11, 17, 0.95);
+        }
+        .model-settings-card input[type="range"] {
+            accent-color: var(--tier-accent, #e4e4e7);
             cursor: pointer;
         }
-        .model-settings-actions .model-settings-save { border-color: var(--accent-primary); background: var(--accent-primary); color: white; }
-        .model-settings-status { min-height: 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+        /* Luxury Pill Switch */
+        .aura-switch {
+            position: relative;
+            display: inline-flex !important;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            margin: 0 !important;
+            user-select: none;
+        }
+        .aura-switch input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 38px !important;
+            height: 21px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.18s ease;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .aura-switch input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 15px;
+            height: 15px;
+            border-radius: 999px;
+            background: #e4e4e7;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background 0.18s ease;
+        }
+        .aura-switch input[type="checkbox"]:checked {
+            background: rgba(52, 211, 153, 0.28);
+            border-color: rgba(52, 211, 153, 0.65);
+        }
+        .aura-switch input[type="checkbox"]:checked::after {
+            transform: translateX(17px);
+            background: #6ee7b7;
+        }
+        .settings-btn-primary {
+            padding: 9px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: #fafafa;
+            color: #09090b;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            white-space: nowrap;
+        }
+        .settings-btn-primary:hover {
+            background: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(255, 255, 255, 0.14);
+        }
+        .settings-btn-ghost {
+            padding: 8px 13px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.045);
+            color: #e4e4e7;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            white-space: nowrap;
+        }
+        .settings-btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.24);
+            color: #ffffff;
+        }
+        .settings-btn-danger {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(239, 68, 68, 0.42);
+            background: rgba(239, 68, 68, 0.14);
+            color: #fca5a5;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.16s ease;
+            white-space: nowrap;
+        }
+        .settings-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.65);
+            color: #fecaca;
+        }
+        .settings-input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .settings-inline-toggle {
+            padding: 8px 10px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .settings-inline-toggle:hover {
+            color: #fafafa;
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+        .settings-theme-swatches {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .settings-theme-swatch {
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(0, 0, 0, 0.34);
+            color: #d4d4d8;
+            font-size: 11.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .settings-theme-swatch:hover {
+            border-color: rgba(255, 255, 255, 0.24);
+            color: #ffffff;
+        }
+        .settings-theme-swatch.active {
+            border-color: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+        .settings-swatch-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 999px;
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+        .model-settings-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-top: 6px;
+        }
+        .model-settings-status {
+            min-height: 18px;
+            font-size: 12px;
+            color: #a1a1aa;
+        }
+        @media (max-width: 768px) {
+            .model-settings-overlay { padding: 10px; }
+            .model-settings-card {
+                width: calc(100vw - 20px) !important;
+                max-width: calc(100vw - 20px) !important;
+                height: calc(100dvh - 20px) !important;
+                max-height: calc(100dvh - 20px) !important;
+                border-radius: 16px;
+            }
+            .settings-shell-header { padding: 12px 14px; }
+            .settings-user-chip { display: none; }
+            .settings-shell-body {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .settings-nav-rail {
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                padding: 8px 10px;
+                gap: 6px;
+                scrollbar-width: none;
+            }
+            .settings-nav-rail::-webkit-scrollbar { display: none; }
+            .settings-nav-section-lbl { display: none; }
+            .settings-nav-btn {
+                width: auto;
+                padding: 7px 11px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+            .settings-pane-viewport { padding: 14px 14px 20px; }
+            .settings-field-grid, .settings-field-grid-3, .settings-memory-add-row { grid-template-columns: 1fr; }
+            .settings-theme-swatches { grid-template-columns: 1fr 1fr; }
+        }
 
         .auth-card {
             background: #121318;
@@ -1689,7 +2151,7 @@
                 border-right: none;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             }
-            .model-settings-card, .auth-card {
+            .auth-card {
                 width: calc(100vw - 20px) !important;
                 max-width: calc(100vw - 20px) !important;
                 max-height: calc(100dvh - 24px) !important;
@@ -3402,166 +3864,385 @@
 
     <!-- ---------------- Model, Workspace & Account Settings Modal ---------------- -->
     <div class="model-settings-overlay" id="modelSettingsOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modelSettingsTitle">
-        <section class="model-settings-card" style="max-height:88vh; overflow-y:auto; max-width:520px;">
-            <h2 id="modelSettingsTitle">Model, Security & Account Settings</h2>
-            <p>Configure your model, temperature, execution policy, saved memories, and account credentials.</p>
-            <label for="modelProvider">Provider</label>
-            <select id="modelProvider">
-                <option value="gemini">Google Gemini</option>
-                <option value="ollama">Ollama (local)</option>
-            </select>
-            <label for="modelChoice">Gemini model</label>
-            <select id="modelChoice"></select>
-            <label for="ollamaModel" id="ollamaModelLabel" style="display:none;">Installed Ollama model name</label>
-            <input id="ollamaModel" type="text" maxlength="128" placeholder="e.g. qwen2.5-coder:7b" style="display:none;">
-            <p id="modelProviderHint"></p>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                <div>
-                    <label for="modelTemperature">Temperature (0.0 – 1.0)</label>
-                    <input id="modelTemperature" type="number" min="0" max="1" step="0.1" value="0.3">
+        <section class="model-settings-card" onclick="event.stopPropagation()">
+            <div class="settings-shell-header">
+                <div class="settings-brand-group">
+                    <div class="settings-brand-icon" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h2 id="modelSettingsTitle" class="settings-header-title">AURA Workspace Settings</h2>
+                        <p class="settings-header-sub">Models, appearance, membership keys, voice studio, memories &amp; account security</p>
+                    </div>
                 </div>
-                <div>
-                    <label for="executionPolicySelect">Execution Policy</label>
-                    <select id="executionPolicySelect">
-                        <option value="auto_pilot">Workspace Safe (Auto)</option>
-                        <option value="ask_first">Strict Approval (Ask First)</option>
-                    </select>
+                <div class="settings-header-right">
+                    <span class="settings-user-chip" id="settingsHeaderUserChip">
+                        <span class="settings-user-dot"></span>
+                        <span id="settingsHeaderUserText">Signed in</span>
+                    </span>
+                    <button type="button" class="settings-close-btn" onclick="closeModelSettings()" aria-label="Close settings" title="Close (Esc)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>
             </div>
 
-            <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
-            <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.09);">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                    <label style="display:inline-flex; align-items:center; gap:8px; margin:0; font-size:12.5px; color:#d4d4d8; cursor:pointer; white-space:nowrap;">
-                        <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)" style="width:auto; flex-shrink:0; margin:0;">
-                        <span>Scroll Space Backdrop</span>
-                    </label>
-                    <span id="spaceWarpBadge" style="font-family:var(--font-code); font-size:11px; color:#9ca3af;">Warp 1.0x • 0°</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center;">
-                    <div>
-                        <label for="themePresetSelect" style="font-size:11px; margin-bottom:4px;">Studio Accent Theme</label>
-                        <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="font-size:12px; padding:6px 8px;">
-                            <option value="matte">Obsidian Slate (Default)</option>
-                            <option value="obsidian">Sovereign Champagne</option>
-                            <option value="cyan">Titanium Ice</option>
-                            <option value="emerald">Emerald Matrix</option>
-                        </select>
+            <div class="settings-shell-body">
+                <!-- Left Navigation Rail -->
+                <nav class="settings-nav-rail" aria-label="Settings sections">
+                    <div class="settings-nav-section-lbl">Workspace</div>
+                    <button type="button" class="settings-nav-btn active" id="settingsNav_ai" onclick="switchSettingsTab('ai')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                        <span>AI &amp; Model</span>
+                    </button>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_appearance" onclick="switchSettingsTab('appearance')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        <span>Appearance</span>
+                    </button>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_voice" onclick="switchSettingsTab('voice')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        <span>Voice Studio</span>
+                    </button>
+
+                    <div class="settings-nav-section-lbl">Account</div>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_membership" onclick="switchSettingsTab('membership')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                        <span>Membership &amp; Keys</span>
+                    </button>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_memory" onclick="switchSettingsTab('memory')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                        <span>Memory &amp; Backup</span>
+                    </button>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_security" onclick="switchSettingsTab('security')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Security &amp; Admin</span>
+                    </button>
+                </nav>
+
+                <!-- Right Content Viewport -->
+                <div class="settings-pane-viewport">
+
+                    <!-- TAB 1: AI & MODEL -->
+                    <div class="settings-tab-pane active" id="settingsTab_ai">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>AI Intelligence &amp; Execution Policy</h3>
+                                <p>Select your active inference provider, model, response temperature, and safety execution policy.</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div class="settings-card-eyebrow">Inference Engine</div>
+                            <div class="settings-field-grid">
+                                <div class="settings-field-group">
+                                    <label for="modelProvider">Provider</label>
+                                    <select id="modelProvider">
+                                        <option value="gemini">Google Gemini</option>
+                                        <option value="ollama">Ollama (local)</option>
+                                    </select>
+                                </div>
+                                <div class="settings-field-group">
+                                    <label for="modelChoice">Gemini Model</label>
+                                    <select id="modelChoice"></select>
+                                    <label for="ollamaModel" id="ollamaModelLabel" style="display:none;">Installed Ollama Model Name</label>
+                                    <input id="ollamaModel" type="text" maxlength="128" placeholder="e.g. qwen2.5-coder:7b" style="display:none;">
+                                </div>
+                            </div>
+                            <p id="modelProviderHint" style="font-size:11.5px; color:#71717a;"></p>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div class="settings-card-eyebrow">Behavior &amp; Safety Guardrails</div>
+                            <div class="settings-field-grid">
+                                <div class="settings-field-group">
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <label for="modelTemperature">Temperature (0.0 – 1.0)</label>
+                                        <span id="modelTempPill" style="font-family:var(--font-code); font-size:11px; color:#a1a1aa;">0.3</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <input type="range" id="modelTemperatureRange" min="0" max="1" step="0.1" value="0.3" oninput="syncTempFromSlider(this.value)" style="flex:1; margin:0; padding:0;">
+                                        <input id="modelTemperature" type="number" min="0" max="1" step="0.1" value="0.3" oninput="syncTempFromInput(this.value)" style="width:74px; text-align:center; padding:7px 8px;">
+                                    </div>
+                                </div>
+                                <div class="settings-field-group">
+                                    <label for="executionPolicySelect">Execution Policy</label>
+                                    <select id="executionPolicySelect">
+                                        <option value="auto_pilot">Workspace Safe (Auto)</option>
+                                        <option value="ask_first">Strict Approval (Ask First)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div class="settings-card-eyebrow">Personal API Key (Browser-Only Traffic Bypass)</div>
+                                <span id="byokKeyStatusPill" style="font-family:var(--font-code); font-size:10.5px; color:#71717a;">Server default</span>
+                            </div>
+                            <div class="settings-field-group">
+                                <label for="byokGeminiKeyInput">Optional Personal Gemini Key</label>
+                                <div class="settings-input-wrap">
+                                    <input id="byokGeminiKeyInput" type="password" placeholder="Optional AIza... key (stays in your browser only)" autocomplete="off" oninput="saveByokGeminiKey(this.value)" style="flex:1;">
+                                    <button type="button" class="settings-inline-toggle" onclick="toggleSecretInputVisibility('byokGeminiKeyInput', this)">Show</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="clearByokGeminiKey()">Clear</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="model-settings-actions">
+                            <div class="model-settings-status" id="modelSettingsStatus" role="status"></div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button type="button" class="settings-btn-ghost" onclick="closeModelSettings()">Close</button>
+                                <button type="button" class="settings-btn-primary model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save settings</button>
+                            </div>
+                        </div>
+                        <span id="globalExecutionChip" style="display:none;"><span class="nav-pill-sub">Auto-Pilot</span></span>
                     </div>
-                    <div>
-                        <label style="font-size:11px; margin-bottom:4px;">Personal Wallpapers (Multi-Upload)</label>
-                        <div style="display:flex; gap:6px;">
-                            <input type="file" id="customWallpaperInput" accept="image/*" multiple style="display:none;" onchange="handleCustomWallpaperUpload(event)">
-                            <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">+ Upload Pic</button>
-                            <button type="button" onclick="clearCustomWallpaper()" style="padding:6px 8px; border-radius:7px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#a1a1aa; font-size:11.5px; cursor:pointer;">Reset</button>
+
+                    <!-- TAB 2: APPEARANCE & WALLPAPER STUDIO -->
+                    <div class="settings-tab-pane" id="settingsTab_appearance">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>Appearance &amp; Wallpaper Studio</h3>
+                                <p>Customize ambient accent palettes, 10 luxury curated backdrops, multi-upload custom photos, dimmer, and glass blur.</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                                <label class="aura-switch">
+                                    <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)">
+                                    <span style="font-size:13px; font-weight:600; color:#f4f4f5;">Scroll Space Backdrop</span>
+                                </label>
+                                <span id="spaceWarpBadge" style="font-family:var(--font-code); font-size:11px; color:#a1a1aa; padding:4px 9px; border-radius:999px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);">Warp 1.0x • 0°</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div class="settings-card-eyebrow">Studio Accent Theme</div>
+                                <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="width:auto; min-width:190px; padding:6px 10px; font-size:12px;">
+                                    <option value="matte">Obsidian Slate (Default)</option>
+                                    <option value="obsidian">Sovereign Champagne</option>
+                                    <option value="cyan">Titanium Ice</option>
+                                    <option value="emerald">Emerald Matrix</option>
+                                </select>
+                            </div>
+                            <div class="settings-theme-swatches" id="settingsThemeSwatches">
+                                <button type="button" class="settings-theme-swatch" data-preset="matte" onclick="selectAuraThemePresetFromSwatch('matte')"><span class="settings-swatch-dot" style="background:#e4e4e7;"></span>Obsidian</button>
+                                <button type="button" class="settings-theme-swatch" data-preset="obsidian" onclick="selectAuraThemePresetFromSwatch('obsidian')"><span class="settings-swatch-dot" style="background:#e2b96f;"></span>Champagne</button>
+                                <button type="button" class="settings-theme-swatch" data-preset="cyan" onclick="selectAuraThemePresetFromSwatch('cyan')"><span class="settings-swatch-dot" style="background:#38bdf8;"></span>Titanium</button>
+                                <button type="button" class="settings-theme-swatch" data-preset="emerald" onclick="selectAuraThemePresetFromSwatch('emerald')"><span class="settings-swatch-dot" style="background:#34d399;"></span>Emerald</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                                <div class="settings-card-eyebrow">Curated &amp; Personal Wallpapers</div>
+                                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                    <input type="file" id="customWallpaperInput" accept="image/*" multiple style="display:none;" onchange="handleCustomWallpaperUpload(event)">
+                                    <button type="button" class="settings-btn-ghost" onclick="document.getElementById('customWallpaperInput').click()" style="padding:5px 10px; font-size:11.5px;">+ Upload Pic</button>
+                                    <button type="button" class="settings-btn-ghost" onclick="cycleNextWallpaper()" style="padding:5px 10px; font-size:11.5px;">Cycle Next</button>
+                                    <button type="button" class="settings-btn-ghost" onclick="clearCustomWallpaper()" style="padding:5px 10px; font-size:11.5px; color:#a1a1aa;">Reset</button>
+                                </div>
+                            </div>
+                            <div id="settingsWallpaperGrid" class="wallpaper-gallery-grid"></div>
+                            <div id="settingsCustomWallpapersWrap" style="display:none; margin-top:4px;">
+                                <span style="font-size:11px; color:#a1a1aa; display:block; margin-bottom:6px;">Saved Custom Wallpapers</span>
+                                <div id="settingsCustomWallpapersGrid" class="wallpaper-gallery-grid"></div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <span style="font-size:12px; color:#a1a1aa; width:96px; white-space:nowrap;">Wallpaper Dim</span>
+                                    <input type="range" id="wallpaperDimRange" min="0.15" max="0.90" step="0.05" value="0.52" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                                    <span id="wallpaperDimVal" style="font-size:11px; font-family:var(--font-code); color:#d4d4d8; width:38px; text-align:right;">52%</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <span style="font-size:12px; color:#a1a1aa; width:96px; white-space:nowrap;">Glass Blur</span>
+                                    <input type="range" id="wallpaperBlurRange" min="0" max="18" step="1" value="0" oninput="updateWallpaperBlur(this.value)" style="flex:1; margin:0; padding:0;">
+                                    <span id="wallpaperBlurVal" style="font-size:11px; font-family:var(--font-code); color:#d4d4d8; width:38px; text-align:right;">0px</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                        <span style="font-size:11px; font-weight:600; color:#d4d4d8;">Multiple Luxury Wallpapers</span>
-                        <button type="button" onclick="cycleNextWallpaper()" style="background:none; border:none; color:#93c5fd; font-size:11px; cursor:pointer; padding:0;">Cycle Next</button>
+
+                    <!-- TAB 3: MEMBERSHIP & ACTIVATION KEYS -->
+                    <div class="settings-tab-pane" id="settingsTab_membership">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>Membership &amp; Activation Keys</h3>
+                                <p>Activate an administrator-issued cryptographic key to unlock Tier 1–5 engineering tools, themes, and expanded capacity.</p>
+                            </div>
+                            <span id="settingsMembershipBadge" class="tier-header-pill">STANDARD · 1X</span>
+                        </div>
+
+                        <div id="membershipSettingsSection" class="membership-card-box" style="padding:18px; border-radius:14px;">
+                            <div id="settingsQuotaSummary" style="font-size:12px; font-family:var(--font-code); color:#e4e4e7; background:rgba(0,0,0,0.4); padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">Daily Quota: 0 / 30 chats (24h rolling refresh)</div>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <input id="membershipKeyInput" type="text" placeholder="AURA-XXXX-XXXX-XXXX-XXXX" autocomplete="off" style="flex:1; min-width:200px; margin:0; font-family:var(--font-code); text-transform:uppercase; letter-spacing:0.05em;">
+                                <button type="button" class="settings-inline-toggle" onclick="toggleSecretInputVisibility('membershipKeyInput', this)">Hide</button>
+                                <button type="button" id="btnActivateMembershipKey" class="settings-btn-primary" onclick="activateMembershipKeyFromSettings()">Activate Key</button>
+                                <button type="button" id="btnDeactivateMembership" class="settings-btn-ghost" onclick="deactivateMembershipFromSettings()" style="display:none;">Reset Tier</button>
+                            </div>
+                            <div id="membershipActivateStatus" style="font-size:12px; color:#a1a1aa; min-height:16px;"></div>
+                            <div id="membershipTierMatrix" class="membership-tier-grid"></div>
+                        </div>
                     </div>
-                    <div id="settingsWallpaperGrid" class="wallpaper-gallery-grid"></div>
-                    <div id="settingsCustomWallpapersWrap" style="display:none; margin-top:8px;">
-                        <span style="font-size:10.5px; color:#a1a1aa; display:block; margin-bottom:4px;">Saved Custom Wallpapers</span>
-                        <div id="settingsCustomWallpapersGrid" class="wallpaper-gallery-grid"></div>
+
+                    <!-- TAB 4: VOICE STUDIO -->
+                    <div class="settings-tab-pane" id="settingsTab_voice">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>Permanent Voice Studio &amp; Cloud API</h3>
+                                <p>Configure voice language, speaker persona, neural synthesis engine, and live speech playback diagnostics.</p>
+                            </div>
+                        </div>
+
+                        <div id="voiceStudioSection" style="display:flex; flex-direction:column; gap:14px;">
+                            <div class="settings-panel-card">
+                                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                                    <div class="settings-card-eyebrow">Voice Preferences (Synced with Voice HUD)</div>
+                                    <label class="aura-switch">
+                                        <input type="checkbox" id="voiceCommercialOnlyCheckbox" onchange="saveVoicePreferences({commercial_only:this.checked})">
+                                        <span style="font-size:12px; color:#d4d4d8;">Commercial-Safe Only</span>
+                                    </label>
+                                </div>
+                                <div class="settings-field-grid-3">
+                                    <div class="settings-field-group">
+                                        <label for="settingsVoiceLangSelect">Language</label>
+                                        <select id="settingsVoiceLangSelect" onchange="saveVoicePreferences({language:this.value})">
+                                            <option value="en">English</option>
+                                            <option value="hi">Hindi / Hinglish</option>
+                                            <option value="te">Telugu</option>
+                                            <option value="es">Spanish</option>
+                                            <option value="fr">French</option>
+                                        </select>
+                                    </div>
+                                    <div class="settings-field-group">
+                                        <label for="settingsVoicePersonaSelect">Voice Persona</label>
+                                        <select id="settingsVoicePersonaSelect" onchange="saveVoicePreferences({voice_id:this.value})">
+                                            <option value="male_02">AURA Executive (Male)</option>
+                                            <option value="female_01">Aria Studio (Female)</option>
+                                            <option value="male_01">Orion Deep (Male)</option>
+                                            <option value="female_02">Nova Clear (Female)</option>
+                                        </select>
+                                    </div>
+                                    <div class="settings-field-group">
+                                        <label for="settingsVoiceEngineSelect">Synthesis Engine</label>
+                                        <select id="settingsVoiceEngineSelect" onchange="saveVoicePreferences({engine:this.value})">
+                                            <option value="auto">Hybrid HD (Auto)</option>
+                                            <option value="kokoro">Kokoro Apache-2.0</option>
+                                            <option value="edge">Neural HD Cloud</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="voiceHardwareSummary" style="font-size:11.5px; color:#a1a1aa; font-family:var(--font-code); background:rgba(0,0,0,0.34); padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">Loading voice hardware &amp; licenses...</div>
+                            </div>
+
+                            <div class="settings-panel-card">
+                                <div class="settings-card-eyebrow">Live Speech Synthesis Test</div>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <input id="voiceStudioSampleText" type="text" value="Hello! I am AURA speaking clearly in natural English." placeholder="Enter text for Voice Studio synthesis..." style="flex:1; min-width:200px; margin:0;">
+                                    <button type="button" id="btnVoiceStudioSynthesize" class="settings-btn-primary" onclick="testVoiceStudioSynthesis()">Generate &amp; Play</button>
+                                </div>
+                                <audio id="voiceStudioAudioPlayer" controls style="width:100%; height:36px; display:none; margin-top:4px;"></audio>
+                                <div id="voiceStudioStatus" style="font-size:12px; color:#a7f3d0; min-height:16px;"></div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:11px; color:#9ca3af; width:78px; white-space:nowrap;">Wallpaper Dim</span>
-                    <input type="range" id="wallpaperDimRange" min="0.15" max="0.90" step="0.05" value="0.52" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
-                    <span id="wallpaperDimVal" style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa; width:34px; text-align:right;">52%</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:11px; color:#9ca3af; width:78px; white-space:nowrap;">Glass Blur</span>
-                    <input type="range" id="wallpaperBlurRange" min="0" max="18" step="1" value="0" oninput="updateWallpaperBlur(this.value)" style="flex:1; margin:0; padding:0;">
-                    <span id="wallpaperBlurVal" style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa; width:34px; text-align:right;">0px</span>
-                </div>
-                <div style="margin-top:2px;">
-                    <label for="byokGeminiKeyInput" style="font-size:11px; margin-bottom:3px; display:block; color:#a1a1aa;">Optional Personal Gemini Key (Browser-Only Traffic Bypass)</label>
-                    <input id="byokGeminiKeyInput" type="password" placeholder="Optional AIza... key (stays in your browser only)" autocomplete="off" oninput="saveByokGeminiKey(this.value)" style="font-size:11.5px; padding:6px 8px; margin:0;">
-                </div>
-            </div>
-            <span id="globalExecutionChip" style="display:none;"><span class="nav-pill-sub">Auto-Pilot</span></span>
-            <div class="model-settings-actions">
-                <button type="button" onclick="closeModelSettings()">Close</button>
-                <button type="button" class="model-settings-save" id="modelSettingsSave" onclick="saveModelSettings()">Save settings</button>
-            </div>
 
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
-            <div id="membershipSettingsSection" class="membership-card-box">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
-                    <div>
-                        <div style="font-size:14px; font-weight:700; color:#f4f4f5; letter-spacing:-0.01em;">Membership &amp; Activation Key</div>
-                        <div style="font-size:11.5px; color:#9ca3af; margin-top:2px;">Enter an authorized key from the administrator to unlock Tier 1–5 engineering tools, themes, and expanded capacity.</div>
+                    <!-- TAB 5: MEMORY & BACKUP -->
+                    <div class="settings-tab-pane" id="settingsTab_memory">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>Scoped Memories &amp; Account History</h3>
+                                <p>Inspect or add account-isolated long-term memories and export portable JSON backups across devices.</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div class="settings-card-eyebrow">Scoped User Memories</div>
+                                <button type="button" class="settings-btn-ghost" onclick="loadUserMemoriesInspector()" style="padding:4px 10px; font-size:11px;">Refresh</button>
+                            </div>
+                            <div class="settings-memory-add-row">
+                                <input id="newMemoryKeyInput" type="text" placeholder="Key (e.g. stack)" maxlength="120">
+                                <input id="newMemoryValInput" type="text" placeholder="Value (e.g. Python Flask + Next.js)" maxlength="500">
+                                <button type="button" class="settings-btn-ghost" onclick="addUserMemoryFromSettings()">+ Save</button>
+                            </div>
+                            <div id="userMemoriesInspector" style="font-size:12px; color:#a1a1aa; max-height:175px; overflow-y:auto; background:rgba(0,0,0,0.34); padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">Loading memories...</div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div class="settings-card-eyebrow">Persistent Account History (100+ Chats Safe)</div>
+                            <p>Chats are stored in an account-isolated IndexedDB vault and automatically re-synced for your username only. Export a portable backup anytime to move chats permanently across devices.</p>
+                            <div class="history-backup-row" style="margin-top:2px;">
+                                <button type="button" id="btnExportHistoryBackup" class="settings-btn-ghost btn-backup-action" onclick="exportMyHistoryBackup()">Export History Backup (.json)</button>
+                                <button type="button" id="btnImportHistoryBackup" class="settings-btn-ghost btn-backup-action" onclick="document.getElementById('historyImportFile').click()">Import / Restore Backup</button>
+                                <input type="file" id="historyImportFile" accept=".json,application/json" style="display:none;" onchange="importMyHistoryBackup(event)">
+                            </div>
+                            <div id="historyBackupStatus" style="font-size:12px; color:#a7f3d0; min-height:16px;"></div>
+                        </div>
                     </div>
-                    <span id="settingsMembershipBadge" class="tier-header-pill">STANDARD · 1X</span>
+
+                    <!-- TAB 6: SECURITY & ADMIN -->
+                    <div class="settings-tab-pane" id="settingsTab_security">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>Account Security &amp; Host Terminal Role</h3>
+                                <p>Rotate your scrypt-hashed password, unlock local administrator shell controls, or delete your account permanently.</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div class="settings-card-eyebrow">Update Account Password</div>
+                            <div class="settings-field-grid">
+                                <div class="settings-field-group">
+                                    <label for="acctCurrentPwd">Current Password</label>
+                                    <div class="settings-input-wrap">
+                                        <input id="acctCurrentPwd" type="password" placeholder="Current password" autocomplete="current-password" style="flex:1;">
+                                        <button type="button" class="settings-inline-toggle" onclick="toggleSecretInputVisibility('acctCurrentPwd', this)">Show</button>
+                                    </div>
+                                </div>
+                                <div class="settings-field-group">
+                                    <label for="acctNewPwd">New Password</label>
+                                    <div class="settings-input-wrap">
+                                        <input id="acctNewPwd" type="password" minlength="8" placeholder="8+ chars (letters + numbers)" autocomplete="new-password" style="flex:1;">
+                                        <button type="button" class="settings-inline-toggle" onclick="toggleSecretInputVisibility('acctNewPwd', this)">Show</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <div id="accountSecurityStatus" style="font-size:12px; color:#d4d4d8;"></div>
+                                <button type="button" class="settings-btn-primary" onclick="changeAccountPassword()">Update Password</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div class="settings-card-eyebrow">Host Terminal Role</div>
+                                <span style="font-family:var(--font-code); font-size:11px; padding:3px 9px; border-radius:999px; background:rgba(139,92,246,0.16); border:1px solid rgba(139,92,246,0.35); color:#ddd6fe;">Role: <span id="settingsRoleBadge">user</span></span>
+                            </div>
+                            <p>Workspace files, safe CLI, grep, edit, and static previews work for every signed-in account. To unlock full OS PowerShell/bash terminal commands locally, enter your server <code>AURA_ADMIN_BOOTSTRAP_TOKEN</code>.</p>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <input id="adminBootstrapSecret" type="password" placeholder="AURA_ADMIN_BOOTSTRAP_TOKEN" autocomplete="off" style="flex:1; min-width:200px;">
+                                <button type="button" class="settings-btn-ghost" onclick="bootstrapAdminRole()" style="border-color:rgba(139,92,246,0.5); color:#ddd6fe;">Unlock Admin</button>
+                            </div>
+                            <div id="adminBootstrapStatus" style="font-size:12px; color:#c4b5fd; min-height:16px;"></div>
+                        </div>
+
+                        <div class="settings-panel-card danger-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                                <div>
+                                    <div class="settings-card-eyebrow" style="color:#fca5a5;">Danger Zone</div>
+                                    <p style="color:#d4d4d8; margin-top:4px;">Permanently delete your account, all conversation threads, memories, and local session proofs.</p>
+                                </div>
+                                <button type="button" class="settings-btn-danger" onclick="deleteMyAccount()">Delete Account</button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div id="settingsQuotaSummary" style="font-size:11.5px; font-family:var(--font-code); color:#d4d4d8; background:rgba(0,0,0,0.34); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Daily Quota: 0 / 30 chats (24h rolling refresh)</div>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                    <input id="membershipKeyInput" type="text" placeholder="AURA-XXXX-XXXX-XXXX-XXXX" autocomplete="off" style="flex:1; min-width:210px; margin:0; font-family:var(--font-code); text-transform:uppercase; letter-spacing:0.04em;">
-                    <button type="button" id="btnActivateMembershipKey" class="apex-btn-primary" onclick="activateMembershipKeyFromSettings()">Activate Key</button>
-                    <button type="button" id="btnDeactivateMembership" class="apex-btn-secondary" onclick="deactivateMembershipFromSettings()" style="display:none;">Reset Tier</button>
-                </div>
-                <div id="membershipActivateStatus" style="font-size:11.5px; color:#a1a1aa;"></div>
-                <div id="membershipTierMatrix" class="membership-tier-grid"></div>
             </div>
-
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
-            <div id="voiceStudioSection">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
-                    <h3 style="margin:0; font-size:14px; color:#f4f4f5;">Permanent Voice Studio &amp; Cloud API</h3>
-                    <label style="display:inline-flex; align-items:center; gap:6px; margin:0; font-size:11.5px; color:#a1a1aa; cursor:pointer; white-space:nowrap;">
-                        <input type="checkbox" id="voiceCommercialOnlyCheckbox" onchange="saveVoicePreferences({commercial_only:this.checked})" style="width:auto; flex-shrink:0; margin:0;">
-                        <span>Commercial-Safe Only</span>
-                    </label>
-                </div>
-                <div id="voiceHardwareSummary" style="font-size:11.5px; color:#a1a1aa; font-family:var(--font-code); background:rgba(0,0,0,0.28); padding:7px 9px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); margin-bottom:8px;">Loading voice hardware &amp; licenses...</div>
-                <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
-                    <input id="voiceStudioSampleText" type="text" value="Hello! I am AURA speaking clearly in natural English." placeholder="Enter text for Voice Studio synthesis..." style="flex:1; margin:0;">
-                    <button type="button" id="btnVoiceStudioSynthesize" onclick="testVoiceStudioSynthesis()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.07); color:#f4f4f5; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Generate &amp; Play</button>
-                </div>
-                <audio id="voiceStudioAudioPlayer" controls style="width:100%; height:34px; display:none; margin-top:4px;"></audio>
-                <div id="voiceStudioStatus" style="font-size:11.5px; color:#a7f3d0; margin-top:4px;"></div>
-            </div>
-
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
-            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f4f4f5;">Scoped User Memories</h3>
-            <div id="userMemoriesInspector" style="font-size:12px; color:#a1a1aa; max-height:120px; overflow-y:auto; background:rgba(0,0,0,0.28); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">Loading memories...</div>
-
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
-            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f4f4f5;">Persistent Account History (100+ Chats Safe)</h3>
-            <p style="font-size:11.5px; color:#a1a1aa; margin:0 0 8px 0;">Chats are stored in an account-isolated IndexedDB vault and automatically re-synced for your username only. Export a portable backup anytime to keep chats permanently across devices.</p>
-            <div class="history-backup-row">
-                <button type="button" id="btnExportHistoryBackup" class="btn-backup-action" onclick="exportMyHistoryBackup()">Export History Backup (.json)</button>
-                <button type="button" id="btnImportHistoryBackup" class="btn-backup-action" onclick="document.getElementById('historyImportFile').click()">Import / Restore Backup</button>
-                <input type="file" id="historyImportFile" accept=".json,application/json" style="display:none;" onchange="importMyHistoryBackup(event)">
-            </div>
-            <div id="historyBackupStatus" style="font-size:11.5px; margin-top:6px; color:#a7f3d0;"></div>
-
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
-            <h3 style="margin:0 0 8px 0; font-size:14px; color:#f4f4f5;">Account Security</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center;">
-                <input id="acctCurrentPwd" type="password" placeholder="Current password" autocomplete="current-password">
-                <input id="acctNewPwd" type="password" minlength="8" placeholder="New password (8+ chars)" autocomplete="new-password">
-                <button type="button" onclick="changeAccountPassword()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(52,211,153,0.4); background:rgba(16,185,129,0.16); color:#a7f3d0; cursor:pointer; font-size:12px; font-weight:600;">Update</button>
-            </div>
-            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                <span style="font-size:11.5px; color:#a1a1aa;">Permanently delete account, threads &amp; memories:</span>
-                <button type="button" onclick="deleteMyAccount()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.14); color:#fca5a5; cursor:pointer; font-size:11.5px; font-weight:600;">Delete Account</button>
-            </div>
-            <div id="accountSecurityStatus" style="font-size:12px; margin-top:6px; color:#d4d4d8;"></div>
-
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:16px 0;">
-            <h3 style="margin:0 0 6px 0; font-size:14px; color:#f4f4f5;">Host Terminal Role (<span id="settingsRoleBadge">user</span>)</h3>
-            <p style="font-size:11.5px; color:#94a3b8; margin:0 0 8px 0;">Workspace files, safe CLI, grep, edit, and static previews work for every signed-in account. To unlock full OS PowerShell/bash terminal commands locally, enter your server <code>AURA_ADMIN_BOOTSTRAP_TOKEN</code>.</p>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <input id="adminBootstrapSecret" type="password" placeholder="AURA_ADMIN_BOOTSTRAP_TOKEN" autocomplete="off" style="flex:1;">
-                <button type="button" onclick="bootstrapAdminRole()" style="padding:8px 12px; border-radius:8px; border:1px solid rgba(139,92,246,0.55); background:rgba(139,92,246,0.2); color:#ede9fe; cursor:pointer; font-size:12px; font-weight:600;">Unlock Admin</button>
-            </div>
-            <div id="adminBootstrapStatus" style="font-size:11.5px; margin-top:6px; color:#c4b5fd;"></div>
         </section>
     </div>
 
@@ -4577,7 +5258,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                         req.onsuccess = () => {
                             const keys = Array.isArray(req.result) ? req.result : [];
                             keys.forEach(k => {
-                                if (String(k).startsWith('guest_')) {
+                                const ks = String(k);
+                                if (ks.startsWith('guest_') || ks.startsWith('__proof__guest_')) {
                                     store.delete(k);
                                 }
                             });
@@ -4850,14 +5532,157 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             }
         }
 
+        let activeSettingsTab = 'ai';
+
+        function switchSettingsTab(tabKey = 'ai') {
+            const validTabs = ['ai', 'appearance', 'membership', 'voice', 'memory', 'security'];
+            const next = validTabs.includes(tabKey) ? tabKey : 'ai';
+            activeSettingsTab = next;
+            validTabs.forEach(t => {
+                const pane = document.getElementById('settingsTab_' + t);
+                const nav = document.getElementById('settingsNav_' + t);
+                if (pane) pane.classList.toggle('active', t === next);
+                if (nav) nav.classList.toggle('active', t === next);
+            });
+            if (next === 'appearance' && typeof renderWallpaperGalleries === 'function') {
+                renderWallpaperGalleries();
+                syncAppearanceControlsUi();
+            } else if (next === 'voice' && typeof syncVoiceStudioSettingsUi === 'function') {
+                syncVoiceStudioSettingsUi();
+            } else if (next === 'memory') {
+                loadUserMemoriesInspector();
+            } else if (next === 'membership' && typeof renderMembershipTierMatrix === 'function') {
+                renderMembershipTierMatrix();
+            }
+        }
+
+        function syncTempFromSlider(val) {
+            const clamped = Math.max(0, Math.min(1, parseFloat(val || '0.3')));
+            const str = isNaN(clamped) ? '0.3' : clamped.toFixed(1);
+            if (modelTemperature) modelTemperature.value = str;
+            const pill = document.getElementById('modelTempPill');
+            if (pill) pill.textContent = str;
+        }
+
+        function syncTempFromInput(val) {
+            const clamped = Math.max(0, Math.min(1, parseFloat(val || '0.3')));
+            const str = isNaN(clamped) ? '0.3' : clamped.toFixed(1);
+            const rng = document.getElementById('modelTemperatureRange');
+            if (rng) rng.value = str;
+            const pill = document.getElementById('modelTempPill');
+            if (pill) pill.textContent = str;
+        }
+
+        function toggleSecretInputVisibility(inputId, btnEl) {
+            const inp = document.getElementById(inputId);
+            if (!inp) return;
+            const showing = inp.type === 'text';
+            inp.type = showing ? 'password' : 'text';
+            if (btnEl) btnEl.textContent = showing ? 'Show' : 'Hide';
+        }
+
+        function syncThemeSwatchHighlight(preset) {
+            const active = preset || 'matte';
+            document.querySelectorAll('#settingsThemeSwatches .settings-theme-swatch').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.preset === active);
+            });
+        }
+
+        function selectAuraThemePresetFromSwatch(preset) {
+            const sel = document.getElementById('themePresetSelect');
+            if (sel) sel.value = preset;
+            if (typeof applyAuraThemePreset === 'function') applyAuraThemePreset(preset);
+            syncThemeSwatchHighlight(preset);
+        }
+
+        function syncAppearanceControlsUi() {
+            try {
+                const savedSpace = localStorage.getItem('aura_space_bg');
+                const chk = document.getElementById('toggleSpaceBackdropCheckbox');
+                if (chk) chk.checked = (savedSpace === 'on');
+
+                const savedTheme = localStorage.getItem('aura_theme_preset') || 'matte';
+                const sel = document.getElementById('themePresetSelect');
+                if (sel) sel.value = savedTheme;
+                syncThemeSwatchHighlight(savedTheme);
+
+                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.52';
+                const dimRng = document.getElementById('wallpaperDimRange');
+                const dimVal = document.getElementById('wallpaperDimVal');
+                if (dimRng) dimRng.value = savedDim;
+                if (dimVal) dimVal.textContent = Math.round(parseFloat(savedDim) * 100) + '%';
+
+                const savedBlur = localStorage.getItem('aura_wallpaper_blur') || '0';
+                const blurRng = document.getElementById('wallpaperBlurRange');
+                const blurVal = document.getElementById('wallpaperBlurVal');
+                if (blurRng) blurRng.value = savedBlur;
+                if (blurVal) blurVal.textContent = Math.round(parseFloat(savedBlur)) + 'px';
+            } catch (_) {}
+        }
+
+        function updateByokStatusPill(val) {
+            const pill = document.getElementById('byokKeyStatusPill');
+            if (!pill) return;
+            const cleaned = String(val || '').trim();
+            if (cleaned) {
+                pill.textContent = 'Saved in browser';
+                pill.style.color = '#6ee7b7';
+            } else {
+                pill.textContent = 'Server default';
+                pill.style.color = '#71717a';
+            }
+        }
+
+        function clearByokGeminiKey() {
+            const inp = document.getElementById('byokGeminiKeyInput');
+            if (inp) inp.value = '';
+            saveByokGeminiKey('');
+            if (typeof showBridgeToast === 'function') showBridgeToast('Personal Gemini key cleared.', '#a1a1aa');
+        }
+
+        async function addUserMemoryFromSettings() {
+            const keyEl = document.getElementById('newMemoryKeyInput');
+            const valEl = document.getElementById('newMemoryValInput');
+            if (!keyEl || !valEl || !isAuthenticated()) return;
+            const key = keyEl.value.trim();
+            const value = valEl.value.trim();
+            if (!key || !value) {
+                if (typeof showBridgeToast === 'function') showBridgeToast('Enter both memory key and value.', '#fbbf24');
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/memory/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, value })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) throw new Error(data.error || 'Could not save memory.');
+                keyEl.value = '';
+                valEl.value = '';
+                await loadUserMemoriesInspector();
+                if (typeof showBridgeToast === 'function') showBridgeToast('Memory saved to your account.', '#34d399');
+            } catch (err) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(err.message || 'Memory save failed.', '#f87171');
+            }
+        }
+
         async function openModelSettings(focusSection = '') {
             if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
             }
             modelSettingsStatus.textContent = 'Loading saved settings…';
+            modelSettingsStatus.style.color = '#a1a1aa';
             if (accountSecurityStatus) accountSecurityStatus.textContent = '';
+            const hdrUser = document.getElementById('settingsHeaderUserText');
+            if (hdrUser && currentUser) {
+                const uname = currentUser.display_name || currentUser.username || 'Signed in';
+                hdrUser.textContent = uname;
+            }
             modelSettingsOverlay.style.display = 'flex';
+            switchSettingsTab(focusSection || 'ai');
+            syncAppearanceControlsUi();
             if (typeof renderWallpaperGalleries === 'function') renderWallpaperGalleries();
             try {
                 const response = await apiFetch('/api/settings');
@@ -4865,10 +5690,6 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not load settings.');
                 if (data.membership && typeof applyMembershipStateUI === 'function') {
                     applyMembershipStateUI(data.membership, data.quota, data.membership_tiers);
-                }
-                if (focusSection === 'membership') {
-                    const msec = document.getElementById('membershipSettingsSection');
-                    if (msec) setTimeout(() => msec.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
                 }
                 modelChoice.innerHTML = '';
                 (data.providers.gemini.models || []).forEach(model => {
@@ -4882,14 +5703,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 modelProvider.value = settings.active_provider || 'gemini';
                 if (modelProvider.value === 'ollama') ollamaModel.value = settings.active_model || '';
                 else modelChoice.value = settings.active_model || 'gemini-3-flash-preview';
+                const resolvedTemp = (prefs.temperature !== undefined) ? prefs.temperature : 0.3;
                 if (modelTemperature) {
-                    modelTemperature.value = (prefs.temperature !== undefined) ? prefs.temperature : 0.3;
+                    modelTemperature.value = resolvedTemp;
+                    syncTempFromInput(resolvedTemp);
                 }
                 if (executionPolicySelect) {
                     executionPolicySelect.value = prefs.execution_mode || 'auto_pilot';
                 }
                 if (modelProvider.value === 'gemini' && !data.gemini_key_configured) {
                     modelSettingsStatus.textContent = 'Gemini is selected, but no server-side API key is configured.';
+                    modelSettingsStatus.style.color = '#fbbf24';
                 } else {
                     modelSettingsStatus.textContent = '';
                 }
@@ -4902,11 +5726,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 }
                 const byokEl = document.getElementById('byokGeminiKeyInput');
                 if (byokEl) {
-                    try { byokEl.value = localStorage.getItem('aura_byok_gemini_key') || ''; } catch (_) {}
+                    try {
+                        const savedKey = localStorage.getItem('aura_byok_gemini_key') || '';
+                        byokEl.value = savedKey;
+                        updateByokStatusPill(savedKey);
+                    } catch (_) {}
                 }
                 await loadUserMemoriesInspector();
             } catch (error) {
                 modelSettingsStatus.textContent = error.message;
+                modelSettingsStatus.style.color = '#fca5a5';
             }
         }
 
@@ -4915,6 +5744,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 const cleaned = String(val || '').trim();
                 if (cleaned) localStorage.setItem('aura_byok_gemini_key', cleaned);
                 else localStorage.removeItem('aura_byok_gemini_key');
+                updateByokStatusPill(cleaned);
             } catch (_) {}
         }
 
@@ -4922,11 +5752,18 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             modelSettingsOverlay.style.display = 'none';
         }
 
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && modelSettingsOverlay && modelSettingsOverlay.style.display !== 'none') {
+                closeModelSettings();
+            }
+        });
+
         async function saveModelSettings() {
             const provider = modelProvider.value;
             const model = provider === 'ollama' ? ollamaModel.value.trim() : modelChoice.value;
             const tempVal = modelTemperature ? parseFloat(modelTemperature.value || '0.3') : 0.3;
             const execPolicy = executionPolicySelect ? executionPolicySelect.value : 'auto_pilot';
+            modelSettingsStatus.style.color = '#a1a1aa';
             modelSettingsStatus.textContent = 'Saving…';
             try {
                 const response = await apiFetch('/api/settings', {
@@ -4947,9 +5784,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (typeof syncAuraTierUi === 'function') {
                     syncAuraTierUi(data.active_aura_model || activeAuraModelTier);
                 }
-                modelSettingsStatus.textContent = 'Saved. Your next message will use these settings.';
-                setTimeout(closeModelSettings, 700);
+                modelSettingsStatus.style.color = '#6ee7b7';
+                modelSettingsStatus.textContent = 'Saved. Active on your next message.';
+                if (typeof showBridgeToast === 'function') showBridgeToast('Settings saved.', '#34d399');
             } catch (error) {
+                modelSettingsStatus.style.color = '#fca5a5';
                 modelSettingsStatus.textContent = error.message;
             }
         }
@@ -4961,30 +5800,43 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const current_password = curInput.value;
             const new_password = newInput.value;
             if (!current_password || !new_password) {
+                accountSecurityStatus.style.color = '#fbbf24';
                 accountSecurityStatus.textContent = 'Enter both current and new password.';
                 return;
             }
+            accountSecurityStatus.style.color = '#a1a1aa';
             accountSecurityStatus.textContent = 'Updating password...';
             try {
+                const uname = (currentUser && currentUser.username) ? currentUser.username : '';
+                const storedProof = uname ? await loadAccountProofAsync(uname) : '';
+                const reqBody = { current_password, new_password };
+                if (storedProof) reqBody.account_proof = storedProof;
                 const res = await apiFetch('/api/auth/change_password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ current_password, new_password })
+                    body: JSON.stringify(reqBody)
                 });
                 const data = await safeParseJson(res);
                 if (!res.ok || !data.success) {
+                    accountSecurityStatus.style.color = '#fca5a5';
                     accountSecurityStatus.textContent = data.error || 'Password update failed.';
                     return;
                 }
-                if (data.token) authToken = data.token;
+                if (data.token) {
+                    authToken = data.token;
+                    try { sessionStorage.setItem('aura_auth_token', authToken); } catch (_) {}
+                }
                 if (data.csrf_token) csrfToken = data.csrf_token;
                 if (data.account_proof && currentUser && currentUser.username) {
                     saveAccountProof(currentUser.username, data.account_proof);
                 }
                 curInput.value = '';
                 newInput.value = '';
+                accountSecurityStatus.style.color = '#6ee7b7';
                 accountSecurityStatus.textContent = 'Password updated and prior sessions rotated.';
+                if (typeof showBridgeToast === 'function') showBridgeToast('Password updated securely.', '#34d399');
             } catch (err) {
+                accountSecurityStatus.style.color = '#fca5a5';
                 accountSecurityStatus.textContent = 'Error: ' + err.message;
             }
         }
@@ -4993,14 +5845,21 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const password = prompt('Enter your current password to permanently delete your account and all data:');
             if (!password) return;
             try {
+                const uname = (currentUser && currentUser.username) ? currentUser.username : '';
+                const storedProof = uname ? await loadAccountProofAsync(uname) : '';
+                const reqBody = { password };
+                if (storedProof) reqBody.account_proof = storedProof;
                 const res = await apiFetch('/api/auth/delete_account', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify(reqBody)
                 });
                 const data = await safeParseJson(res);
                 if (!res.ok || !data.success) {
-                    if (accountSecurityStatus) accountSecurityStatus.textContent = data.error || 'Account deletion failed.';
+                    if (accountSecurityStatus) {
+                        accountSecurityStatus.style.color = '#fca5a5';
+                        accountSecurityStatus.textContent = data.error || 'Account deletion failed.';
+                    }
                     return;
                 }
                 closeModelSettings();
@@ -5013,7 +5872,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 authOverlay.style.display = 'flex';
                 switchAuthTab('login');
             } catch (err) {
-                if (accountSecurityStatus) accountSecurityStatus.textContent = 'Error: ' + err.message;
+                if (accountSecurityStatus) {
+                    accountSecurityStatus.style.color = '#fca5a5';
+                    accountSecurityStatus.textContent = 'Error: ' + err.message;
+                }
             }
         }
 
@@ -5264,12 +6126,29 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const uname = String(username || '').trim().toLowerCase();
             if (!uname || !proof || typeof proof !== 'string' || !proof.startsWith('aura_ap1.')) return;
             try { localStorage.setItem('aura_acct_proof_' + uname, proof); } catch (e) {}
+            try { AuraVaultDB.set('__proof__' + uname, { proof, updatedAt: Date.now() }); } catch (e) {}
         }
 
         function loadAccountProof(username) {
             const uname = String(username || '').trim().toLowerCase();
             if (!uname) return '';
             try { return localStorage.getItem('aura_acct_proof_' + uname) || ''; } catch (e) { return ''; }
+        }
+
+        async function loadAccountProofAsync(username) {
+            const uname = String(username || '').trim().toLowerCase();
+            if (!uname) return '';
+            let proof = loadAccountProof(uname);
+            if (!proof) {
+                try {
+                    const rec = await AuraVaultDB.get('__proof__' + uname);
+                    if (rec && typeof rec.proof === 'string' && rec.proof.startsWith('aura_ap1.')) {
+                        proof = rec.proof;
+                        try { localStorage.setItem('aura_acct_proof_' + uname, proof); } catch (_) {}
+                    }
+                } catch (_) {}
+            }
+            return proof;
         }
 
         async function loadIsolatedUserVault(username) {
@@ -5361,6 +6240,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     localStorage.removeItem('aura_thread_id_' + removeSpecific);
                     sessionStorage.removeItem('aura_thread_id_' + removeSpecific);
                     await AuraVaultDB.remove(removeSpecific);
+                    await AuraVaultDB.remove('__proof__' + removeSpecific);
                 }
 
                 // Always scrub ephemeral guest keys and optionally wipe all named user caches
@@ -5595,7 +6475,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const parsedVault = await loadIsolatedUserVault(u);
             const loginPayload = { username: u, password: p };
             if (authMode === 'login') {
-                const storedProof = loadAccountProof(u);
+                const storedProof = await loadAccountProofAsync(u);
                 if (storedProof) {
                     loginPayload.account_proof = storedProof;
                 }
@@ -8824,11 +9704,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const langEl = document.getElementById('voiceHudLangSelect');
             const voiceEl = document.getElementById('voiceHudVoiceSelect');
             const engEl = document.getElementById('voiceHudEngineSelect');
+            const sLangEl = document.getElementById('settingsVoiceLangSelect');
+            const sVoiceEl = document.getElementById('settingsVoicePersonaSelect');
+            const sEngEl = document.getElementById('settingsVoiceEngineSelect');
             const commEl = document.getElementById('voiceCommercialOnlyCheckbox');
             const badgeEl = document.getElementById('voiceHudEngineBadge');
             if (langEl) langEl.value = prefs.language;
             if (voiceEl) voiceEl.value = prefs.voice_id;
             if (engEl) engEl.value = prefs.engine;
+            if (sLangEl) sLangEl.value = prefs.language;
+            if (sVoiceEl) sVoiceEl.value = prefs.voice_id;
+            if (sEngEl) sEngEl.value = prefs.engine;
             if (commEl) commEl.checked = !!prefs.commercial_only;
             if (badgeEl) {
                 const engLabel = prefs.engine === 'kokoro' ? 'Kokoro Apache-2.0' : (prefs.engine === 'edge' ? 'Neural HD' : 'Hybrid HD');
@@ -9549,6 +10435,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             document.documentElement.style.setProperty('--accent-gold', p.gold);
             document.documentElement.style.setProperty('--border-focus', p.border);
             try { localStorage.setItem('aura_theme_preset', preset); } catch (_) {}
+            if (typeof syncThemeSwatchHighlight === 'function') syncThemeSwatchHighlight(preset);
         }
 
         const AURA_CURATED_WALLPAPERS = [
