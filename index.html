@@ -3424,6 +3424,670 @@
                 padding: 3px 7px;
             }
         }
+
+        /* ============================================================================
+           AURA AGENTIC WORKSPACE SPLIT PANE
+           (1. Live Browser | 2. Computer Use | 3. Live Action View)
+           Pure Obsidian Glass Executive Aesthetic — Zero Clutter
+        ============================================================================ */
+        .agent-workspace-pane {
+            display: none;
+            width: 50%;
+            min-width: 460px;
+            max-width: 840px;
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(9, 11, 17, 0.97);
+            backdrop-filter: blur(22px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            flex-direction: column;
+            z-index: 32;
+            box-shadow: -18px 0 48px rgba(0, 0, 0, 0.65);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .agent-workspace-pane.open {
+            display: flex;
+        }
+        .agent-workspace-pane.wide {
+            width: 64%;
+            max-width: 1120px;
+        }
+        @media (max-width: 1520px) and (min-width: 961px) {
+            body.aw-workspace-open .sidebar {
+                display: none;
+            }
+            body.aw-workspace-open .btn-mobile-menu {
+                display: inline-flex;
+            }
+        }
+        .aw-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 12px;
+            background: rgba(13, 16, 24, 0.96);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .aw-mode-switcher {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .aw-mode-switcher::-webkit-scrollbar { display: none; }
+        .aw-mode-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: #9ca3af;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.16s ease;
+        }
+        .aw-mode-btn:hover {
+            color: #f4f4f5;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .aw-mode-btn.active {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(226, 185, 111, 0.38);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        .aw-count-pill {
+            font-family: var(--font-code);
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(226, 185, 111, 0.16);
+            color: #e2b96f;
+        }
+        .aw-topbar-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .aw-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            height: 28px;
+            padding: 0 9px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            background: rgba(255, 255, 255, 0.04);
+            color: #d4d4d8;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .aw-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+        .aw-panel {
+            display: none;
+            flex: 1;
+            min-height: 0;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .aw-panel.active {
+            display: flex;
+        }
+
+        /* ---- Capability 1: AURA Live Browser ---- */
+        .aw-browser-tabs {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 10px 6px;
+            background: rgba(11, 14, 21, 0.96);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            overflow-x: auto;
+            scrollbar-width: none;
+            flex-shrink: 0;
+        }
+        .aw-browser-tabs::-webkit-scrollbar { display: none; }
+        .aw-tab-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            max-width: 175px;
+            padding: 5px 9px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: #a1a1aa;
+            font-size: 11.5px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+        .aw-tab-pill.active {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(226, 185, 111, 0.35);
+            color: #f4f4f5;
+        }
+        .aw-tab-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .aw-tab-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: none;
+            background: transparent;
+            color: #71717a;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+            padding: 0;
+        }
+        .aw-tab-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+        }
+        .aw-address-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            background: rgba(13, 16, 24, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .aw-url-input {
+            flex: 1;
+            min-width: 0;
+            height: 30px;
+            padding: 0 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(6, 8, 13, 0.9);
+            color: #f4f4f5;
+            font-family: var(--font-code);
+            font-size: 11.5px;
+            outline: none;
+        }
+        .aw-url-input:focus {
+            border-color: rgba(226, 185, 111, 0.5);
+        }
+        .aw-browser-stage {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            background: #06080d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .aw-live-canvas-wrap {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 8px;
+        }
+        .aw-live-viewport-img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #0b0e16;
+            cursor: crosshair;
+            display: none;
+            user-select: none;
+        }
+        .aw-empty-canvas {
+            max-width: 420px;
+            text-align: center;
+            padding: 24px 20px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(15, 18, 28, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .aw-cursor-reticle {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            border: 2px solid #e2b96f;
+            box-shadow: 0 0 18px rgba(226, 185, 111, 0.65);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: left 0.25s cubic-bezier(0.22, 1, 0.36, 1), top 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+            display: none;
+            z-index: 8;
+        }
+        .aw-cursor-reticle::after {
+            content: '';
+            position: absolute;
+            inset: 7px;
+            border-radius: 999px;
+            background: #e2b96f;
+        }
+        .aw-cursor-tag {
+            position: absolute;
+            left: 16px;
+            top: -10px;
+            padding: 2px 6px;
+            border-radius: 5px;
+            background: rgba(10, 12, 19, 0.94);
+            border: 1px solid rgba(226, 185, 111, 0.5);
+            color: #f4f4f5;
+            font-family: var(--font-code);
+            font-size: 9.5px;
+            white-space: nowrap;
+        }
+        .aw-elements-drawer {
+            display: none;
+            max-height: 165px;
+            overflow-y: auto;
+            padding: 8px 10px;
+            background: rgba(10, 13, 20, 0.96);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .aw-elements-drawer.open {
+            display: flex;
+        }
+        .aw-el-chip {
+            padding: 4px 8px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #d4d4d8;
+            font-size: 11px;
+            cursor: pointer;
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .aw-el-chip:hover {
+            border-color: rgba(226, 185, 111, 0.45);
+            color: #ffffff;
+        }
+        .aw-browser-command-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 9px 10px;
+            background: rgba(12, 15, 23, 0.96);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .aw-cmd-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .aw-primary-btn {
+            height: 30px;
+            padding: 0 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #f4f4f5;
+            color: #09090b;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.15s ease;
+        }
+        .aw-primary-btn:hover { opacity: 0.9; }
+        .aw-primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ---- Capability 2: AURA Computer Use ---- */
+        .aw-hitl-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 10px;
+            background: rgba(13, 16, 24, 0.96);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .aw-hitl-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .aw-ctrl-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            height: 29px;
+            padding: 0 11px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .aw-ctrl-btn.start {
+            border-color: rgba(52, 211, 153, 0.45);
+            background: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+        }
+        .aw-ctrl-btn.pause {
+            border-color: rgba(251, 191, 36, 0.42);
+            background: rgba(245, 158, 11, 0.14);
+            color: #fde68a;
+        }
+        .aw-ctrl-btn.stop {
+            border-color: rgba(248, 113, 113, 0.45);
+            background: rgba(239, 68, 68, 0.14);
+            color: #fca5a5;
+        }
+        .aw-ctrl-btn.takeover {
+            border-color: rgba(244, 244, 245, 0.4);
+            background: #f4f4f5;
+            color: #09090b;
+            font-weight: 700;
+        }
+        .aw-state-pill {
+            font-family: var(--font-code);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: #d4d4d8;
+            letter-spacing: 0.4px;
+        }
+        .aw-state-pill.running { border-color: rgba(52, 211, 153, 0.5); color: #6ee7b7; background: rgba(16, 185, 129, 0.14); }
+        .aw-state-pill.paused { border-color: rgba(251, 191, 36, 0.5); color: #fde68a; background: rgba(245, 158, 11, 0.14); }
+        .aw-state-pill.stopped { border-color: rgba(248, 113, 113, 0.5); color: #fca5a5; background: rgba(239, 68, 68, 0.14); }
+        .aw-state-pill.human_control { border-color: rgba(147, 197, 253, 0.55); color: #bfdbfe; background: rgba(59, 130, 246, 0.16); }
+
+        .aw-computer-split {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(205px, 0.92fr) minmax(240px, 1.35fr);
+            overflow: hidden;
+        }
+        .aw-computer-env {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(10, 12, 19, 0.92);
+        }
+        .aw-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            color: #71717a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .aw-apps-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+        }
+        .aw-app-btn {
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            background: rgba(255, 255, 255, 0.03);
+            color: #e4e4e7;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.14s ease;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .aw-app-btn:hover {
+            border-color: rgba(226, 185, 111, 0.4);
+            background: rgba(255, 255, 255, 0.07);
+        }
+        .aw-ui-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .aw-ui-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 5px 8px;
+            border-radius: 7px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.025);
+            color: #d4d4d8;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .aw-ui-row:hover {
+            border-color: rgba(226, 185, 111, 0.35);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .aw-computer-screen {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            background: #06080d;
+            overflow: hidden;
+        }
+        .aw-screen-hud {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 7px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            background: rgba(12, 15, 23, 0.9);
+            font-size: 11px;
+            color: #a1a1aa;
+            flex-shrink: 0;
+        }
+        .aw-vision-box {
+            padding: 8px 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(11, 14, 21, 0.95);
+            font-size: 11.5px;
+            line-height: 1.45;
+            color: #d4d4d8;
+            max-height: 115px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* ---- Capability 3: AURA Live Action View ---- */
+        .aw-actions-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(12, 15, 23, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .aw-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .aw-kpi-card {
+            padding: 7px 9px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .aw-kpi-val {
+            font-family: var(--font-code);
+            font-size: 15px;
+            font-weight: 700;
+            color: #f4f4f5;
+        }
+        .aw-kpi-lbl {
+            font-size: 10px;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .aw-actions-feed {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .aw-action-card {
+            display: flex;
+            gap: 10px;
+            padding: 9px 11px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(16, 19, 29, 0.78);
+            align-items: flex-start;
+        }
+        .aw-action-src {
+            font-family: var(--font-code);
+            font-size: 9.5px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #e4e4e7;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .aw-action-src.browser { border-color: rgba(147, 197, 253, 0.35); color: #93c5fd; background: rgba(59, 130, 246, 0.12); }
+        .aw-action-src.computer { border-color: rgba(52, 211, 153, 0.35); color: #6ee7b7; background: rgba(16, 185, 129, 0.12); }
+        .aw-action-src.vision { border-color: rgba(226, 185, 111, 0.4); color: #e2b96f; background: rgba(226, 185, 111, 0.12); }
+        .aw-action-thumb {
+            width: 84px;
+            height: 52px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            flex-shrink: 0;
+            cursor: pointer;
+            background: #06080d;
+        }
+        .aw-ticker-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(8, 10, 16, 0.98);
+            font-family: var(--font-code);
+            font-size: 10.5px;
+            color: #a1a1aa;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .aw-ticker-footer:hover {
+            background: rgba(16, 20, 30, 0.98);
+            color: #f4f4f5;
+        }
+        .aw-live-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: #34d399;
+            margin-right: 6px;
+            box-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+        }
+
+        @media (max-width: 1080px) {
+            .aw-computer-split {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(0, 48%) minmax(0, 52%);
+            }
+            .aw-computer-env {
+                height: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+        }
+        @media (max-width: 960px) {
+            .agent-workspace-pane,
+            .agent-workspace-pane.wide {
+                position: fixed;
+                inset: 0;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                z-index: 2250;
+                border-left: none;
+            }
+            #awBtnExpand {
+                display: none;
+            }
+            .aw-mode-btn {
+                padding: 5px 8px;
+                font-size: 11px;
+                gap: 4px;
+            }
+            .aw-kpi-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
@@ -3518,6 +4182,9 @@
                 <button type="button" id="headerQuotaPill" class="quota-header-pill" onclick="openModelSettings('membership')" title="Rolling 24-Hour Chat Quota">30/30</button>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                <button type="button" class="nav-icon-btn" id="btnHeaderLiveWorkspace" onclick="toggleAgentWorkspace('browser')" title="AURA Live Browser, Computer Use &amp; Action View" aria-label="AURA Live Browser and Computer Use">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </button>
                 <button type="button" class="btn-header-studio" id="btnHeaderStudio" onclick="openApexStudio()" title="Open AURA Engineering Studio (Tiers 1-5)">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                     <span class="studio-hide-xs">Studio</span>
@@ -3739,6 +4406,197 @@
         <div class="artifact-body">
             <iframe id="artifactPreviewFrame" class="artifact-preview-frame" sandbox="allow-scripts" title="Sandboxed Live Artifact Preview"></iframe>
             <pre id="artifactSourcePre" class="artifact-source-pre"></pre>
+        </div>
+    </aside>
+
+    <!-- ---------------- AURA Agentic Split Workspace: Live Browser | Computer Use | Live Action View ---------------- -->
+    <aside class="agent-workspace-pane" id="agentWorkspacePane" aria-label="AURA Live Browser, Computer Use & Action View">
+        <div class="aw-topbar">
+            <div class="aw-mode-switcher" role="tablist" aria-label="AURA Agentic Capabilities">
+                <button type="button" class="aw-mode-btn active" id="awTabBtn_browser" role="tab" aria-selected="true" onclick="switchAgentWorkspaceTab('browser')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    <span>Live Browser</span>
+                </button>
+                <button type="button" class="aw-mode-btn" id="awTabBtn_computer" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('computer')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <span>Computer Use</span>
+                </button>
+                <button type="button" class="aw-mode-btn" id="awTabBtn_actions" role="tab" aria-selected="false" onclick="switchAgentWorkspaceTab('actions')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span>Live Action View</span>
+                    <span class="aw-count-pill" id="awActionCountBadge">0</span>
+                </button>
+            </div>
+            <div class="aw-topbar-actions">
+                <button type="button" class="aw-icon-btn" id="awBtnExpand" onclick="toggleAgentWorkspaceWide()" title="Toggle Wide Workspace">Wide</button>
+                <button type="button" class="aw-icon-btn" onclick="closeAgentWorkspace()" title="Close Workspace">Close</button>
+            </div>
+        </div>
+
+        <!-- CAPABILITY 1: AURA LIVE BROWSER -->
+        <section class="aw-panel active" id="awPanel_browser" aria-label="AURA Live Browser">
+            <div class="aw-browser-tabs" id="awBrowserTabsBar">
+                <button type="button" class="aw-icon-btn" id="awBtnNewTab" onclick="awBrowserNewTab()" title="Open New Browser Tab">+</button>
+            </div>
+            <div class="aw-address-bar">
+                <button type="button" class="aw-icon-btn" onclick="awBrowserAction('back')" title="Back" aria-label="Back">&lt;</button>
+                <button type="button" class="aw-icon-btn" onclick="awBrowserAction('forward')" title="Forward" aria-label="Forward">&gt;</button>
+                <button type="button" class="aw-icon-btn" onclick="awBrowserAction('reload')" title="Reload" aria-label="Reload">R</button>
+                <input type="text" class="aw-url-input" id="awBrowserUrlInput" placeholder="Enter URL (e.g. wikipedia.org) or search..." onkeydown="if(event.key==='Enter'){awBrowserNavigate();}">
+                <button type="button" class="aw-primary-btn" onclick="awBrowserNavigate()">Go</button>
+                <button type="button" class="aw-icon-btn" id="awBtnToggleElements" onclick="awToggleBrowserElements()" title="Inspect Interactive DOM Elements">DOM</button>
+                <button type="button" class="aw-icon-btn" onclick="awUnderstandBrowserPage(true)" title="Capture Screenshot &amp; Sync Page Understanding to Chat">Ask AURA</button>
+            </div>
+            <div class="aw-browser-stage" id="awBrowserStage">
+                <div class="aw-live-canvas-wrap" id="awBrowserCanvasWrap">
+                    <img id="awBrowserImg" class="aw-live-viewport-img" alt="AURA Live Browser Viewport" onclick="awHandleBrowserCanvasClick(event)" onwheel="awHandleBrowserCanvasWheel(event)">
+                    <div id="awBrowserCursor" class="aw-cursor-reticle"><span id="awBrowserCursorTag" class="aw-cursor-tag">AI</span></div>
+                    <div id="awBrowserEmpty" class="aw-empty-canvas">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e2b96f" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        <div style="font-size:14px; font-weight:700; color:#f4f4f5;">AURA Live Browser</div>
+                        <div style="font-size:12px; color:#a1a1aa; line-height:1.5;">Navigate any public website, watch AURA click, scroll, type, manage multiple tabs, and understand live pages synchronized with chat.</div>
+                        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin-top:4px;">
+                            <button type="button" class="aw-icon-btn" onclick="awBrowserNavigate('https://example.com')">example.com</button>
+                            <button type="button" class="aw-icon-btn" onclick="awBrowserNavigate('https://en.wikipedia.org/wiki/Artificial_intelligence')">Wikipedia AI</button>
+                            <button type="button" class="aw-icon-btn" onclick="awBrowserNavigate('https://news.ycombinator.com')">Hacker News</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="aw-elements-drawer" id="awBrowserElementsDrawer"></div>
+            <div class="aw-browser-command-bar">
+                <div class="aw-cmd-row">
+                    <input type="text" class="aw-url-input" id="awBrowserGoalInput" placeholder="Tell AURA what to browse, search, click, or summarize..." onkeydown="if(event.key==='Enter'){awRunBrowserAgent();}">
+                    <button type="button" class="aw-primary-btn" id="awBtnRunBrowserAgent" onclick="awRunBrowserAgent()">Run AI</button>
+                </div>
+                <div class="aw-cmd-row" style="justify-content:space-between; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:5px; flex:1; min-width:180px;">
+                        <input type="text" class="aw-url-input" id="awBrowserTypeInput" style="height:26px; font-size:11px;" placeholder="Type text into focused field..." onkeydown="if(event.key==='Enter'){awBrowserTypeText(true);}">
+                        <button type="button" class="aw-icon-btn" style="height:26px;" onclick="awBrowserTypeText(false)">Type</button>
+                        <button type="button" class="aw-icon-btn" style="height:26px;" onclick="awBrowserTypeText(true)">Type+Enter</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <button type="button" class="aw-icon-btn" style="height:26px;" onclick="awBrowserAction('scroll', {delta_y: -420})">Up</button>
+                        <button type="button" class="aw-icon-btn" style="height:26px;" onclick="awBrowserAction('scroll', {delta_y: 420})">Down</button>
+                        <span id="awBrowserEnginePill" style="font-family:var(--font-code); font-size:10px; color:#71717a;">STANDBY</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAPABILITY 2: AURA COMPUTER USE -->
+        <section class="aw-panel" id="awPanel_computer" aria-label="AURA Computer Use">
+            <div class="aw-hitl-bar">
+                <div class="aw-hitl-controls">
+                    <button type="button" class="aw-ctrl-btn start" id="awCompBtnStart" onclick="awComputerControl('start')">Start</button>
+                    <button type="button" class="aw-ctrl-btn pause" id="awCompBtnPause" onclick="awComputerControl('pause')">Pause</button>
+                    <button type="button" class="aw-ctrl-btn stop" id="awCompBtnStop" onclick="awComputerControl('stop')">Stop</button>
+                    <button type="button" class="aw-ctrl-btn takeover" id="awCompBtnTakeover" onclick="awComputerControl('take_control')">Take Control</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <button type="button" class="aw-icon-btn" id="awCompBtnShareScreen" onclick="awToggleBrowserScreenShare()" title="Stream your desktop via Browser Screen Share for live Vision">Share Screen</button>
+                    <span class="aw-state-pill" id="awComputerStatePill">IDLE</span>
+                </div>
+            </div>
+
+            <div class="aw-computer-split">
+                <!-- Left Side: Desktop / Computer Environment Controls -->
+                <div class="aw-computer-env">
+                    <div class="aw-section-label">
+                        <span>Desktop Task Agent</span>
+                        <span id="awCompHostMode" style="font-family:var(--font-code); color:#9ca3af;">LOCAL</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <textarea id="awCompGoalInput" rows="2" class="aw-url-input" style="height:auto; padding:7px 9px; resize:none; font-family:var(--font-sans);" placeholder="Describe desktop goal (e.g. Open Notepad or analyze active window)..."></textarea>
+                        <div style="display:flex; gap:5px;">
+                            <button type="button" class="aw-primary-btn" style="flex:1;" onclick="awComputerControl('start')">Run Agent</button>
+                            <button type="button" class="aw-icon-btn" onclick="awAnalyzeComputerScreen()">Vision Scan</button>
+                        </div>
+                    </div>
+
+                    <div class="aw-section-label" style="margin-top:4px;">
+                        <span>Supported Desktop Apps</span>
+                    </div>
+                    <div class="aw-apps-grid" id="awCompAppsGrid">
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'chrome'})">Google Chrome</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'vscode'})">VS Code</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'notepad'})">Notepad</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'calculator'})">Calculator</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'explorer'})">File Explorer</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'whatsapp'})">WhatsApp</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'settings'})">Settings</button>
+                        <button type="button" class="aw-app-btn" onclick="awComputerAction('launch_app', {app_name:'terminal'})">Terminal</button>
+                    </div>
+
+                    <div class="aw-section-label" style="margin-top:4px;">
+                        <span>Keyboard &amp; Hotkey</span>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="awCompTypeInput" class="aw-url-input" style="height:28px; font-size:11px;" placeholder="Type to desktop..." onkeydown="if(event.key==='Enter'){awComputerTypeDirect();}">
+                        <button type="button" class="aw-icon-btn" style="height:28px;" onclick="awComputerTypeDirect()">Send</button>
+                    </div>
+
+                    <div class="aw-section-label" style="margin-top:4px;">
+                        <span>Windows UI Automation Tree</span>
+                        <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px; padding:0 7px;" onclick="awRefreshComputerUiTree()">Inspect</button>
+                    </div>
+                    <div class="aw-ui-list" id="awCompUiTreeList">
+                        <div style="font-size:11px; color:#71717a; padding:6px 2px;">Click Inspect to list open windows &amp; Windows UI Automation controls.</div>
+                    </div>
+                </div>
+
+                <!-- Right Side: Live Screen View of AI Actions & Activity -->
+                <div class="aw-computer-screen">
+                    <div class="aw-screen-hud">
+                        <span id="awCompActiveWin" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Live Screen View</span>
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                            <span id="awCompStackBadge" style="font-family:var(--font-code); font-size:10px; color:#6ee7b7;">STREAM</span>
+                            <button type="button" class="aw-icon-btn" style="height:22px; font-size:10px;" onclick="awCaptureComputerFrameOnce()">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="aw-live-canvas-wrap" id="awComputerCanvasWrap">
+                        <video id="awCompShareVideo" autoplay playsinline muted style="display:none; max-width:100%; max-height:100%; border-radius:10px; border:1px solid rgba(255,255,255,0.14);"></video>
+                        <img id="awComputerImg" class="aw-live-viewport-img" style="display:block;" alt="AURA Live Desktop Screen Stream" onclick="awHandleComputerCanvasClick(event)">
+                        <div id="awComputerCursor" class="aw-cursor-reticle"><span id="awComputerCursorTag" class="aw-cursor-tag">OS</span></div>
+                    </div>
+                    <div class="aw-vision-box" id="awCompVisionSummary">
+                        <strong style="color:#f4f4f5;">Visual Computer Agent Standby:</strong> Click <strong>Start</strong> to arm live screen streaming &amp; desktop control, or <strong>Take Control</strong> at any time to reclaim mouse and keyboard immediately.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAPABILITY 3: AURA LIVE ACTION VIEW -->
+        <section class="aw-panel" id="awPanel_actions" aria-label="AURA Live Action View">
+            <div class="aw-actions-header">
+                <div class="aw-kpi-grid">
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiTotal">0</div><div class="aw-kpi-lbl">Total Steps</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiBrowser" style="color:#93c5fd;">0</div><div class="aw-kpi-lbl">Browser</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiComputer" style="color:#6ee7b7;">0</div><div class="aw-kpi-lbl">Computer</div></div>
+                    <div class="aw-kpi-card"><div class="aw-kpi-val" id="awKpiVision" style="color:#e2b96f;">0</div><div class="aw-kpi-lbl">Vision</div></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                        <button type="button" class="aw-icon-btn" id="awFilter_all" onclick="awSetActionFilter('all')">All</button>
+                        <button type="button" class="aw-icon-btn" id="awFilter_browser" onclick="awSetActionFilter('browser')">Browser</button>
+                        <button type="button" class="aw-icon-btn" id="awFilter_computer" onclick="awSetActionFilter('computer')">Computer</button>
+                        <button type="button" class="aw-icon-btn" id="awFilter_vision" onclick="awSetActionFilter('vision')">Vision</button>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button type="button" class="aw-icon-btn" onclick="awRefreshActionsFeed()">Refresh</button>
+                        <button type="button" class="aw-icon-btn" onclick="awClearActionsFeed()">Clear</button>
+                    </div>
+                </div>
+            </div>
+            <div class="aw-actions-feed" id="awActionsFeedList">
+                <div style="font-size:12px; color:#71717a; text-align:center; padding:28px 16px;">No live AI actions recorded yet. Navigate in Live Browser or start Computer Use to watch every action execute in real time.</div>
+            </div>
+        </section>
+
+        <!-- Synchronized Always-On Live Action Ticker -->
+        <div class="aw-ticker-footer" id="awTickerFooter" onclick="switchAgentWorkspaceTab('actions')" title="Open AURA Live Action View">
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span class="aw-live-dot" id="awTickerDot"></span><span id="awTickerText">AURA Live Action View ready</span></span>
+            <span id="awTickerTime" style="flex-shrink:0; color:#71717a;">LIVE</span>
         </div>
     </aside>
 
@@ -7387,7 +8245,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             { cmd: '/plan', template: '/plan ', desc: 'Structured step-by-step architecture & build plan' },
             { cmd: '/boost', template: '/boost ', desc: 'Deep multi-perspective verification & optimization' },
             { cmd: '/teamwork', template: '/teamwork ', desc: 'Coordinate multi-agent swarm team on a task' },
-            { cmd: '/browser', template: '/browser ', desc: 'Live web research & interactive browser workflow plan' },
+            { cmd: '/browser', template: '/browser ', desc: 'Open AURA Live Browser & run AI web navigation/actions' },
+            { cmd: '/computer', template: '/computer ', desc: 'Open AURA Computer Use (Desktop Automation & Live Screen)' },
+            { cmd: '/actions', template: '/actions', desc: 'Open AURA Live Action View (Real-time AI activity stream)' },
             { cmd: '/schedule', template: '/schedule ', desc: 'Set recurring cron monitor or one-shot timer' },
             { cmd: '/compact', template: '/compact', desc: 'Summarize & compress long thread context cleanly' },
             { cmd: '/learn', template: '/learn ', desc: 'Extract reusable workflow skill & memory note' },
@@ -7644,6 +8504,42 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (typeof openIdeWorkbench === 'function') {
                     await openIdeWorkbench('preview', targetPreviewPath);
                 }
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/browser' || lowerCmd.startsWith('/browser '))) {
+                const browserArg = text.slice(8).trim();
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('browser');
+                if (browserArg) {
+                    await awRunBrowserFromChat(browserArg);
+                }
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/computer' || lowerCmd.startsWith('/computer '))) {
+                const compGoal = text.slice(9).trim();
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('computer');
+                if (compGoal) {
+                    const inp = document.getElementById('awCompGoalInput');
+                    if (inp) inp.value = compGoal;
+                    await awComputerControl('start');
+                }
+                return;
+            }
+            if (!hasAttachments && (lowerCmd === '/actions' || lowerCmd === '/liveactions')) {
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('actions');
+                return;
+            }
+            // Synchronized natural chat -> AURA Live Browser shortcut
+            if (!hasAttachments && !lowerCmd.startsWith('/') && /\b(live\s*browser|in\s+(?:the\s+)?browser|browse\s+to|browse\s+https?:\/\/|open\s+https?:\/\/\S+\s+in\s+browser)\b/i.test(text)) {
+                userPrompt.value = '';
+                userPrompt.style.height = 'auto';
+                await openAgentWorkspace('browser');
+                await awRunBrowserFromChat(text);
                 return;
             }
 
@@ -9468,6 +10364,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function openArtifactPane(code, lang = 'html', title = 'Live Artifact') {
+            if (typeof closeAgentWorkspace === 'function') closeAgentWorkspace();
             const pane = document.getElementById('artifactSplitPane');
             const frame = document.getElementById('artifactPreviewFrame');
             const sourcePre = document.getElementById('artifactSourcePre');
@@ -11336,6 +12233,730 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (res.ok && data.success) {
                 if (applyWrap) applyWrap.style.display = 'none';
                 out.innerHTML = `<div style="color:#6ee7b7; font-weight:700; margin-bottom:6px;">Applied ${data.files_count} file(s) · Rollback Snapshot: ${escapeHtml(data.snapshot_id)}</div>` + _renderUnifiedDiffHtml(data.diffs);
+            }
+        }
+
+        // ============================================================================
+        // AURA AGENTIC WORKSPACE CONTROLLER
+        // 1. AURA Live Browser | 2. AURA Computer Use | 3. AURA Live Action View
+        // ============================================================================
+        const awState = {
+            open: false,
+            wide: false,
+            activeTab: 'browser',
+            actionFilter: 'all',
+            browserState: null,
+            computerStatus: null,
+            pollTimer: null,
+            screenTimer: null,
+            screenShareStream: null,
+            lastCursorEventId: 0,
+            browserElementsOpen: false,
+            busy: false
+        };
+
+        async function _ensureAwAuth() {
+            if (isAuthenticated()) return true;
+            if (typeof continueAsGuest === 'function') {
+                return await continueAsGuest({ preserveConversation: true });
+            }
+            return false;
+        }
+
+        async function toggleAgentWorkspace(initialMode = 'browser') {
+            if (awState.open && awState.activeTab === initialMode) {
+                closeAgentWorkspace();
+                return;
+            }
+            await openAgentWorkspace(initialMode);
+        }
+
+        async function openAgentWorkspace(mode = 'browser') {
+            const ok = await _ensureAwAuth();
+            if (!ok) {
+                if (typeof authOverlay !== 'undefined' && authOverlay) authOverlay.style.display = 'flex';
+                return;
+            }
+            if (typeof closeArtifactPane === 'function') closeArtifactPane();
+            const pane = document.getElementById('agentWorkspacePane');
+            const hdrBtn = document.getElementById('btnHeaderLiveWorkspace');
+            if (!pane) return;
+            awState.open = true;
+            pane.classList.add('open');
+            document.body.classList.add('aw-workspace-open');
+            if (hdrBtn) {
+                hdrBtn.style.borderColor = 'rgba(226, 185, 111, 0.55)';
+                hdrBtn.style.color = '#f4f4f5';
+            }
+            await switchAgentWorkspaceTab(mode);
+            _startAwPolling();
+        }
+
+        function closeAgentWorkspace() {
+            const pane = document.getElementById('agentWorkspacePane');
+            const hdrBtn = document.getElementById('btnHeaderLiveWorkspace');
+            awState.open = false;
+            if (pane) pane.classList.remove('open');
+            document.body.classList.remove('aw-workspace-open');
+            if (hdrBtn) {
+                hdrBtn.style.borderColor = '';
+                hdrBtn.style.color = '';
+            }
+            _stopAwPolling();
+        }
+
+        function toggleAgentWorkspaceWide() {
+            const pane = document.getElementById('agentWorkspacePane');
+            const btn = document.getElementById('awBtnExpand');
+            if (!pane) return;
+            awState.wide = !awState.wide;
+            pane.classList.toggle('wide', awState.wide);
+            if (btn) btn.textContent = awState.wide ? 'Split' : 'Wide';
+        }
+
+        async function switchAgentWorkspaceTab(mode) {
+            const valid = ['browser', 'computer', 'actions'].includes(mode) ? mode : 'browser';
+            awState.activeTab = valid;
+            ['browser', 'computer', 'actions'].forEach(m => {
+                const btn = document.getElementById('awTabBtn_' + m);
+                const panel = document.getElementById('awPanel_' + m);
+                const isAct = m === valid;
+                if (btn) {
+                    btn.classList.toggle('active', isAct);
+                    btn.setAttribute('aria-selected', isAct ? 'true' : 'false');
+                }
+                if (panel) panel.classList.toggle('active', isAct);
+            });
+            if (valid === 'browser') {
+                await awRefreshBrowserState();
+            } else if (valid === 'computer') {
+                await awRefreshComputerStatus();
+                await awCaptureComputerFrameOnce();
+            } else if (valid === 'actions') {
+                await awRefreshActionsFeed();
+            }
+            _syncAwScreenTimer();
+        }
+
+        function _startAwPolling() {
+            _stopAwPolling();
+            awState.pollTimer = setInterval(() => {
+                if (!awState.open || !isAuthenticated()) return;
+                awRefreshActionsFeed(true);
+                if (awState.activeTab === 'computer') {
+                    awRefreshComputerStatus();
+                }
+            }, 2200);
+            _syncAwScreenTimer();
+        }
+
+        function _syncAwScreenTimer() {
+            if (awState.screenTimer) {
+                clearInterval(awState.screenTimer);
+                awState.screenTimer = null;
+            }
+            if (!awState.open || awState.activeTab !== 'computer') return;
+            awState.screenTimer = setInterval(() => {
+                if (!awState.open || awState.activeTab !== 'computer' || !isAuthenticated()) return;
+                if (!awState.screenShareStream) {
+                    awCaptureComputerFrameOnce();
+                }
+            }, 1300);
+        }
+
+        function _stopAwPolling() {
+            if (awState.pollTimer) { clearInterval(awState.pollTimer); awState.pollTimer = null; }
+            if (awState.screenTimer) { clearInterval(awState.screenTimer); awState.screenTimer = null; }
+        }
+
+        // ---------------- Capability 1: AURA Live Browser ----------------
+        function _renderBrowserState(data) {
+            if (!data || !data.success) return;
+            awState.browserState = data;
+            const tabsBar = document.getElementById('awBrowserTabsBar');
+            const urlInp = document.getElementById('awBrowserUrlInput');
+            const img = document.getElementById('awBrowserImg');
+            const empty = document.getElementById('awBrowserEmpty');
+            const engPill = document.getElementById('awBrowserEnginePill');
+            const drawer = document.getElementById('awBrowserElementsDrawer');
+
+            const tabs = data.tabs || [];
+            const active = data.active_tab || {};
+            if (tabsBar) {
+                const pillsHtml = tabs.map(t => {
+                    const isAct = t.id === data.active_tab_id;
+                    const safeTitle = escapeHtml((t.title || t.url || 'New Tab').slice(0, 24));
+                    return `<div class="aw-tab-pill${isAct ? ' active' : ''}" onclick="awBrowserSwitchTab('${escapeHtml(t.id)}')" title="${escapeHtml(t.url || '')}">` +
+                        `<span class="aw-tab-title">${safeTitle}</span>` +
+                        `<button type="button" class="aw-tab-close" onclick="event.stopPropagation(); awBrowserCloseTab('${escapeHtml(t.id)}')" aria-label="Close tab">&times;</button>` +
+                        `</div>`;
+                }).join('');
+                tabsBar.innerHTML = pillsHtml + `<button type="button" class="aw-icon-btn" id="awBtnNewTab" onclick="awBrowserNewTab()" title="Open New Browser Tab">+</button>`;
+            }
+            if (urlInp && document.activeElement !== urlInp) {
+                urlInp.value = active.url && active.url !== 'about:blank' ? active.url : '';
+            }
+            if (img && empty) {
+                if (active.screenshot_b64) {
+                    img.src = 'data:image/jpeg;base64,' + active.screenshot_b64;
+                    img.style.display = 'block';
+                    empty.style.display = 'none';
+                } else {
+                    img.style.display = 'none';
+                    empty.style.display = 'flex';
+                }
+            }
+            if (engPill) {
+                const eng = active.engine || (data.engine_capabilities && data.engine_capabilities.playwright_local ? 'playwright_ready' : 'cloud_dom');
+                engPill.textContent = String(eng).toUpperCase().replace(/_/g, ' ');
+                engPill.style.color = String(eng).includes('playwright') ? '#6ee7b7' : '#93c5fd';
+            }
+            if (drawer) {
+                const els = active.elements || [];
+                if (!els.length) {
+                    drawer.innerHTML = `<div style="font-size:11px; color:#71717a;">No interactive DOM elements detected on this page yet.</div>`;
+                } else {
+                    drawer.innerHTML = els.slice(0, 28).map(el => (
+                        `<button type="button" class="aw-el-chip" onclick="awBrowserClickElement(${Number(el.index)})" title="${escapeHtml(el.href || el.text || '')}">` +
+                        `<span style="color:#e2b96f; font-family:var(--font-code);">[${Number(el.index)}]</span> ` +
+                        `<span style="color:#93c5fd;">${escapeHtml(el.tag || '')}</span> ${escapeHtml(el.text || el.href || 'element')}` +
+                        `</button>`
+                    )).join('');
+                }
+            }
+        }
+
+        function awToggleBrowserElements() {
+            awState.browserElementsOpen = !awState.browserElementsOpen;
+            const drawer = document.getElementById('awBrowserElementsDrawer');
+            const btn = document.getElementById('awBtnToggleElements');
+            if (drawer) drawer.classList.toggle('open', awState.browserElementsOpen);
+            if (btn) btn.style.borderColor = awState.browserElementsOpen ? 'rgba(226,185,111,0.5)' : '';
+        }
+
+        async function awRefreshBrowserState() {
+            try {
+                const res = await apiFetch('/api/browser/state', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success) _renderBrowserState(data);
+            } catch (_) {}
+        }
+
+        async function awBrowserNewTab(url = '') {
+            const res = await apiFetch('/api/browser/tab/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                _renderBrowserState(data);
+                awRefreshActionsFeed(true);
+            } else if (data.error) {
+                showBridgeToast(data.error, '#f87171');
+            }
+        }
+
+        async function awBrowserSwitchTab(tabId) {
+            const res = await apiFetch('/api/browser/tab/switch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tab_id: tabId })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) _renderBrowserState(data);
+        }
+
+        async function awBrowserCloseTab(tabId) {
+            const res = await apiFetch('/api/browser/tab/close', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tab_id: tabId })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) _renderBrowserState(data);
+        }
+
+        async function awBrowserNavigate(explicitUrl) {
+            const inp = document.getElementById('awBrowserUrlInput');
+            const url = (typeof explicitUrl === 'string' && explicitUrl.trim()) ? explicitUrl.trim() : (inp ? inp.value.trim() : '');
+            if (!url) return;
+            const engPill = document.getElementById('awBrowserEnginePill');
+            if (engPill) engPill.textContent = 'LOADING...';
+            try {
+                const res = await apiFetch('/api/browser/navigate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success) {
+                    _renderBrowserState(data);
+                    awRefreshActionsFeed(true);
+                } else {
+                    showBridgeToast(data.error || 'Navigation blocked', '#f87171');
+                    if (engPill) engPill.textContent = 'BLOCKED';
+                }
+            } catch (err) {
+                showBridgeToast('Browser error: ' + err.message, '#f87171');
+            }
+        }
+
+        async function awBrowserAction(action, extra = {}) {
+            try {
+                const res = await apiFetch('/api/browser/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, ...extra })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success) {
+                    _renderBrowserState(data);
+                    if (typeof extra.x === 'number' && typeof extra.y === 'number') {
+                        _flashReticle('browser', extra.x, extra.y, action.toUpperCase());
+                    }
+                    awRefreshActionsFeed(true);
+                } else if (data.error) {
+                    showBridgeToast(data.error, '#f87171');
+                }
+            } catch (_) {}
+        }
+
+        async function awBrowserClickElement(index) {
+            await awBrowserAction('click', { element_index: index });
+        }
+
+        async function awBrowserTypeText(submit = false) {
+            const inp = document.getElementById('awBrowserTypeInput');
+            const text = inp ? inp.value : '';
+            if (!text) return;
+            await awBrowserAction('type', { text, submit: !!submit });
+            if (inp) inp.value = '';
+        }
+
+        function awHandleBrowserCanvasClick(ev) {
+            const img = document.getElementById('awBrowserImg');
+            if (!img || !img.clientWidth || !img.clientHeight) return;
+            const rect = img.getBoundingClientRect();
+            const relX = (ev.clientX - rect.left) / rect.width;
+            const relY = (ev.clientY - rect.top) / rect.height;
+            const vp = (awState.browserState && awState.browserState.active_tab && awState.browserState.active_tab.viewport) || { width: 1280, height: 760 };
+            const x = Math.round(relX * vp.width);
+            const y = Math.round(relY * vp.height);
+            _flashReticle('browser', x, y, 'CLICK');
+            awBrowserAction('click', { x, y });
+        }
+
+        let _awWheelDebounce = null;
+        function awHandleBrowserCanvasWheel(ev) {
+            ev.preventDefault();
+            const dy = ev.deltaY > 0 ? 360 : -360;
+            if (_awWheelDebounce) clearTimeout(_awWheelDebounce);
+            _awWheelDebounce = setTimeout(() => awBrowserAction('scroll', { delta_y: dy }), 140);
+        }
+
+        function _flashReticle(kind, x, y, label) {
+            const isBrowser = kind === 'browser';
+            const img = document.getElementById(isBrowser ? 'awBrowserImg' : 'awComputerImg');
+            const wrap = document.getElementById(isBrowser ? 'awBrowserCanvasWrap' : 'awComputerCanvasWrap');
+            const ret = document.getElementById(isBrowser ? 'awBrowserCursor' : 'awComputerCursor');
+            const tag = document.getElementById(isBrowser ? 'awBrowserCursorTag' : 'awComputerCursorTag');
+            if (!img || !wrap || !ret || img.style.display === 'none') return;
+            const imgRect = img.getBoundingClientRect();
+            const wrapRect = wrap.getBoundingClientRect();
+            const vp = isBrowser
+                ? ((awState.browserState && awState.browserState.active_tab && awState.browserState.active_tab.viewport) || { width: 1280, height: 760 })
+                : ((awState.computerStatus && awState.computerStatus.screen_size) || { width: 1920, height: 1080 });
+            const px = (imgRect.left - wrapRect.left) + (Math.max(0, Math.min(vp.width, x)) / vp.width) * imgRect.width;
+            const py = (imgRect.top - wrapRect.top) + (Math.max(0, Math.min(vp.height, y)) / vp.height) * imgRect.height;
+            ret.style.left = px + 'px';
+            ret.style.top = py + 'px';
+            ret.style.display = 'block';
+            ret.style.opacity = '1';
+            if (tag) tag.textContent = label || 'AI';
+        }
+
+        async function awUnderstandBrowserPage(syncToChat = true) {
+            const res = await apiFetch('/api/browser/understand', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: 'Summarize this live webpage, key information, and interactive options available.' })
+            });
+            const data = await safeParseJson(res);
+            if (!res.ok || !data.success) {
+                showBridgeToast(data.error || 'Open a page first.', '#f87171');
+                return;
+            }
+            if (data.state) _renderBrowserState(data.state);
+            awRefreshActionsFeed(true);
+            if (syncToChat && typeof appendUserMessage === 'function' && typeof createAgentStreamingTurn === 'function') {
+                if (typeof welcomeHero !== 'undefined' && welcomeHero) welcomeHero.style.display = 'none';
+                appendUserMessage(`Analyze live browser page: ${data.title || data.url}`, []);
+                const turn = createAgentStreamingTurn();
+                turn.thinking.style.display = 'none';
+                turn.bubble.innerHTML = renderMarkdown(data.analysis || 'Page analyzed.');
+                scrollChatToBottom();
+            }
+        }
+
+        async function awRunBrowserAgent(explicitGoal, syncToChat = true) {
+            const inp = document.getElementById('awBrowserGoalInput');
+            const btn = document.getElementById('awBtnRunBrowserAgent');
+            const goal = (typeof explicitGoal === 'string' && explicitGoal.trim()) ? explicitGoal.trim() : (inp ? inp.value.trim() : '');
+            if (!goal) return;
+            if (btn) { btn.disabled = true; btn.textContent = 'Running...'; }
+            let turn = null;
+            if (syncToChat && typeof appendUserMessage === 'function' && typeof createAgentStreamingTurn === 'function') {
+                if (typeof welcomeHero !== 'undefined' && welcomeHero) welcomeHero.style.display = 'none';
+                appendUserMessage(goal, []);
+                turn = createAgentStreamingTurn();
+                scrollChatToBottom();
+            }
+            try {
+                const res = await apiFetch('/api/browser/agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ goal })
+                });
+                const data = await safeParseJson(res);
+                if (data.state) _renderBrowserState(data.state);
+                awRefreshActionsFeed(true);
+                if (turn) {
+                    turn.thinking.style.display = 'none';
+                    if (res.ok && data.success) {
+                        const stepTrail = (data.steps || []).map(s => `${s.step}. **${s.action}** ${s.target || s.text || s.title || ''}`).join('\n');
+                        turn.bubble.innerHTML = renderMarkdown(
+                            `${data.summary || 'Browser task completed.'}\n\n---\n**AURA Live Browser Steps:**\n${stepTrail}`
+                        );
+                    } else {
+                        turn.bubble.innerHTML = renderMarkdown(`**AURA Live Browser Notice:** ${data.error || 'Could not complete browser command.'}`);
+                    }
+                    scrollChatToBottom();
+                } else if (!res.ok || !data.success) {
+                    showBridgeToast(data.error || 'Browser agent failed', '#f87171');
+                }
+                if (inp && !explicitGoal) inp.value = '';
+            } catch (err) {
+                if (turn) {
+                    turn.thinking.style.display = 'none';
+                    turn.bubble.textContent = 'Browser error: ' + err.message;
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Run AI'; }
+            }
+        }
+
+        async function awRunBrowserFromChat(goal) {
+            return await awRunBrowserAgent(goal, true);
+        }
+
+        // ---------------- Capability 2: AURA Computer Use ----------------
+        function _renderComputerStatus(status) {
+            if (!status || !status.success) return;
+            awState.computerStatus = status;
+            const pill = document.getElementById('awComputerStatePill');
+            const pauseBtn = document.getElementById('awCompBtnPause');
+            const hostEl = document.getElementById('awCompHostMode');
+            const winEl = document.getElementById('awCompActiveWin');
+            const stackEl = document.getElementById('awCompStackBadge');
+            const visEl = document.getElementById('awCompVisionSummary');
+
+            const st = String(status.state || 'idle').toLowerCase();
+            if (pill) {
+                pill.className = 'aw-state-pill ' + st;
+                pill.textContent = st.replace(/_/g, ' ').toUpperCase();
+            }
+            if (pauseBtn) {
+                pauseBtn.textContent = st === 'paused' ? 'Resume' : 'Pause';
+                pauseBtn.onclick = () => awComputerControl(st === 'paused' ? 'resume' : 'pause');
+            }
+            if (hostEl) {
+                hostEl.textContent = status.local_desktop_available ? 'LOCAL WINDOWS' : (status.cloud_mode ? 'CLOUD VISION' : 'SANDBOX');
+                hostEl.style.color = status.local_desktop_available ? '#6ee7b7' : '#93c5fd';
+            }
+            if (winEl && status.active_window) {
+                winEl.textContent = status.active_window;
+            }
+            if (stackEl && status.stack) {
+                const activeCount = Object.values(status.stack).filter(Boolean).length;
+                stackEl.textContent = `${activeCount}/6 ENGINES`;
+            }
+            if (visEl && status.last_vision_summary) {
+                visEl.innerHTML = `<strong style="color:#f4f4f5;">Visual Understanding:</strong> ${escapeHtml(status.last_vision_summary)}`;
+            }
+        }
+
+        async function awRefreshComputerStatus() {
+            try {
+                const res = await apiFetch('/api/computer/status', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success) _renderComputerStatus(data);
+            } catch (_) {}
+        }
+
+        async function awCaptureComputerFrameOnce() {
+            if (awState.screenShareStream) return;
+            try {
+                const res = await apiFetch('/api/computer/screenshot?width=1024&quality=58', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success && data.frame_b64) {
+                    const img = document.getElementById('awComputerImg');
+                    const winEl = document.getElementById('awCompActiveWin');
+                    if (img) {
+                        img.src = 'data:image/jpeg;base64,' + data.frame_b64;
+                        img.style.display = 'block';
+                    }
+                    if (winEl && data.active_window) {
+                        winEl.textContent = `${data.active_window}` + (typeof data.cv_ui_regions === 'number' ? ` · ${data.cv_ui_regions} UI regions` : '');
+                    }
+                }
+            } catch (_) {}
+        }
+
+        async function awComputerControl(command) {
+            const goalInp = document.getElementById('awCompGoalInput');
+            const goal = goalInp ? goalInp.value.trim() : '';
+            const res = await apiFetch('/api/computer/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command, goal })
+            });
+            const data = await safeParseJson(res);
+            if (data.status) _renderComputerStatus(data.status);
+            if (!res.ok || !data.success) {
+                showBridgeToast(data.error || 'Computer Use control failed', '#f87171');
+                return;
+            }
+            if (command === 'take_control') {
+                showBridgeToast('You have full desktop control. AURA yielded immediately.', '#93c5fd');
+            }
+            awRefreshActionsFeed(true);
+            awCaptureComputerFrameOnce();
+        }
+
+        async function awComputerAction(action, payload = {}) {
+            const res = await apiFetch('/api/computer/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, ...payload })
+            });
+            const data = await safeParseJson(res);
+            if (data.status) _renderComputerStatus(data.status);
+            if (data.frame_b64) {
+                const img = document.getElementById('awComputerImg');
+                if (img) img.src = 'data:image/jpeg;base64,' + data.frame_b64;
+            }
+            if (!res.ok || !data.success) {
+                showBridgeToast(data.error || 'Desktop action blocked', '#f87171');
+            } else {
+                awRefreshActionsFeed(true);
+            }
+        }
+
+        async function awComputerTypeDirect() {
+            const inp = document.getElementById('awCompTypeInput');
+            const text = inp ? inp.value : '';
+            if (!text) return;
+            await awComputerAction('type', { text });
+            if (inp) inp.value = '';
+        }
+
+        function awHandleComputerCanvasClick(ev) {
+            const img = document.getElementById('awComputerImg');
+            if (!img || !img.clientWidth || !img.clientHeight) return;
+            const rect = img.getBoundingClientRect();
+            const relX = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+            const relY = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+            const sz = (awState.computerStatus && awState.computerStatus.screen_size) || { width: 1920, height: 1080 };
+            _flashReticle('computer', Math.round(relX * sz.width), Math.round(relY * sz.height), 'CLICK');
+            awComputerAction('click', { x: relX, y: relY });
+        }
+
+        async function awRefreshComputerUiTree() {
+            const list = document.getElementById('awCompUiTreeList');
+            if (list) list.innerHTML = `<div style="font-size:11px; color:#a1a1aa; padding:6px 2px;">Inspecting Windows UI Automation tree...</div>`;
+            try {
+                const res = await apiFetch('/api/computer/ui_tree', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) {
+                    if (list) list.innerHTML = `<div style="font-size:11px; color:#fca5a5;">${escapeHtml(data.error || 'UI inspection failed')}</div>`;
+                    return;
+                }
+                const controls = data.controls || [];
+                const wins = data.windows || [];
+                let htmlOut = '';
+                wins.slice(0, 6).forEach(w => {
+                    htmlOut += `<button type="button" class="aw-ui-row" onclick="awComputerAction('focus_window', {window_title:${JSON.stringify(w.title)}})">` +
+                        `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(w.title)}</span>` +
+                        `<span style="font-family:var(--font-code); font-size:9.5px; color:#6ee7b7; flex-shrink:0;">WIN</span></button>`;
+                });
+                controls.slice(0, 14).forEach(c => {
+                    htmlOut += `<button type="button" class="aw-ui-row" onclick="awComputerAction('click', {x:${Number(c.x || 0)}, y:${Number(c.y || 0)}})">` +
+                        `<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.name || 'Control')}</span>` +
+                        `<span style="font-family:var(--font-code); font-size:9.5px; color:#93c5fd; flex-shrink:0;">${escapeHtml(c.control_type || 'UI')}</span></button>`;
+                });
+                if (list) list.innerHTML = htmlOut || `<div style="font-size:11px; color:#71717a;">No desktop controls returned.</div>`;
+                awRefreshActionsFeed(true);
+            } catch (err) {
+                if (list) list.innerHTML = `<div style="font-size:11px; color:#fca5a5;">${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function awToggleBrowserScreenShare() {
+            const vid = document.getElementById('awCompShareVideo');
+            const img = document.getElementById('awComputerImg');
+            const btn = document.getElementById('awCompBtnShareScreen');
+            if (awState.screenShareStream) {
+                awState.screenShareStream.getTracks().forEach(t => t.stop());
+                awState.screenShareStream = null;
+                if (vid) { vid.srcObject = null; vid.style.display = 'none'; }
+                if (img) img.style.display = 'block';
+                if (btn) btn.textContent = 'Share Screen';
+                awCaptureComputerFrameOnce();
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                showBridgeToast('Browser Screen Share is not supported in this browser.', '#f87171');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 12 }, audio: false });
+                awState.screenShareStream = stream;
+                if (vid) {
+                    vid.srcObject = stream;
+                    vid.style.display = 'block';
+                }
+                if (img) img.style.display = 'none';
+                if (btn) btn.textContent = 'Stop Share';
+                stream.getVideoTracks()[0].addEventListener('ended', () => {
+                    if (awState.screenShareStream) awToggleBrowserScreenShare();
+                });
+            } catch (_) {}
+        }
+
+        async function awAnalyzeComputerScreen() {
+            const goalInp = document.getElementById('awCompGoalInput');
+            const goal = (goalInp && goalInp.value.trim()) || 'Describe what is visible on screen and recommend the next safe action.';
+            const visEl = document.getElementById('awCompVisionSummary');
+            if (visEl) visEl.textContent = 'Running Computer Vision & Gemini multimodal analysis...';
+
+            let frame_b64 = '';
+            if (awState.screenShareStream) {
+                const vid = document.getElementById('awCompShareVideo');
+                if (vid && vid.videoWidth > 0) {
+                    const c = document.createElement('canvas');
+                    c.width = Math.min(1280, vid.videoWidth);
+                    c.height = Math.round(c.width * (vid.videoHeight / vid.videoWidth));
+                    c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
+                    frame_b64 = c.toDataURL('image/jpeg', 0.65);
+                }
+            }
+
+            const res = await apiFetch('/api/computer/analyze_frame', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ goal, frame_b64 })
+            });
+            const data = await safeParseJson(res);
+            if (data.status) _renderComputerStatus(data.status);
+            if (res.ok && data.success && visEl) {
+                visEl.innerHTML = `<strong style="color:#f4f4f5;">Visual Understanding:</strong> ${escapeHtml(data.analysis || '')}`;
+                awRefreshActionsFeed(true);
+            } else if (visEl) {
+                visEl.textContent = data.error || 'Vision scan unavailable.';
+            }
+        }
+
+        // ---------------- Capability 3: AURA Live Action View ----------------
+        function awSetActionFilter(src) {
+            awState.actionFilter = src;
+            ['all', 'browser', 'computer', 'vision'].forEach(f => {
+                const btn = document.getElementById('awFilter_' + f);
+                if (btn) {
+                    btn.style.borderColor = f === src ? 'rgba(226,185,111,0.55)' : '';
+                    btn.style.color = f === src ? '#ffffff' : '';
+                }
+            });
+            awRefreshActionsFeed(false);
+        }
+
+        async function awRefreshActionsFeed(lightweight = false) {
+            try {
+                const url = `/api/actions/feed?source=${encodeURIComponent(awState.actionFilter)}&limit=50&thumbs=${lightweight && awState.activeTab !== 'actions' ? '0' : '1'}`;
+                const res = await apiFetch(url, { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+
+                const stats = data.stats || {};
+                const badge = document.getElementById('awActionCountBadge');
+                if (badge) badge.textContent = String(stats.total || 0);
+                const elTot = document.getElementById('awKpiTotal');
+                const elBr = document.getElementById('awKpiBrowser');
+                const elCo = document.getElementById('awKpiComputer');
+                const elVi = document.getElementById('awKpiVision');
+                if (elTot) elTot.textContent = String(stats.total || 0);
+                if (elBr) elBr.textContent = String(stats.browser || 0);
+                if (elCo) elCo.textContent = String(stats.computer || 0);
+                if (elVi) elVi.textContent = String(stats.vision || 0);
+
+                const actions = data.actions || [];
+                const tickerTxt = document.getElementById('awTickerText');
+                const tickerTime = document.getElementById('awTickerTime');
+                if (actions.length && tickerTxt) {
+                    const top = actions[0];
+                    tickerTxt.textContent = `[${String(top.source || '').toUpperCase()}] ${top.summary || top.action}`;
+                    if (tickerTime) tickerTime.textContent = top.time_label || 'LIVE';
+                }
+
+                // Animate live AI cursor reticle when new cursor event arrives
+                const cursors = data.cursors || {};
+                const bCur = cursors.browser;
+                if (bCur && bCur.event_id > awState.lastCursorEventId && awState.activeTab === 'browser') {
+                    awState.lastCursorEventId = bCur.event_id;
+                    _flashReticle('browser', bCur.x, bCur.y, String(bCur.action || 'AI').toUpperCase());
+                }
+
+                if (awState.activeTab === 'actions') {
+                    const list = document.getElementById('awActionsFeedList');
+                    if (!list) return;
+                    if (!actions.length) {
+                        list.innerHTML = `<div style="font-size:12px; color:#71717a; text-align:center; padding:28px 16px;">No live AI actions recorded for this filter yet.</div>`;
+                        return;
+                    }
+                    list.innerHTML = actions.map(ev => {
+                        const coordPill = ev.coords ? `<span style="font-family:var(--font-code); font-size:10px; color:#e2b96f;">(${ev.coords.x}, ${ev.coords.y})</span>` : '';
+                        const thumbHtml = ev.thumbnail_b64
+                            ? `<img class="aw-action-thumb" src="data:image/jpeg;base64,${ev.thumbnail_b64}" alt="Step frame" onclick="window.open(this.src, '_blank')">`
+                            : '';
+                        const statusColor = ev.status === 'blocked' || ev.status === 'error' ? '#fca5a5' : (ev.status === 'paused' ? '#fde68a' : '#6ee7b7');
+                        return `<div class="aw-action-card">` +
+                            `<div style="flex:1; min-width:0;">` +
+                            `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:4px;">` +
+                            `<span class="aw-action-src ${escapeHtml(ev.source)}">${escapeHtml(ev.source)}</span>` +
+                            `<span style="font-family:var(--font-code); font-size:10.5px; color:#f4f4f5; font-weight:600;">${escapeHtml(ev.action)}</span>` +
+                            `${coordPill}` +
+                            `<span style="font-family:var(--font-code); font-size:10px; color:${statusColor}; margin-left:auto;">${escapeHtml(ev.time_label || '')}${ev.duration_ms ? ' · ' + ev.duration_ms + 'ms' : ''}</span>` +
+                            `</div>` +
+                            `<div style="font-size:12px; color:#e4e4e7; line-height:1.4; word-break:break-word;">${escapeHtml(ev.summary || '')}</div>` +
+                            (ev.target ? `<div style="font-size:10.5px; color:#71717a; font-family:var(--font-code); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(ev.target)}</div>` : '') +
+                            `</div>` +
+                            thumbHtml +
+                            `</div>`;
+                    }).join('');
+                }
+            } catch (_) {}
+        }
+
+        async function awClearActionsFeed() {
+            const res = await apiFetch('/api/actions/clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            if (res.ok) {
+                awRefreshActionsFeed(false);
+                const tickerTxt = document.getElementById('awTickerText');
+                if (tickerTxt) tickerTxt.textContent = 'AURA Live Action View cleared';
             }
         }
     </script>

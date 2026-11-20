@@ -84,8 +84,11 @@ import aura_db
 import aura_membership
 import aura_pro_studio
 from aura_brain import AuraBrain
+from aura_computer_use import COMPUTER_USE
 from aura_engine_base import EngineDispatchPlan, format_thought_block
 from aura_jarvis_hub import JARVIS_HUB
+from aura_live_actions import LIVE_ACTION_HUB
+from aura_live_browser import LIVE_BROWSER
 from aura_models_hub import AURA_MODEL_ROUTER
 from aura_settings import AuraSettingsManager
 from aura_voice_cloud import (
@@ -1120,11 +1123,96 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             self._send_json(JARVIS_HUB.get_status(user["id"]))
 
+        elif self._handle_agent_workspace_get(path, query):
+            return
+
         elif self._handle_voice_get(path, query):
             return
 
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)
+
+    def _handle_agent_workspace_get(self, path: str, query: Dict[str, List[str]]) -> bool:
+        """Handles GET routes for AURA Live Browser, Computer Use, and Live Action View."""
+        if path == "/api/browser/state":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            inc_shot = str((query.get("screenshot") or ["1"])[0]).lower() not in ("0", "false", "no")
+            self._send_json(LIVE_BROWSER.get_state(user["id"], include_screenshot=inc_shot))
+            return True
+
+        if path == "/api/computer/status":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(COMPUTER_USE.get_status(user["id"]))
+            return True
+
+        if path == "/api/computer/screenshot":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            w = _clamp_int((query.get("width") or [1280])[0], 1280, 480, 1440)
+            q = _clamp_int((query.get("quality") or [62])[0], 62, 35, 85)
+            snap = COMPUTER_USE.capture_screen_frame(user["id"], width=w, quality=q)
+            snap.pop("jpeg_bytes", None)
+            self._send_json(snap)
+            return True
+
+        if path == "/api/computer/stream":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            fps = _clamp_float((query.get("fps") or [3.0])[0], 3.0, 0.5, 8.0)
+            self.send_response(200)
+            self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+            self.send_header("Connection", "close")
+            self._apply_security_and_cors_headers()
+            self.end_headers()
+            try:
+                for chunk in COMPUTER_USE.iter_mjpeg_frames(user["id"], max_seconds=45.0, fps=fps):
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                pass
+            return True
+
+        if path == "/api/computer/ui_tree":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            max_nodes = _clamp_int((query.get("max_nodes") or [28])[0], 28, 5, 40)
+            self._send_json(COMPUTER_USE.inspect_ui_tree(user["id"], max_nodes=max_nodes))
+            return True
+
+        if path == "/api/actions/feed":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            src = str((query.get("source") or ["all"])[0])[:24]
+            lim = _clamp_int((query.get("limit") or [50])[0], 50, 1, 120)
+            since = _clamp_int((query.get("since_id") or [0])[0], 0, 0, 10_000_000)
+            inc_thumbs = str((query.get("thumbs") or ["1"])[0]).lower() not in ("0", "false", "no")
+            self._send_json(
+                LIVE_ACTION_HUB.get_feed(
+                    user["id"],
+                    source=src,
+                    limit=lim,
+                    since_id=since,
+                    include_thumbnails=inc_thumbs,
+                )
+            )
+            return True
+
+        return False
 
     def _voice_subpath(self, path: str) -> str:
         return path[4:] if path.startswith("/api/v1/") else path
@@ -2758,11 +2846,179 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             )
             self._send_json(res, status=200 if res.get("success") else 400)
 
+        elif self._handle_agent_workspace_post(path, body):
+            return
+
         elif self._handle_voice_post(path, body):
             return
 
         else:
             self._send_json({"success": False, "error": "Not Found"}, status=404)
+
+    def _handle_agent_workspace_post(self, path: str, body: Dict[str, Any]) -> bool:
+        """Handles POST routes for AURA Live Browser, Computer Use, and Live Action View."""
+        if path == "/api/browser/tab/new":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            url = str(body.get("url") or "").strip()[:2048]
+            res = LIVE_BROWSER.new_tab(user["id"], url=url)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/browser/tab/switch":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            tab_id = str(body.get("tab_id") or "").strip()[:32]
+            res = LIVE_BROWSER.switch_tab(user["id"], tab_id)
+            self._send_json(res, status=200 if res.get("success") else 404)
+            return True
+
+        if path == "/api/browser/tab/close":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            tab_id = str(body.get("tab_id") or "").strip()[:32]
+            res = LIVE_BROWSER.close_tab(user["id"], tab_id)
+            self._send_json(res, status=200 if res.get("success") else 404)
+            return True
+
+        if path == "/api/browser/navigate":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            raw_url = str(body.get("url") or "").strip()[:2048]
+            tab_id = str(body.get("tab_id") or "").strip()[:32] or None
+            res = LIVE_BROWSER.navigate(user["id"], raw_url, tab_id=tab_id)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/browser/action":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            action = str(body.get("action") or "").strip()[:32]
+            tab_id = str(body.get("tab_id") or "").strip()[:32] or None
+            x_val = body.get("x")
+            y_val = body.get("y")
+            el_idx = body.get("element_index")
+            res = LIVE_BROWSER.perform_action(
+                user["id"],
+                action,
+                tab_id=tab_id,
+                x=float(x_val) if isinstance(x_val, (int, float)) else None,
+                y=float(y_val) if isinstance(y_val, (int, float)) else None,
+                selector=str(body.get("selector") or "")[:240],
+                text=str(body.get("text") or "")[:1000],
+                key=str(body.get("key") or "")[:40],
+                delta_y=_clamp_int(body.get("delta_y", 420), 420, -3000, 3000),
+                delta_x=_clamp_int(body.get("delta_x", 0), 0, -2000, 2000),
+                submit=bool(body.get("submit", False)),
+                clear=bool(body.get("clear", False)),
+                element_index=int(el_idx) if isinstance(el_idx, int) else None,
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/browser/agent":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            goal = str(body.get("goal") or body.get("prompt") or "").strip()[:1200]
+            tab_id = str(body.get("tab_id") or "").strip()[:32] or None
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = LIVE_BROWSER.run_agent_goal(user["id"], goal, brain=brain, tab_id=tab_id)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/browser/understand":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            question = str(body.get("question") or body.get("prompt") or "Summarize this page and its interactive actions.").strip()[:1200]
+            tab_id = str(body.get("tab_id") or "").strip()[:32] or None
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = LIVE_BROWSER.understand_page(user["id"], question=question, brain=brain, tab_id=tab_id)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/computer/control":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            cmd = str(body.get("command") or "").strip()[:32]
+            goal = str(body.get("goal") or "").strip()[:500]
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = COMPUTER_USE.control(user["id"], cmd, goal=goal, brain=brain)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/computer/action":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            action = str(body.get("action") or "").strip()[:32]
+            x_val = body.get("x")
+            y_val = body.get("y")
+            raw_keys = body.get("keys")
+            keys_list = [str(k)[:24] for k in raw_keys[:5]] if isinstance(raw_keys, list) else None
+            res = COMPUTER_USE.execute_action(
+                user["id"],
+                action,
+                x=float(x_val) if isinstance(x_val, (int, float)) else None,
+                y=float(y_val) if isinstance(y_val, (int, float)) else None,
+                text=str(body.get("text") or "")[:400],
+                keys=keys_list,
+                delta_y=_clamp_int(body.get("delta_y", -300), -300, -2400, 2400),
+                app_name=str(body.get("app_name") or "")[:64],
+                window_title=str(body.get("window_title") or "")[:120],
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/computer/analyze_frame":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            goal = str(body.get("goal") or body.get("prompt") or "Analyze the live desktop screen and suggest the next step.").strip()[:800]
+            frame_b64 = str(body.get("frame_b64") or "")[:3_500_000]
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+            res = COMPUTER_USE.analyze_frame_with_vision(user["id"], goal=goal, frame_b64=frame_b64, brain=brain)
+            self._send_json(res, status=200 if res.get("success") else 400)
+            return True
+
+        if path == "/api/actions/clear":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return True
+            self._send_json(LIVE_ACTION_HUB.clear(user["id"]))
+            return True
+
+        return False
 
     def _handle_voice_post(self, path: str, body: Dict[str, Any]) -> bool:
         vp = self._voice_subpath(path)

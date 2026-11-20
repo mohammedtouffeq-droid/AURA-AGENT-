@@ -21,12 +21,18 @@ def is_test_runner_active() -> bool:
     """
     Detects if AURA is running inside any automated test runner, CI suite, or verification sandbox.
     Prevents physical hardware / GUI execution from ever touching the host system during tests.
+    (Note: `numpy`/`cv2` transitively import `unittest`, so only treat `unittest` as active
+    when launched as a test runner via argv/main, never merely because it sits in `sys.modules`.)
     """
     if os.environ.get("AURA_TEST_MODE") == "1":
         return True
-    if os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI"):
+    if os.environ.get("GITHUB_ACTIONS") or os.environ.get("CI") or os.environ.get("PYTEST_CURRENT_TEST"):
         return True
-    if "unittest" in sys.modules or "pytest" in sys.modules:
+    if "pytest" in sys.modules:
+        return True
+    main_mod = sys.modules.get("__main__")
+    main_file = str(getattr(main_mod, "__file__", "") or "").lower()
+    if "unittest" in main_file or "pytest" in main_file:
         return True
     for arg in sys.argv:
         lower_arg = str(arg).lower()
