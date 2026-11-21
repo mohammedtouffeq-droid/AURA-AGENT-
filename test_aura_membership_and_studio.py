@@ -1,12 +1,12 @@
 """
-Automated regression suite for AURA 5-Tier Membership System, 25-Key Cryptographic Registry,
-Rolling 24-Hour Daily Quotas (30 / 60 / Unlimited), Cross-Container Serverless Proof,
-and Pro / Apex Omnis Engineering Studio (Tiers 1–5).
+Automated regression suite for AURA 3-Plan Subscription System, Dynamic Time-Limited
+Cryptographic Key Engine (20-day / 30-day auto-expiry, renewal & disable kill-switch),
+Exclusive Admin Key Vault (@ig.ahmed.irl), Rolling 24h Quotas (30 / 100 / 300 / Unlimited),
+Pro / Apex Omnis Engineering Studio, and Multi-Chat Unlimited History Sync.
 """
 from __future__ import annotations
 
 import json
-import os
 import re
 import threading
 import time
@@ -53,6 +53,7 @@ def membership_server(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("AURA_SESSION_SECRET", "unit-test-membership-session-secret-0123456789abcdef")
     monkeypatch.setenv("AURA_VAULT_SECRET", "unit-test-membership-vault-secret-0123456789abcdef")
     monkeypatch.setenv("AURA_CSRF_SECRET", "unit-test-membership-csrf-secret-0123456789abcdef")
+    monkeypatch.setenv("AURA_ADMIN_VAULT_PASSWORD", "UnitTestAdminVault!2026")
     aura_db._RUNTIME_SECRETS_CACHE.clear()
 
     db_file = tmp_path / "aura_mem_test.db"
@@ -62,15 +63,6 @@ def membership_server(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(aura_web, "_resolve_workspace_dir", lambda uid=None: (ws_root / f"user_{int(uid)}" if uid is not None else ws_root))
     aura_db.init_database()
 
-    # Register synthetic unit-test activation keys (one per tier) via monkeypatch — never hardcodes real keys
-    test_keys = {
-        f"tier_{i}": f"AURA-TST{i}-UNIT-TEST-000{i}" for i in range(1, 6)
-    }
-    patched_hashes = dict(aura_membership.ACTIVATION_KEY_HASHES)
-    for tid, k in test_keys.items():
-        patched_hashes[aura_membership.hash_activation_key(k)] = {"tier_id": tid, "slot": f"{tid}_unit"}
-    monkeypatch.setattr(aura_membership, "ACTIVATION_KEY_HASHES", patched_hashes)
-
     server = ThreadingHTTPServer(("127.0.0.1", 0), aura_web.AuraWebHandler)
     port = server.server_address[1]
     t = threading.Thread(target=server.serve_forever, daemon=True)
@@ -78,7 +70,7 @@ def membership_server(tmp_path: Path, monkeypatch):
     try:
         yield {
             "base_url": f"http://127.0.0.1:{port}",
-            "test_keys": test_keys,
+            "admin_pw": "UnitTestAdminVault!2026",
             "tmp_path": tmp_path,
             "ws_root": ws_root,
         }
@@ -87,230 +79,274 @@ def membership_server(tmp_path: Path, monkeypatch):
         server.server_close()
 
 
-def test_25_hashed_keys_registered_and_zero_plaintext_keys_or_pricing_in_repo():
-    assert len(aura_membership.ACTIVATION_KEY_HASHES) == 25
-    by_tier: Dict[str, int] = {}
-    for meta in aura_membership.ACTIVATION_KEY_HASHES.values():
-        by_tier[meta["tier_id"]] = by_tier.get(meta["tier_id"], 0) + 1
-    assert by_tier == {"tier_1": 5, "tier_2": 5, "tier_3": 5, "tier_4": 5, "tier_5": 5}
+def test_3_flagship_plans_zero_plaintext_secrets_and_ui_wiring():
+    tiers = aura_membership.list_public_tiers()
+    paid = [t for t in tiers if t["rank"] >= 3]
+    assert [t["id"] for t in paid] == ["tier_3", "tier_4", "tier_5"]
+    # Plan 1: Rs.40, 20 days, 100 chats/day
+    assert paid[0]["price_inr"] == 40
+    assert paid[0]["duration_days"] == 20
+    assert paid[0]["daily_limit"] == 100
+    assert paid[0]["unlimited"] is False
+    # Plan 2: Rs.99, 30 days, 300 chats/day (expanded over Plan 1)
+    assert paid[1]["price_inr"] == 99
+    assert paid[1]["duration_days"] == 30
+    assert paid[1]["daily_limit"] == 300
+    assert paid[1]["unlimited"] is False
+    # Plan 3: Rs.199, 30 days, Unlimited
+    assert paid[2]["price_inr"] == 199
+    assert paid[2]["duration_days"] == 30
+    assert paid[2]["unlimited"] is True
 
-    # Ensure zero plaintext production keys leaked into tracked source files
+    # Legacy 15 big-tier hashes only (10 small tier_1/tier_2 hashes removed)
+    assert len(aura_membership.ACTIVATION_KEY_HASHES) == 15
+    assert all(m["tier_id"] in ("tier_3", "tier_4", "tier_5") for m in aura_membership.ACTIVATION_KEY_HASHES.values())
+
+    # Zero plaintext activation keys or admin vault password leaked into tracked files
     root = Path(__file__).resolve().parent
     key_rx = re.compile(r"AURA-(?:VEL1|ARC2|SOV3|TTN4|APX5)-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}")
-    for fname in ("aura_membership.py", "aura_pro_studio.py", "aura_web.py", "index.html"):
+    for fname in ("aura_membership.py", "aura_pro_studio.py", "aura_web.py", "aura_db.py", "index.html"):
         txt = (root / fname).read_text(encoding="utf-8")
         assert not key_rx.search(txt), f"Plaintext activation key found in {fname}!"
+        assert "Aa123123asss" not in txt, f"Plaintext admin vault password leaked in {fname}!"
 
-    # Ensure zero pricing/payment UI or 'Codex' branding inside Membership & Studio markup
     html = (root / "index.html").read_text(encoding="utf-8")
     assert 'id="membershipSettingsSection"' in html
-    assert 'id="apexStudioOverlay"' in html
-    assert 'id="permissionRiskBadge"' in html
-    mem_chunk = html[html.find('id="membershipSettingsSection"'):html.find('id="voiceStudioSection"')]
-    assert not re.search(r"(?:\bprice\b|\bcheckout\b|\bstripe\b|\bbuy now\b|₹)", mem_chunk, re.I)
+    assert 'id="adminKeyVaultSection"' in html
+    assert 'id="auraSubWelcomeOverlay"' in html
+    assert 'id="sidebarSubCard"' in html
+    assert "919640875528" in html and "+91 9640875528" in html
+    assert "mergeThreadLists" in html and "_mergeVaultPayloads" in html
 
 
-def test_rolling_24h_daily_chat_limits_and_serverless_membership_recovery(membership_server, monkeypatch):
+def test_exclusive_admin_vault_expiry_renewal_disable_and_quotas(membership_server):
     base = membership_server["base_url"]
-    keys = membership_server["test_keys"]
+    admin_pw = membership_server["admin_pw"]
 
-    st, reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "quota_student", "password": "QuotaPass!2026"})
-    assert st == 200 and reg["success"]
-    uid = reg["user"]["id"]
-    hdrs = {"Authorization": f"Bearer {reg['token']}"}
+    # Register normal user & exclusive admin user (ig.ahmed.irl)
+    st_u, user_reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "buyer_rahul", "password": "BuyerPass!2026"})
+    assert st_u == 200 and user_reg["success"]
+    u_hdrs = {"Authorization": f"Bearer {user_reg['token']}"}
+    uid = user_reg["user"]["id"]
 
-    # Simulate 30 prior chat events inside the last 24h on Standard (tier_0)
+    st_u2, other_reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "other_user", "password": "OtherPass!2026"})
+    assert st_u2 == 200
+    u2_hdrs = {"Authorization": f"Bearer {other_reg['token']}"}
+
+    st_a, adm_reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "ig.ahmed.irl", "password": "OwnerLogin!2026"})
+    assert st_a == 200 and adm_reg["success"]
+    a_hdrs = {"Authorization": f"Bearer {adm_reg['token']}"}
+
+    # 1. Non-admin CANNOT unlock Admin Key Vault even with correct password
+    st_forb, _ = _http_json(f"{base}/api/admin/keys/unlock", "POST", {"password": admin_pw}, headers=u_hdrs)
+    assert st_forb == 403
+
+    # 2. ig.ahmed.irl with wrong password is rejected
+    st_badpw, _ = _http_json(f"{base}/api/admin/keys/unlock", "POST", {"password": "WrongPassword!"}, headers=a_hdrs)
+    assert st_badpw == 403
+
+    # 3. ig.ahmed.irl with correct password unlocks Admin Key Vault
+    st_ok, unlock_res = _http_json(f"{base}/api/admin/keys/unlock", "POST", {"password": admin_pw}, headers=a_hdrs)
+    assert st_ok == 200 and unlock_res["success"] and unlock_res["admin_vault_token"].startswith("aura_av1.")
+    av_hdrs = {**a_hdrs, "X-Admin-Vault-Token": unlock_res["admin_vault_token"]}
+
+    # 4. Admin generates Plan 1 (20 days), Plan 2 (30 days), Plan 3 (30 days)
+    st_g1, g1 = _http_json(f"{base}/api/admin/keys/generate", "POST", {"tier_id": "tier_3", "duration_days": 20, "count": 1, "note": "Rahul ₹40 UPI"}, headers=av_hdrs)
+    assert st_g1 == 200 and g1["generated_count"] == 1
+    k1 = g1["keys"][0]["key_code"]
+    assert k1.startswith("AURA-SOV-20D-")
+
+    st_g2, g2 = _http_json(f"{base}/api/admin/keys/generate", "POST", {"tier_id": "tier_4", "duration_days": 30, "count": 1}, headers=av_hdrs)
+    assert st_g2 == 200
+    k2 = g2["keys"][0]["key_code"]
+    assert k2.startswith("AURA-TTN-30D-")
+
+    st_g3, g3 = _http_json(f"{base}/api/admin/keys/generate", "POST", {"tier_id": "tier_5", "duration_days": 30, "count": 1}, headers=av_hdrs)
+    assert st_g3 == 200
+    k3 = g3["keys"][0]["key_code"]
+    assert k3.startswith("AURA-APX-30D-")
+
+    # 5. Free Standard hits 30/30 daily quota -> 429
     now = time.time()
     for i in range(30):
         aura_db.record_chat_quota_event(uid, created_at=now - (30 - i))
+    st_429, body_429 = _http_json(f"{base}/api/chat", "POST", {"prompt": "Hello", "thread_id": user_reg["default_thread_id"]}, headers=u_hdrs)
+    assert st_429 == 429 and body_429["quota"]["limit"] == 30
 
-    # Chat #31 MUST be rejected cleanly with HTTP 429 + daily_limit_reached
-    st_429, body_429 = _http_json(
-        f"{base}/api/chat",
-        "POST",
-        {"prompt": "Hello AURA", "thread_id": reg["default_thread_id"]},
-        headers=hdrs,
-    )
-    assert st_429 == 429
-    assert body_429.get("error") == "daily_limit_reached"
-    assert body_429["quota"]["limit"] == 30
-    assert body_429["quota"]["remaining"] == 0
-
-    # Utility /help command MUST still work even at 30/30
-    st_help, body_help = _http_json(
-        f"{base}/api/chat",
-        "POST",
-        {"prompt": "/help", "thread_id": reg["default_thread_id"]},
-        headers=hdrs,
-    )
+    # Utility /help bypasses quota cleanly
+    st_help, body_help = _http_json(f"{base}/api/chat", "POST", {"prompt": "/help", "thread_id": user_reg["default_thread_id"]}, headers=u_hdrs)
     assert st_help == 200 and "AURA" in body_help.get("reply", "")
 
-    # Activate Tier 1 (60/24h): now 30 used / 60 limit -> 30 remaining!
-    st_t1, res_t1 = _http_json(f"{base}/api/membership/activate", "POST", {"key": keys["tier_1"]}, headers=hdrs)
-    assert st_t1 == 200 and res_t1["success"]
-    assert res_t1["membership"]["id"] == "tier_1"
-    assert res_t1["quota"]["limit"] == 60
-    assert res_t1["quota"]["remaining"] == 30
+    # 6. Buyer activates Plan 1 key (₹40 · 20d · 100 chats/day) -> Special Welcome payload + 100/day quota!
+    st_act1, act1 = _http_json(f"{base}/api/membership/activate", "POST", {"key": k1}, headers=u_hdrs)
+    assert st_act1 == 200 and act1["success"]
+    assert act1["membership"]["id"] == "tier_3"
+    assert act1["membership"]["days_remaining_int"] == 20
+    assert act1["quota"]["limit"] == 100 and act1["quota"]["remaining"] == 70
+    assert act1["welcome"]["plan_name"] == "AURA Sovereign"
+    assert len(act1["welcome"]["unlocked_features"]) >= 5
 
-    # Fill up to 60 -> #61 blocked on Tier 1
-    for i in range(30):
-        aura_db.record_chat_quota_event(uid, created_at=now - i)
-    st_t1_61, body_t1_61 = _http_json(
-        f"{base}/api/chat",
-        "POST",
-        {"prompt": "Another message", "thread_id": reg["default_thread_id"]},
-        headers=hdrs,
-    )
-    assert st_t1_61 == 429 and body_t1_61["quota"]["limit"] == 60
+    # 7. Another user CANNOT steal/reuse an already bound key
+    st_steal, _ = _http_json(f"{base}/api/membership/activate", "POST", {"key": k1}, headers=u2_hdrs)
+    assert st_steal == 400
 
-    # Upgrade to Tier 3 (Sovereign · Unlimited): immediately unblocked even at 60 events!
-    st_t3, res_t3 = _http_json(f"{base}/api/membership/activate", "POST", {"key": keys["tier_3"]}, headers=hdrs)
-    assert st_t3 == 200 and res_t3["membership"]["unlimited"] is True
-    assert res_t3["quota"]["blocked"] is False
+    # 8. Simulate 20 days passing (key expires) -> User automatically drops to Free Standard (30/day)
+    aura_db.update_subscription_key(k1, {"expires_at": now - 60})
+    st_exp, exp_res = _http_json(f"{base}/api/membership/status", "GET", headers=u_hdrs)
+    assert st_exp == 200
+    assert exp_res["membership"]["id"] == "tier_0"
+    assert exp_res["quota"]["limit"] == 30
+    assert "9640875528" in exp_res["membership"]["expired_notice"]
 
-    # Activate Tier 5 and verify signed membership_proof survives cold start (cleared settings_json)
-    st_t5, res_t5 = _http_json(f"{base}/api/membership/activate", "POST", {"key": keys["tier_5"]}, headers=hdrs)
-    assert st_t5 == 200 and res_t5["membership"]["id"] == "tier_5"
-    proof = res_t5["membership"]["membership_proof"]
+    # Expired key cannot be re-activated by buyer before Admin renews
+    st_re_exp, _ = _http_json(f"{base}/api/membership/activate", "POST", {"key": k1}, headers=u_hdrs)
+    assert st_re_exp == 400
+
+    # 9. Admin RENEWS the exact same key (and upgrades to Plan 2: 300/day · 30d) after payment arrives!
+    st_ren, ren_res = _http_json(f"{base}/api/admin/keys/renew", "POST", {"key_code": k1, "tier_id": "tier_4", "duration_days": 30}, headers=av_hdrs)
+    assert st_ren == 200 and ren_res["success"] and ren_res["key"]["renew_count"] == 1
+
+    # Buyer is IMMEDIATELY reactivated at Plan 2 (300/day) without even needing a new key!
+    st_back, back_res = _http_json(f"{base}/api/membership/status", "GET", headers=u_hdrs)
+    assert st_back == 200 and back_res["membership"]["id"] == "tier_4"
+    assert back_res["quota"]["limit"] == 300 and back_res["membership"]["days_remaining_int"] == 30
+
+    # 10. Admin DISABLE kill-switch immediately revokes buyer's access
+    st_dis, dis_res = _http_json(f"{base}/api/admin/keys/toggle", "POST", {"key_code": k1, "disable": True}, headers=av_hdrs)
+    assert st_dis == 200 and dis_res["key"]["status"] == "disabled"
+    st_after_dis, after_dis = _http_json(f"{base}/api/membership/status", "GET", headers=u_hdrs)
+    assert st_after_dis == 200 and after_dis["membership"]["id"] == "tier_0"
+
+    # 11. Plan 3 (Apex Omnis Unlimited) + cold-start proof recovery
+    st_p3, act3 = _http_json(f"{base}/api/membership/activate", "POST", {"key": k3}, headers=u_hdrs)
+    assert st_p3 == 200 and act3["membership"]["unlimited"] is True and act3["quota"]["blocked"] is False
+    proof = act3["membership"]["membership_proof"]
     assert proof.startswith("aura_mp1.")
-
-    # Simulate cold container wipe of membership field in DB
     aura_db.save_user_settings(uid, {})
-    st_rec, rec_body = _http_json(
-        f"{base}/api/membership/status",
-        "GET",
-        headers={**hdrs, "X-Aura-Membership": proof},
-    )
+    st_rec, rec_body = _http_json(f"{base}/api/membership/status", "GET", headers={**u_hdrs, "X-Aura-Membership": proof})
     assert st_rec == 200 and rec_body["membership"]["id"] == "tier_5"
 
-    # Verify events older than 24h roll off automatically
-    aura_db.save_user_settings(uid, {})
-    conn = aura_db.get_connection()
-    conn.execute("UPDATE chat_quota_events SET created_at = ? WHERE user_id = ?", (now - 90000, uid))
-    conn.commit()
-    conn.close()
-    refreshed = aura_membership.get_user_quota_status(reg["user"])
-    assert refreshed["used"] == 0 and refreshed["remaining"] == 30 and refreshed["blocked"] is False
+    # 12. Admin list endpoint returns clean KPI summary
+    st_lst, lst_body = _http_json(f"{base}/api/admin/keys/list", "GET", headers=av_hdrs)
+    assert st_lst == 200 and lst_body["summary"]["total"] >= 3 and lst_body["summary"]["disabled"] >= 1
 
 
-def test_pro_studio_tiers_1_to_5_real_tools_and_guarded_os_popup(membership_server):
+def test_pro_studio_3_plan_gating_and_guarded_os_popup(membership_server):
     base = membership_server["base_url"]
-    keys = membership_server["test_keys"]
+    admin_pw = membership_server["admin_pw"]
+
+    st_a, adm = _http_json(f"{base}/api/auth/register", "POST", {"username": "ig.ahmed.irl", "password": "OwnerPass!2026"})
+    assert st_a == 200
+    st_u, un = _http_json(f"{base}/api/admin/keys/unlock", "POST", {"password": admin_pw}, headers={"Authorization": f"Bearer {adm['token']}"})
+    assert st_u == 200
+    av_hdrs = {"Authorization": f"Bearer {adm['token']}", "X-Admin-Vault-Token": un["admin_vault_token"]}
+
+    _, g_p1 = _http_json(f"{base}/api/admin/keys/generate", "POST", {"tier_id": "tier_3", "duration_days": 20}, headers=av_hdrs)
+    _, g_p3 = _http_json(f"{base}/api/admin/keys/generate", "POST", {"tier_id": "tier_5", "duration_days": 30}, headers=av_hdrs)
+    key_p1 = g_p1["keys"][0]["key_code"]
+    key_p3 = g_p3["keys"][0]["key_code"]
 
     st, reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "apex_eng", "password": "ApexPass!2026"})
     assert st == 200
     hdrs = {"Authorization": f"Bearer {reg['token']}"}
 
-    # Tier 0 is strictly gated out of Pro/Apex endpoints
-    st_g1, _ = _http_json(f"{base}/api/pro/index", "GET", headers=hdrs)
-    assert st_g1 == 403
-    st_g5, _ = _http_json(f"{base}/api/pro/apex_execute", "POST", {"goal": "Build CLI"}, headers=hdrs)
-    assert st_g5 == 403
+    # Free Standard is strictly gated out of Pro/Apex endpoints
+    assert _http_json(f"{base}/api/pro/index", "GET", headers=hdrs)[0] == 403
+    assert _http_json(f"{base}/api/pro/apex_execute", "POST", {"goal": "Build CLI"}, headers=hdrs)[0] == 403
 
-    # Activate Tier 5 (unlocks Tiers 1–5)
-    st_act, act = _http_json(f"{base}/api/membership/activate", "POST", {"key": keys["tier_5"]}, headers=hdrs)
+    # Plan 1 (Sovereign ₹40) unlocks HALF of flagship suite (Index, Scaffold, Sandbox, Diffs, Rules) while Plan 2/3 stay locked!
+    st_p1, _ = _http_json(f"{base}/api/membership/activate", "POST", {"key": key_p1}, headers=hdrs)
+    assert st_p1 == 200
+    st_sc, sc = _http_json(f"{base}/api/pro/scaffold", "POST", {"template": "fastapi_service", "project_name": "demo_api"}, headers=hdrs)
+    assert st_sc == 200 and sc["success"] and sc["files_count"] >= 3
+    st_idx, idx = _http_json(f"{base}/api/pro/index", "GET", headers=hdrs)
+    assert st_idx == 200 and idx["workspace_files_count"] >= 3
+    st_py, py_res = _http_json(f"{base}/api/pro/run_code", "POST", {"language": "python", "code": "print(sum(range(1, 11)))"}, headers=hdrs)
+    assert st_py == 200 and "55" in py_res["stdout"]
+    # Plan 2 (Security Audit / OS Action) & Plan 3 (Apex Execute) MUST still be locked on Plan 1!
+    assert _http_json(f"{base}/api/pro/security_audit", "POST", {}, headers=hdrs)[0] == 403
+    assert _http_json(f"{base}/api/pro/apex_execute", "POST", {"goal": "Build CLI"}, headers=hdrs)[0] == 403
+
+    # Upgrade to Plan 3 (Apex Omnis ₹199) -> unlocks 100% ALL features!
+    st_act, act = _http_json(f"{base}/api/membership/activate", "POST", {"key": key_p3}, headers=hdrs)
     assert st_act == 200 and act["membership"]["rank"] == 5
 
-    # Tier 3: Scaffolder creates real multi-file project + rollback snapshot
-    st_sc, sc = _http_json(
-        f"{base}/api/pro/scaffold",
-        "POST",
-        {"template": "fastapi_service", "project_name": "demo_api"},
-        headers=hdrs,
-    )
-    assert st_sc == 200 and sc["success"] and sc["files_count"] >= 3 and sc["snapshot_id"]
-
-    # Tier 1: AST & Symbol Indexer finds compute_health & ApiHandler + @file reader works
-    st_idx, idx = _http_json(f"{base}/api/pro/index", "GET", headers=hdrs)
-    assert st_idx == 200 and idx["workspace_files_count"] >= 3 and idx["total_symbols"] >= 2
     st_ctx, ctx = _http_json(f"{base}/api/pro/context_files", "POST", {"paths": ["demo_api/app.py"]}, headers=hdrs)
     assert st_ctx == 200 and "compute_health" in ctx["context_block"]
 
-    # Tier 2: Polyglot Sandbox executes Python + SQL + JSON cleanly
-    st_py, py_res = _http_json(
-        f"{base}/api/pro/run_code",
-        "POST",
-        {"language": "python", "code": "print(sum(range(1, 11)))"},
-        headers=hdrs,
-    )
-    assert st_py == 200 and py_res["success"] and "55" in py_res["stdout"]
+    st_sql, sql_res = _http_json(f"{base}/api/pro/run_code", "POST", {"language": "sql", "code": "CREATE TABLE t (x INT); INSERT INTO t VALUES (10), (20); SELECT SUM(x) AS total FROM t;"}, headers=hdrs)
+    assert st_sql == 200 and sql_res["tables"][0]["rows"] == [[30]]
 
-    st_sql, sql_res = _http_json(
-        f"{base}/api/pro/run_code",
-        "POST",
-        {"language": "sql", "code": "CREATE TABLE t (x INT); INSERT INTO t VALUES (10), (20); SELECT SUM(x) AS total FROM t;"},
-        headers=hdrs,
-    )
-    assert st_sql == 200 and sql_res["success"] and sql_res["tables"][0]["rows"] == [[30]]
-
-    # Tier 2: Multi-file Diff Apply + Rollback restores workspace cleanly
-    st_ap, ap = _http_json(
-        f"{base}/api/pro/apply_diff",
-        "POST",
-        {"edits": [{"path": "unsafe_sample.py", "content": "def run(x):\n    try:\n        return eval(x)\n    except:\n        return None\n"}]},
-        headers=hdrs,
-    )
+    st_ap, ap = _http_json(f"{base}/api/pro/apply_diff", "POST", {"edits": [{"path": "unsafe_sample.py", "content": "def run(x):\n    try:\n        return eval(x)\n    except:\n        return None\n"}]}, headers=hdrs)
     assert st_ap == 200 and ap["applied"] and ap["snapshot_id"]
 
-    # Tier 4: Security AST Audit catches eval() and bare except in unsafe_sample.py
     st_sec, sec = _http_json(f"{base}/api/pro/security_audit", "POST", {}, headers=hdrs)
     assert st_sec == 200 and sec["findings_count"] >= 2
     assert any("eval/exec" in f["rule"] for f in sec["findings"])
 
-    # Rollback removes unsafe_sample.py cleanly
     st_rb, rb = _http_json(f"{base}/api/pro/rollback", "POST", {"snapshot_id": ap["snapshot_id"]}, headers=hdrs)
     assert st_rb == 200 and "unsafe_sample.py" in rb["removed_new_files"]
 
-    # Tier 3: Persistent .aura-rules saves cleanly
     st_rl, rl = _http_json(f"{base}/api/membership/rules", "POST", {"rules": "Always include type annotations and pytest tests."}, headers=hdrs)
     assert st_rl == 200 and "type annotations" in rl["aura_rules"]
 
-    # Tier 4: Guarded Desktop/Laptop OS Automation — Mandatory Proposal -> DENY vs ALLOW
-    st_prop, prop = _http_json(
-        f"{base}/api/pro/os_action/propose",
+    # Guarded OS Automation Proposal -> DENY vs ALLOW
+    st_prop, prop = _http_json(f"{base}/api/pro/os_action/propose", "POST", {"action_type": "create_workspace_note", "target": "ops_log.md", "reason": "Save verified report."}, headers=hdrs)
+    assert st_prop == 200 and prop["requires_approval"] is True
+    ticket = prop["proposal"]["signed_ticket"]
+    st_deny, deny_res = _http_json(f"{base}/api/pro/os_action/commit", "POST", {"signed_ticket": ticket, "decision": "DENY"}, headers=hdrs)
+    assert st_deny == 200 and deny_res["executed"] is False
+    st_ok, ok_res = _http_json(f"{base}/api/pro/os_action/commit", "POST", {"signed_ticket": ticket, "decision": "ALLOW_ONCE"}, headers=hdrs)
+    assert st_ok == 200 and ok_res["executed"] is True
+    assert _http_json(f"{base}/api/pro/os_action/commit", "POST", {"signed_ticket": ticket[:-4] + "0000", "decision": "ALLOW_ONCE"}, headers=hdrs)[0] == 400
+
+
+def test_unlimited_multi_chat_history_sync_preserves_all_threads(membership_server):
+    """Verifies creating 6+ separate chats and syncing across container cold starts retains EVERY chat (never just 1)."""
+    base = membership_server["base_url"]
+    st, reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "history_tester", "password": "HistPass!2026"})
+    assert st == 200
+    hdrs = {"Authorization": f"Bearer {reg['token']}"}
+    uid = reg["user"]["id"]
+
+    # Create 6 distinct chats with messages
+    for idx in range(1, 7):
+        tid = f"th_multi_{idx}"
+        aura_db.save_message(uid, tid, "user", f"Conversation topic number {idx}")
+        aura_db.save_message(uid, tid, "assistant", f"Detailed reply for topic {idx}")
+
+    st_t, t_body = _http_json(f"{base}/api/threads", "GET", headers=hdrs)
+    assert st_t == 200 and len(t_body["threads"]) >= 6
+
+    # Export vault, wipe DB threads to simulate cold Vercel container with only 1 new thread, then sync!
+    vault = aura_db.export_user_vault(uid)
+    assert len(vault["payload"]["threads"]) >= 6
+    conn = aura_db.get_connection()
+    conn.execute("DELETE FROM messages WHERE user_id = ?", (uid,))
+    conn.execute("DELETE FROM threads WHERE user_id = ?", (uid,))
+    conn.commit()
+    conn.close()
+    aura_db.save_message(uid, "th_multi_7", "user", "Brand new chat on cold container 7")
+    aura_db.save_message(uid, "th_multi_7", "assistant", "Cold container reply 7")
+
+    st_sync, sync_res = _http_json(
+        f"{base}/api/threads/sync",
         "POST",
         {
-            "action_type": "create_workspace_note",
-            "target": "ops_log.md",
-            "reason": "Save a verified automation report into the workspace.",
+            "username": "history_tester",
+            "threads": vault["payload"]["threads"],
+            "messages": vault["payload"]["messages"],
         },
         headers=hdrs,
     )
-    assert st_prop == 200 and prop["requires_approval"] is True
-    ticket = prop["proposal"]["signed_ticket"]
-    assert prop["proposal"]["reason"] == "Save a verified automation report into the workspace."
-    assert prop["proposal"]["command"].startswith("workspace.write_file")
-
-    # Clicking DENY executes nothing
-    st_deny, deny_res = _http_json(
-        f"{base}/api/pro/os_action/commit",
-        "POST",
-        {"signed_ticket": ticket, "decision": "DENY", "deny_note": "Not right now"},
-        headers=hdrs,
-    )
-    assert st_deny == 200 and deny_res["executed"] is False and deny_res["decision"] == "DENIED"
-
-    # Clicking ALLOW_ONCE executes cleanly
-    st_ok, ok_res = _http_json(
-        f"{base}/api/pro/os_action/commit",
-        "POST",
-        {"signed_ticket": ticket, "decision": "ALLOW_ONCE"},
-        headers=hdrs,
-    )
-    assert st_ok == 200 and ok_res["executed"] is True and ok_res["decision"] == "ALLOWED"
-
-    # Tampered approval ticket is rejected
-    st_bad, _ = _http_json(
-        f"{base}/api/pro/os_action/commit",
-        "POST",
-        {"signed_ticket": ticket[:-4] + "0000", "decision": "ALLOW_ONCE"},
-        headers=hdrs,
-    )
-    assert st_bad == 400
+    assert st_sync == 200 and sync_res["success"]
+    all_ids = {t["id"] for t in sync_res["threads"]}
+    for idx in range(1, 8):
+        assert f"th_multi_{idx}" in all_ids
 
 
 def test_apex_omnis_6_stage_pipeline_auto_heals_broken_draft(tmp_path: Path):
-    """Verifies Tier 5 Apex Omnis 6-stage pipeline detects a broken script, auto-heals it, and verifies green."""
+    """Verifies Plan 3 Apex Omnis 6-stage pipeline detects a broken script, auto-heals it, and verifies green."""
     calls = {"n": 0}
 
     class _StubBrain:

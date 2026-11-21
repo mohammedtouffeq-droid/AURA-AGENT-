@@ -1,192 +1,207 @@
 """
-AURA Membership, 25-Key Cryptographic Activation Registry & 24h Rolling Daily Quota Engine.
+AURA 3-Plan Subscription System, Dynamic Time-Limited Cryptographic Key Engine,
+24h Rolling Daily Quota Engine & Exclusive Admin Key Vault (ig.ahmed.irl).
 
-Security & Serverless Architecture:
-- Stores ONLY salted SHA-256 digests of the 25 owner-issued activation keys (zero plaintext keys in repo).
-- Issues server-signed HMAC-SHA256 `membership_proof` envelopes (`aura_mp1.<b64>.<sig>`) bound to the user
-  so activated memberships seamlessly persist across Vercel serverless cold starts and local restarts.
-- Enforces rolling 24-hour daily chat quotas:
-    * Standard (tier_0): 30 chats / 24h
-    * Tier 1 (AURA Velocity · 10x): 60 chats / 24h
-    * Tier 2 (AURA Architect · 30x): 60 chats / 24h
-    * Tier 3 (AURA Sovereign · 60x): Unlimited
-    * Tier 4 (AURA Titan · 100x): Unlimited
-    * Tier 5 (AURA Apex Omnis · 100x Ultimate Autonomous Engineering Suite): Unlimited
+Architecture:
+- 3 Flagship Paid Subscriptions (2 entry tiers removed — keeping the BIG 3):
+    * Standard (tier_0 · Free):      30 chats / 24h
+    * Plan 1 — AURA Sovereign (tier_3): Rs. 40  | 20 Days | 100 chats / 24h | Half of Flagship Suite
+    * Plan 2 — AURA Titan     (tier_4): Rs. 99  | 30 Days | 300 chats / 24h | Expanded Autonomous Suite
+    * Plan 3 — AURA Apex Omnis(tier_5): Rs. 199 | 30 Days | Unlimited / 24h | 100% All 64 Flagship Features
+- Hybrid Key Engine:
+    * Admin-generated keys (`AURA-<SOV|TTN|APX>-<DAYS>D-<NONCE6>-<SIG8>`) are stored in
+      `subscription_keys` SQLite/LibSQL table AND cryptographically self-verifiable across
+      serverless cold starts via HMAC-SHA256.
+    * Automatic expiration when `expires_at` passes — user returns to Standard until Admin renews.
+    * Admin can renew expired/disabled keys on the exact same key code when payment arrives,
+      change plan or duration, disable/turn off keys instantly, or unbind users.
+- Strict Admin Isolation:
+    * Admin Key Vault endpoints require BOTH authenticated username == `ig.ahmed.irl`
+      AND a verified Admin Vault session token unlocked with the server-hashed Admin Vault password.
 """
 from __future__ import annotations
 
 import base64
+import datetime
 import hashlib
 import hmac
 import json
+import os
+import re
+import secrets
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import aura_db
 
 KEY_HASH_SALT = "AURA_MEMBER_KEY_V1:"
+ADMIN_VAULT_SALT = "AURA_ADMIN_VAULT_V1:"
+ADMIN_OWNER_USERNAME = "ig.ahmed.irl"
+# Salted SHA-256 digest of the exclusive Admin Key Vault password (never stored in plaintext)
+DEFAULT_ADMIN_VAULT_HASH = "7555131f70c3e4fae18f50dfb15527f55c45cd53c682ae54058ff745e7c90748"
+ADMIN_VAULT_TOKEN_TTL_SECONDS = 12 * 60 * 60
 ROLLING_WINDOW_SECONDS = 24 * 60 * 60
+SECONDS_PER_DAY = 24 * 60 * 60
+
+SUBSCRIPTION_CONTACT: Dict[str, str] = {
+    "whatsapp_display": "+91 9640875528",
+    "whatsapp_digits": "919640875528",
+    "whatsapp_url": "https://wa.me/919640875528",
+    "support_note": "Message directly on WhatsApp (+91 9640875528) to purchase a new key or renew an expired key.",
+}
 
 MEMBERSHIP_TIERS: Dict[str, Dict[str, Any]] = {
     "tier_0": {
         "id": "tier_0",
+        "plan_number": 0,
         "rank": 0,
         "name": "AURA Standard",
         "short_name": "Standard",
         "badge": "STANDARD",
-        "multiplier": "1x",
+        "multiplier": "FREE",
+        "price_inr": 0,
+        "price_label": "Free",
+        "duration_days": None,
+        "duration_label": "Always Free",
         "daily_limit": 30,
         "unlimited": False,
         "theme": "standard",
-        "accent": "#3b82f6",
+        "accent": "#7aa2ff",
+        "feature_coverage": "Core Starter",
         "tagline": "Core AURA 2.0 / 2.3 / 2.6 workspace with 30 chats per 24 hours.",
         "features": [
-            "AURA 2.0 / 2.3 / 2.6 Core Access",
             "30 Chats / 24h Rolling Refresh",
+            "AURA 2.0 / 2.3 / 2.6 Core Chat Access",
             "Live Split Preview & Multi-Wallpaper Studio",
             "TRINETRA Cyber Defense & Voice HUD",
         ],
     },
-    "tier_1": {
-        "id": "tier_1",
-        "rank": 1,
-        "name": "AURA Velocity",
-        "short_name": "Velocity",
-        "badge": "VELOCITY · 10X",
-        "multiplier": "10x",
-        "daily_limit": 60,
-        "unlimited": False,
-        "theme": "cobalt",
-        "accent": "#3b82f6",
-        "tagline": "10x engineering velocity with Cobalt Titanium UI, @file context injection, and live AST symbol indexing.",
-        "features": [
-            "60 Chats / 24h Rolling Refresh",
-            "Cobalt Titanium Executive UI Theme",
-            "Smart @file Multi-File Context Injection",
-            "Instant Codebase AST & Symbol Indexer",
-            "Priority Fast Stream Routing & Split Export",
-        ],
-    },
-    "tier_2": {
-        "id": "tier_2",
-        "rank": 2,
-        "name": "AURA Architect",
-        "short_name": "Architect",
-        "badge": "ARCHITECT · 30X",
-        "multiplier": "30x",
-        "daily_limit": 60,
-        "unlimited": False,
-        "theme": "emerald",
-        "accent": "#10b981",
-        "tagline": "30x studio precision with Emerald Noir UI, multi-file unified diffs with rollback, and polyglot code execution.",
-        "features": [
-            "60 Chats / 24h Rolling Refresh",
-            "Emerald Noir Executive UI Theme",
-            "Everything in AURA Velocity (Tier 1)",
-            "Multi-File Unified Diff Composer + Snapshot Rollback",
-            "Polyglot Sandbox Runner (Python / JS / SQL / JSON / HTML)",
-            "Deep Architecture Thinking Mode",
-        ],
-    },
     "tier_3": {
         "id": "tier_3",
+        "plan_number": 1,
         "rank": 3,
         "name": "AURA Sovereign",
         "short_name": "Sovereign",
-        "badge": "SOVEREIGN · 60X",
-        "multiplier": "60x",
-        "daily_limit": None,
-        "unlimited": True,
+        "badge": "SOVEREIGN · PLAN 1",
+        "multiplier": "100/DAY · 20D",
+        "price_inr": 40,
+        "price_label": "₹40",
+        "duration_days": 20,
+        "duration_label": "20 Days",
+        "daily_limit": 100,
+        "unlimited": False,
         "theme": "amethyst",
-        "accent": "#a78bfa",
-        "tagline": "60x unlimited workspace with Royal Amethyst glass, self-healing bug repair, repo scaffolder, and .aura-rules.",
+        "accent": "#818cf8",
+        "feature_coverage": "50% Flagship Suite",
+        "tagline": "100 chats/day for 20 days with half of AURA's flagship engineering & agent capabilities unlocked.",
         "features": [
-            "Unlimited Daily Chats (No 24h Cap)",
-            "Royal Amethyst Executive UI Theme",
-            "Everything in Tiers 1 & 2",
-            "Autonomous Self-Healing Bug & Test Repair Loop",
-            "Full Multi-File Production Repo Scaffolder",
-            "Persistent .aura-rules Custom Engineering Memory",
+            "100 Chats / Day (24h Rolling Refresh)",
+            "20-Day Validity (Auto-Deactivates · Admin Renewable)",
+            "Dev Studio AI Code (Autocomplete, Explain, Bug Scan & Refactor)",
+            "AST Symbol Indexer, @file Context & Polyglot Code Sandbox",
+            "Multi-File Diffs, Snapshots, Repo Scaffolder & Self-Healing Repair",
+            "AURA Live Browser & Persistent .aura-rules Memory",
+            "Upgraded Sapphire-Amethyst Obsidian Executive Design",
         ],
     },
     "tier_4": {
         "id": "tier_4",
+        "plan_number": 2,
         "rank": 4,
         "name": "AURA Titan",
         "short_name": "Titan",
-        "badge": "TITAN · 100X",
-        "multiplier": "100x",
-        "daily_limit": None,
-        "unlimited": True,
+        "badge": "TITAN · PLAN 2",
+        "multiplier": "300/DAY · 30D",
+        "price_inr": 99,
+        "price_label": "₹99",
+        "duration_days": 30,
+        "duration_label": "30 Days",
+        "daily_limit": 300,
+        "unlimited": False,
         "theme": "champagne",
-        "accent": "#d4a759",
-        "tagline": "100x autonomous suite with Champagne Obsidian finish, 4-Agent War Room, security AST audits, and guarded desktop OS automation.",
+        "accent": "#60a5fa",
+        "feature_coverage": "80% Flagship Suite",
+        "tagline": "300 chats/day for 30 days with parallel multi-agent war room, desktop automation, Git diffs, and workflows.",
         "features": [
-            "Unlimited Daily Chats (No 24h Cap)",
-            "Champagne Obsidian Executive UI Theme",
-            "Everything in Tiers 1, 2 & 3",
-            "Desktop / Laptop OS Automation with Allow/Deny Reason Popup",
-            "Parallel 4-Agent War Room (Architect · Coder · Security · QA)",
-            "Deep Workspace Security & Static Vulnerability Audit Suite",
+            "300 Chats / Day (3x Sovereign Capacity)",
+            "30-Day Validity (Auto-Deactivates · Admin Renewable)",
+            "Everything Included in AURA Sovereign (Plan 1)",
+            "Parallel 4-Agent War Room & Multi-Agent Orchestrator",
+            "Computer Use Desktop Automation with Guarded Allow/Deny Control",
+            "Git Visual Diffs, Worktrees, PR Assistant & Security AST Audits",
+            "Automation Hub: Reusable Workflows, Cron Schedules & Custom Skills",
+            "Upgraded Indigo-Titanium Obsidian Executive Design",
         ],
     },
     "tier_5": {
         "id": "tier_5",
+        "plan_number": 3,
         "rank": 5,
         "name": "AURA Apex Omnis",
         "short_name": "Apex Omnis",
-        "badge": "APEX OMNIS · 100X",
-        "multiplier": "100x",
+        "badge": "APEX OMNIS · PLAN 3",
+        "multiplier": "UNLIMITED · 30D",
+        "price_inr": 199,
+        "price_label": "₹199",
+        "duration_days": 30,
+        "duration_label": "30 Days",
         "daily_limit": None,
         "unlimited": True,
         "theme": "platinum",
-        "accent": "#f4f4f5",
-        "tagline": "100x flagship Platinum Monolith autonomous engineering studio — 6-stage polyglot build, verify, self-heal, and rollback engine.",
+        "accent": "#e2e8f0",
+        "feature_coverage": "100% Complete Flagship",
+        "tagline": "Unlimited daily chats for 30 days with 100% of all 64 AURA autonomous engineering, remote control, and Platinum Monolith studio capabilities.",
         "features": [
-            "Unlimited Daily Chats (No 24h Cap)",
-            "Platinum Monolith Exclusive UI & Command Deck",
-            "Everything in Tiers 1, 2, 3 & 4",
-            "6-Stage Autonomous End-to-End Engineering Pipeline",
-            "Dedicated Full-Screen Apex Engineering Studio IDE",
-            "20+ Language Polyglot Mastery with Zero-Placeholder Gate",
+            "Unlimited Daily Chats (Zero 24h Cap)",
+            "30-Day Validity (Custom Admin Duration & Instant Renewal)",
+            "Everything Included in Sovereign (Plan 1) & Titan (Plan 2)",
+            "6-Stage Apex Omnis Autonomous Build, Verify & Self-Heal Pipeline",
+            "Full-Screen Apex Engineering Studio IDE & 20+ Language Mastery",
+            "Remote Agent Control, MCP Servers, Plugins & Deep Reasoning Routing",
+            "Exclusive Platinum Monolith Executive Workspace Design & Priority Engine",
         ],
     },
 }
 
-# Salted SHA-256 registry for the 25 owner-issued activation keys (5 unique keys per tier).
-# Plaintext keys are NEVER committed into source control.
-ACTIVATION_KEY_HASHES: Dict[str, Dict[str, str]] = {
-    # Tier 1 — AURA Velocity (5 keys)
-    "dc3762783ec4969892b011f5c505e33033c777a92594250bf2c90be7548beb92": {"tier_id": "tier_1", "slot": "tier_1_key_1"},
-    "01b75d441d20a3b5058077b39dd66956263fbef42a667dd0ecb08a2582ac9773": {"tier_id": "tier_1", "slot": "tier_1_key_2"},
-    "0a1531fd49e28d32ba7575f7db2f6896cea5b80b2ef46e0dbab894684f9cb8dc": {"tier_id": "tier_1", "slot": "tier_1_key_3"},
-    "9fa156e9b136592db39cc45dbf8889c1154c523ee50128c5129402909e0756fa": {"tier_id": "tier_1", "slot": "tier_1_key_4"},
-    "2a2838a835ffdd25f648402711a0ec4b9e4c67fc6fd4dede87f78ee5cfa5504a": {"tier_id": "tier_1", "slot": "tier_1_key_5"},
-    # Tier 2 — AURA Architect (5 keys)
-    "5d5d3a1ff60b8881186b4d262c582dc0a3632676657197b34a4c0cd83087711b": {"tier_id": "tier_2", "slot": "tier_2_key_1"},
-    "6937b37689a82d0a1ab20caf41ce220cf981d6f4497873826131ce241025032b": {"tier_id": "tier_2", "slot": "tier_2_key_2"},
-    "a9a741815164bc751812984e354eb5c1b24dd013564f794be975cd5034e525e6": {"tier_id": "tier_2", "slot": "tier_2_key_3"},
-    "58194b91a33973c1e9acc1f3e8d409a773a589163c80e3209862f77ee927d6f7": {"tier_id": "tier_2", "slot": "tier_2_key_4"},
-    "574983e84fc2a29aa7e6c13ed333c4ea5fe49b371334faff099e50ff1582338d": {"tier_id": "tier_2", "slot": "tier_2_key_5"},
-    # Tier 3 — AURA Sovereign (5 keys)
-    "978db932c2244221ca1b23d2672dc88fb57983fa802723b90272ea4178f1f6ce": {"tier_id": "tier_3", "slot": "tier_3_key_1"},
-    "7808533c3534739be696aba38b01828614e83160e8f4f1aeb7eec52dc548f1eb": {"tier_id": "tier_3", "slot": "tier_3_key_2"},
-    "ac929a91611bb9b436e6d1a0dbe67a8a4d3dfe2ec1734f1d5f6314c0f42a301e": {"tier_id": "tier_3", "slot": "tier_3_key_3"},
-    "d6fe44dabd6703eb15942ec82f885f71e65f6ca8446660a557f8f978d571b6de": {"tier_id": "tier_3", "slot": "tier_3_key_4"},
-    "bd6bad3e09a9ebad31df4c488be1aee8141ac264593726308c222ab4c46be431": {"tier_id": "tier_3", "slot": "tier_3_key_5"},
-    # Tier 4 — AURA Titan (5 keys)
-    "6f801ffa534a3dbb81e09b7f01cd25feae6e4411625b734b3877ca1201702e3c": {"tier_id": "tier_4", "slot": "tier_4_key_1"},
-    "b5ec78fe7ac9ddc69d816773d63ef5b9bf50cc9c907daa81c194f0c6d166e838": {"tier_id": "tier_4", "slot": "tier_4_key_2"},
-    "32ac0f31b1e9f9b8b9d1ae8eb5d5c1ff941f5ba2ebff69166b2ff5bccc1e469d": {"tier_id": "tier_4", "slot": "tier_4_key_3"},
-    "5b6ea9a2c32ff195721e4e5ef8a3164dbcc704ed7248117503e463ad26b0ade4": {"tier_id": "tier_4", "slot": "tier_4_key_4"},
-    "ac5de735a48cc10b1ca2d0582d9f9c543fbf67c4d80f1388923b9c85b69f5101": {"tier_id": "tier_4", "slot": "tier_4_key_5"},
-    # Tier 5 — AURA Apex Omnis (5 keys)
-    "cc33417088b2e6bd45aec1162f459e224749198e3c758f4ee77eceec095b39fd": {"tier_id": "tier_5", "slot": "tier_5_key_1"},
-    "a53d9e1b69df7424faf88e2239475e71fdda00d296837d95b5827214469ab6be": {"tier_id": "tier_5", "slot": "tier_5_key_2"},
-    "77a219fc856974467f60629c9b0638ef3ac921e785bb4077934feb7d911bfa55": {"tier_id": "tier_5", "slot": "tier_5_key_3"},
-    "33ee56dfdfd4dbc0e79f4979ef3fc897e5ef6a7298bccb939535d37c90b3e474": {"tier_id": "tier_5", "slot": "tier_5_key_4"},
-    "4c32426b9cfa3c44afc2ee887ea4455dba2026f224f0337f2b8673f4430529cb": {"tier_id": "tier_5", "slot": "tier_5_key_5"},
+TIER_CODE_TO_ID: Dict[str, str] = {"SOV": "tier_3", "TTN": "tier_4", "APX": "tier_5"}
+TIER_ID_TO_CODE: Dict[str, str] = {"tier_3": "SOV", "tier_4": "TTN", "tier_5": "APX"}
+PAID_TIER_ORDER: Tuple[str, ...] = ("tier_3", "tier_4", "tier_5")
+
+# Salted SHA-256 fallback registry for the 15 big-tier owner keys (5 per active flagship plan).
+# The 2 smaller legacy tiers (tier_1, tier_2) were retired per 3-plan consolidation.
+ACTIVATION_KEY_HASHES: Dict[str, Dict[str, Any]] = {
+    # Plan 1 — AURA Sovereign (tier_3 · 20 days)
+    "978db932c2244221ca1b23d2672dc88fb57983fa802723b90272ea4178f1f6ce": {"tier_id": "tier_3", "slot": "plan_1_key_1", "duration_days": 20},
+    "7808533c3534739be696aba38b01828614e83160e8f4f1aeb7eec52dc548f1eb": {"tier_id": "tier_3", "slot": "plan_1_key_2", "duration_days": 20},
+    "ac929a91611bb9b436e6d1a0dbe67a8a4d3dfe2ec1734f1d5f6314c0f42a301e": {"tier_id": "tier_3", "slot": "plan_1_key_3", "duration_days": 20},
+    "d6fe44dabd6703eb15942ec82f885f71e65f6ca8446660a557f8f978d571b6de": {"tier_id": "tier_3", "slot": "plan_1_key_4", "duration_days": 20},
+    "bd6bad3e09a9ebad31df4c488be1aee8141ac264593726308c222ab4c46be431": {"tier_id": "tier_3", "slot": "plan_1_key_5", "duration_days": 20},
+    # Plan 2 — AURA Titan (tier_4 · 30 days)
+    "6f801ffa534a3dbb81e09b7f01cd25feae6e4411625b734b3877ca1201702e3c": {"tier_id": "tier_4", "slot": "plan_2_key_1", "duration_days": 30},
+    "b5ec78fe7ac9ddc69d816773d63ef5b9bf50cc9c907daa81c194f0c6d166e838": {"tier_id": "tier_4", "slot": "plan_2_key_2", "duration_days": 30},
+    "32ac0f31b1e9f9b8b9d1ae8eb5d5c1ff941f5ba2ebff69166b2ff5bccc1e469d": {"tier_id": "tier_4", "slot": "plan_2_key_3", "duration_days": 30},
+    "5b6ea9a2c32ff195721e4e5ef8a3164dbcc704ed7248117503e463ad26b0ade4": {"tier_id": "tier_4", "slot": "plan_2_key_4", "duration_days": 30},
+    "ac5de735a48cc10b1ca2d0582d9f9c543fbf67c4d80f1388923b9c85b69f5101": {"tier_id": "tier_4", "slot": "plan_2_key_5", "duration_days": 30},
+    # Plan 3 — AURA Apex Omnis (tier_5 · 30 days)
+    "cc33417088b2e6bd45aec1162f459e224749198e3c758f4ee77eceec095b39fd": {"tier_id": "tier_5", "slot": "plan_3_key_1", "duration_days": 30},
+    "a53d9e1b69df7424faf88e2239475e71fdda00d296837d95b5827214469ab6be": {"tier_id": "tier_5", "slot": "plan_3_key_2", "duration_days": 30},
+    "77a219fc856974467f60629c9b0638ef3ac921e785bb4077934feb7d911bfa55": {"tier_id": "tier_5", "slot": "plan_3_key_3", "duration_days": 30},
+    "33ee56dfdfd4dbc0e79f4979ef3fc897e5ef6a7298bccb939535d37c90b3e474": {"tier_id": "tier_5", "slot": "plan_3_key_4", "duration_days": 30},
+    "4c32426b9cfa3c44afc2ee887ea4455dba2026f224f0337f2b8673f4430529cb": {"tier_id": "tier_5", "slot": "plan_3_key_5", "duration_days": 30},
 }
+
+_DYNAMIC_KEY_RE = re.compile(r"^AURA-(SOV|TTN|APX)-(\d{1,3})D-([A-Z0-9]{6})(?:-R(\d{1,3}))?-([A-F0-9]{8})$")
+
+
+def normalize_tier_id(raw_tier: str) -> str:
+    val = str(raw_tier or "").strip().lower()
+    if val in ("tier_3", "plan_1", "1", "sovereign", "sov", "tier_1", "tier_2"):
+        return "tier_3"
+    if val in ("tier_4", "plan_2", "2", "titan", "ttn"):
+        return "tier_4"
+    if val in ("tier_5", "plan_3", "3", "apex", "apex_omnis", "apx"):
+        return "tier_5"
+    return "tier_0"
 
 
 def normalize_activation_key(raw_key: str) -> str:
@@ -198,25 +213,123 @@ def hash_activation_key(raw_key: str) -> str:
     return hashlib.sha256((KEY_HASH_SALT + norm).encode("utf-8")).hexdigest()
 
 
-def lookup_activation_key(raw_key: str) -> Optional[Dict[str, str]]:
-    digest = hash_activation_key(raw_key)
-    entry = ACTIVATION_KEY_HASHES.get(digest)
-    if not entry:
+def _sign_dynamic_key(tier_code: str, duration_days: int, nonce: str, renew_gen: int = 0) -> str:
+    tag = f"AURA_KEY_V2:{tier_code}:{int(duration_days)}D:{nonce}"
+    if renew_gen > 0:
+        tag += f":R{int(renew_gen)}"
+    return aura_db.compute_vault_signature(tag)[:8].upper()
+
+
+def format_dynamic_key(tier_id: str, duration_days: int, nonce: str, renew_gen: int = 0) -> str:
+    norm_tier = normalize_tier_id(tier_id)
+    if norm_tier not in TIER_ID_TO_CODE:
+        norm_tier = "tier_3"
+    tcode = TIER_ID_TO_CODE[norm_tier]
+    days = max(1, min(365, int(duration_days)))
+    clean_nonce = "".join(ch for ch in str(nonce or "").upper() if ch.isalnum())[:6].ljust(6, "X")
+    sig = _sign_dynamic_key(tcode, days, clean_nonce, renew_gen=renew_gen)
+    if renew_gen > 0:
+        return f"AURA-{tcode}-{days}D-{clean_nonce}-R{int(renew_gen)}-{sig}"
+    return f"AURA-{tcode}-{days}D-{clean_nonce}-{sig}"
+
+
+def verify_dynamic_key_format(raw_key: str) -> Optional[Dict[str, Any]]:
+    norm = normalize_activation_key(raw_key)
+    m = _DYNAMIC_KEY_RE.match(norm)
+    if not m:
         return None
-    return {"tier_id": entry["tier_id"], "slot": entry["slot"], "key_hash": digest}
+    tcode, days_str, nonce, rgen_str, provided_sig = m.groups()
+    days = int(days_str)
+    renew_gen = int(rgen_str) if rgen_str else 0
+    if days < 1 or days > 365:
+        return None
+    expected_sig = _sign_dynamic_key(tcode, days, nonce, renew_gen=renew_gen)
+    if not hmac.compare_digest(expected_sig, provided_sig):
+        return None
+    tier_id = TIER_CODE_TO_ID[tcode]
+    return {
+        "key_code": norm,
+        "key_hash": hash_activation_key(norm),
+        "tier_id": tier_id,
+        "duration_days": days,
+        "nonce": nonce,
+        "renew_gen": renew_gen,
+        "slot": f"dyn_{tcode.lower()}_{nonce.lower()}",
+    }
+
+
+def lookup_activation_key(raw_key: str) -> Optional[Dict[str, Any]]:
+    norm = normalize_activation_key(raw_key)
+    if not norm:
+        return None
+    digest = hash_activation_key(norm)
+
+    # 1. Check live SQLite/LibSQL subscription_keys registry first (admin-generated, renewed, or disabled keys)
+    db_row = aura_db.get_subscription_key_by_code(norm) or aura_db.get_subscription_key_by_hash(digest)
+    if db_row:
+        return {
+            "source": "db",
+            "key_code": db_row["key_code"],
+            "key_hash": db_row["key_hash"],
+            "tier_id": normalize_tier_id(db_row["tier_id"]),
+            "duration_days": max(1, int(db_row.get("duration_days") or 20)),
+            "slot": db_row["key_code"],
+            "db_row": db_row,
+        }
+
+    # 2. Cross-container cryptographic verification for Admin-generated dynamic keys
+    dyn = verify_dynamic_key_format(norm)
+    if dyn:
+        return {
+            "source": "dynamic_sig",
+            "key_code": dyn["key_code"],
+            "key_hash": dyn["key_hash"],
+            "tier_id": dyn["tier_id"],
+            "duration_days": dyn["duration_days"],
+            "slot": dyn["key_code"],
+            "db_row": None,
+        }
+
+    # 3. Fallback: 15 hashed owner keys (time-limited per tier defaults)
+    entry = ACTIVATION_KEY_HASHES.get(digest)
+    if entry:
+        tid = normalize_tier_id(entry["tier_id"])
+        default_days = int(entry.get("duration_days") or MEMBERSHIP_TIERS[tid].get("duration_days") or 20)
+        return {
+            "source": "static_hash",
+            "key_code": norm,
+            "key_hash": digest,
+            "tier_id": tid,
+            "duration_days": default_days,
+            "slot": str(entry.get("slot") or norm[:24]),
+            "db_row": None,
+        }
+    return None
 
 
 def _sign_membership_payload(canonical_json: str) -> str:
-    return aura_db.compute_vault_signature("AURA_MP1:" + canonical_json)
+    return aura_db.compute_vault_signature("AURA_MP2:" + canonical_json)
 
 
-def build_membership_proof(username: str, tier_id: str, key_slot: str, activated_at: float) -> str:
-    payload = {
+def build_membership_proof(
+    username: str,
+    tier_id: str,
+    key_slot: str,
+    activated_at: float,
+    expires_at: Optional[float] = None,
+    key_code: str = "",
+) -> str:
+    norm_tier = normalize_tier_id(tier_id)
+    payload: Dict[str, Any] = {
         "u": str(username or "").strip().lower(),
-        "t": tier_id if tier_id in MEMBERSHIP_TIERS else "tier_0",
-        "s": str(key_slot or "")[:32],
+        "t": norm_tier,
+        "s": str(key_slot or "")[:40],
         "ts": int(activated_at),
     }
+    if expires_at:
+        payload["exp"] = int(expires_at)
+    if key_code:
+        payload["k"] = str(key_code).strip().upper()[:48]
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     b64 = base64.urlsafe_b64encode(canonical.encode("utf-8")).decode("ascii").rstrip("=")
     sig = _sign_membership_payload(canonical)
@@ -242,25 +355,31 @@ def verify_membership_proof(proof: str, expected_username: str) -> Optional[Dict
             return None
         if str(data.get("u", "")).lower() != str(expected_username or "").strip().lower():
             return None
-        tier_id = str(data.get("t", "tier_0"))
+        tier_id = normalize_tier_id(str(data.get("t", "tier_0")))
         if tier_id not in MEMBERSHIP_TIERS:
+            return None
+        exp = data.get("exp")
+        if exp is not None and float(exp) <= time.time():
             return None
         return {
             "tier_id": tier_id,
             "key_slot": str(data.get("s", "")),
+            "key_code": str(data.get("k", "")),
             "activated_at": float(data.get("ts", time.time())),
+            "expires_at": float(exp) if exp is not None else None,
         }
     except Exception:
         return None
 
 
 def get_tier_spec(tier_id: str) -> Dict[str, Any]:
-    return dict(MEMBERSHIP_TIERS.get(str(tier_id or "tier_0"), MEMBERSHIP_TIERS["tier_0"]))
+    norm = normalize_tier_id(tier_id)
+    return dict(MEMBERSHIP_TIERS.get(norm, MEMBERSHIP_TIERS["tier_0"]))
 
 
 def list_public_tiers() -> List[Dict[str, Any]]:
-    """Returns all 5 upgrade tiers + Standard spec (capability matrix only — zero prices)."""
-    return [dict(MEMBERSHIP_TIERS[k]) for k in ("tier_0", "tier_1", "tier_2", "tier_3", "tier_4", "tier_5")]
+    """Returns Standard + the 3 Flagship Paid Subscriptions."""
+    return [dict(MEMBERSHIP_TIERS[k]) for k in ("tier_0", "tier_3", "tier_4", "tier_5")]
 
 
 def _safe_int_uid(user: Dict[str, Any]) -> Optional[int]:
@@ -270,23 +389,44 @@ def _safe_int_uid(user: Dict[str, Any]) -> Optional[int]:
         return None
 
 
+def _fmt_date(ts: Optional[float]) -> str:
+    if not ts:
+        return ""
+    try:
+        return datetime.datetime.fromtimestamp(float(ts)).strftime("%d %b %Y")
+    except Exception:
+        return ""
+
+
+def _mask_key_code(code: str) -> str:
+    c = str(code or "").strip().upper()
+    if len(c) <= 10:
+        return c
+    return f"{c[:12]}••••{c[-4:]}"
+
+
 def resolve_user_membership(
     user: Dict[str, Any],
     membership_proof: str = "",
 ) -> Dict[str, Any]:
     """
-    Resolves active tier for an authenticated user from DB settings_json,
-    automatically hydrating from a verified server-signed membership_proof on cold starts.
+    Resolves active subscription tier for an authenticated user:
+    - Enforces Admin disable/kill-switch in real time.
+    - Enforces automatic time expiration (`expires_at <= now`) and returns user to Standard.
+    - Auto-syncs Admin renewals directly onto the user's account.
+    - Hydrates verified non-expired `membership_proof` across serverless cold starts.
     """
     uid = _safe_int_uid(user)
     uname = str(user.get("username") or "").strip().lower()
     settings = aura_db.get_user_settings_dict(uid) if uid is not None else (user.get("settings") if isinstance(user.get("settings"), dict) else {})
     mem = settings.get("membership") if isinstance(settings.get("membership"), dict) else {}
-    tier_id = str(mem.get("tier_id") or "tier_0")
-    if tier_id not in MEMBERSHIP_TIERS:
-        tier_id = "tier_0"
+    raw_tier = str(mem.get("tier_id") or "tier_0")
+    tier_id = normalize_tier_id(raw_tier) if raw_tier != "tier_0" else "tier_0"
+    now_ts = time.time()
+    expired_notice = ""
+    disabled_notice = ""
 
-    # Cross-container serverless recovery via server-signed membership_proof
+    # Cross-container serverless recovery via server-signed non-expired membership_proof
     if tier_id == "tier_0" and membership_proof and uid is not None:
         verified = verify_membership_proof(membership_proof, uname)
         if verified and verified["tier_id"] != "tier_0":
@@ -294,58 +434,228 @@ def resolve_user_membership(
             mem = {
                 "tier_id": tier_id,
                 "key_slot": verified.get("key_slot", ""),
-                "activated_at": verified.get("activated_at", time.time()),
+                "key_code": verified.get("key_code", ""),
+                "activated_at": verified.get("activated_at", now_ts),
+                "expires_at": verified.get("expires_at"),
             }
             settings["membership"] = mem
             aura_db.save_user_settings(uid, settings)
 
+    # Authoritative live check against `subscription_keys` table (handles disable, expiry & Admin renewal)
+    key_code = str(mem.get("key_code") or "").strip().upper()
+    db_key = aura_db.get_subscription_key_by_code(key_code) if key_code else None
+    if db_key is None and uname:
+        # Check if Admin renewed a key bound to this user even after earlier expiry
+        for krow in aura_db.list_subscription_keys(limit=200):
+            if str(krow.get("bound_username") or "").lower() == uname:
+                if krow.get("status") == "active" and krow.get("expires_at") and float(krow["expires_at"]) > now_ts:
+                    db_key = krow
+                    key_code = krow["key_code"]
+                    break
+
+    if db_key:
+        k_status = str(db_key.get("status") or "active").lower()
+        k_exp = float(db_key["expires_at"]) if db_key.get("expires_at") is not None else None
+        k_bound = str(db_key.get("bound_username") or "").lower()
+        if k_status == "disabled":
+            if tier_id != "tier_0":
+                disabled_notice = f"Your subscription key was disabled by the administrator. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} for support."
+            tier_id = "tier_0"
+            if uid is not None and "membership" in settings:
+                settings.pop("membership", None)
+                aura_db.save_user_settings(uid, settings)
+        elif k_bound and k_bound != uname:
+            tier_id = "tier_0"
+            if uid is not None and "membership" in settings:
+                settings.pop("membership", None)
+                aura_db.save_user_settings(uid, settings)
+        elif k_exp is not None and k_exp <= now_ts:
+            if k_status != "expired":
+                aura_db.update_subscription_key(db_key["key_code"], {"status": "expired"})
+            old_name = get_tier_spec(db_key.get("tier_id", "tier_3"))["name"]
+            expired_notice = f"Your {old_name} subscription expired on {_fmt_date(k_exp)}. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} to renew your key."
+            tier_id = "tier_0"
+            if uid is not None and "membership" in settings:
+                settings.pop("membership", None)
+                aura_db.save_user_settings(uid, settings)
+        elif k_status == "active" and (k_exp is None or k_exp > now_ts):
+            # Sync live tier/expiry (picks up instant Admin renewals or plan upgrades!)
+            synced_tier = normalize_tier_id(db_key.get("tier_id", "tier_3"))
+            tier_id = synced_tier
+            mem = {
+                "tier_id": synced_tier,
+                "key_slot": db_key["key_code"],
+                "key_code": db_key["key_code"],
+                "activated_at": float(db_key.get("activated_at") or now_ts),
+                "expires_at": k_exp,
+                "duration_days": int(db_key.get("duration_days") or 20),
+            }
+            if uid is not None and settings.get("membership") != mem:
+                settings["membership"] = mem
+                aura_db.save_user_settings(uid, settings)
+
+    # Also enforce expiry stored directly on mem (e.g. cold serverless without DB row)
+    expires_at = float(mem["expires_at"]) if mem.get("expires_at") is not None else None
+    if tier_id != "tier_0" and expires_at is not None and expires_at <= now_ts:
+        old_name = get_tier_spec(tier_id)["name"]
+        expired_notice = f"Your {old_name} subscription expired on {_fmt_date(expires_at)}. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} to renew your key."
+        tier_id = "tier_0"
+        expires_at = None
+        if uid is not None and "membership" in settings:
+            settings.pop("membership", None)
+            aura_db.save_user_settings(uid, settings)
+
     spec = get_tier_spec(tier_id)
-    activated_at = float(mem.get("activated_at") or 0)
-    key_slot = str(mem.get("key_slot") or "")
-    proof = build_membership_proof(uname, tier_id, key_slot, activated_at or time.time()) if tier_id != "tier_0" else ""
+    activated_at = float(mem.get("activated_at") or 0) if tier_id != "tier_0" else None
+    key_slot = str(mem.get("key_slot") or "") if tier_id != "tier_0" else ""
+    active_key_code = str(mem.get("key_code") or "") if tier_id != "tier_0" else ""
+    seconds_left = max(0, int(expires_at - now_ts)) if (tier_id != "tier_0" and expires_at) else 0
+    days_remaining = round(seconds_left / SECONDS_PER_DAY, 1) if seconds_left > 0 else 0
+    days_remaining_floor = int(seconds_left // SECONDS_PER_DAY) if seconds_left > 0 else 0
+    days_remaining_ceil = int((seconds_left + SECONDS_PER_DAY - 1) // SECONDS_PER_DAY) if seconds_left > 0 else 0
+    hours_remaining = (seconds_left % SECONDS_PER_DAY) // 3600 if seconds_left > 0 else 0
+
+    proof = (
+        build_membership_proof(
+            uname,
+            tier_id,
+            key_slot,
+            activated_at or now_ts,
+            expires_at=expires_at,
+            key_code=active_key_code,
+        )
+        if tier_id != "tier_0"
+        else ""
+    )
 
     return {
         **spec,
-        "activated_at": activated_at if tier_id != "tier_0" else None,
+        "activated_at": activated_at,
+        "expires_at": expires_at if tier_id != "tier_0" else None,
+        "expires_label": _fmt_date(expires_at) if (tier_id != "tier_0" and expires_at) else "",
+        "days_remaining": days_remaining if tier_id != "tier_0" else 0,
+        "days_remaining_floor": days_remaining_floor if tier_id != "tier_0" else 0,
+        "days_remaining_int": days_remaining_ceil if tier_id != "tier_0" else 0,
+        "hours_remaining": hours_remaining if tier_id != "tier_0" else 0,
+        "subscription_active": tier_id != "tier_0",
         "key_slot": key_slot,
+        "key_code_masked": _mask_key_code(active_key_code) if active_key_code else "",
         "membership_proof": proof,
+        "expired_notice": expired_notice or disabled_notice,
         "aura_rules": str(settings.get("aura_rules") or ""),
     }
 
 
 def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any]:
-    """Validates an activation key against the SHA-256 registry and activates the user's tier."""
+    """
+    Validates a dynamic or hashed subscription key, enforces admin kill-switch,
+    expiry window, and single-account binding, activates the plan, and returns
+    the special subscriber welcome payload.
+    """
     match = lookup_activation_key(raw_key)
     if not match:
         return {
             "success": False,
-            "error": "Invalid activation key. Double-check the key format (AURA-XXXX-XXXX-XXXX-XXXX) and try again.",
+            "error": f"Invalid subscription key. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} on WhatsApp to get a valid AURA key.",
         }
 
     uid = int(user["id"])
     uname = str(user.get("username") or "").strip().lower()
-    tier_id = match["tier_id"]
-    key_slot = match["slot"]
-    key_hash = match["key_hash"]
+    tier_id = normalize_tier_id(match["tier_id"])
+    key_code = str(match["key_code"]).strip().upper()
+    key_hash = str(match["key_hash"])
+    duration_days = max(1, int(match.get("duration_days") or MEMBERSHIP_TIERS[tier_id].get("duration_days") or 20))
+    db_row = match.get("db_row")
     now_ts = time.time()
+
+    if db_row:
+        status = str(db_row.get("status") or "active").lower()
+        if status == "disabled":
+            return {
+                "success": False,
+                "error": f"This key has been deactivated by the administrator. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} to reactivate or renew.",
+            }
+        bound_u = str(db_row.get("bound_username") or "").strip().lower()
+        if bound_u and bound_u != uname:
+            return {
+                "success": False,
+                "error": "This subscription key is already bound to another AURA account.",
+            }
+        existing_exp = float(db_row["expires_at"]) if db_row.get("expires_at") is not None else None
+        if status == "expired" or (existing_exp is not None and existing_exp <= now_ts):
+            if status != "expired":
+                aura_db.update_subscription_key(key_code, {"status": "expired"})
+            return {
+                "success": False,
+                "error": f"This key expired on {_fmt_date(existing_exp)}. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} to renew your same key.",
+            }
+        # If key already has a future expires_at (e.g. renewed or re-activating on same user), keep it; otherwise start clock now!
+        expires_at = existing_exp if (existing_exp and existing_exp > now_ts) else (now_ts + duration_days * SECONDS_PER_DAY)
+        activated_at = float(db_row.get("activated_at") or now_ts)
+        aura_db.update_subscription_key(
+            key_code,
+            {
+                "status": "active",
+                "bound_user_id": uid,
+                "bound_username": uname,
+                "activated_at": activated_at,
+                "expires_at": expires_at,
+            },
+        )
+    else:
+        activated_at = now_ts
+        expires_at = now_ts + duration_days * SECONDS_PER_DAY
+        aura_db.upsert_subscription_key(
+            key_code=key_code,
+            key_hash=key_hash,
+            tier_id=tier_id,
+            duration_days=duration_days,
+            status="active",
+            bound_user_id=uid,
+            bound_username=uname,
+            activated_at=activated_at,
+            expires_at=expires_at,
+            created_by=ADMIN_OWNER_USERNAME,
+            note="Activated on account",
+        )
 
     settings = aura_db.get_user_settings_dict(uid)
     settings["membership"] = {
         "tier_id": tier_id,
-        "key_slot": key_slot,
+        "key_slot": match["slot"],
+        "key_code": key_code,
         "key_hash_prefix": key_hash[:12],
-        "activated_at": now_ts,
+        "activated_at": activated_at,
+        "expires_at": expires_at,
+        "duration_days": duration_days,
     }
     aura_db.save_user_settings(uid, settings)
     aura_db.record_membership_activation(uid, uname, key_hash, tier_id)
 
     resolved = resolve_user_membership(user)
     quota = get_user_quota_status(user, resolved)
+    spec = get_tier_spec(tier_id)
+    welcome_payload = {
+        "plan_id": tier_id,
+        "plan_number": spec["plan_number"],
+        "plan_name": spec["name"],
+        "badge": spec["badge"],
+        "accent": spec["accent"],
+        "theme": spec["theme"],
+        "price_label": spec["price_label"],
+        "duration_days": duration_days,
+        "expires_label": resolved["expires_label"],
+        "daily_limit_label": "Unlimited Chats / Day" if spec["unlimited"] else f"{spec['daily_limit']} Chats / Day",
+        "feature_coverage": spec["feature_coverage"],
+        "unlocked_features": spec["features"],
+        "username": user.get("display_name") or user.get("username") or "Member",
+    }
     return {
         "success": True,
-        "message": f"{resolved['name']} ({resolved['multiplier']}) activated successfully.",
+        "message": f"{resolved['name']} activated for {duration_days} days (expires {resolved['expires_label']}).",
         "membership": resolved,
         "quota": quota,
+        "welcome": welcome_payload,
     }
 
 
@@ -369,7 +679,7 @@ def save_user_aura_rules(user: Dict[str, Any], rules_text: str, membership: Opti
     if int(mem.get("rank", 0)) < 3:
         return {
             "success": False,
-            "error": "Persistent .aura-rules engineering memory requires AURA Sovereign (Tier 3) or higher.",
+            "error": "Persistent .aura-rules engineering memory requires AURA Sovereign (Plan 1) or higher.",
             "required_rank": 3,
         }
     uid = int(user["id"])
@@ -429,11 +739,6 @@ def check_and_consume_chat_quota(
     prompt: str,
     membership: Optional[Dict[str, Any]] = None,
 ) -> Tuple[bool, Dict[str, Any]]:
-    """
-    Checks rolling 24-hour chat limit before running a model turn.
-    Utility commands (/help) bypass quota consumption so users are never stranded.
-    Returns (allowed, quota_status).
-    """
     mem = membership or resolve_user_membership(user)
     stripped = str(prompt or "").strip().lower()
     if stripped in ("/help", "help"):
@@ -451,48 +756,359 @@ def check_and_consume_chat_quota(
 
 
 def build_tier_system_profile(membership: Dict[str, Any], context_files_block: str = "") -> str:
-    """
-    Builds concise, high-signal engineering profile instructions tailored to the user's
-    activated membership tier, persistent .aura-rules, and attached @file context snippets.
-    """
     rank = int(membership.get("rank", 0))
     parts: List[str] = []
 
     if rank >= 5:
         parts.append(
-            "[AURA APEX OMNIS · TIER 5 PLATINUM ENGINEERING ENGINE]\n"
-            "You are operating at Tier 5 Apex Omnis capacity — an institutional autonomous polyglot software engineer across 20+ languages "
+            "[AURA APEX OMNIS · PLAN 3 PLATINUM ENGINEERING ENGINE]\n"
+            "You are operating at Apex Omnis capacity — an institutional autonomous polyglot software engineer across 20+ languages "
             "(Python, TypeScript, JavaScript, React, Rust, Go, Java, C/C++, C#, SQL, Kotlin, Swift, Bash, Docker/K8s).\n"
             "Standards: Zero placeholder comments ('TODO', 'pass', '...'), full edge-case validation, crisp Big-O complexity proofs, "
             "security-by-default patterns, multi-file unified diffs when editing existing code, and runnable verification tests."
         )
-    elif rank == 4:
+    elif rank >= 4:
         parts.append(
-            "[AURA TITAN · TIER 4 AUTONOMOUS SUITE]\n"
+            "[AURA TITAN · PLAN 2 AUTONOMOUS SUITE]\n"
             "Operate with multi-agent rigor (Architecture + Implementation + Security + QA). Flag OWASP/security pitfalls proactively "
             "and always provide explicit verification commands or runnable code blocks."
         )
-    elif rank == 3:
+    elif rank >= 3:
         parts.append(
-            "[AURA SOVEREIGN · TIER 3 UNLIMITED ENGINEERING]\n"
+            "[AURA SOVEREIGN · PLAN 1 PRO ENGINEERING]\n"
             "Deliver production-complete, self-verified implementations with clear error handling, unit tests, and architectural rationale."
-        )
-    elif rank == 2:
-        parts.append(
-            "[AURA ARCHITECT · TIER 2 STUDIO]\n"
-            "Provide structured multi-file diffs, clean modular code, and concise architectural trade-offs."
-        )
-    elif rank == 1:
-        parts.append(
-            "[AURA VELOCITY · TIER 1 FAST ENGINEERING]\n"
-            "Prioritize crisp, high-velocity, copy-ready engineering answers with zero fluff."
         )
 
     rules = str(membership.get("aura_rules") or "").strip()
     if rank >= 3 and rules:
         parts.append(f"[USER .AURA-RULES ENGINEERING CONSTRAINTS]\n{rules[:3000]}")
 
-    if rank >= 1 and context_files_block:
+    if rank >= 3 and context_files_block:
         parts.append(f"[ATTACHED WORKSPACE @FILE CONTEXT]\n{context_files_block[:14000]}")
 
     return "\n\n".join(parts)
+
+
+# ===================================================================================
+# EXCLUSIVE ADMIN KEY VAULT & GENERATOR (ONLY AUTHORIZED FOR `ig.ahmed.irl`)
+# ===================================================================================
+
+def is_key_admin_user(user: Optional[Dict[str, Any]]) -> bool:
+    if not isinstance(user, dict):
+        return False
+    uname = str(user.get("username") or "").strip().lower()
+    allowed_admin = os.environ.get("AURA_KEY_ADMIN_USERNAME", ADMIN_OWNER_USERNAME).strip().lower() or ADMIN_OWNER_USERNAME
+    return bool(uname) and hmac.compare_digest(uname, allowed_admin)
+
+
+def _verify_admin_vault_password(password: str) -> bool:
+    candidate = str(password or "")
+    if not candidate:
+        return False
+    env_pw = os.environ.get("AURA_ADMIN_VAULT_PASSWORD", "").strip()
+    if env_pw:
+        return hmac.compare_digest(candidate, env_pw)
+    digest = hashlib.sha256((ADMIN_VAULT_SALT + candidate).encode("utf-8")).hexdigest()
+    return hmac.compare_digest(digest, DEFAULT_ADMIN_VAULT_HASH)
+
+
+def _sign_admin_vault_token(canonical: str) -> str:
+    return aura_db.compute_vault_signature("AURA_ADMIN_VAULT_TOK:" + canonical)
+
+
+def unlock_admin_key_vault(user: Optional[Dict[str, Any]], password: str) -> Dict[str, Any]:
+    if not is_key_admin_user(user):
+        return {
+            "success": False,
+            "status": 403,
+            "error": f"Forbidden: Admin Key Vault access is restricted exclusively to @{ADMIN_OWNER_USERNAME}.",
+        }
+    if not _verify_admin_vault_password(password):
+        return {
+            "success": False,
+            "status": 403,
+            "error": "Invalid Admin Key Vault password.",
+        }
+    now_ts = time.time()
+    payload = {
+        "u": str(user["username"]).strip().lower(),
+        "iat": int(now_ts),
+        "exp": int(now_ts + ADMIN_VAULT_TOKEN_TTL_SECONDS),
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    b64 = base64.urlsafe_b64encode(canonical.encode("utf-8")).decode("ascii").rstrip("=")
+    sig = _sign_admin_vault_token(canonical)
+    token = f"aura_av1.{b64}.{sig}"
+    return {
+        "success": True,
+        "status": 200,
+        "admin_vault_token": token,
+        "expires_at": payload["exp"],
+        "admin_username": payload["u"],
+    }
+
+
+def verify_admin_vault_token(user: Optional[Dict[str, Any]], token: str) -> bool:
+    if not is_key_admin_user(user):
+        return False
+    raw = str(token or "").strip()
+    if not raw.startswith("aura_av1."):
+        return False
+    parts = raw.split(".")
+    if len(parts) != 3:
+        return False
+    _, b64, sig = parts
+    try:
+        pad = "=" * ((4 - len(b64) % 4) % 4)
+        canonical = base64.urlsafe_b64decode((b64 + pad).encode("ascii")).decode("utf-8")
+        if not hmac.compare_digest(_sign_admin_vault_token(canonical), sig):
+            return False
+        data = json.loads(canonical)
+        if not isinstance(data, dict):
+            return False
+        uname = str(user.get("username") or "").strip().lower()
+        if str(data.get("u", "")).lower() != uname:
+            return False
+        if float(data.get("exp", 0)) <= time.time():
+            return False
+        return True
+    except Exception:
+        return False
+
+
+def _enrich_admin_key_row(row: Dict[str, Any], now_ts: Optional[float] = None) -> Dict[str, Any]:
+    now = now_ts if now_ts is not None else time.time()
+    tier_id = normalize_tier_id(row.get("tier_id", "tier_3"))
+    spec = get_tier_spec(tier_id)
+    raw_status = str(row.get("status") or "active").lower()
+    exp = float(row["expires_at"]) if row.get("expires_at") is not None else None
+    bound_u = str(row.get("bound_username") or "").strip()
+
+    if raw_status == "disabled":
+        effective = "disabled"
+    elif exp is not None and exp <= now:
+        effective = "expired"
+        if raw_status != "expired":
+            aura_db.update_subscription_key(row["key_code"], {"status": "expired"})
+    elif bound_u:
+        effective = "active"
+    else:
+        effective = "unused"
+
+    secs_left = max(0, int(exp - now)) if (exp is not None and effective == "active") else 0
+    days_left = round(secs_left / SECONDS_PER_DAY, 1) if secs_left > 0 else 0
+    return {
+        "key_code": row["key_code"],
+        "tier_id": tier_id,
+        "plan_number": spec["plan_number"],
+        "plan_name": spec["name"],
+        "badge": spec["badge"],
+        "price_label": spec["price_label"],
+        "daily_limit": spec["daily_limit"],
+        "unlimited": spec["unlimited"],
+        "duration_days": int(row.get("duration_days") or spec.get("duration_days") or 20),
+        "status": effective,
+        "raw_status": raw_status,
+        "bound_username": bound_u,
+        "activated_at": row.get("activated_at"),
+        "expires_at": exp,
+        "expires_label": _fmt_date(exp) if exp else "Starts on activation",
+        "days_left": days_left,
+        "note": str(row.get("note") or ""),
+        "renew_count": int(row.get("renew_count") or 0),
+        "created_at": row.get("created_at"),
+        "created_label": _fmt_date(row.get("created_at")),
+    }
+
+
+def admin_generate_keys(
+    tier_id: str,
+    duration_days: Optional[int] = None,
+    count: int = 1,
+    note: str = "",
+    created_by: str = ADMIN_OWNER_USERNAME,
+) -> Dict[str, Any]:
+    norm_tier = normalize_tier_id(tier_id)
+    if norm_tier not in PAID_TIER_ORDER:
+        return {"success": False, "error": "Select Plan 1 (Sovereign), Plan 2 (Titan), or Plan 3 (Apex Omnis)."}
+    spec = get_tier_spec(norm_tier)
+    days = int(duration_days) if duration_days is not None and str(duration_days).strip() else int(spec.get("duration_days") or 20)
+    days = max(1, min(365, days))
+    qty = max(1, min(25, int(count or 1)))
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    created: List[Dict[str, Any]] = []
+    for _ in range(qty):
+        nonce = "".join(secrets.choice(alphabet) for _ in range(6))
+        code = format_dynamic_key(norm_tier, days, nonce)
+        row = aura_db.upsert_subscription_key(
+            key_code=code,
+            key_hash=hash_activation_key(code),
+            tier_id=norm_tier,
+            duration_days=days,
+            status="active",
+            created_by=created_by,
+            note=str(note or "").strip()[:200],
+        )
+        created.append(_enrich_admin_key_row(row))
+    return {
+        "success": True,
+        "generated_count": len(created),
+        "keys": created,
+        "message": f"Generated {len(created)} {spec['name']} key(s) valid for {days} days.",
+    }
+
+
+def admin_list_keys(status_filter: str = "all", search: str = "") -> Dict[str, Any]:
+    now_ts = time.time()
+    raw_rows = aura_db.list_subscription_keys(limit=500)
+    enriched = [_enrich_admin_key_row(r, now_ts=now_ts) for r in raw_rows]
+    summary = {
+        "total": len(enriched),
+        "active": sum(1 for k in enriched if k["status"] == "active"),
+        "unused": sum(1 for k in enriched if k["status"] == "unused"),
+        "expired": sum(1 for k in enriched if k["status"] == "expired"),
+        "disabled": sum(1 for k in enriched if k["status"] == "disabled"),
+    }
+    sf = str(status_filter or "all").strip().lower()
+    q = str(search or "").strip().lower()
+    filtered = []
+    for k in enriched:
+        if sf != "all" and k["status"] != sf:
+            continue
+        if q:
+            hay = f"{k['key_code']} {k['bound_username']} {k['plan_name']} {k['note']}".lower()
+            if q not in hay:
+                continue
+        filtered.append(k)
+    return {
+        "success": True,
+        "summary": summary,
+        "keys": filtered,
+        "tiers": [get_tier_spec(tid) for tid in PAID_TIER_ORDER],
+    }
+
+
+def admin_renew_key(
+    key_code: str,
+    duration_days: Optional[int] = None,
+    tier_id: Optional[str] = None,
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    norm_code = normalize_activation_key(key_code)
+    row = aura_db.get_subscription_key_by_code(norm_code)
+    if not row:
+        return {"success": False, "error": f"Subscription key '{norm_code}' not found."}
+
+    target_tier = normalize_tier_id(tier_id) if tier_id else normalize_tier_id(row["tier_id"])
+    if target_tier not in PAID_TIER_ORDER:
+        target_tier = normalize_tier_id(row["tier_id"])
+    spec = get_tier_spec(target_tier)
+    add_days = int(duration_days) if duration_days is not None and str(duration_days).strip() else int(spec.get("duration_days") or 20)
+    add_days = max(1, min(365, add_days))
+
+    now_ts = time.time()
+    prev_exp = float(row["expires_at"]) if row.get("expires_at") is not None else 0.0
+    was_active = str(row.get("status") or "").lower() == "active" and prev_exp > now_ts
+    base_ts = prev_exp if was_active else now_ts
+    new_exp = base_ts + add_days * SECONDS_PER_DAY
+    new_renew_count = int(row.get("renew_count") or 0) + 1
+
+    fields: Dict[str, Any] = {
+        "tier_id": target_tier,
+        "duration_days": add_days,
+        "status": "active",
+        "expires_at": new_exp,
+        "renew_count": new_renew_count,
+    }
+    if not row.get("activated_at") and row.get("bound_username"):
+        fields["activated_at"] = now_ts
+    if note is not None and str(note).strip():
+        fields["note"] = str(note).strip()[:200]
+
+    updated = aura_db.update_subscription_key(norm_code, fields)
+    bound_u = str((updated or {}).get("bound_username") or "").strip().lower()
+    if bound_u:
+        aura_db.update_user_membership_by_username(
+            bound_u,
+            {
+                "tier_id": target_tier,
+                "key_slot": norm_code,
+                "key_code": norm_code,
+                "key_hash_prefix": str((updated or {}).get("key_hash") or "")[:12],
+                "activated_at": float((updated or {}).get("activated_at") or now_ts),
+                "expires_at": new_exp,
+                "duration_days": add_days,
+            },
+        )
+    enriched = _enrich_admin_key_row(updated or row)
+    return {
+        "success": True,
+        "message": f"Key {norm_code} renewed on {spec['name']} for +{add_days} days (expires {enriched['expires_label']}).",
+        "key": enriched,
+    }
+
+
+def admin_toggle_key_status(key_code: str, disable: bool) -> Dict[str, Any]:
+    norm_code = normalize_activation_key(key_code)
+    row = aura_db.get_subscription_key_by_code(norm_code)
+    if not row:
+        return {"success": False, "error": f"Subscription key '{norm_code}' not found."}
+    now_ts = time.time()
+    bound_u = str(row.get("bound_username") or "").strip().lower()
+    if disable:
+        updated = aura_db.update_subscription_key(norm_code, {"status": "disabled"})
+        if bound_u:
+            aura_db.update_user_membership_by_username(bound_u, None)
+        return {
+            "success": True,
+            "message": f"Key {norm_code} disabled immediately." + (f" Account @{bound_u} returned to Standard." if bound_u else ""),
+            "key": _enrich_admin_key_row(updated or row),
+        }
+
+    # Re-enabling a disabled key
+    exp = float(row["expires_at"]) if row.get("expires_at") is not None else None
+    days = max(1, int(row.get("duration_days") or 20))
+    if bound_u and (exp is None or exp <= now_ts):
+        exp = now_ts + days * SECONDS_PER_DAY
+    fields: Dict[str, Any] = {"status": "active"}
+    if exp is not None:
+        fields["expires_at"] = exp
+    updated = aura_db.update_subscription_key(norm_code, fields)
+    if bound_u and exp:
+        tier_id = normalize_tier_id(row["tier_id"])
+        aura_db.update_user_membership_by_username(
+            bound_u,
+            {
+                "tier_id": tier_id,
+                "key_slot": norm_code,
+                "key_code": norm_code,
+                "key_hash_prefix": str(row.get("key_hash") or "")[:12],
+                "activated_at": float(row.get("activated_at") or now_ts),
+                "expires_at": exp,
+                "duration_days": days,
+            },
+        )
+    return {
+        "success": True,
+        "message": f"Key {norm_code} re-enabled.",
+        "key": _enrich_admin_key_row(updated or row),
+    }
+
+
+def admin_unbind_key(key_code: str) -> Dict[str, Any]:
+    norm_code = normalize_activation_key(key_code)
+    row = aura_db.get_subscription_key_by_code(norm_code)
+    if not row:
+        return {"success": False, "error": f"Subscription key '{norm_code}' not found."}
+    old_user = str(row.get("bound_username") or "").strip().lower()
+    if old_user:
+        aura_db.update_user_membership_by_username(old_user, None)
+    updated = aura_db.update_subscription_key(
+        norm_code,
+        {"bound_user_id": None, "bound_username": "", "activated_at": None, "expires_at": None, "status": "active"},
+    )
+    return {
+        "success": True,
+        "message": f"Key {norm_code} unbound and ready for activation.",
+        "key": _enrich_admin_key_row(updated or row),
+    }

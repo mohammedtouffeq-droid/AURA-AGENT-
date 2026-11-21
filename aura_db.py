@@ -592,6 +592,25 @@ def init_database():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS subscription_keys (
+            key_code TEXT PRIMARY KEY,
+            key_hash TEXT NOT NULL UNIQUE,
+            tier_id TEXT NOT NULL,
+            duration_days INTEGER NOT NULL DEFAULT 20,
+            status TEXT NOT NULL DEFAULT 'active',
+            bound_user_id INTEGER,
+            bound_username TEXT DEFAULT '',
+            activated_at REAL,
+            expires_at REAL,
+            created_at REAL NOT NULL,
+            created_by TEXT DEFAULT 'ig.ahmed.irl',
+            note TEXT DEFAULT '',
+            renew_count INTEGER NOT NULL DEFAULT 0,
+            updated_at REAL NOT NULL
+        )
+    """)
+
     # Schema migrations for existing local SQLite files
     c.execute("PRAGMA table_info(users)")
     user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
@@ -1575,6 +1594,182 @@ def record_membership_activation(user_id: int, username: str, key_hash: str, tie
         conn.close()
 
 
+def upsert_subscription_key(
+    key_code: str,
+    key_hash: str,
+    tier_id: str,
+    duration_days: int = 20,
+    status: str = "active",
+    bound_user_id: Optional[int] = None,
+    bound_username: str = "",
+    activated_at: Optional[float] = None,
+    expires_at: Optional[float] = None,
+    created_by: str = "ig.ahmed.irl",
+    note: str = "",
+    renew_count: int = 0,
+) -> Dict[str, Any]:
+    now_ts = time.time()
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT key_code, created_at FROM subscription_keys WHERE key_code = ? OR key_hash = ?", (key_code, key_hash))
+        existing = c.fetchone()
+        if existing:
+            c.execute(
+                """
+                UPDATE subscription_keys
+                SET tier_id = ?, duration_days = ?, status = ?, bound_user_id = ?, bound_username = ?,
+                    activated_at = ?, expires_at = ?, note = ?, renew_count = ?, updated_at = ?
+                WHERE key_code = ?
+                """,
+                (
+                    str(tier_id)[:24],
+                    max(1, int(duration_days)),
+                    str(status or "active")[:24],
+                    int(bound_user_id) if bound_user_id is not None else None,
+                    str(bound_username or "").strip().lower()[:64],
+                    float(activated_at) if activated_at is not None else None,
+                    float(expires_at) if expires_at is not None else None,
+                    str(note or "").strip()[:240],
+                    max(0, int(renew_count)),
+                    now_ts,
+                    existing["key_code"],
+                ),
+            )
+            target_code = existing["key_code"]
+        else:
+            c.execute(
+                """
+                INSERT INTO subscription_keys (
+                    key_code, key_hash, tier_id, duration_days, status,
+                    bound_user_id, bound_username, activated_at, expires_at,
+                    created_at, created_by, note, renew_count, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(key_code).strip().upper()[:64],
+                    str(key_hash).strip()[:64],
+                    str(tier_id)[:24],
+                    max(1, int(duration_days)),
+                    str(status or "active")[:24],
+                    int(bound_user_id) if bound_user_id is not None else None,
+                    str(bound_username or "").strip().lower()[:64],
+                    float(activated_at) if activated_at is not None else None,
+                    float(expires_at) if expires_at is not None else None,
+                    now_ts,
+                    str(created_by or "ig.ahmed.irl").strip().lower()[:64],
+                    str(note or "").strip()[:240],
+                    max(0, int(renew_count)),
+                    now_ts,
+                ),
+            )
+            target_code = str(key_code).strip().upper()[:64]
+        conn.commit()
+        c.execute("SELECT * FROM subscription_keys WHERE key_code = ?", (target_code,))
+        row = c.fetchone()
+        return dict(row) if row else {}
+    finally:
+        conn.close()
+
+
+def get_subscription_key_by_code(key_code: str) -> Optional[Dict[str, Any]]:
+    norm = str(key_code or "").strip().upper()
+    if not norm:
+        return None
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM subscription_keys WHERE key_code = ?", (norm,))
+        row = c.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def get_subscription_key_by_hash(key_hash: str) -> Optional[Dict[str, Any]]:
+    h = str(key_hash or "").strip().lower()
+    if not h:
+        return None
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM subscription_keys WHERE key_hash = ?", (h,))
+        row = c.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def list_subscription_keys(limit: int = 250) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM subscription_keys ORDER BY updated_at DESC, created_at DESC LIMIT ?", (max(1, min(1000, int(limit))),))
+        return [dict(r) for r in c.fetchall()]
+    finally:
+        conn.close()
+
+
+def update_subscription_key(key_code: str, fields: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    norm = str(key_code or "").strip().upper()
+    if not norm or not fields:
+        return None
+    allowed = {
+        "tier_id", "duration_days", "status", "bound_user_id", "bound_username",
+        "activated_at", "expires_at", "note", "renew_count",
+    }
+    sets = []
+    vals = []
+    for k, v in fields.items():
+        if k in allowed:
+            sets.append(f"{k} = ?")
+            vals.append(v)
+    if not sets:
+        return None
+    sets.append("updated_at = ?")
+    vals.append(time.time())
+    vals.append(norm)
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(f"UPDATE subscription_keys SET {', '.join(sets)} WHERE key_code = ?", tuple(vals))
+        conn.commit()
+        c.execute("SELECT * FROM subscription_keys WHERE key_code = ?", (norm,))
+        row = c.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_user_membership_by_username(username: str, membership_dict: Optional[Dict[str, Any]]) -> bool:
+    uname = str(username or "").strip().lower()
+    if not uname:
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, settings_json FROM users WHERE LOWER(username) = ?", (uname,))
+        row = c.fetchone()
+        if not row:
+            return False
+        uid = int(row["id"])
+        try:
+            settings = json.loads(row["settings_json"] or "{}")
+            if not isinstance(settings, dict):
+                settings = {}
+        except Exception:
+            settings = {}
+        if membership_dict is None:
+            settings.pop("membership", None)
+        else:
+            settings["membership"] = membership_dict
+        c.execute("UPDATE users SET settings_json = ? WHERE id = ?", (json.dumps(settings), uid))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
 # ===================================================================================
 # DEDICATED CODING WORKSPACES / PROJECTS API
 # ===================================================================================
@@ -2036,7 +2231,7 @@ def sync_user_history(
         restored_messages = 0
         id_remap: Dict[str, str] = {}
 
-        for t in (threads or [])[:1000]:
+        for t in (threads or [])[:5000]:
             if not isinstance(t, dict) or not t.get("id"):
                 continue
             raw_tid = str(t["id"])
@@ -2060,7 +2255,7 @@ def sync_user_history(
                 restored_threads += 1
 
         msgs_by_tid: Dict[str, List[Dict[str, Any]]] = {}
-        for m in (messages or [])[:15000]:
+        for m in (messages or [])[:50000]:
             if not isinstance(m, dict) or not m.get("thread_id"):
                 continue
             raw_tid = str(m["thread_id"])

@@ -4895,6 +4895,477 @@
             gap: 10px;
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
+
+        /* ============================================================================
+           3-PLAN SUBSCRIPTIONS, ADMIN KEY VAULT, SPECIAL WELCOME & SUBSCRIBER DESIGN
+           Pure Google Antigravity Obsidian Architectural System — Zero Clutter
+        ============================================================================ */
+        html[data-aura-tier="tier_3"],
+        html[data-aura-tier="tier_4"],
+        html[data-aura-tier="tier_5"] {
+            --sub-beam: linear-gradient(90deg, rgba(129, 140, 248, 0.08), #818cf8 35%, #a78bfa 65%, rgba(167, 139, 250, 0.08));
+            --sub-glow: rgba(129, 140, 248, 0.14);
+            --sub-border: rgba(129, 140, 248, 0.36);
+            --sub-accent: #a5b4fc;
+        }
+        html[data-aura-tier="tier_4"] {
+            --sub-beam: linear-gradient(90deg, rgba(96, 165, 250, 0.08), #60a5fa 35%, #38bdf8 65%, rgba(56, 189, 248, 0.08));
+            --sub-glow: rgba(96, 165, 250, 0.16);
+            --sub-border: rgba(96, 165, 250, 0.42);
+            --sub-accent: #93c5fd;
+        }
+        html[data-aura-tier="tier_5"] {
+            --sub-beam: linear-gradient(90deg, rgba(226, 232, 240, 0.1), #f8fafc 38%, #7aa2ff 64%, rgba(226, 232, 240, 0.1));
+            --sub-glow: rgba(226, 232, 240, 0.16);
+            --sub-border: rgba(226, 232, 240, 0.42);
+            --sub-accent: #f8fafc;
+        }
+        html[data-aura-tier="tier_3"] body::before,
+        html[data-aura-tier="tier_4"] body::before,
+        html[data-aura-tier="tier_5"] body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            z-index: 9999;
+            background: var(--sub-beam);
+            pointer-events: none;
+        }
+        html[data-aura-tier="tier_3"] .top-navbar,
+        html[data-aura-tier="tier_4"] .top-navbar,
+        html[data-aura-tier="tier_5"] .top-navbar {
+            border-bottom-color: var(--sub-border) !important;
+            background: linear-gradient(180deg, var(--sub-glow), rgba(11, 12, 14, 0.94)) !important;
+        }
+        html[data-aura-tier="tier_3"] #headerTierBadge,
+        html[data-aura-tier="tier_4"] #headerTierBadge,
+        html[data-aura-tier="tier_5"] #headerTierBadge {
+            border-color: var(--sub-border) !important;
+            background: var(--sub-glow) !important;
+            color: var(--sub-accent) !important;
+            box-shadow: 0 0 18px var(--sub-glow);
+        }
+        html[data-aura-tier="tier_3"] .input-dock-card,
+        html[data-aura-tier="tier_4"] .input-dock-card,
+        html[data-aura-tier="tier_5"] .input-dock-card {
+            border-color: var(--sub-border) !important;
+            box-shadow: 0 10px 36px rgba(0, 0, 0, 0.55), 0 0 24px var(--sub-glow) !important;
+        }
+        html[data-aura-tier="tier_5"] .sidebar {
+            border-right-color: rgba(226, 232, 240, 0.18) !important;
+            background: linear-gradient(180deg, rgba(22, 24, 30, 0.98), rgba(11, 12, 14, 0.99)) !important;
+        }
+
+        /* Sidebar Executive Subscriber Crest Card */
+        .sidebar-sub-card {
+            display: none;
+            margin-bottom: 10px;
+            padding: 10px 11px;
+            border-radius: 10px;
+            border: 1px solid var(--sub-border, rgba(122, 162, 255, 0.3));
+            background: linear-gradient(135deg, var(--sub-glow, rgba(122, 162, 255, 0.1)), rgba(17, 18, 22, 0.92));
+            cursor: pointer;
+            transition: border-color 0.2s ease, transform 0.15s ease;
+        }
+        .sidebar-sub-card:hover {
+            border-color: var(--sub-accent, #7aa2ff);
+            transform: translateY(-1px);
+        }
+        html[data-aura-tier="tier_3"] .sidebar-sub-card,
+        html[data-aura-tier="tier_4"] .sidebar-sub-card,
+        html[data-aura-tier="tier_5"] .sidebar-sub-card {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .sidebar-sub-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+        .sidebar-sub-name {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--sub-accent, #f4f5f7);
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar-sub-days {
+            font-family: var(--font-code);
+            font-size: 10px;
+            color: #6ee7b7;
+            background: rgba(52, 211, 153, 0.12);
+            border: 1px solid rgba(52, 211, 153, 0.28);
+            border-radius: 999px;
+            padding: 1px 7px;
+            white-space: nowrap;
+        }
+        .sidebar-sub-meta {
+            font-family: var(--font-code);
+            font-size: 10px;
+            color: #939aa8;
+        }
+
+        /* 3-Plan Subscription Pricing Grid inside Settings */
+        .sub-plan-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+        @media (max-width: 820px) {
+            .sub-plan-grid { grid-template-columns: 1fr; }
+        }
+        .sub-plan-card {
+            position: relative;
+            background: #12141a;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .sub-plan-card.recommended {
+            border-color: rgba(122, 162, 255, 0.42);
+            background: linear-gradient(180deg, rgba(122, 162, 255, 0.08), #12141a 55%);
+        }
+        .sub-plan-card.platinum {
+            border-color: rgba(226, 232, 240, 0.34);
+            background: linear-gradient(180deg, rgba(226, 232, 240, 0.07), #12141a 55%);
+        }
+        .sub-plan-card.active-tier {
+            border-color: rgba(52, 211, 153, 0.65) !important;
+            box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.25), 0 12px 28px rgba(0, 0, 0, 0.35);
+        }
+        .sub-plan-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 6px;
+        }
+        .sub-plan-eyebrow {
+            font-family: var(--font-code);
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #8b93a3;
+        }
+        .sub-plan-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f4f5f7;
+            margin-top: 2px;
+        }
+        .sub-plan-tag {
+            font-family: var(--font-code);
+            font-size: 9.5px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(122, 162, 255, 0.35);
+            background: rgba(122, 162, 255, 0.12);
+            color: #93c5fd;
+            white-space: nowrap;
+        }
+        .sub-plan-tag.active {
+            border-color: rgba(52, 211, 153, 0.5);
+            background: rgba(52, 211, 153, 0.14);
+            color: #6ee7b7;
+        }
+        .sub-plan-price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .sub-plan-price {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.03em;
+        }
+        .sub-plan-duration {
+            font-family: var(--font-code);
+            font-size: 11px;
+            color: #939aa8;
+        }
+        .sub-plan-cap {
+            font-family: var(--font-code);
+            font-size: 11px;
+            font-weight: 600;
+            color: #a5b4fc;
+            background: rgba(122, 162, 255, 0.08);
+            border: 1px solid rgba(122, 162, 255, 0.22);
+            border-radius: 7px;
+            padding: 5px 8px;
+        }
+        .sub-plan-features {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+        .sub-plan-features li {
+            font-size: 11px;
+            color: #cbd5e1;
+            line-height: 1.38;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+        .sub-plan-features li svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: #6ee7b7;
+        }
+        .sub-wa-btn {
+            width: 100%;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid rgba(52, 211, 153, 0.42);
+            background: rgba(16, 185, 129, 0.14);
+            color: #d1fae5;
+            font-size: 11.5px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.18s ease, border-color 0.18s ease;
+        }
+        .sub-wa-btn:hover {
+            background: rgba(16, 185, 129, 0.24);
+            border-color: rgba(52, 211, 153, 0.72);
+            color: #ffffff;
+        }
+        .sub-contact-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(122, 162, 255, 0.08));
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+        .sub-expired-banner {
+            display: none;
+            padding: 11px 14px;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            color: #fecaca;
+            font-size: 12px;
+            line-height: 1.45;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .sub-quota-bar-wrap {
+            width: 100%;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .sub-quota-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: #7aa2ff;
+            transition: width 0.3s ease;
+        }
+
+        /* Exclusive Admin Key Vault & Generator (ig.ahmed.irl only) */
+        .admin-vault-card {
+            margin-top: 14px;
+            padding: 16px;
+            border-radius: 12px;
+            background: #0f1116;
+            border: 1px solid rgba(122, 162, 255, 0.32);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .admin-kpi-row {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+        }
+        @media (max-width: 720px) {
+            .admin-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .admin-kpi-box {
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: #16181f;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .admin-kpi-val {
+            font-family: var(--font-code);
+            font-size: 16px;
+            font-weight: 700;
+            color: #f4f5f7;
+        }
+        .admin-kpi-lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #8b93a3;
+        }
+        .admin-gen-grid {
+            display: grid;
+            grid-template-columns: 1.7fr 0.85fr 0.85fr 1.3fr;
+            gap: 8px;
+        }
+        @media (max-width: 760px) {
+            .admin-gen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        #adminKeyVaultSection input,
+        #adminKeyVaultSection select {
+            background: #0b0d12 !important;
+            color: #f4f5f7 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 8px !important;
+            padding: 7px 10px !important;
+            font-size: 12px !important;
+            outline: none;
+        }
+        #adminKeyVaultSection input:focus,
+        #adminKeyVaultSection select:focus {
+            border-color: rgba(122, 162, 255, 0.6) !important;
+            box-shadow: 0 0 0 2px rgba(122, 162, 255, 0.16);
+        }
+        .admin-key-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 9px 10px;
+            border-radius: 8px;
+            background: #15171e;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .admin-key-code {
+            font-family: var(--font-code);
+            font-size: 11px;
+            font-weight: 700;
+            color: #f4f5f7;
+            letter-spacing: 0.03em;
+        }
+        .admin-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-family: var(--font-code);
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .admin-pill.active { color: #6ee7b7; border-color: rgba(52, 211, 153, 0.35); background: rgba(52, 211, 153, 0.1); }
+        .admin-pill.unused { color: #93c5fd; border-color: rgba(122, 162, 255, 0.35); background: rgba(122, 162, 255, 0.1); }
+        .admin-pill.expired { color: #fde68a; border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.1); }
+        .admin-pill.disabled { color: #fca5a5; border-color: rgba(248, 113, 113, 0.35); background: rgba(248, 113, 113, 0.1); }
+
+        /* Special Subscriber Activation Welcome Modal */
+        .sub-welcome-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100020;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(6, 7, 10, 0.84);
+            backdrop-filter: blur(14px);
+            animation: subWelcomeFade 0.28s ease;
+        }
+        .sub-welcome-overlay.open { display: flex; }
+        @keyframes subWelcomeFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .sub-welcome-shell {
+            position: relative;
+            width: 100%;
+            max-width: 620px;
+            max-height: 92vh;
+            overflow-y: auto;
+            border-radius: 18px;
+            background: radial-gradient(circle at top center, rgba(122, 162, 255, 0.16), #0d0f14 55%);
+            border: 1px solid rgba(122, 162, 255, 0.42);
+            box-shadow: 0 32px 90px rgba(0, 0, 0, 0.85), 0 0 60px rgba(122, 162, 255, 0.14);
+            padding: 28px 26px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sub-welcome-crest {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(122, 162, 255, 0.25), rgba(167, 139, 250, 0.18));
+            border: 1px solid rgba(122, 162, 255, 0.55);
+            box-shadow: 0 0 34px rgba(122, 162, 255, 0.28);
+            color: #ffffff;
+        }
+        .sub-welcome-kpis {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+        @media (max-width: 560px) {
+            .sub-welcome-kpis { grid-template-columns: 1fr; }
+        }
+        .sub-welcome-kpi {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+        }
+        .sub-welcome-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+        @media (max-width: 560px) {
+            .sub-welcome-grid { grid-template-columns: 1fr; }
+        }
+        .sub-welcome-feat {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 9px 10px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            font-size: 11.5px;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -4954,6 +5425,13 @@
         </div>
 
         <div class="sidebar-footer">
+            <div class="sidebar-sub-card" id="sidebarSubCard" onclick="openModelSettings('membership')" title="View Active Subscription & Quota">
+                <div class="sidebar-sub-top">
+                    <span class="sidebar-sub-name" id="sidebarSubName">AURA Sovereign</span>
+                    <span class="sidebar-sub-days" id="sidebarSubDays">20d left</span>
+                </div>
+                <div class="sidebar-sub-meta" id="sidebarSubMeta">100 chats/day · Active Suite</div>
+            </div>
             <div class="user-profile-row">
                 <div class="user-meta-left">
                     <div class="user-avatar-circle" id="userAvatar">U</div>
@@ -6023,7 +6501,7 @@
                     <div class="settings-nav-section-lbl">Account</div>
                     <button type="button" class="settings-nav-btn" id="settingsNav_membership" onclick="switchSettingsTab('membership')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                        <span>Membership &amp; Keys</span>
+                        <span>Subscriptions &amp; Keys</span>
                     </button>
                     <button type="button" class="settings-nav-btn" id="settingsNav_memory" onclick="switchSettingsTab('memory')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
@@ -6182,26 +6660,141 @@
                         </div>
                     </div>
 
-                    <!-- TAB 3: MEMBERSHIP & ACTIVATION KEYS -->
+                    <!-- TAB 3: SUBSCRIPTIONS, ACTIVATION KEYS & EXCLUSIVE ADMIN VAULT -->
                     <div class="settings-tab-pane" id="settingsTab_membership">
                         <div class="settings-pane-head">
                             <div>
-                                <h3>Membership &amp; Activation Keys</h3>
-                                <p>Activate an administrator-issued cryptographic key to unlock Tier 1–5 engineering tools, themes, and expanded capacity.</p>
+                                <h3>AURA Subscriptions &amp; Activation Keys</h3>
+                                <p>Upgrade your workspace with time-bound activation keys. All plans auto-deactivate on expiry and can be renewed anytime on your same key.</p>
                             </div>
-                            <span id="settingsMembershipBadge" class="tier-header-pill">STANDARD · 1X</span>
+                            <span id="settingsMembershipBadge" class="tier-header-pill">STANDARD</span>
                         </div>
 
-                        <div id="membershipSettingsSection" class="membership-card-box" style="padding:18px; border-radius:14px;">
-                            <div id="settingsQuotaSummary" style="font-size:12px; font-family:var(--font-code); color:#e4e4e7; background:rgba(0,0,0,0.4); padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">Daily Quota: 0 / 30 chats (24h rolling refresh)</div>
-                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                                <input id="membershipKeyInput" type="text" placeholder="AURA-XXXX-XXXX-XXXX-XXXX" autocomplete="off" style="flex:1; min-width:200px; margin:0; font-family:var(--font-code); text-transform:uppercase; letter-spacing:0.05em;">
-                                <button type="button" class="settings-inline-toggle" onclick="toggleSecretInputVisibility('membershipKeyInput', this)">Hide</button>
-                                <button type="button" id="btnActivateMembershipKey" class="settings-btn-primary" onclick="activateMembershipKeyFromSettings()">Activate Key</button>
-                                <button type="button" id="btnDeactivateMembership" class="settings-btn-ghost" onclick="deactivateMembershipFromSettings()" style="display:none;">Reset Tier</button>
+                        <div id="membershipSettingsSection" class="membership-card-box" style="padding:16px; border-radius:14px; display:flex; flex-direction:column; gap:14px;">
+                            <!-- Active Plan & Quota Telemetry -->
+                            <div style="background:rgba(0,0,0,0.42); padding:11px 13px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                                    <div id="settingsQuotaSummary" style="font-size:12px; font-family:var(--font-code); color:#e4e4e7;">Daily Quota: 0 / 30 chats (24h rolling refresh)</div>
+                                    <div id="settingsExpiryBadge" style="font-size:11px; font-family:var(--font-code); color:#6ee7b7;">Free Standard Plan</div>
+                                </div>
+                                <div class="sub-quota-bar-wrap"><div class="sub-quota-bar-fill" id="settingsQuotaBarFill" style="width:0%;"></div></div>
                             </div>
-                            <div id="membershipActivateStatus" style="font-size:12px; color:#a1a1aa; min-height:16px;"></div>
-                            <div id="membershipTierMatrix" class="membership-tier-grid"></div>
+
+                            <!-- Expired / Disabled Renewal Alert -->
+                            <div id="subExpiredBanner" class="sub-expired-banner">
+                                <span id="subExpiredText"></span>
+                                <a href="https://wa.me/919640875528?text=Hi%20AURA%20Team%2C%20my%20subscription%20key%20expired%20and%20I%20would%20like%20to%20renew%20it." target="_blank" rel="noopener noreferrer" class="sub-wa-btn" style="width:auto; padding:0 12px; height:30px;">Renew on WhatsApp</a>
+                            </div>
+
+                            <!-- Activation Key Input Row -->
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <label for="membershipKeyInput" style="font-size:11px; font-weight:600; color:#a1a1aa; text-transform:uppercase; letter-spacing:0.06em;">Activate Subscription Key</label>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <input id="membershipKeyInput" type="text" placeholder="AURA-SOV-20D-XXXXXX-XXXXXXXX" autocomplete="off" style="flex:1; min-width:210px; margin:0; font-family:var(--font-code); text-transform:uppercase; letter-spacing:0.05em;" onkeydown="if(event.key==='Enter'){activateMembershipKeyFromSettings();}">
+                                    <button type="button" class="settings-inline-toggle" onclick="toggleSecretInputVisibility('membershipKeyInput', this)">Hide</button>
+                                    <button type="button" id="btnActivateMembershipKey" class="settings-btn-primary" onclick="activateMembershipKeyFromSettings()">Activate Subscription</button>
+                                    <button type="button" id="btnDeactivateMembership" class="settings-btn-ghost" onclick="deactivateMembershipFromSettings()" style="display:none;">Switch to Free</button>
+                                </div>
+                                <div id="membershipActivateStatus" style="font-size:12px; color:#a1a1aa; min-height:16px;"></div>
+                            </div>
+
+                            <!-- 3 Flagship Subscription Plan Cards -->
+                            <div id="membershipTierMatrix" class="sub-plan-grid"></div>
+
+                            <!-- Direct Purchase & Renewal Contact Strip (+91 9640875528) -->
+                            <div class="sub-contact-banner">
+                                <div>
+                                    <div style="font-size:12.5px; font-weight:700; color:#f4f5f7;">Get Your Key or Renew Anytime via Direct Message</div>
+                                    <div style="font-size:11.5px; color:#cbd5e1; margin-top:2px;">Message directly on WhatsApp / SMS: <strong style="font-family:var(--font-code); color:#6ee7b7;">+91 9640875528</strong></div>
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <button type="button" class="settings-btn-ghost" onclick="copySubscriptionNumber()" style="height:32px; font-size:11.5px;">Copy +91 9640875528</button>
+                                    <a id="subDirectWaLink" href="https://wa.me/919640875528?text=Hi%20AURA%20Team%2C%20I%20want%20to%20get%20an%20AURA%20Subscription%20Key." target="_blank" rel="noopener noreferrer" class="sub-wa-btn" style="width:auto; padding:0 14px; height:32px;">Message on WhatsApp</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EXCLUSIVE ADMIN KEY VAULT & GENERATOR (Strictly visible ONLY for @ig.ahmed.irl) -->
+                        <div id="adminKeyVaultSection" class="admin-vault-card" style="display:none;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                                <div>
+                                    <div style="font-family:var(--font-code); font-size:10px; font-weight:700; color:#7aa2ff; letter-spacing:0.08em; text-transform:uppercase;">Exclusive Admin Control · @ig.ahmed.irl</div>
+                                    <div style="font-size:14px; font-weight:700; color:#f4f5f7; margin-top:2px;">Subscription Key Generator, Renewal &amp; Kill-Switch Vault</div>
+                                </div>
+                                <button type="button" id="btnLockAdminVault" class="settings-btn-ghost" onclick="lockAdminKeyVault()" style="display:none; height:30px; font-size:11px;">Lock Vault</button>
+                            </div>
+
+                            <!-- Locked Password Prompt -->
+                            <div id="adminKeyVaultLocked" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <input id="adminVaultPasswordInput" type="password" placeholder="Enter Admin Vault Password..." autocomplete="off" style="flex:1; min-width:200px; margin:0;" onkeydown="if(event.key==='Enter'){unlockAdminKeyVaultFromUI();}">
+                                <button type="button" id="btnUnlockAdminVault" class="settings-btn-primary" onclick="unlockAdminKeyVaultFromUI()">Unlock Key Generator</button>
+                                <div id="adminVaultAuthMsg" style="width:100%; font-size:11.5px; color:#fca5a5;"></div>
+                            </div>
+
+                            <!-- Unlocked Full Key Generator & Live Registry -->
+                            <div id="adminKeyVaultUnlocked" style="display:none; flex-direction:column; gap:12px;">
+                                <div class="admin-kpi-row">
+                                    <div class="admin-kpi-box"><div class="admin-kpi-val" id="admKpiTotal">0</div><div class="admin-kpi-lbl">Total Keys</div></div>
+                                    <div class="admin-kpi-box"><div class="admin-kpi-val" id="admKpiActive" style="color:#6ee7b7;">0</div><div class="admin-kpi-lbl">Active</div></div>
+                                    <div class="admin-kpi-box"><div class="admin-kpi-val" id="admKpiUnused" style="color:#93c5fd;">0</div><div class="admin-kpi-lbl">Unused</div></div>
+                                    <div class="admin-kpi-box"><div class="admin-kpi-val" id="admKpiExpired" style="color:#fde68a;">0</div><div class="admin-kpi-lbl">Expired</div></div>
+                                    <div class="admin-kpi-box"><div class="admin-kpi-val" id="admKpiDisabled" style="color:#fca5a5;">0</div><div class="admin-kpi-lbl">Disabled</div></div>
+                                </div>
+
+                                <!-- Key Generator Form -->
+                                <div style="padding:12px; border-radius:10px; background:#14161d; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:10px;">
+                                    <div style="font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:0.06em;">Generate New Time-Limited Keys</div>
+                                    <div class="admin-gen-grid">
+                                        <div>
+                                            <label for="admGenTier" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Subscription Plan</label>
+                                            <select id="admGenTier" onchange="syncAdminDefaultDays()" style="width:100%; margin:0;">
+                                                <option value="tier_3">Plan 1 · Sovereign (₹40 · 100/day)</option>
+                                                <option value="tier_4">Plan 2 · Titan (₹99 · 300/day)</option>
+                                                <option value="tier_5">Plan 3 · Apex Omnis (₹199 · Unlimited)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="admGenDays" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Duration (Days)</label>
+                                            <input id="admGenDays" type="number" min="1" max="365" value="20" style="width:100%; margin:0;">
+                                        </div>
+                                        <div>
+                                            <label for="admGenCount" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Quantity (1–25)</label>
+                                            <input id="admGenCount" type="number" min="1" max="25" value="1" style="width:100%; margin:0;">
+                                        </div>
+                                        <div>
+                                            <label for="admGenNote" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Buyer Name / Note</label>
+                                            <input id="admGenNote" type="text" placeholder="e.g. Rahul · UPI paid" style="width:100%; margin:0;">
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                                        <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                                            <span style="font-size:10.5px; color:#8b93a3;">Quick Days:</span>
+                                            <button type="button" class="settings-inline-toggle" onclick="document.getElementById('admGenDays').value='7'">7d</button>
+                                            <button type="button" class="settings-inline-toggle" onclick="document.getElementById('admGenDays').value='15'">15d</button>
+                                            <button type="button" class="settings-inline-toggle" onclick="document.getElementById('admGenDays').value='20'">20d</button>
+                                            <button type="button" class="settings-inline-toggle" onclick="document.getElementById('admGenDays').value='30'">30d</button>
+                                            <button type="button" class="settings-inline-toggle" onclick="document.getElementById('admGenDays').value='60'">60d</button>
+                                            <button type="button" class="settings-inline-toggle" onclick="document.getElementById('admGenDays').value='90'">90d</button>
+                                        </div>
+                                        <button type="button" id="btnAdminGenerateKeys" class="settings-btn-primary" onclick="adminGenerateKeysFromUI()">Generate Key(s)</button>
+                                    </div>
+                                    <div id="adminGeneratedOutput" style="display:none; padding:10px; border-radius:8px; background:rgba(16,185,129,0.08); border:1px solid rgba(52,211,153,0.3); flex-direction:column; gap:6px;"></div>
+                                </div>
+
+                                <!-- Search & Manage All Issued Keys (Renew / Disable / Re-Enable / Unbind) -->
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <input id="admKeySearchInput" type="search" placeholder="Search by key code, @username, or buyer note..." oninput="loadAdminKeysList()" style="flex:1; min-width:180px; margin:0;">
+                                    <select id="admKeyStatusFilter" onchange="loadAdminKeysList()" style="width:130px; margin:0;">
+                                        <option value="all">All Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="unused">Unused</option>
+                                        <option value="expired">Expired</option>
+                                        <option value="disabled">Disabled</option>
+                                    </select>
+                                    <button type="button" class="settings-btn-ghost" onclick="loadAdminKeysList()" style="height:34px;">Refresh</button>
+                                </div>
+                                <div id="adminKeysListWrap" style="display:flex; flex-direction:column; gap:7px; max-height:310px; overflow-y:auto;"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -6363,7 +6956,43 @@
         </section>
     </div>
 
-    <!-- ---------------- Pro & Apex Omnis Engineering Studio Modal (Tiers 1–5) ---------------- -->
+    <!-- ---------------- Special Subscriber Activation Welcome Overlay ---------------- -->
+    <div class="sub-welcome-overlay" id="auraSubWelcomeOverlay" role="dialog" aria-modal="true" aria-label="Subscription Activated Welcome" onclick="if(event.target===this) closeSubWelcomeModal()">
+        <div class="sub-welcome-shell" onclick="event.stopPropagation()">
+            <div class="sub-welcome-crest" id="subWelcomeCrest">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div style="text-align:center;">
+                <div id="subWelcomeEyebrow" style="font-family:var(--font-code); font-size:10.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#7aa2ff;">SUBSCRIPTION ACTIVATED</div>
+                <h2 id="subWelcomeTitle" style="font-size:23px; font-weight:800; color:#ffffff; letter-spacing:-0.025em; margin:6px 0 4px;">Welcome to AURA Sovereign</h2>
+                <p id="subWelcomeSub" style="font-size:12.5px; color:#939aa8; margin:0;">Your upgraded workspace theme and flagship engineering capabilities are now active.</p>
+            </div>
+            <div class="sub-welcome-kpis">
+                <div class="sub-welcome-kpi">
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Daily Chat Limit</div>
+                    <div id="subWelcomeKpiLimit" style="font-family:var(--font-code); font-size:14px; font-weight:700; color:#ffffff; margin-top:3px;">100 / Day</div>
+                </div>
+                <div class="sub-welcome-kpi">
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Validity Window</div>
+                    <div id="subWelcomeKpiExpiry" style="font-family:var(--font-code); font-size:14px; font-weight:700; color:#6ee7b7; margin-top:3px;">20 Days</div>
+                </div>
+                <div class="sub-welcome-kpi">
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Unlocked Suite</div>
+                    <div id="subWelcomeKpiSuite" style="font-family:var(--font-code); font-size:14px; font-weight:700; color:#a5b4fc; margin-top:3px;">Flagship</div>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:10.5px; font-weight:700; color:#8b93a3; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Newly Unlocked Capabilities</div>
+                <div class="sub-welcome-grid" id="subWelcomeFeaturesGrid"></div>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:4px;">
+                <button type="button" class="settings-btn-primary" onclick="closeSubWelcomeModal()" style="min-width:190px; height:38px;">Enter Upgraded Workspace</button>
+                <button type="button" class="settings-btn-ghost" onclick="closeSubWelcomeModal(); openApexStudio();" style="height:38px;">Open Engineering Studio</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ---------------- Pro & Apex Omnis Engineering Studio Modal (3 Flagship Plans) ---------------- -->
     <div class="apex-studio-overlay" id="apexStudioOverlay" role="dialog" aria-modal="true" aria-label="AURA Engineering Studio" onclick="if(event.target===this) closeApexStudio()">
         <div class="apex-studio-shell" onclick="event.stopPropagation()">
             <div class="apex-studio-header">
@@ -7670,6 +8299,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 loadUserMemoriesInspector();
             } else if (next === 'membership' && typeof renderMembershipTierMatrix === 'function') {
                 renderMembershipTierMatrix();
+                if (typeof refreshMembershipStatus === 'function') refreshMembershipStatus();
+                if (typeof updateAdminKeyVaultVisibility === 'function') updateAdminKeyVaultVisibility();
             }
         }
 
@@ -8287,10 +8918,133 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             return vault;
         }
 
-        async function saveUserVault(vaultObj) {
-            // Only accept v2 credential-free vaults scoped strictly to the signed-in username
+        function _isGenericThreadTitle(title) {
+            const t = String(title || '').trim().toLowerCase();
+            return !t || t === 'new session' || t === 'new conversation' || t === 'restored conversation' || t === 'saved conversation' || t === 'welcome & overview';
+        }
+
+        function mergeThreadLists(primaryThreads, secondaryThreads, deletedIdsSet = lastDeletedThreadIds) {
+            const byId = new Map();
+            const ingest = (arr) => {
+                if (!Array.isArray(arr)) return;
+                arr.forEach(t => {
+                    if (!t || !t.id) return;
+                    const id = String(t.id);
+                    if (deletedIdsSet && deletedIdsSet.has(id)) return;
+                    const prev = byId.get(id);
+                    if (!prev) {
+                        byId.set(id, Object.assign({}, t, { id }));
+                    } else {
+                        const nextTitle = (!_isGenericThreadTitle(t.title)) ? t.title : (!_isGenericThreadTitle(prev.title) ? prev.title : (t.title || prev.title));
+                        const prevTs = String(prev.updated_at || prev.created_at || '');
+                        const curTs = String(t.updated_at || t.created_at || '');
+                        byId.set(id, {
+                            ...prev,
+                            ...t,
+                            id,
+                            title: nextTitle || 'Conversation',
+                            is_pinned: Boolean(t.is_pinned !== undefined ? t.is_pinned : prev.is_pinned),
+                            updated_at: curTs >= prevTs ? (curTs || prevTs) : prevTs,
+                        });
+                    }
+                });
+            };
+            ingest(secondaryThreads);
+            ingest(primaryThreads);
+            return Array.from(byId.values()).sort((a, b) => {
+                const pinDiff = (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+                if (pinDiff !== 0) return pinDiff;
+                return String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || ''));
+            });
+        }
+
+        function _mergeVaultPayloads(existingVault, incomingVault, opts = {}) {
+            const deletedId = opts.deletedThreadId ? String(opts.deletedThreadId) : '';
+            const deletedSet = new Set(lastDeletedThreadIds || []);
+            if (deletedId) deletedSet.add(deletedId);
+
+            const exP = (existingVault && existingVault.payload && typeof existingVault.payload === 'object') ? existingVault.payload : {};
+            const inP = (incomingVault && incomingVault.payload && typeof incomingVault.payload === 'object') ? incomingVault.payload : {};
+
+            const mergedThreads = mergeThreadLists(inP.threads || [], exP.threads || [], deletedSet);
+
+            // Group messages by thread_id and preserve the richest/union history per thread (never lose older chats across cold serverless containers!)
+            const groupByTid = (arr) => {
+                const m = new Map();
+                (Array.isArray(arr) ? arr : []).forEach(msg => {
+                    if (!msg || !msg.thread_id) return;
+                    const tid = String(msg.thread_id);
+                    if (deletedSet.has(tid)) return;
+                    if (!m.has(tid)) m.set(tid, []);
+                    m.get(tid).push(msg);
+                });
+                return m;
+            };
+            const exByTid = groupByTid(exP.messages);
+            const inByTid = groupByTid(inP.messages);
+            const allTids = new Set([...exByTid.keys(), ...inByTid.keys()]);
+            const mergedMessages = [];
+            allTids.forEach(tid => {
+                const exList = exByTid.get(tid) || [];
+                const inList = inByTid.get(tid) || [];
+                if (!exList.length) {
+                    mergedMessages.push(...inList);
+                } else if (!inList.length) {
+                    mergedMessages.push(...exList);
+                } else if (inList.length >= exList.length) {
+                    mergedMessages.push(...inList);
+                } else {
+                    // Existing browser archive has more messages for this thread; append any tail messages from incoming that aren't already at end
+                    const merged = exList.slice();
+                    const seenTail = new Set(exList.map(x => `${x.role}::${String(x.content || '')}`));
+                    inList.forEach(x => {
+                        const k = `${x.role}::${String(x.content || '')}`;
+                        if (!seenTail.has(k)) {
+                            merged.push(x);
+                            seenTail.add(k);
+                        }
+                    });
+                    mergedMessages.push(...merged);
+                }
+            });
+
+            // Union memories by key
+            const memMap = new Map();
+            [...(Array.isArray(exP.user_memories) ? exP.user_memories : []), ...(Array.isArray(inP.user_memories) ? inP.user_memories : [])].forEach(mm => {
+                if (mm && mm.key) memMap.set(String(mm.key), mm);
+            });
+
+            // Union projects by id
+            const projMap = new Map();
+            [...(Array.isArray(exP.projects) ? exP.projects : []), ...(Array.isArray(inP.projects) ? inP.projects : [])].forEach(pr => {
+                if (pr && pr.id) projMap.set(String(pr.id), pr);
+            });
+
+            const baseEnvelope = incomingVault && typeof incomingVault === 'object' ? Object.assign({}, incomingVault) : Object.assign({}, existingVault || {});
+            // Preserve valid server signature only when payload wasn't widened beyond incomingVault
+            const incomingIds = new Set((inP.threads || []).map(t => String(t && t.id || '')));
+            const widened = mergedThreads.some(t => !incomingIds.has(String(t.id))) || mergedMessages.length > ((inP.messages || []).length);
+            return {
+                ...baseEnvelope,
+                version: 2,
+                username: String(baseEnvelope.username || (inP.user && inP.user.username) || (exP.user && exP.user.username) || '').trim().toLowerCase(),
+                credentials_excluded: true,
+                signature: widened ? '' : (baseEnvelope.signature || ''),
+                payload: {
+                    user: inP.user || exP.user || {},
+                    threads: mergedThreads,
+                    messages: mergedMessages,
+                    user_memories: Array.from(memMap.values()),
+                    projects: Array.from(projMap.values()),
+                }
+            };
+        }
+
+        async function saveUserVault(vaultObj, opts = {}) {
+            // Non-destructive UNION-MERGE vault writer scoped strictly to the signed-in username.
+            // Prevents ephemeral serverless cold starts from ever wiping previous chat history!
             if (!vaultObj || typeof vaultObj !== 'object') return false;
-            const uname = String(vaultObj.username || (vaultObj.payload && vaultObj.payload.username) || '').trim().toLowerCase();
+            const uname = String(vaultObj.username || (vaultObj.payload && vaultObj.payload.username) || (currentUser && currentUser.username) || '').trim().toLowerCase();
             if (!uname) return false;
             if (currentUser && currentUser.username && String(currentUser.username).trim().toLowerCase() !== uname) {
                 return false;
@@ -8299,9 +9053,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 return false;
             }
             try {
-                await AuraVaultDB.set(uname, vaultObj);
-                // Keep a compact mirror in localStorage when small for legacy fast login restore; never share across users
-                const serialized = JSON.stringify(vaultObj);
+                const existing = opts.replaceAll ? null : await loadIsolatedUserVault(uname);
+                const toStore = existing ? _mergeVaultPayloads(existing, vaultObj, opts) : _mergeVaultPayloads(null, vaultObj, opts);
+                await AuraVaultDB.set(uname, toStore);
+                // Keep a compact mirror in localStorage when small; full unlimited archive always lives in IndexedDB AuraVaultDB
+                const serialized = JSON.stringify(toStore);
                 if (serialized.length < 1800000) {
                     localStorage.setItem('aura_user_vault_' + uname, serialized);
                 } else {
@@ -8312,6 +9068,30 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             } catch (e) {
                 return false;
             }
+        }
+
+        async function recordLocalChatTurn(threadId, userText, assistantReply, tools = []) {
+            if (!currentUser || !currentUser.username || !threadId) return;
+            const uname = String(currentUser.username).trim().toLowerCase();
+            const nowIso = new Date().toISOString();
+            const cleanFirst = String(userText || '').trim().split('\n')[0].trim();
+            const autoTitle = cleanFirst.length > 42 ? (cleanFirst.slice(0, 42) + '...') : (cleanFirst || 'Conversation');
+            const turnVault = {
+                version: 2,
+                username: uname,
+                credentials_excluded: true,
+                payload: {
+                    user: { username: uname, display_name: currentUser.display_name || uname },
+                    threads: [{ id: String(threadId), title: autoTitle, is_pinned: 0, updated_at: nowIso }],
+                    messages: [
+                        { thread_id: String(threadId), role: 'user', content: String(userText || ''), tools_json: null, created_at: nowIso },
+                        { thread_id: String(threadId), role: 'assistant', content: String(assistantReply || ''), tools_json: (Array.isArray(tools) && tools.length) ? JSON.stringify(tools) : null, created_at: nowIso }
+                    ],
+                    user_memories: [],
+                    projects: []
+                }
+            };
+            await saveUserVault(turnVault);
         }
 
         async function syncVaultPayloadToServer(vaultObj, opts = {}) {
@@ -8349,6 +9129,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 localStorage.removeItem('aura_csrf_token');
                 sessionStorage.removeItem('aura_auth_token');
                 sessionStorage.removeItem('aura_csrf_token');
+                sessionStorage.removeItem('aura_admin_vault_token');
+                const admSec = document.getElementById('adminKeyVaultSection');
+                if (admSec) admSec.style.display = 'none';
 
                 const removeSpecific = String(opts.removeUser || '').trim().toLowerCase();
                 if (removeSpecific) {
@@ -9989,18 +10772,28 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                                         turnData.thinking.style.display = 'none';
                                         accumulatedMarkdown = eventData.reply || accumulatedMarkdown;
                                         turnData.bubble.innerHTML = renderMarkdown(accumulatedMarkdown);
+                                        const activeTid = eventData.thread_id || currentThreadId;
                                         if (eventData.thread_id) {
                                             setScopedActiveThread(eventData.thread_id);
                                         }
                                         if ((eventData.membership || eventData.quota) && typeof applyMembershipStateUI === 'function') {
                                             applyMembershipStateUI(eventData.membership, eventData.quota);
                                         }
+                                        // Non-destructive merge: NEVER drop prior chats on cold serverless containers
                                         if (eventData.user_vault) {
                                             await saveUserVault(eventData.user_vault);
+                                        } else if (activeTid) {
+                                            await recordLocalChatTurn(activeTid, text, accumulatedMarkdown, eventData.tools || []);
                                         }
+                                        const mergedVault = currentUser && currentUser.username ? await loadIsolatedUserVault(currentUser.username) : null;
+                                        const vaultThreads = (mergedVault && mergedVault.payload && Array.isArray(mergedVault.payload.threads)) ? mergedVault.payload.threads : [];
                                         if (Array.isArray(eventData.threads)) {
-                                            cachedThreads = eventData.threads;
+                                            cachedThreads = mergeThreadLists(eventData.threads, [...cachedThreads, ...vaultThreads]);
                                             applyThreadSearchAndRender();
+                                            const srvIds = new Set(eventData.threads.map(t => String(t.id)));
+                                            if (mergedVault && vaultThreads.some(t => t && t.id && !srvIds.has(String(t.id)) && !lastDeletedThreadIds.has(String(t.id)))) {
+                                                syncVaultPayloadToServer(mergedVault).catch(() => {});
+                                            }
                                         } else {
                                             await loadThreads(false);
                                         }
@@ -10196,7 +10989,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     }
                 }
 
-                cachedThreads = serverThreads;
+                cachedThreads = mergeThreadLists(serverThreads, vaultThreads);
                 applyThreadSearchAndRender();
             } catch (e) {
                 console.error('Failed to load threads:', e);
@@ -10343,8 +11136,13 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 });
                 const data = await safeParseJson(res);
                 if (data && data.user_vault) {
-                    await saveUserVault(data.user_vault);
+                    await saveUserVault(data.user_vault, { deletedThreadId: id });
+                } else if (currentUser && currentUser.username) {
+                    const curV = await loadIsolatedUserVault(currentUser.username);
+                    if (curV) await saveUserVault(curV, { deletedThreadId: id });
                 }
+                cachedThreads = cachedThreads.filter(t => String(t.id) !== String(id));
+                applyThreadSearchAndRender();
                 if (currentThreadId === id) {
                     createNewChatSession();
                 }
@@ -12973,6 +13771,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     closeComposerPopovers();
                     closeWallpaperQuickPopover();
                     if (typeof closeApexStudio === 'function') closeApexStudio();
+                    if (typeof closeSubWelcomeModal === 'function') closeSubWelcomeModal();
                     if (voiceOverlay && voiceOverlay.style.display === 'flex') closeVoiceCallHud();
                     if (jarvisOverlay && jarvisOverlay.style.display === 'flex') closeJarvisConsole();
                 }
@@ -12980,13 +13779,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         })();
 
         // =========================================================================
-        // 5-TIER MEMBERSHIP ENGINE, 24H QUOTA UI & APEX OMNIS ENGINEERING STUDIO
+        // 3-PLAN SUBSCRIPTIONS, SPECIAL WELCOME MODAL & ADMIN KEY VAULT (ig.ahmed.irl)
         // =========================================================================
-        let activeMembershipState = { id: 'tier_0', rank: 0, name: 'AURA Standard', badge: 'STANDARD', multiplier: '1x', daily_limit: 30, unlimited: false, aura_rules: '' };
+        const SUB_WHATSAPP_DIGITS = '919640875528';
+        const SUB_WHATSAPP_DISPLAY = '+91 9640875528';
+        let activeMembershipState = { id: 'tier_0', plan_number: 0, rank: 0, name: 'AURA Standard', badge: 'STANDARD', multiplier: 'FREE', daily_limit: 30, unlimited: false, aura_rules: '', subscription_active: false };
         let activeQuotaState = { used: 0, limit: 30, remaining: 30, unlimited: false, reset_label: '24h rolling' };
         let cachedMembershipTiers = [];
         let attachedContextFiles = [];
         let lastApexPipelineResult = null;
+        let lastAdminKeyList = [];
+        let activeAdminRenewCode = '';
 
         function _membershipProofStorageKey() {
             const uname = (currentUser && currentUser.username) ? String(currentUser.username).toLowerCase() : 'anon';
@@ -12998,6 +13801,15 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (activeMembershipState && activeMembershipState.membership_proof) return activeMembershipState.membership_proof;
                 return localStorage.getItem(_membershipProofStorageKey()) || '';
             } catch (_) { return ''; }
+        }
+
+        function getAdminVaultToken() {
+            try { return sessionStorage.getItem('aura_admin_vault_token') || ''; } catch (_) { return ''; }
+        }
+
+        function isCurrentUserKeyAdmin() {
+            const uname = String((currentUser && currentUser.username) || '').trim().toLowerCase();
+            return uname === 'ig.ahmed.irl';
         }
 
         function getAttachedContextFiles() {
@@ -13029,6 +13841,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (listEl && listEl.dataset.loaded === '1') loadStudioWorkspaceIndex();
         }
 
+        function copySubscriptionNumber() {
+            try { navigator.clipboard.writeText(SUB_WHATSAPP_DISPLAY); } catch (_) {}
+            if (typeof showBridgeToast === 'function') showBridgeToast(`Copied ${SUB_WHATSAPP_DISPLAY} for WhatsApp / SMS.`, '#34d399');
+        }
+
+        function _buildPlanWhatsAppUrl(plan) {
+            const uname = (currentUser && currentUser.username) ? `@${currentUser.username}` : 'my AURA account';
+            const msg = `Hi AURA Team, I want to purchase Plan ${plan.plan_number} (${plan.name} - ${plan.price_label} / ${plan.duration_label}) for ${uname}.`;
+            return `https://wa.me/${SUB_WHATSAPP_DIGITS}?text=${encodeURIComponent(msg)}`;
+        }
+
         function applyMembershipStateUI(membership, quota, tiersList) {
             if (membership && typeof membership === 'object') {
                 activeMembershipState = Object.assign({}, activeMembershipState, membership);
@@ -13049,38 +13872,87 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
             const tierId = activeMembershipState.id || 'tier_0';
             const rank = Number(activeMembershipState.rank || 0);
+            const isSub = rank >= 3;
             document.documentElement.setAttribute('data-aura-tier', tierId);
 
             const badgeText = activeMembershipState.badge || 'STANDARD';
+            const daysInt = Number(activeMembershipState.days_remaining_int || 0);
+            const expLabel = activeMembershipState.expires_label || '';
+
             const hdrBadge = document.getElementById('headerTierBadge');
-            if (hdrBadge) hdrBadge.textContent = badgeText;
+            if (hdrBadge) {
+                hdrBadge.textContent = isSub && daysInt > 0 ? `${activeMembershipState.short_name.toUpperCase()} · ${daysInt}D` : badgeText;
+                hdrBadge.title = isSub && expLabel ? `${activeMembershipState.name} · Expires ${expLabel}` : 'View Subscriptions & Plans';
+            }
             const setBadge = document.getElementById('settingsMembershipBadge');
             if (setBadge) setBadge.textContent = badgeText;
             const studioPill = document.getElementById('studioTierPill');
             if (studioPill) studioPill.textContent = badgeText;
             const deactBtn = document.getElementById('btnDeactivateMembership');
-            if (deactBtn) deactBtn.style.display = rank > 0 ? 'inline-flex' : 'none';
+            if (deactBtn) deactBtn.style.display = isSub ? 'inline-flex' : 'none';
+
+            // Update Executive Sidebar Subscriber Crest Card
+            const sbName = document.getElementById('sidebarSubName');
+            const sbDays = document.getElementById('sidebarSubDays');
+            const sbMeta = document.getElementById('sidebarSubMeta');
+            if (sbName) sbName.textContent = activeMembershipState.name || 'AURA Standard';
+            if (sbDays) sbDays.textContent = isSub && daysInt > 0 ? `${daysInt}d left` : 'Active';
+            if (sbMeta) {
+                const capTxt = activeQuotaState.unlimited ? 'Unlimited chats' : `${activeQuotaState.limit || 100} chats/day`;
+                sbMeta.textContent = expLabel ? `${capTxt} · Exp ${expLabel}` : capTxt;
+            }
+
+            // Active Plan Expiry & Quota Progress Bar
+            const expBadge = document.getElementById('settingsExpiryBadge');
+            if (expBadge) {
+                if (isSub && expLabel) {
+                    expBadge.style.color = '#6ee7b7';
+                    const dFloor = activeMembershipState.days_remaining_floor !== undefined ? Number(activeMembershipState.days_remaining_floor) : Math.max(0, daysInt - 1);
+                    expBadge.textContent = `${dFloor}d ${activeMembershipState.hours_remaining || 0}h left · Expires ${expLabel}`;
+                } else {
+                    expBadge.style.color = '#939aa8';
+                    expBadge.textContent = 'Free Standard Plan';
+                }
+            }
+            const expBanner = document.getElementById('subExpiredBanner');
+            const expText = document.getElementById('subExpiredText');
+            if (expBanner && expText) {
+                if (activeMembershipState.expired_notice) {
+                    expBanner.style.display = 'flex';
+                    expText.textContent = activeMembershipState.expired_notice;
+                } else {
+                    expBanner.style.display = 'none';
+                }
+            }
 
             const quotaEl = document.getElementById('headerQuotaPill');
             const setQuotaEl = document.getElementById('settingsQuotaSummary');
+            const barFill = document.getElementById('settingsQuotaBarFill');
             if (activeQuotaState.unlimited) {
                 if (quotaEl) {
                     quotaEl.textContent = '∞ Chats';
                     quotaEl.className = 'quota-header-pill';
                 }
                 if (setQuotaEl) {
-                    setQuotaEl.textContent = `Daily Quota: Unlimited (${activeQuotaState.used || 0} chats used in last 24h · ${activeMembershipState.name})`;
+                    setQuotaEl.textContent = `Daily Quota: Unlimited (${activeQuotaState.used || 0} chats used in 24h · ${activeMembershipState.name})`;
                 }
+                if (barFill) { barFill.style.width = '100%'; barFill.style.background = '#6ee7b7'; }
             } else {
                 const lim = Number(activeQuotaState.limit || 30);
-                const rem = Number(activeQuotaState.remaining !== undefined ? activeQuotaState.remaining : Math.max(0, lim - (activeQuotaState.used || 0)));
+                const used = Number(activeQuotaState.used || 0);
+                const rem = Number(activeQuotaState.remaining !== undefined ? activeQuotaState.remaining : Math.max(0, lim - used));
+                const pct = Math.min(100, Math.round((used / Math.max(1, lim)) * 100));
                 if (quotaEl) {
                     quotaEl.textContent = `${rem}/${lim}`;
                     quotaEl.className = 'quota-header-pill' + (rem <= 0 ? ' quota-exhausted' : (rem <= 5 ? ' quota-warn' : ''));
                     quotaEl.title = `${rem} of ${lim} chats remaining (refreshes in ${activeQuotaState.reset_label || '24h'})`;
                 }
                 if (setQuotaEl) {
-                    setQuotaEl.textContent = `Daily Quota: ${activeQuotaState.used || 0} / ${lim} chats used · ${rem} remaining (24h rolling refresh: ${activeQuotaState.reset_label || 'active'})`;
+                    setQuotaEl.textContent = `Daily Quota: ${used} / ${lim} chats used · ${rem} remaining (${activeQuotaState.reset_label || '24h rolling'})`;
+                }
+                if (barFill) {
+                    barFill.style.width = `${pct}%`;
+                    barFill.style.background = pct >= 90 ? '#f87171' : (pct >= 70 ? '#fbbf24' : '#7aa2ff');
                 }
             }
 
@@ -13089,14 +13961,19 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 rulesEl.value = activeMembershipState.aura_rules;
             }
 
-            // Update Studio Tab Lock Badges & Gate Banners
-            const tabReqs = { workspace: 1, diff: 2, heal: 3, warroom: 4, apex: 5 };
-            const tabTierNames = { 1: 'Tier 1 · AURA Velocity (10x)', 2: 'Tier 2 · AURA Architect (30x)', 3: 'Tier 3 · AURA Sovereign (60x)', 4: 'Tier 4 · AURA Titan (100x)', 5: 'Tier 5 · AURA Apex Omnis (100x)' };
+            // Update Studio Tab Lock Badges & Gate Banners (mapped cleanly to our 3 Big Plans!)
+            const tabReqs = { workspace: 3, diff: 3, heal: 3, warroom: 4, apex: 5 };
+            const tabPlanLabel = { 3: 'P1', 4: 'P2', 5: 'P3' };
+            const tabTierNames = {
+                3: 'Plan 1 · AURA Sovereign (₹40 / 20 Days)',
+                4: 'Plan 2 · AURA Titan (₹99 / 30 Days)',
+                5: 'Plan 3 · AURA Apex Omnis (₹199 / 30 Days)'
+            };
             Object.keys(tabReqs).forEach(tabKey => {
                 const reqRank = tabReqs[tabKey];
                 const lockEl = document.getElementById('apexLock_' + tabKey);
                 if (lockEl) {
-                    lockEl.textContent = rank >= reqRank ? 'ACTIVE' : ('T' + reqRank);
+                    lockEl.textContent = rank >= reqRank ? 'ACTIVE' : tabPlanLabel[reqRank];
                     lockEl.style.color = rank >= reqRank ? '#6ee7b7' : '#a1a1aa';
                 }
                 const gateEl = document.getElementById('apexGate_' + tabKey);
@@ -13104,8 +13981,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     if (rank < reqRank) {
                         gateEl.innerHTML = `<div class="apex-lock-banner" style="margin-bottom:12px;">` +
                             `<div><div style="font-size:13px; font-weight:700; color:#f4f4f5;">Requires ${tabTierNames[reqRank]}</div>` +
-                            `<div style="font-size:11.5px; color:#9ca3af; margin-top:2px;">Activate your administrator-issued key in Settings to unlock this module.</div></div>` +
-                            `<button type="button" class="apex-btn-primary" onclick="closeApexStudio(); openModelSettings('membership');">Enter Key in Settings</button>` +
+                            `<div style="font-size:11.5px; color:#9ca3af; margin-top:2px;">Get your key on WhatsApp (${SUB_WHATSAPP_DISPLAY}) and activate it in Settings to unlock.</div></div>` +
+                            `<button type="button" class="apex-btn-primary" onclick="closeApexStudio(); openModelSettings('membership');">View Plans &amp; Activate</button>` +
                             `</div>`;
                     } else {
                         gateEl.innerHTML = '';
@@ -13114,24 +13991,68 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             });
 
             renderMembershipTierMatrix();
+            updateAdminKeyVaultVisibility();
         }
 
         function renderMembershipTierMatrix() {
             const box = document.getElementById('membershipTierMatrix');
-            if (!box || !cachedMembershipTiers.length) return;
+            if (!box) return;
+            const fallbackPlans = [
+                { id: 'tier_3', plan_number: 1, rank: 3, name: 'AURA Sovereign', price_label: '₹40', duration_label: '20 Days', daily_limit: 100, unlimited: false, feature_coverage: '50% Flagship Suite', features: ['100 Chats / Day (24h Rolling)', '20-Day Validity (Admin Renewable)', 'Half of All AURA Flagship Dev & Browser Tools', 'AST Indexer, Polyglot Sandbox & Self-Heal', 'Upgraded Sapphire-Amethyst Design'] },
+                { id: 'tier_4', plan_number: 2, rank: 4, name: 'AURA Titan', price_label: '₹99', duration_label: '30 Days', daily_limit: 300, unlimited: false, feature_coverage: '80% Flagship Suite', features: ['300 Chats / Day (3x Sovereign)', '30-Day Validity (Admin Renewable)', 'Everything in Sovereign (Plan 1)', 'Parallel 4-Agent War Room & Computer Use', 'Git Diffs, Worktrees, Workflows & Security Audit'] },
+                { id: 'tier_5', plan_number: 3, rank: 5, name: 'AURA Apex Omnis', price_label: '₹199', duration_label: '30 Days', daily_limit: null, unlimited: true, feature_coverage: '100% Complete Suite', features: ['Unlimited Daily Chats (No 24h Cap)', '30-Day Validity (Custom Admin Renewal)', 'Everything in Sovereign & Titan', '6-Stage Apex Autonomous IDE & Remote Control', 'MCP Servers, Plugins & Platinum Monolith Theme'] }
+            ];
+            const paidPlans = (cachedMembershipTiers && cachedMembershipTiers.length)
+                ? cachedMembershipTiers.filter(t => Number(t.rank || 0) >= 3)
+                : fallbackPlans;
             const activeId = activeMembershipState.id || 'tier_0';
-            box.innerHTML = cachedMembershipTiers.filter(t => t.rank >= 1).map(t => {
+            const checkSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+            box.innerHTML = paidPlans.map(t => {
                 const isActive = t.id === activeId;
-                const capStr = t.unlimited ? 'Unlimited / 24h' : `${t.daily_limit} chats / 24h`;
-                return `<div class="membership-tier-item ${isActive ? 'active-tier' : ''}">` +
-                    `<div style="display:flex; justify-content:space-between; align-items:center; gap:4px;">` +
-                    `<span style="font-size:12px; font-weight:700; color:#f4f4f5;">${escapeHtml(t.name)}</span>` +
-                    `<span style="font-size:10px; font-family:var(--font-code); color:${escapeHtml(t.accent || '#e4e4e7')};">${escapeHtml(t.multiplier)}</span>` +
-                    `</div>` +
-                    `<div style="font-size:10.5px; font-family:var(--font-code); color:#a1a1aa;">${escapeHtml(capStr)}</div>` +
-                    `<div style="font-size:10.5px; color:#9ca3af; line-height:1.4;">${escapeHtml((t.features || []).slice(0, 3).join(' · '))}</div>` +
+                const extraCls = t.plan_number === 2 ? 'recommended' : (t.plan_number === 3 ? 'platinum' : '');
+                const capStr = t.unlimited ? 'Unlimited Chats / Day' : `${t.daily_limit} Chats / Day`;
+                const tagHtml = isActive
+                    ? '<span class="sub-plan-tag active">ACTIVE</span>'
+                    : (t.plan_number === 2 ? '<span class="sub-plan-tag">POPULAR</span>' : (t.plan_number === 3 ? '<span class="sub-plan-tag">ALL FEATURES</span>' : '<span class="sub-plan-tag">STARTER PRO</span>'));
+                const waUrl = _buildPlanWhatsAppUrl(t);
+                const featsHtml = (t.features || []).slice(0, 6).map(f => `<li>${checkSvg}<span>${escapeHtml(f)}</span></li>`).join('');
+                return `<div class="sub-plan-card ${extraCls} ${isActive ? 'active-tier' : ''}">` +
+                    `<div class="sub-plan-head"><div><div class="sub-plan-eyebrow">Plan ${Number(t.plan_number || 1)} · ${escapeHtml(t.feature_coverage || 'Flagship')}</div><div class="sub-plan-title">${escapeHtml(t.name)}</div></div>${tagHtml}</div>` +
+                    `<div class="sub-plan-price-row"><span class="sub-plan-price">${escapeHtml(t.price_label || '')}</span><span class="sub-plan-duration">/ ${escapeHtml(t.duration_label || '20 Days')}</span></div>` +
+                    `<div class="sub-plan-cap">${escapeHtml(capStr)}</div>` +
+                    `<ul class="sub-plan-features">${featsHtml}</ul>` +
+                    `<a href="${escapeHtml(waUrl)}" target="_blank" rel="noopener noreferrer" class="sub-wa-btn">${isActive ? 'Renew on WhatsApp' : 'Get Key on WhatsApp'}</a>` +
                     `</div>`;
             }).join('');
+        }
+
+        function showSubWelcomeModal(welcome) {
+            const ov = document.getElementById('auraSubWelcomeOverlay');
+            if (!ov || !welcome) return;
+            const ey = document.getElementById('subWelcomeEyebrow');
+            const ti = document.getElementById('subWelcomeTitle');
+            const su = document.getElementById('subWelcomeSub');
+            const kl = document.getElementById('subWelcomeKpiLimit');
+            const ke = document.getElementById('subWelcomeKpiExpiry');
+            const ks = document.getElementById('subWelcomeKpiSuite');
+            const gr = document.getElementById('subWelcomeFeaturesGrid');
+            if (ey) ey.textContent = `SUBSCRIPTION ACTIVATED · ${welcome.badge || 'PRO'}`;
+            if (ti) ti.textContent = `Welcome to ${welcome.plan_name || 'AURA Pro'}, ${welcome.username || 'Member'}`;
+            if (su) su.textContent = `Your ${welcome.plan_name} workspace theme and expanded engineering tools are now live.`;
+            if (kl) kl.textContent = welcome.daily_limit_label || '100 Chats / Day';
+            if (ke) ke.textContent = `${welcome.duration_days || 20} Days · ${welcome.expires_label || ''}`;
+            if (ks) ks.textContent = welcome.feature_coverage || 'Unlocked';
+            const checkSvg = '<svg width="13" height="13" style="flex-shrink:0; margin-top:2px; color:#6ee7b7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+            if (gr) {
+                gr.innerHTML = (welcome.unlocked_features || []).map(f => `<div class="sub-welcome-feat">${checkSvg}<span>${escapeHtml(f)}</span></div>`).join('');
+            }
+            ov.classList.add('open');
+        }
+
+        function closeSubWelcomeModal() {
+            const ov = document.getElementById('auraSubWelcomeOverlay');
+            if (ov) ov.classList.remove('open');
         }
 
         async function refreshMembershipStatus() {
@@ -13156,7 +14077,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 return;
             }
             if (btn) btn.disabled = true;
-            if (statusEl) { statusEl.style.color = '#a1a1aa'; statusEl.textContent = 'Verifying cryptographic key...'; }
+            if (statusEl) { statusEl.style.color = '#a1a1aa'; statusEl.textContent = 'Verifying subscription key...'; }
             try {
                 const res = await apiFetch('/api/membership/activate', {
                     method: 'POST',
@@ -13171,9 +14092,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (input) input.value = '';
                 applyMembershipStateUI(data.membership, data.quota);
                 if (data.user_vault && typeof saveUserVault === 'function') await saveUserVault(data.user_vault);
-                if (statusEl) { statusEl.style.color = '#6ee7b7'; statusEl.textContent = data.message || 'Membership tier activated.'; }
+                if (statusEl) { statusEl.style.color = '#6ee7b7'; statusEl.textContent = data.message || 'Subscription activated.'; }
+                if (typeof closeModelSettings === 'function') closeModelSettings();
+                if (data.welcome) showSubWelcomeModal(data.welcome);
                 if (typeof showBridgeToast === 'function') {
-                    showBridgeToast(`${data.membership.name} (${data.membership.multiplier}) unlocked!`, data.membership.accent || '#f4f4f5');
+                    showBridgeToast(`${data.membership.name} activated (${data.membership.days_remaining_int || 20}d)!`, data.membership.accent || '#7aa2ff');
                 }
             } catch (err) {
                 if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = err.message; }
@@ -13195,13 +14118,249 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             } catch (_) {}
         }
 
+        // --- EXCLUSIVE ADMIN KEY VAULT (@ig.ahmed.irl ONLY) ---
+        function updateAdminKeyVaultVisibility() {
+            const sec = document.getElementById('adminKeyVaultSection');
+            if (!sec) return;
+            if (!isCurrentUserKeyAdmin()) {
+                sec.style.display = 'none';
+                return;
+            }
+            sec.style.display = 'flex';
+            const unlocked = Boolean(getAdminVaultToken());
+            const lockedEl = document.getElementById('adminKeyVaultLocked');
+            const unlockedEl = document.getElementById('adminKeyVaultUnlocked');
+            const lockBtn = document.getElementById('btnLockAdminVault');
+            if (lockedEl) lockedEl.style.display = unlocked ? 'none' : 'flex';
+            if (unlockedEl) unlockedEl.style.display = unlocked ? 'flex' : 'none';
+            if (lockBtn) lockBtn.style.display = unlocked ? 'inline-flex' : 'none';
+            if (unlocked) loadAdminKeysList();
+        }
+
+        function syncAdminDefaultDays() {
+            const sel = document.getElementById('admGenTier');
+            const daysInp = document.getElementById('admGenDays');
+            if (!sel || !daysInp) return;
+            daysInp.value = sel.value === 'tier_3' ? '20' : '30';
+        }
+
+        async function unlockAdminKeyVaultFromUI() {
+            const pwInp = document.getElementById('adminVaultPasswordInput');
+            const msgEl = document.getElementById('adminVaultAuthMsg');
+            const pw = pwInp ? pwInp.value : '';
+            if (!pw) { if (msgEl) msgEl.textContent = 'Enter your Admin Vault password.'; return; }
+            if (msgEl) msgEl.textContent = '';
+            try {
+                const res = await apiFetch('/api/admin/keys/unlock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pw })
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success || !data.admin_vault_token) {
+                    if (msgEl) msgEl.textContent = data.error || 'Vault unlock denied.';
+                    return;
+                }
+                if (pwInp) pwInp.value = '';
+                sessionStorage.setItem('aura_admin_vault_token', data.admin_vault_token);
+                updateAdminKeyVaultVisibility();
+                if (typeof showBridgeToast === 'function') showBridgeToast('Admin Key Vault unlocked.', '#7aa2ff');
+            } catch (err) {
+                if (msgEl) msgEl.textContent = err.message;
+            }
+        }
+
+        function lockAdminKeyVault() {
+            sessionStorage.removeItem('aura_admin_vault_token');
+            activeAdminRenewCode = '';
+            const out = document.getElementById('adminGeneratedOutput');
+            if (out) { out.style.display = 'none'; out.innerHTML = ''; }
+            updateAdminKeyVaultVisibility();
+            if (typeof showBridgeToast === 'function') showBridgeToast('Admin Key Vault locked.', '#939aa8');
+        }
+
+        function _adminHeaders() {
+            return { 'Content-Type': 'application/json', 'X-Admin-Vault-Token': getAdminVaultToken() };
+        }
+
+        async function adminGenerateKeysFromUI() {
+            const tier = (document.getElementById('admGenTier') || {}).value || 'tier_3';
+            const days = Number((document.getElementById('admGenDays') || {}).value || 20);
+            const count = Number((document.getElementById('admGenCount') || {}).value || 1);
+            const note = ((document.getElementById('admGenNote') || {}).value || '').trim();
+            const btn = document.getElementById('btnAdminGenerateKeys');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await apiFetch('/api/admin/keys/generate', {
+                    method: 'POST',
+                    headers: _adminHeaders(),
+                    body: JSON.stringify({ tier_id: tier, duration_days: days, count, note })
+                });
+                const data = await safeParseJson(res);
+                if (res.status === 403) { lockAdminKeyVault(); return; }
+                if (!res.ok || !data.success) {
+                    if (typeof showBridgeToast === 'function') showBridgeToast(data.error || 'Key generation failed', '#f87171');
+                    return;
+                }
+                const out = document.getElementById('adminGeneratedOutput');
+                if (out && Array.isArray(data.keys)) {
+                    out.style.display = 'flex';
+                    const allCodes = data.keys.map(k => k.key_code).join('\n');
+                    out.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">` +
+                        `<strong style="font-size:11.5px; color:#6ee7b7;">${escapeHtml(data.message)}</strong>` +
+                        `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${_awEscArg(allCodes)}', 'Copied all generated keys')">Copy All</button>` +
+                        `</div>` +
+                        data.keys.map(k => {
+                            const waTxt = `AURA ${k.plan_name} Key (${k.duration_days} Days): ${k.key_code}\nOpen AURA -> Settings -> Subscriptions & Keys -> Paste & Activate!`;
+                            return `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; padding:5px 8px; border-radius:6px; background:rgba(0,0,0,0.35);">` +
+                                `<code class="admin-key-code">${escapeHtml(k.key_code)}</code>` +
+                                `<div style="display:flex; gap:4px;">` +
+                                `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${_awEscArg(k.key_code)}', 'Key copied')">Copy Key</button>` +
+                                `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="copyAdminText('${_awEscArg(waTxt)}', 'WhatsApp message copied')">Copy WhatsApp Msg</button>` +
+                                `</div></div>`;
+                        }).join('');
+                }
+                const noteInp = document.getElementById('admGenNote');
+                if (noteInp) noteInp.value = '';
+                await loadAdminKeysList();
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function copyAdminText(txt, toastMsg) {
+            try { navigator.clipboard.writeText(txt); } catch (_) {}
+            if (typeof showBridgeToast === 'function') showBridgeToast(toastMsg || 'Copied.', '#34d399');
+        }
+
+        async function loadAdminKeysList() {
+            if (!isCurrentUserKeyAdmin() || !getAdminVaultToken()) return;
+            const q = ((document.getElementById('admKeySearchInput') || {}).value || '').trim();
+            const sf = ((document.getElementById('admKeyStatusFilter') || {}).value || 'all').trim();
+            try {
+                const res = await apiFetch(`/api/admin/keys/list?status=${encodeURIComponent(sf)}&search=${encodeURIComponent(q)}`, {
+                    method: 'GET',
+                    headers: { 'X-Admin-Vault-Token': getAdminVaultToken() }
+                });
+                if (res.status === 403) { lockAdminKeyVault(); return; }
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+                const sum = data.summary || {};
+                const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v ?? 0); };
+                setTxt('admKpiTotal', sum.total);
+                setTxt('admKpiActive', sum.active);
+                setTxt('admKpiUnused', sum.unused);
+                setTxt('admKpiExpired', sum.expired);
+                setTxt('admKpiDisabled', sum.disabled);
+
+                lastAdminKeyList = Array.isArray(data.keys) ? data.keys : [];
+                renderAdminKeysRows();
+            } catch (_) {}
+        }
+
+        function renderAdminKeysRows() {
+            const wrap = document.getElementById('adminKeysListWrap');
+            if (!wrap) return;
+            if (!lastAdminKeyList.length) {
+                wrap.innerHTML = '<div style="font-size:11.5px; color:#8b93a3; padding:10px;">No keys found. Generate your first subscription key above.</div>';
+                return;
+            }
+            wrap.innerHTML = lastAdminKeyList.map(k => {
+                const arg = _awEscArg(k.key_code);
+                const statusTxt = k.status === 'active' ? `ACTIVE · ${k.days_left}d left` : k.status.toUpperCase();
+                const isDis = k.status === 'disabled';
+                const showRenewForm = activeAdminRenewCode === k.key_code;
+                const renewRowHtml = showRenewForm
+                    ? `<div style="width:100%; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:7px; margin-top:4px; border-top:1px solid rgba(255,255,255,0.07);">` +
+                      `<select id="admRenTier_${escapeHtml(k.key_code)}" style="height:28px; font-size:11px; margin:0; flex:1; min-width:130px;">` +
+                      `<option value="tier_3" ${k.tier_id === 'tier_3' ? 'selected' : ''}>Plan 1 · Sovereign (₹40)</option>` +
+                      `<option value="tier_4" ${k.tier_id === 'tier_4' ? 'selected' : ''}>Plan 2 · Titan (₹99)</option>` +
+                      `<option value="tier_5" ${k.tier_id === 'tier_5' ? 'selected' : ''}>Plan 3 · Apex Omnis (₹199)</option>` +
+                      `</select>` +
+                      `<input id="admRenDays_${escapeHtml(k.key_code)}" type="number" min="1" max="365" value="${k.tier_id === 'tier_3' ? 20 : 30}" style="width:72px; height:28px; font-size:11px; margin:0;">` +
+                      `<span style="font-size:10.5px; color:#8b93a3;">days</span>` +
+                      `<button type="button" class="settings-btn-primary" style="height:28px; padding:0 10px; font-size:11px;" onclick="submitAdminRenewKey('${arg}')">Confirm Renew</button>` +
+                      `<button type="button" class="settings-btn-ghost" style="height:28px; padding:0 8px; font-size:11px;" onclick="activeAdminRenewCode=''; renderAdminKeysRows();">Cancel</button>` +
+                      `</div>`
+                    : '';
+                return `<div class="admin-key-row">` +
+                    `<div style="display:flex; flex-direction:column; gap:3px; min-width:210px;">` +
+                    `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">` +
+                    `<span class="admin-key-code">${escapeHtml(k.key_code)}</span>` +
+                    `<span class="admin-pill ${escapeHtml(k.status)}">${escapeHtml(statusTxt)}</span>` +
+                    `</div>` +
+                    `<div style="font-size:10.5px; color:#939aa8; font-family:var(--font-code);">` +
+                    `${escapeHtml(k.plan_name)} (${escapeHtml(k.price_label)}) · ${k.bound_username ? '@' + escapeHtml(k.bound_username) : 'Unclaimed'} · Exp: ${escapeHtml(k.expires_label)}` +
+                    (k.renew_count ? ` · Renewed ${k.renew_count}x` : '') +
+                    (k.note ? ` · ${escapeHtml(k.note)}` : '') +
+                    `</div></div>` +
+                    `<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">` +
+                    `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${arg}', 'Key copied')">Copy</button>` +
+                    `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="activeAdminRenewCode='${arg}'; renderAdminKeysRows();">Renew</button>` +
+                    `<button type="button" class="settings-inline-toggle" style="color:${isDis ? '#93c5fd' : '#fca5a5'};" onclick="adminToggleKeyStatus('${arg}', ${isDis ? 'false' : 'true'})">${isDis ? 'Enable' : 'Disable'}</button>` +
+                    (k.bound_username ? `<button type="button" class="settings-inline-toggle" onclick="adminUnbindKey('${arg}')">Unbind</button>` : '') +
+                    `</div>${renewRowHtml}</div>`;
+            }).join('');
+        }
+
+        async function submitAdminRenewKey(keyCode) {
+            const tierSel = document.getElementById('admRenTier_' + keyCode);
+            const daysInp = document.getElementById('admRenDays_' + keyCode);
+            const tier_id = tierSel ? tierSel.value : '';
+            const duration_days = Number(daysInp ? daysInp.value : 20);
+            const res = await apiFetch('/api/admin/keys/renew', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ key_code: keyCode, tier_id, duration_days })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                activeAdminRenewCode = '';
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#34d399');
+                await loadAdminKeysList();
+                await refreshMembershipStatus();
+            } else if (typeof showBridgeToast === 'function') {
+                showBridgeToast(data.error || 'Renewal failed', '#f87171');
+            }
+        }
+
+        async function adminToggleKeyStatus(keyCode, disable) {
+            const res = await apiFetch('/api/admin/keys/toggle', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ key_code: keyCode, disable: Boolean(disable) })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, disable ? '#f87171' : '#34d399');
+                await loadAdminKeysList();
+                await refreshMembershipStatus();
+            }
+        }
+
+        async function adminUnbindKey(keyCode) {
+            const res = await apiFetch('/api/admin/keys/unbind', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ key_code: keyCode })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#93c5fd');
+                await loadAdminKeysList();
+            }
+        }
+
         function openApexStudio(tab = '') {
             if (!isAuthenticated()) { authOverlay.style.display = 'flex'; return; }
             const ov = document.getElementById('apexStudioOverlay');
             if (!ov) return;
             ov.style.display = 'flex';
             const rank = Number(activeMembershipState.rank || 0);
-            const targetTab = tab || (rank >= 5 ? 'apex' : (rank >= 4 ? 'warroom' : (rank >= 3 ? 'heal' : (rank >= 2 ? 'diff' : 'workspace'))));
+            const targetTab = tab || (rank >= 5 ? 'apex' : (rank >= 4 ? 'warroom' : 'workspace'));
             switchApexStudioTab(targetTab);
             refreshMembershipStatus();
         }

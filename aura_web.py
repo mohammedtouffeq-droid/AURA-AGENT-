@@ -359,7 +359,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Access-Control-Allow-Credentials", "true")
             self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS, HEAD")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token, X-Gemini-Key, X-Aura-Membership")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token, X-CSRF-Token, X-Gemini-Key, X-Aura-Membership, X-Admin-Vault-Token")
 
     def _send_json(
         self,
@@ -665,6 +665,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     "storage_status": storage_status,
                     "membership": mem,
                     "quota": quota,
+                    "is_key_admin": aura_membership.is_key_admin_user(user),
+                    "subscription_contact": aura_membership.SUBSCRIPTION_CONTACT,
                     "user_vault": aura_db.export_user_vault(user["id"]),
                 }
                 if real_proof:
@@ -755,6 +757,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "membership": mem,
                 "quota": quota,
                 "membership_tiers": aura_membership.list_public_tiers(),
+                "is_key_admin": aura_membership.is_key_admin_user(user),
+                "subscription_contact": aura_membership.SUBSCRIPTION_CONTACT,
             })
 
         elif path == "/api/projects":
@@ -1076,8 +1080,23 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "membership": mem,
                 "quota": quota,
                 "tiers": aura_membership.list_public_tiers(),
+                "contact": aura_membership.SUBSCRIPTION_CONTACT,
+                "is_key_admin": aura_membership.is_key_admin_user(user),
                 "os_actions": aura_pro_studio.OS_ACTION_CATALOG,
             })
+
+        elif path == "/api/admin/keys/list":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Admin Key Vault access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            status_f = str((query.get("status") or ["all"])[0])[:24]
+            search_q = str((query.get("search") or [""])[0])[:120]
+            self._send_json(aura_membership.admin_list_keys(status_filter=status_f, search=search_q))
 
         elif path == "/api/pro/index":
             user = self._get_auth_user()
@@ -1085,11 +1104,11 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             mem = self._resolve_membership(user)
-            if int(mem.get("rank", 0)) < 1:
+            if int(mem.get("rank", 0)) < 3:
                 self._send_json({
                     "success": False,
-                    "error": "Codebase AST & Symbol Indexer requires AURA Velocity (Tier 1) or higher. Activate a key in Settings.",
-                    "required_rank": 1,
+                    "error": "Codebase AST & Symbol Indexer requires AURA Sovereign (Plan 1) or higher. Activate a key in Settings.",
+                    "required_rank": 3,
                 }, status=403)
                 return
             self._send_json(aura_pro_studio.index_workspace_symbols(_resolve_workspace_dir(user["id"])))
@@ -1111,8 +1130,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             mem = self._resolve_membership(user)
-            if int(mem.get("rank", 0)) < 2:
-                self._send_json({"success": False, "error": "Rollback snapshots require AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "Rollback snapshots require AURA Sovereign (Plan 1) or higher.", "required_rank": 3}, status=403)
                 return
             self._send_json({"success": True, "snapshots": aura_pro_studio.list_workspace_snapshots(_resolve_workspace_dir(user["id"]))})
 
@@ -2744,7 +2763,55 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = JARVIS_HUB.set_kill_switch(user["id"], halted=halted, reason=reason)
             self._send_json(res)
 
-        # 13. MEMBERSHIP KEY ACTIVATION & 5-TIER PRO / APEX OMNIS ENGINEERING STUDIO ROUTES
+        # 13. 3-PLAN SUBSCRIPTIONS, EXCLUSIVE ADMIN KEY VAULT (ig.ahmed.irl) & PRO/APEX STUDIO ROUTES
+        elif path == "/api/admin/keys/unlock":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            pw = str(body.get("password") or body.get("admin_password") or "")
+            res = aura_membership.unlock_admin_key_vault(user, pw)
+            self._send_json(res, status=int(res.get("status", 200 if res.get("success") else 403)))
+
+        elif path in ("/api/admin/keys/generate", "/api/admin/keys/renew", "/api/admin/keys/toggle", "/api/admin/keys/unbind"):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or body.get("admin_vault_token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Admin Key Vault access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            if path == "/api/admin/keys/generate":
+                raw_days = body.get("duration_days")
+                days_val = int(raw_days) if raw_days is not None and str(raw_days).strip() else None
+                res = aura_membership.admin_generate_keys(
+                    tier_id=str(body.get("tier_id") or "tier_3"),
+                    duration_days=days_val,
+                    count=int(body.get("count") or 1),
+                    note=str(body.get("note") or ""),
+                    created_by=str(user.get("username") or "ig.ahmed.irl"),
+                )
+            elif path == "/api/admin/keys/renew":
+                raw_days = body.get("duration_days")
+                days_val = int(raw_days) if raw_days is not None and str(raw_days).strip() else None
+                res = aura_membership.admin_renew_key(
+                    key_code=str(body.get("key_code") or body.get("key") or ""),
+                    duration_days=days_val,
+                    tier_id=str(body.get("tier_id") or "") or None,
+                    note=body.get("note"),
+                )
+            elif path == "/api/admin/keys/toggle":
+                res = aura_membership.admin_toggle_key_status(
+                    key_code=str(body.get("key_code") or body.get("key") or ""),
+                    disable=bool(body.get("disable", True)),
+                )
+            else:
+                res = aura_membership.admin_unbind_key(
+                    key_code=str(body.get("key_code") or body.get("key") or ""),
+                )
+            self._send_json(res, status=200 if res.get("success") else 400)
+
         elif path == "/api/membership/activate":
             user = self._get_auth_user(body)
             if not user:
@@ -2782,8 +2849,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             mem = self._resolve_membership(user, body)
-            if int(mem.get("rank", 0)) < 1:
-                self._send_json({"success": False, "error": "@file context injection requires AURA Velocity (Tier 1) or higher.", "required_rank": 1}, status=403)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "@file context injection requires AURA Sovereign (Plan 1) or higher.", "required_rank": 3}, status=403)
                 return
             paths = body.get("paths") if isinstance(body.get("paths"), list) else []
             self._send_json(aura_pro_studio.read_context_files(_resolve_workspace_dir(user["id"]), [str(p) for p in paths[:6]]))
@@ -2794,8 +2861,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             mem = self._resolve_membership(user, body)
-            if int(mem.get("rank", 0)) < 2:
-                self._send_json({"success": False, "error": "Multi-File Unified Diff Composer requires AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "Multi-File Unified Diff Composer requires AURA Sovereign (Plan 1) or higher.", "required_rank": 3}, status=403)
                 return
             edits = body.get("edits") if isinstance(body.get("edits"), list) else []
             do_apply = (path == "/api/pro/apply_diff") or bool(body.get("apply", False))
@@ -2809,8 +2876,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             mem = self._resolve_membership(user, body)
-            if int(mem.get("rank", 0)) < 2:
-                self._send_json({"success": False, "error": "Snapshot rollback requires AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "Snapshot rollback requires AURA Sovereign (Plan 1) or higher.", "required_rank": 3}, status=403)
                 return
             snap_id = str(body.get("snapshot_id") or "").strip()
             res = aura_pro_studio.rollback_workspace_snapshot(_resolve_workspace_dir(user["id"]), snap_id)
@@ -2822,8 +2889,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             mem = self._resolve_membership(user, body)
-            if int(mem.get("rank", 0)) < 2:
-                self._send_json({"success": False, "error": "Polyglot Code Sandbox requires AURA Architect (Tier 2) or higher.", "required_rank": 2}, status=403)
+            if int(mem.get("rank", 0)) < 3:
+                self._send_json({"success": False, "error": "Polyglot Code Sandbox requires AURA Sovereign (Plan 1) or higher.", "required_rank": 3}, status=403)
                 return
             lang = str(body.get("language") or "python")[:32]
             code = str(body.get("code") or "")
