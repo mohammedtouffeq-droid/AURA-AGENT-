@@ -107,6 +107,137 @@
         });
     });
 
+    // =========================================================================
+    // NEW COLLECTION A: 25 MODIFIED HYPERCAR REEL WALLPAPERS (PURE MODIFIED!)
+    // BMW · Ferrari · Pagani · Bugatti · Lamborghini · Porsche · Koenigsegg · McLaren · GT-R
+    // EVERY car blinks its headlights dynamically on scroll & cycles RGB laser colors
+    // AND animates its signature moving part (Headlights / Tyres / Rain Wipers / Exhaust / Aero Wing)
+    // =========================================================================
+    const MODCAR_SPECS = [
+        // 5 Modified BMW Builds
+        { name: 'BMW M4 CSL Widebody · RGB Strobe', brand: 'bmw', part: 'headlight_strobe', motion: 'RGB Blinking Laser DRL + Splitter', p: '#facc15', s: '#38bdf8', bg: '#050609' },
+        { name: 'BMW M3 Touring Mansory · Rain Wipers', brand: 'bmw', part: 'wiper_rain', motion: 'Sweeping Wipers + RGB Rain Glare', p: '#38bdf8', s: '#f43f5e', bg: '#04070d' },
+        { name: 'BMW M8 G-Power · Deep-Dish Forged Tyres', brand: 'bmw', part: 'forged_tyres', motion: 'Spinning Forged Rims + Blinking DRL', p: '#f43f5e', s: '#facc15', bg: '#080507' },
+        { name: 'BMW E46 M3 GTR Liberty Walk · Flame Exhaust', brand: 'bmw', part: 'exhaust_flame', motion: 'Titanium Exhaust Pops + RGB Strobe', p: '#60a5fa', s: '#fb923c', bg: '#05060b' },
+        { name: 'BMW M5 CS Matte Carbon · Active GT Wing', brand: 'bmw', part: 'aero_wing', motion: 'DRS Carbon Wing + RGB Laser Flash', p: '#10b981', s: '#facc15', bg: '#040807' },
+        // 5 Modified Ferrari Builds
+        { name: 'Ferrari SF90 XX Novitec · Fang Strobe', brand: 'ferrari', part: 'headlight_strobe', motion: 'RGB Blinking Fangs + Carbon Aero', p: '#f43f5e', s: '#facc15', bg: '#0a0406' },
+        { name: 'Ferrari 812 Comp Carbon · Monsoon Wipers', brand: 'ferrari', part: 'wiper_rain', motion: 'Sweeping Glass Wipers + RGB Beams', p: '#fb7185', s: '#38bdf8', bg: '#080509' },
+        { name: 'Ferrari LaFerrari Mansory · Ceramic Tyres', brand: 'ferrari', part: 'forged_tyres', motion: 'Glowing Brake Rotor + Wheel Spin', p: '#ef4444', s: '#fbbf24', bg: '#0a0505' },
+        { name: 'Ferrari F40 LM Twin-Turbo · Titanium Flames', brand: 'ferrari', part: 'exhaust_flame', motion: 'Blue Flame Backfire + RGB Flash', p: '#fb923c', s: '#38bdf8', bg: '#090504' },
+        { name: 'Ferrari 488 Pista Widebody · DRS Spoiler', brand: 'ferrari', part: 'aero_wing', motion: 'Active Carbon Wing + Color Shift', p: '#f43f5e', s: '#a855f7', bg: '#08040a' },
+        // 5 Modified Pagani Builds
+        { name: 'Pagani Zonda R Exposed Carbon · Quad RGB', brand: 'pagani', part: 'headlight_strobe', motion: 'Quad-Pod RGB Blink + Carbon Hood', p: '#38bdf8', s: '#facc15', bg: '#05070c' },
+        { name: 'Pagani Huayra BC Tempesta · Rain Wipers', brand: 'pagani', part: 'wiper_rain', motion: 'Monsoon Wiper Sweep + Quad Beams', p: '#a855f7', s: '#38bdf8', bg: '#07050c' },
+        { name: 'Pagani Utopia Track Spec · Forged Alloys', brand: 'pagani', part: 'forged_tyres', motion: 'Turbine Forged Wheel + RGB Pulse', p: '#facc15', s: '#fb7185', bg: '#090704' },
+        { name: 'Pagani Zonda Cinque · Quad Titanium Flame', brand: 'pagani', part: 'exhaust_flame', motion: 'Quad Pipe Afterburner + RGB Blink', p: '#38bdf8', s: '#fb923c', bg: '#05070b' },
+        { name: 'Pagani Huayra R Evo · Active Aero Flaps', brand: 'pagani', part: 'aero_wing', motion: 'Hydraulic Aero Flaps + RGB Flash', p: '#10b981', s: '#38bdf8', bg: '#040908' },
+        // 5 Modified Bugatti Builds
+        { name: 'Bugatti Chiron Pur Sport Carbon · 4-Dot RGB', brand: 'bugatti', part: 'headlight_strobe', motion: '4-Pixel RGB Flash + Carbon Grille', p: '#38bdf8', s: '#f8fafc', bg: '#04070e' },
+        { name: 'Bugatti Bolide Track · Storm Wiper Glass', brand: 'bugatti', part: 'wiper_rain', motion: 'Aero Wiper Sweep + X-Laser Glow', p: '#60a5fa', s: '#f43f5e', bg: '#05060d' },
+        { name: 'Bugatti Divo Stealth · Spinning Aero Tyres', brand: 'bugatti', part: 'forged_tyres', motion: 'Spinning Carbon Rim + RGB Halo', p: '#06b6d4', s: '#facc15', bg: '#04080c' },
+        { name: 'Bugatti Tourbillon Mansory · Quad Flames', brand: 'bugatti', part: 'exhaust_flame', motion: 'Titanium Quad Flame + RGB Strobe', p: '#a855f7', s: '#fb923c', bg: '#07050c' },
+        { name: 'Bugatti Veyron Super Sport WRE · Airbrake', brand: 'bugatti', part: 'aero_wing', motion: 'Hydraulic Airbrake Wing + RGB LED', p: '#fb923c', s: '#38bdf8', bg: '#090604' },
+        // 5 Iconic Modified Hypercars
+        { name: 'Lamborghini Revuelto Mansory · Y-Fang RGB', brand: 'hyper', part: 'headlight_strobe', motion: 'Y-Fang RGB Strobe + Stealth Nose', p: '#a855f7', s: '#facc15', bg: '#08050c' },
+        { name: 'Porsche 911 GT3 RS Manthey · Rain Wipers', brand: 'hyper', part: 'wiper_rain', motion: 'Track Rain Wipers + Matrix RGB', p: '#10b981', s: '#38bdf8', bg: '#040807' },
+        { name: 'Koenigsegg Jesko Absolut · Carbon Tyres', brand: 'hyper', part: 'forged_tyres', motion: 'Aircore Carbon Rim + RGB Flash', p: '#f8fafc', s: '#38bdf8', bg: '#06070a' },
+        { name: 'Nissan R35 GT-R Nismo Widebody · Anti-Lag', brand: 'hyper', part: 'exhaust_flame', motion: 'Anti-Lag Titanium Flame + RGB DRL', p: '#f43f5e', s: '#38bdf8', bg: '#0a0507' },
+        { name: 'McLaren P1 GTR Carbon · Swan-Neck DRS', brand: 'hyper', part: 'aero_wing', motion: 'Active Carbon DRS Wing + RGB Beam', p: '#facc15', s: '#fb923c', bg: '#090704' },
+    ];
+
+    MODCAR_SPECS.forEach((mc, idx) => {
+        const num = String(idx + 1).padStart(2, '0');
+        CATALOG.push({
+            id: `modcar_${num}`,
+            name: mc.name,
+            shortName: mc.name.split('·')[0].trim(),
+            category: 'modcars',
+            engine: 'modcar_reel',
+            brand: mc.brand,
+            part: mc.part,
+            motion: mc.motion,
+            p: mc.p,
+            s: mc.s,
+            bg: mc.bg,
+            g: _rgba(mc.p, 0.24),
+            seed: idx * 37 + 303,
+        });
+    });
+
+    // =========================================================================
+    // NEW COLLECTION B: 25 REALISTIC CINEMATIC ENVIRONMENT WALLPAPERS
+    // 5 Atmospheric Engines x 5 Graded Worlds = 25 Zero-Cartoon Environments
+    // =========================================================================
+    const ENV_SPECS = [
+        // 5 Rainstorm & Wet City Reflection Worlds
+        { engine: 'env_rain_storm', name: 'Tokyo Midnight Monsoon', motion: 'Slanted Rain + Puddle Ripples', p: '#38bdf8', s: '#f43f5e', bg: '#04070d' },
+        { engine: 'env_rain_storm', name: 'Mumbai Marine Drive Storm', motion: 'Coastal Rain + Golden Bokeh', p: '#f59e0b', s: '#38bdf8', bg: '#07060a' },
+        { engine: 'env_rain_storm', name: 'London Obsidian Fog Rain', motion: 'Heavy Downpour + Silver Mist', p: '#cbd5e1', s: '#60a5fa', bg: '#06070a' },
+        { engine: 'env_rain_storm', name: 'Seoul Neon Rain Boulevard', motion: 'Neon Reflections + Storm Ripples', p: '#a855f7', s: '#ec4899', bg: '#07040c' },
+        { engine: 'env_rain_storm', name: 'Emerald Rainforest Downpour', motion: 'Canopy Rain + Bioluminescent Mist', p: '#10b981', s: '#34d399', bg: '#030907' },
+        // 5 Aurora Borealis & Polar Peak Worlds
+        { engine: 'env_aurora_peaks', name: 'Iceland Black-Sand Aurora', motion: 'Shifting Emerald Borealis Curtains', p: '#10b981', s: '#38bdf8', bg: '#03080b' },
+        { engine: 'env_aurora_peaks', name: 'Norway Fjord Mirror Sky', motion: 'Glacial Aurora + Water Reflection', p: '#2dd4bf', s: '#818cf8', bg: '#04070e' },
+        { engine: 'env_aurora_peaks', name: 'Yukon Violet Borealis', motion: 'Violet Solar Ribbons + Peaks', p: '#a855f7', s: '#38bdf8', bg: '#06040d' },
+        { engine: 'env_aurora_peaks', name: 'Arctic Glacial Blue Crown', motion: 'Polar Light Wave + Ice Horizon', p: '#38bdf8', s: '#e2e8f0', bg: '#040811' },
+        { engine: 'env_aurora_peaks', name: 'Patagonia Crimson Aurora', motion: 'Solar Storm Sky + Ridge Shadow', p: '#f43f5e', s: '#a855f7', bg: '#0a0409' },
+        // 5 Deep Ocean Abyss & Caustics Worlds
+        { engine: 'env_abyss_ocean', name: 'Mariana Bioluminescent Trench', motion: 'Ocean Sun-Shafts + Glowing Spores', p: '#06b6d4', s: '#3b82f6', bg: '#02070e' },
+        { engine: 'env_abyss_ocean', name: 'Pacific Midnight Caustics', motion: 'Underwater Light Caustics Drift', p: '#38bdf8', s: '#0ea5e9', bg: '#020812' },
+        { engine: 'env_abyss_ocean', name: 'Arctic Sub-Ice Current', motion: 'Glacial Shafts + Deep Current', p: '#bae6fd', s: '#38bdf8', bg: '#030910' },
+        { engine: 'env_abyss_ocean', name: 'Abyssal Emerald Lagoon', motion: 'Teal Water Rays + Rising Motes', p: '#14b8a6', s: '#34d399', bg: '#020a09' },
+        { engine: 'env_abyss_ocean', name: 'Atlantic Moonlit Swell', motion: 'Silver Lunar Rays + Deep Tide', p: '#94a3b8', s: '#60a5fa', bg: '#04070c' },
+        // 5 Volcanic Obsidian & Rising Ember Worlds
+        { engine: 'env_volcanic_embers', name: 'Obsidian Basalt Caldera', motion: 'Rising Volcanic Embers + Glow', p: '#f97316', s: '#ef4444', bg: '#0a0504' },
+        { engine: 'env_volcanic_embers', name: 'Mount Etna Night Magma', motion: 'Lava Fissure Pulse + Ash Drift', p: '#ef4444', s: '#fbbf24', bg: '#0c0404' },
+        { engine: 'env_volcanic_embers', name: 'Fuji Obsidian Ash Horizon', motion: 'Crimson Sunset Ridge + Sparks', p: '#fb7185', s: '#f97316', bg: '#090507' },
+        { engine: 'env_volcanic_embers', name: 'Golden Forge Valley', motion: 'Molten Gold Embers + Smoke', p: '#facc15', s: '#f97316', bg: '#090703' },
+        { engine: 'env_volcanic_embers', name: 'Solar Eclipse Obsidian Ridge', motion: 'Corona Rim + Rising Embers', p: '#e2e8f0', s: '#f97316', bg: '#060506' },
+        // 5 Alpine Mist, Desert Starfield & Cosmic Horizon Worlds
+        { engine: 'env_mist_cosmos', name: 'Himalayan Milky Way Pass', motion: 'Parallax Peaks + Shooting Meteors', p: '#93c5fd', s: '#e2e8f0', bg: '#04060c' },
+        { engine: 'env_mist_cosmos', name: 'Sahara Midnight Starfield', motion: 'Desert Dunes + Starlight Drift', p: '#fbbf24', s: '#93c5fd', bg: '#080604' },
+        { engine: 'env_mist_cosmos', name: 'Misty Redwood Valley', motion: 'Gliding Silver Mist + Pines', p: '#6ee7b7', s: '#94a3b8', bg: '#040807' },
+        { engine: 'env_mist_cosmos', name: 'Swiss Alpine Moonrise', motion: 'Lunar Halo + Rolling Valley Fog', p: '#cbd5e1', s: '#60a5fa', bg: '#05070b' },
+        { engine: 'env_mist_cosmos', name: 'Atacama Nebula Horizon', motion: 'Deep-Space Band + Meteor Streaks', p: '#c084fc', s: '#38bdf8', bg: '#06040d' },
+    ];
+
+    ENV_SPECS.forEach((ev, idx) => {
+        const num = String(idx + 1).padStart(2, '0');
+        CATALOG.push({
+            id: `env_${num}`,
+            name: ev.name,
+            shortName: ev.name.split(' ').slice(0, 2).join(' '),
+            category: 'environment',
+            engine: ev.engine,
+            motion: ev.motion,
+            p: ev.p,
+            s: ev.s,
+            bg: ev.bg,
+            g: _rgba(ev.p, 0.22),
+            seed: idx * 43 + 701,
+        });
+    });
+
+    const RGB_LASER_SPECTRUM = ['#facc15', '#38bdf8', '#f43f5e', '#f8fafc', '#10b981', '#a855f7', '#fb923c'];
+
+    function _lerpHex(hexA, hexB, f) {
+        const a = _hexToRgb(hexA);
+        const b = _hexToRgb(hexB);
+        const t = Math.max(0, Math.min(1, f));
+        const r = Math.round(a.r + (b.r - a.r) * t);
+        const g = Math.round(a.g + (b.g - a.g) * t);
+        const bl = Math.round(a.b + (b.b - a.b) * t);
+        return `#${((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1)}`;
+    }
+
+    function _scrollRgbColor(sc, seed) {
+        const phase = Math.abs(sc * 1.45) + (seed % RGB_LASER_SPECTRUM.length);
+        const i0 = Math.floor(phase) % RGB_LASER_SPECTRUM.length;
+        const i1 = (i0 + 1) % RGB_LASER_SPECTRUM.length;
+        return _lerpHex(RGB_LASER_SPECTRUM[i0], RGB_LASER_SPECTRUM[i1], phase - Math.floor(phase));
+    }
+
     // Deterministic seeded PRNG so each of the 100 wallpapers has crisp, consistent structure
     function _rng(seed) {
         let s = (seed * 1664525 + 1013904223) >>> 0;
@@ -1004,6 +1135,659 @@
             return;
         }
 
+        // ---------------- 25 MODIFIED HYPERCAR REEL ENGINES (RGB BLINKING HEADLIGHTS + MOVING PARTS) ----------------
+        if (eng === 'modcar_reel') {
+            const cx = w * 0.5;
+            const cy = h * 0.54;
+            const s = Math.min(w * 0.44, h * 0.62);
+            const brand = spec.brand || 'bmw';
+            const part = spec.part || 'headlight_strobe';
+
+            // Dynamic RGB headlight color shifts on EVERY scroll step + strobe blink pulse!
+            const rgbPrimary = _scrollRgbColor(sc, spec.seed || 1);
+            const rgbAlt = _scrollRgbColor(sc + 1.8, (spec.seed || 1) + 2);
+            const scrollActivity = Math.min(1, Math.abs(vel) * 1.4);
+            const strobeWave = 0.5 + 0.5 * Math.sin(sc * 11.5 + t * 4.2);
+            const blink = isPreview ? 0.92 : (0.48 + 0.52 * strobeWave + scrollActivity * 0.35);
+            const beam = Math.min(1.25, blink);
+
+            // Pitch-black wet studio floor + RGB ambient wash shifting with scroll
+            const wash = ctx.createRadialGradient(cx, cy - s * 0.1, s * 0.08, cx, cy, Math.max(w, h) * 0.72);
+            wash.addColorStop(0, _rgba(rgbPrimary, 0.22 * beam));
+            wash.addColorStop(0.48, _rgba(rgbAlt, 0.08 * beam));
+            wash.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = wash;
+            ctx.fillRect(0, 0, w, h);
+
+            // Sweeping studio light bar across widebody carbon hood
+            const sweepX = cx + Math.sin(t * 0.35 + sc * 1.4) * w * 0.36;
+            const hoodG = ctx.createLinearGradient(cx - s * 1.25, cy - s * 0.28, cx + s * 1.25, cy - s * 0.28);
+            hoodG.addColorStop(0, 'rgba(255,255,255,0)');
+            hoodG.addColorStop(0.5, _rgba('#ffffff', 0.20));
+            hoodG.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.strokeStyle = hoodG;
+            ctx.lineWidth = isPreview ? 1.1 : 1.9;
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 1.25, cy - s * 0.14);
+            ctx.bezierCurveTo(cx - s * 0.55, cy - s * 0.42, cx + s * 0.55, cy - s * 0.42, cx + s * 1.25, cy - s * 0.14);
+            ctx.stroke();
+
+            // Helper: draw brand-specific iconic modified headlights with RGB color-shift & scroll strobe blink!
+            const drawBrandHeadlights = (hy) => {
+                [-1, 1].forEach((side) => {
+                    const ex = cx + side * s * 0.66;
+                    // Wide volumetric RGB headlight halo
+                    const halo = ctx.createRadialGradient(ex, hy, 1, ex, hy, s * 0.52);
+                    halo.addColorStop(0, _rgba(rgbPrimary, 0.54 * beam));
+                    halo.addColorStop(0.35, _rgba(rgbAlt, 0.18 * beam));
+                    halo.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = halo;
+                    ctx.beginPath(); ctx.arc(ex, hy, s * 0.52, 0, Math.PI * 2); ctx.fill();
+
+                    // Anamorphic horizontal strobe flash streak on scroll
+                    if (!isPreview) {
+                        const fl = ctx.createLinearGradient(ex - s * 0.62, hy, ex + s * 0.62, hy);
+                        fl.addColorStop(0, 'rgba(0,0,0,0)');
+                        fl.addColorStop(0.4, _rgba(rgbPrimary, 0.24 * beam));
+                        fl.addColorStop(0.5, _rgba('#ffffff', 0.52 * beam));
+                        fl.addColorStop(0.6, _rgba(rgbPrimary, 0.24 * beam));
+                        fl.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = fl;
+                        ctx.fillRect(ex - s * 0.62, hy - 1.6, s * 1.24, 3.2);
+                    }
+
+                    const strokeOptic = (traceFn) => {
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.strokeStyle = _rgba(rgbPrimary, 0.65 * beam);
+                        ctx.lineWidth = isPreview ? 3.2 : 7.0;
+                        traceFn(); ctx.stroke();
+                        ctx.strokeStyle = _rgba(rgbAlt, 0.85 * beam);
+                        ctx.lineWidth = isPreview ? 1.8 : 3.2;
+                        traceFn(); ctx.stroke();
+                        ctx.strokeStyle = _rgba('#ffffff', Math.min(1, 0.72 + 0.28 * beam));
+                        ctx.lineWidth = isPreview ? 0.95 : 1.8;
+                        traceFn(); ctx.stroke();
+                    };
+
+                    if (brand === 'bmw') {
+                        // Predatory M4 CSL twin hexagonal L-blades
+                        for (let k = 0; k < 2; k++) {
+                            const ox = ex + side * (k === 0 ? -s * 0.13 : s * 0.11);
+                            const oy = hy + (k === 0 ? s * 0.01 : -s * 0.014);
+                            strokeOptic(() => {
+                                ctx.beginPath();
+                                ctx.moveTo(ox - side * s * 0.095, oy - s * 0.042);
+                                ctx.lineTo(ox - side * s * 0.062, oy + s * 0.032);
+                                ctx.lineTo(ox + side * s * 0.068, oy + s * 0.026);
+                                ctx.lineTo(ox + side * s * 0.11, oy - s * 0.036);
+                            });
+                        }
+                    } else if (brand === 'ferrari') {
+                        // Razor Italian SF90 / 812 sweeping L-fang LEDs
+                        strokeOptic(() => {
+                            ctx.beginPath();
+                            ctx.moveTo(ex - side * s * 0.22, hy + s * 0.03);
+                            ctx.lineTo(ex + side * s * 0.14, hy + s * 0.01);
+                            ctx.lineTo(ex + side * s * 0.26, hy - s * 0.095);
+                        });
+                        strokeOptic(() => {
+                            ctx.beginPath();
+                            ctx.moveTo(ex - side * s * 0.14, hy - s * 0.025);
+                            ctx.lineTo(ex + side * s * 0.08, hy - s * 0.038);
+                        });
+                    } else if (brand === 'pagani') {
+                        // Iconic Pagani quad-pod carbon projector pods (2 stacked twin eyes per side)
+                        for (let p = 0; p < 2; p++) {
+                            const px = ex + side * (p === 0 ? -s * 0.09 : s * 0.10);
+                            const py = hy + (p === 0 ? s * 0.016 : -s * 0.022);
+                            const r = s * (p === 0 ? 0.046 : 0.054);
+                            strokeOptic(() => {
+                                ctx.beginPath();
+                                ctx.arc(px, py, r, 0, Math.PI * 2);
+                            });
+                        }
+                    } else if (brand === 'bugatti') {
+                        // Signature Bugatti Chiron 4-dot quad-pixel LED bar
+                        for (let d = 0; d < 4; d++) {
+                            const dx = ex + side * (-s * 0.17 + d * s * 0.115);
+                            const dy = hy - d * s * 0.008;
+                            strokeOptic(() => {
+                                ctx.beginPath();
+                                ctx.moveTo(dx - side * s * 0.03, dy + s * 0.014);
+                                ctx.lineTo(dx + side * s * 0.03, dy + s * 0.014);
+                                ctx.lineTo(dx + side * s * 0.03, dy - s * 0.018);
+                                ctx.lineTo(dx - side * s * 0.03, dy - s * 0.018);
+                                ctx.closePath();
+                            });
+                        }
+                    } else {
+                        // Lamborghini / Koenigsegg / GT3RS predatory Y-fang blade
+                        strokeOptic(() => {
+                            ctx.beginPath();
+                            ctx.moveTo(ex - side * s * 0.19, hy + s * 0.02);
+                            ctx.lineTo(ex + side * s * 0.04, hy + s * 0.012);
+                            ctx.lineTo(ex + side * s * 0.22, hy - s * 0.078);
+                            ctx.moveTo(ex + side * s * 0.04, hy + s * 0.012);
+                            ctx.lineTo(ex + side * s * 0.21, hy + s * 0.072);
+                        });
+                    }
+
+                    // Wet studio floor RGB elliptical reflection under each headlight
+                    ctx.save();
+                    ctx.translate(ex, cy + s * 0.38);
+                    ctx.scale(1.0, 0.22);
+                    const fr = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 0.56);
+                    fr.addColorStop(0, _rgba(rgbPrimary, 0.34 * beam));
+                    fr.addColorStop(0.5, _rgba(rgbAlt, 0.12 * beam));
+                    fr.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = fr;
+                    ctx.beginPath(); ctx.arc(0, 0, s * 0.56, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                });
+
+                // Subtle center grille accent matching brand
+                if (brand === 'bugatti') {
+                    // Iconic illuminated carbon horseshoe grille
+                    ctx.strokeStyle = _rgba(rgbPrimary, 0.42 * beam);
+                    ctx.lineWidth = isPreview ? 1.2 : 2.1;
+                    ctx.beginPath();
+                    ctx.arc(cx, hy + s * 0.10, s * 0.18, Math.PI, Math.PI * 2);
+                    ctx.lineTo(cx + s * 0.16, hy + s * 0.26);
+                    ctx.lineTo(cx - s * 0.16, hy + s * 0.26);
+                    ctx.closePath();
+                    ctx.stroke();
+                } else if (brand === 'bmw') {
+                    // Dark recessed carbon double kidney grilles
+                    [-1, 1].forEach((side) => {
+                        const gx = cx + side * s * 0.028;
+                        ctx.fillStyle = 'rgba(3,4,7,0.88)';
+                        ctx.strokeStyle = _rgba(rgbPrimary, 0.32 * beam);
+                        ctx.lineWidth = isPreview ? 1 : 1.6;
+                        ctx.beginPath();
+                        ctx.roundRect(side < 0 ? gx - s * 0.19 : gx, hy - s * 0.05, s * 0.19, s * 0.22, 10);
+                        ctx.fill();
+                        ctx.stroke();
+                    });
+                } else {
+                    // Widebody low carbon front splitter glow line
+                    const spG = ctx.createLinearGradient(cx - s * 0.9, 0, cx + s * 0.9, 0);
+                    spG.addColorStop(0, 'rgba(0,0,0,0)');
+                    spG.addColorStop(0.5, _rgba(rgbPrimary, 0.48 * beam));
+                    spG.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.strokeStyle = spG;
+                    ctx.lineWidth = isPreview ? 1.4 : 2.4;
+                    ctx.beginPath();
+                    ctx.moveTo(cx - s * 0.92, hy + s * 0.24);
+                    ctx.quadraticCurveTo(cx, hy + s * 0.29, cx + s * 0.92, hy + s * 0.24);
+                    ctx.stroke();
+                }
+            };
+
+            // ---- SIGNATURE MOVING PART PER MODIFIED CAR ----
+            if (part === 'wiper_rain') {
+                // Dark glass windshield perspective + live raindrops + twin aero windshield wipers ("water cleaner") moving on scroll!
+                drawBrandHeadlights(cy + s * 0.06);
+
+                // Slanted monsoon rain streaks falling across tinted windshield
+                const drops = isPreview ? 28 : 85;
+                ctx.lineWidth = isPreview ? 0.8 : 1.15;
+                for (let i = 0; i < drops; i++) {
+                    const rx = rnd() * w;
+                    const ry = ((rnd() * h + (t * 220 + sc * 320) * (0.6 + rnd() * 0.8)) % (h + 40)) - 20;
+                    const len = (isPreview ? 7 : 18) + rnd() * 14;
+                    ctx.strokeStyle = _rgba(i % 4 === 0 ? rgbPrimary : '#cbd5e1', 0.16 + rnd() * 0.24);
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry);
+                    ctx.lineTo(rx - len * 0.22, ry + len);
+                    ctx.stroke();
+                }
+
+                // Twin sweeping aero windshield wiper blades pivoting cleanly with scroll!
+                const wipeSweep = Math.sin(sc * 2.4 + t * 1.15); // -1 .. +1
+                const wiperLen = s * 0.82;
+                const pivots = [
+                    { x: cx - s * 0.36, y: h * 0.86 },
+                    { x: cx + s * 0.18, y: h * 0.86 },
+                ];
+                pivots.forEach((pv, pi) => {
+                    const ang = -Math.PI * 0.5 + wipeSweep * 0.72 + (pi === 0 ? -0.08 : 0.08);
+                    const tipX = pv.x + Math.cos(ang) * wiperLen;
+                    const tipY = pv.y + Math.sin(ang) * wiperLen;
+                    // Clean water-cleared misty arc trail behind the moving wiper blade
+                    ctx.strokeStyle = _rgba(rgbPrimary, 0.12 * beam);
+                    ctx.lineWidth = isPreview ? 6 : 16;
+                    ctx.beginPath();
+                    ctx.arc(pv.x, pv.y, wiperLen * 0.72, ang - 0.18, ang + 0.18);
+                    ctx.stroke();
+                    // Sleek matte-carbon wiper arm & rubber aero blade
+                    ctx.strokeStyle = 'rgba(226,232,240,0.72)';
+                    ctx.lineWidth = isPreview ? 1.8 : 3.4;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(pv.x, pv.y);
+                    ctx.lineTo(tipX, tipY);
+                    ctx.stroke();
+                    // Water bead spray glinting off blade edge
+                    ctx.strokeStyle = _rgba(rgbPrimary, 0.65 * beam);
+                    ctx.lineWidth = isPreview ? 0.9 : 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(pv.x + Math.cos(ang) * wiperLen * 0.35, pv.y + Math.sin(ang) * wiperLen * 0.35);
+                    ctx.lineTo(tipX, tipY);
+                    ctx.stroke();
+                });
+                return;
+            }
+
+            if (part === 'forged_tyres') {
+                // Blinking RGB headlights at upper horizon + twin giant spinning deep-dish forged tyres with glowing ceramic brakes!
+                drawBrandHeadlights(cy - s * 0.24);
+                const spin = t * 0.9 + sc * 4.2;
+                const wRad = s * 0.35;
+                [-1, 1].forEach((side) => {
+                    const wx = cx + side * s * 0.68;
+                    const wy = cy + s * 0.26;
+                    // Glowing hot carbon-ceramic brake caliper
+                    const cal = ctx.createRadialGradient(wx - side * wRad * 0.35, wy, 2, wx - side * wRad * 0.35, wy, wRad * 0.55);
+                    cal.addColorStop(0, _rgba('#fb923c', 0.62));
+                    cal.addColorStop(0.5, _rgba(rgbPrimary, 0.24 * beam));
+                    cal.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = cal;
+                    ctx.beginPath(); ctx.arc(wx - side * wRad * 0.35, wy, wRad * 0.55, 0, Math.PI * 2); ctx.fill();
+
+                    // Outer dark tyre wall & forged rim lip
+                    ctx.strokeStyle = 'rgba(18,20,26,0.95)';
+                    ctx.lineWidth = isPreview ? 5 : 12;
+                    ctx.beginPath(); ctx.arc(wx, wy, wRad, 0, Math.PI * 2); ctx.stroke();
+
+                    ctx.strokeStyle = _rgba(rgbPrimary, 0.58 * beam);
+                    ctx.lineWidth = isPreview ? 1.5 : 2.8;
+                    ctx.beginPath(); ctx.arc(wx, wy, wRad * 0.86, 0, Math.PI * 2); ctx.stroke();
+
+                    // 10-Spoke concave forged alloy spinning rapidly with scroll!
+                    ctx.strokeStyle = 'rgba(226,232,240,0.68)';
+                    ctx.lineWidth = isPreview ? 1.2 : 2.4;
+                    for (let k = 0; k < 10; k++) {
+                        const a = spin * side + (k / 10) * Math.PI * 2;
+                        const af = a + (k % 2 === 0 ? 0.1 : -0.1);
+                        ctx.beginPath();
+                        ctx.moveTo(wx + Math.cos(a) * wRad * 0.18, wy + Math.sin(a) * wRad * 0.18);
+                        ctx.lineTo(wx + Math.cos(a) * wRad * 0.52, wy + Math.sin(a) * wRad * 0.52);
+                        ctx.lineTo(wx + Math.cos(af) * wRad * 0.85, wy + Math.sin(af) * wRad * 0.85);
+                        ctx.stroke();
+                    }
+                    // Center lock ring
+                    ctx.strokeStyle = _rgba(rgbAlt, 0.9);
+                    ctx.lineWidth = isPreview ? 1.4 : 2.4;
+                    ctx.beginPath(); ctx.arc(wx, wy, wRad * 0.17, 0, Math.PI * 2); ctx.stroke();
+                });
+                return;
+            }
+
+            if (part === 'exhaust_flame') {
+                // Blinking RGB optics + Quad Titanium Exhaust Pipes spitting blue/amber backfire flames on scroll!
+                drawBrandHeadlights(cy - s * 0.18);
+                const diffY = cy + s * 0.25;
+                // Carbon rear diffuser fins
+                ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+                ctx.lineWidth = isPreview ? 1.2 : 2.2;
+                for (let f = -3; f <= 3; f++) {
+                    const fx = cx + f * s * 0.14;
+                    ctx.beginPath();
+                    ctx.moveTo(fx, diffY - s * 0.08);
+                    ctx.lineTo(fx + f * s * 0.02, diffY + s * 0.14);
+                    ctx.stroke();
+                }
+                // Quad titanium exhaust tips with realistic feathered jet-torch backfire flames + sparks on scroll!
+                const flamePower = isPreview ? 0.85 : Math.min(1.35, 0.42 + Math.abs(Math.sin(sc * 4.5 + t * 2.5)) * 0.58 + scrollActivity * 0.75);
+                const pipeOffsets = [-0.52, -0.34, 0.34, 0.52];
+                pipeOffsets.forEach((po, idx) => {
+                    const px = cx + po * s;
+                    const py = diffY + s * 0.04;
+                    const pr = s * 0.052;
+                    const fLen = s * (0.22 + 0.18 * flamePower);
+
+                    // Soft circular atmospheric afterburner glow (ZERO hard ellipse edge!)
+                    const ambGlow = ctx.createRadialGradient(px, py + fLen * 0.25, 1, px, py + fLen * 0.25, fLen * 1.15);
+                    ambGlow.addColorStop(0, _rgba('#38bdf8', 0.42 * flamePower));
+                    ambGlow.addColorStop(0.35, _rgba('#fb923c', 0.26 * flamePower));
+                    ambGlow.addColorStop(0.7, _rgba(rgbPrimary, 0.10 * flamePower));
+                    ambGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = ambGlow;
+                    ctx.beginPath();
+                    ctx.arc(px, py + fLen * 0.25, fLen * 1.15, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Sculpted tapered jet-torch outer amber tongue + inner electric-blue Mach diamond core
+                    const drawTongue = (wScale, lScale, gradStops) => {
+                        const fl = fLen * lScale;
+                        const fw = pr * wScale;
+                        const sway = Math.sin(t * 14 + sc * 6 + idx * 1.9) * pr * 0.25;
+                        const tg = ctx.createLinearGradient(px, py, px + sway, py + fl);
+                        gradStops.forEach(([stop, col]) => tg.addColorStop(stop, col));
+                        ctx.fillStyle = tg;
+                        ctx.beginPath();
+                        ctx.moveTo(px - fw, py);
+                        ctx.quadraticCurveTo(px - fw * 0.85, py + fl * 0.55, px + sway, py + fl);
+                        ctx.quadraticCurveTo(px + fw * 0.85, py + fl * 0.55, px + fw, py);
+                        ctx.closePath();
+                        ctx.fill();
+                    };
+                    drawTongue(1.15, 1.05, [[0, _rgba('#fb923c', 0.82 * flamePower)], [0.55, _rgba('#f97316', 0.45 * flamePower)], [1, 'rgba(0,0,0,0)']]);
+                    drawTongue(0.68, 0.72, [[0, '#ffffff'], [0.42, _rgba('#38bdf8', 0.92)], [1, 'rgba(56,189,248,0)']]);
+
+                    // Titanium burnt-blue exhaust bezel ring
+                    ctx.fillStyle = 'rgba(4,5,9,0.85)';
+                    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = idx % 2 === 0 ? '#93c5fd' : '#e2e8f0';
+                    ctx.lineWidth = isPreview ? 1.4 : 2.5;
+                    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.stroke();
+
+                    // Hot flying titanium backfire sparks driven by scroll!
+                    for (let sp = 0; sp < (isPreview ? 2 : 5); sp++) {
+                        const spT = ((t * 1.6 + sc * 2.2 + sp * 0.27 + idx * 0.19) % 1);
+                        const sx = px + Math.sin(sp * 7.3 + idx) * pr * (0.8 + spT * 2.6);
+                        const sy = py + spT * fLen * 1.35;
+                        ctx.fillStyle = _rgba('#fde68a', (1 - spT) * 0.85);
+                        ctx.beginPath(); ctx.arc(sx, sy, isPreview ? 1 : 1.7, 0, Math.PI * 2); ctx.fill();
+                    }
+                });
+                return;
+            }
+
+            if (part === 'aero_wing') {
+                // Active Swan-Neck Carbon GT / DRS Wing pitching dynamically on scroll + RGB blinking headlights + vortex trails!
+                const drsPitch = Math.sin(sc * 1.9 + t * 0.6) * s * 0.095;
+                const wingY = cy - s * 0.32 + drsPitch * 0.35;
+                // Swan-neck carbon wing uprights
+                ctx.strokeStyle = 'rgba(203,213,225,0.42)';
+                ctx.lineWidth = isPreview ? 2 : 4;
+                [-0.36, 0.36].forEach((ux) => {
+                    ctx.beginPath();
+                    ctx.moveTo(cx + ux * s, cy - s * 0.05);
+                    ctx.quadraticCurveTo(cx + ux * s * 0.92, wingY - s * 0.05, cx + ux * s * 1.04, wingY + drsPitch * 0.4);
+                    ctx.stroke();
+                });
+                // Main carbon airfoil blade + dynamic DRS upper flap
+                const wingG = ctx.createLinearGradient(cx - s * 1.08, wingY, cx + s * 1.08, wingY);
+                wingG.addColorStop(0, _rgba(rgbPrimary, 0.75 * beam));
+                wingG.addColorStop(0.5, '#f8fafc');
+                wingG.addColorStop(1, _rgba(rgbAlt, 0.75 * beam));
+                ctx.strokeStyle = wingG;
+                ctx.lineWidth = isPreview ? 2.6 : 5.2;
+                ctx.beginPath();
+                ctx.moveTo(cx - s * 1.08, wingY + s * 0.04);
+                ctx.quadraticCurveTo(cx, wingY - s * 0.06 + drsPitch, cx + s * 1.08, wingY + s * 0.04);
+                ctx.stroke();
+
+                // Aerodynamic wingtip vortex ribbons streaming off both carbon endplates
+                [-1, 1].forEach((side) => {
+                    const ex = cx + side * s * 1.08;
+                    ctx.strokeStyle = _rgba(rgbPrimary, 0.34 * beam);
+                    ctx.lineWidth = isPreview ? 1 : 1.8;
+                    ctx.beginPath();
+                    for (let k = 0; k <= 16; k++) {
+                        const f = k / 16;
+                        const vx = ex + side * f * s * 0.45;
+                        const vy = wingY + s * 0.04 + Math.sin(f * 10 - sc * 4 - t * 2) * s * 0.04 * (1 + f);
+                        if (k === 0) ctx.moveTo(vx, vy);
+                        else ctx.lineTo(vx, vy);
+                    }
+                    ctx.stroke();
+                });
+
+                drawBrandHeadlights(cy + s * 0.06);
+                return;
+            }
+
+            // Default: 'headlight_strobe' — pure widebody dark studio RGB blinking hypercar reel!
+            drawBrandHeadlights(cy);
+            return;
+        }
+
+        // ---------------- 25 REALISTIC CINEMATIC ENVIRONMENT ENGINES ----------------
+        if (eng === 'env_rain_storm') {
+            const hz = h * 0.64;
+            // Distant nocturnal city/horizon neon bokeh lights shifting gently on scroll
+            const bokehN = isPreview ? 8 : 18;
+            for (let b = 0; b < bokehN; b++) {
+                const bx = (((rnd() * w + sc * (18 + b * 4)) % (w + 80)) + (w + 80)) % (w + 80) - 40;
+                const by = hz * (0.35 + rnd() * 0.58);
+                const br = (isPreview ? 8 : 22) + rnd() * (isPreview ? 10 : 28);
+                const bg = ctx.createRadialGradient(bx, by, 1, bx, by, br);
+                bg.addColorStop(0, _rgba(b % 2 === 0 ? spec.p : spec.s, 0.22));
+                bg.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = bg;
+                ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+            }
+            // Wet reflective ground plane
+            const gnd = ctx.createLinearGradient(0, hz, 0, h);
+            gnd.addColorStop(0, _rgba(spec.p, 0.16));
+            gnd.addColorStop(0.5, _rgba(spec.s, 0.06));
+            gnd.addColorStop(1, 'rgba(2,3,6,0.96)');
+            ctx.fillStyle = gnd;
+            ctx.fillRect(0, hz, w, h - hz);
+
+            // Expanding rain puddle ripples on wet asphalt
+            const ripN = isPreview ? 5 : 11;
+            for (let r = 0; r < ripN; r++) {
+                const rx = rnd() * w;
+                const ry = hz + rnd() * (h - hz) * 0.88;
+                const phase = ((t * 0.75 + sc * 0.9 + rnd()) % 1);
+                const rad = phase * (isPreview ? 14 : 42);
+                ctx.strokeStyle = _rgba(r % 2 === 0 ? spec.p : '#e2e8f0', (1 - phase) * 0.36);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.ellipse(rx, ry, rad, rad * 0.28, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            // Multi-depth slanted volumetric rain streaks
+            const rainN = isPreview ? 32 : 110;
+            for (let i = 0; i < rainN; i++) {
+                const depth = 0.4 + rnd() * 0.8;
+                const x = rnd() * (w + 80);
+                const y = ((rnd() * h + (t * 280 + sc * 340) * depth) % (h + 40)) - 20;
+                const len = (isPreview ? 8 : 22) * depth;
+                ctx.strokeStyle = _rgba(i % 5 === 0 ? spec.p : '#cbd5e1', 0.12 + depth * 0.22);
+                ctx.lineWidth = depth > 0.95 ? 1.3 : 0.85;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - len * 0.20, y + len);
+                ctx.stroke();
+            }
+            return;
+        }
+
+        if (eng === 'env_aurora_peaks') {
+            const hz = h * 0.68;
+            // Shimmering volumetric Aurora Borealis curtains undulating smoothly on scroll
+            const curtains = isPreview ? 3 : 5;
+            for (let c = 0; c < curtains; c++) {
+                const step = isPreview ? 8 : 10;
+                const baseY = h * (0.20 + c * 0.085);
+                for (let x = 0; x <= w; x += step) {
+                    const nx = x / w;
+                    const wave = Math.sin(nx * 5.2 + c * 1.4 + t * 0.45 + sc * 1.35) * h * 0.085
+                        + Math.cos(nx * 10.5 - t * 0.3 + sc * 0.9) * h * 0.03;
+                    const yTop = baseY + wave - h * 0.14;
+                    const yBot = baseY + wave + h * 0.13;
+                    const aGrad = ctx.createLinearGradient(x, yTop, x, yBot);
+                    aGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                    aGrad.addColorStop(0.45, _rgba(c % 2 === 0 ? spec.p : spec.s, 0.15));
+                    aGrad.addColorStop(0.78, _rgba(spec.p, 0.06));
+                    aGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = aGrad;
+                    ctx.fillRect(x, yTop, step + 1, yBot - yTop);
+                }
+            }
+            // Layered dark obsidian alpine peaks with parallax scroll depth
+            for (let layer = 0; layer < 3; layer++) {
+                const shift = sc * (18 + layer * 24);
+                const ridgeBase = hz - (2 - layer) * h * 0.06;
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let x = 0; x <= w; x += (isPreview ? 8 : 10)) {
+                    const nx = (x + shift) / w;
+                    const peak = Math.abs(Math.sin(nx * (3.2 + layer * 1.5) + spec.seed + layer)) * h * (0.14 - layer * 0.025)
+                        + Math.sin(nx * 11 + layer * 2) * h * 0.02;
+                    ctx.lineTo(x, ridgeBase - peak);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = layer === 2 ? '#040508' : (layer === 1 ? 'rgba(8,11,17,0.86)' : 'rgba(13,18,28,0.68)');
+                ctx.fill();
+            }
+            // Mirror glacial lake reflection whisper
+            const lk = ctx.createLinearGradient(0, hz, 0, h);
+            lk.addColorStop(0, _rgba(spec.p, 0.16));
+            lk.addColorStop(1, 'rgba(2,4,8,0.92)');
+            ctx.fillStyle = lk;
+            ctx.fillRect(0, hz + h * 0.04, w, h - hz);
+            return;
+        }
+
+        if (eng === 'env_abyss_ocean') {
+            // Volumetric underwater light-shafts slicing downward through midnight abyss
+            const shafts = isPreview ? 4 : 8;
+            for (let i = 0; i < shafts; i++) {
+                const sx = w * (0.08 + (i / shafts) * 0.88) + Math.sin(t * 0.35 + sc * 0.9 + i) * w * 0.06;
+                const sw = w * (0.04 + rnd() * 0.06);
+                const sg = ctx.createLinearGradient(sx, 0, sx + w * 0.14, h * 0.92);
+                sg.addColorStop(0, _rgba(i % 2 === 0 ? spec.p : spec.s, 0.20));
+                sg.addColorStop(0.65, _rgba(spec.p, 0.05));
+                sg.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = sg;
+                ctx.beginPath();
+                ctx.moveTo(sx - sw * 0.4, 0);
+                ctx.lineTo(sx + sw * 0.4, 0);
+                ctx.lineTo(sx + w * 0.16 + sw * 1.4, h);
+                ctx.lineTo(sx + w * 0.16 - sw * 1.2, h);
+                ctx.closePath();
+                ctx.fill();
+            }
+            // Gently undulating caustic ribbons
+            for (let r = 0; r < (isPreview ? 4 : 7); r++) {
+                const y0 = h * (0.22 + r * 0.11);
+                ctx.beginPath();
+                for (let x = 0; x <= w; x += (isPreview ? 8 : 10)) {
+                    const y = y0 + Math.sin(x * 0.012 + t * 0.8 + sc * 1.6 + r) * h * 0.025;
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = _rgba(r % 2 === 0 ? spec.p : spec.s, 0.16);
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            }
+            // Rising bioluminescent marine light motes driven by scroll
+            const motes = isPreview ? 18 : 52;
+            for (let m = 0; m < motes; m++) {
+                const mx = rnd() * w + Math.sin(t + m) * 14;
+                const my = (((rnd() * h - (t * 28 + sc * 120) * (0.4 + rnd() * 0.7)) % h) + h) % h;
+                const mr = (isPreview ? 1.1 : 2.1) + rnd() * 1.4;
+                ctx.fillStyle = _rgba(m % 3 === 0 ? '#ffffff' : spec.p, 0.28 + rnd() * 0.55);
+                ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+            }
+            return;
+        }
+
+        if (eng === 'env_volcanic_embers') {
+            const hz = h * 0.74;
+            // Deep caldera molten horizon glow
+            const glow = ctx.createRadialGradient(w * 0.5, hz, 10, w * 0.5, hz, w * 0.72);
+            glow.addColorStop(0, _rgba(spec.p, 0.34));
+            glow.addColorStop(0.45, _rgba(spec.s, 0.12));
+            glow.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, w, h);
+
+            // Dark basalt volcanic ridge silhouette
+            ctx.beginPath();
+            ctx.moveTo(0, h);
+            const pan = sc * 28;
+            for (let x = 0; x <= w; x += (isPreview ? 8 : 10)) {
+                const nx = (x + pan) / w;
+                const y = hz - Math.abs(Math.sin(nx * 4.1 + spec.seed)) * h * 0.16 - Math.cos(nx * 9.5) * h * 0.025;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.fillStyle = '#070405';
+            ctx.fill();
+
+            // Glowing lava rim along caldera silhouette
+            ctx.beginPath();
+            for (let x = 0; x <= w; x += (isPreview ? 8 : 10)) {
+                const nx = (x + pan) / w;
+                const y = hz - Math.abs(Math.sin(nx * 4.1 + spec.seed)) * h * 0.16 - Math.cos(nx * 9.5) * h * 0.025;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = _rgba(spec.p, 0.45 + Math.sin(t * 1.4 + sc) * 0.18);
+            ctx.lineWidth = isPreview ? 1.1 : 2;
+            ctx.stroke();
+
+            // Swirling incandescent ash embers rising with scroll velocity
+            const embers = isPreview ? 22 : 68;
+            for (let e = 0; e < embers; e++) {
+                const sp = 0.5 + rnd() * 0.9;
+                const ex = (((rnd() * w + Math.sin(t * 0.9 + e) * 28 + sc * 42 * sp) % w) + w) % w;
+                const ey = (((rnd() * h - (t * 48 + sc * 180) * sp) % h) + h) % h;
+                const er = (isPreview ? 1.0 : 1.9) + rnd() * 1.5;
+                ctx.fillStyle = _rgba(e % 3 === 0 ? '#fde68a' : spec.p, 0.35 + rnd() * 0.6);
+                ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI * 2); ctx.fill();
+            }
+            return;
+        }
+
+        if (eng === 'env_mist_cosmos') {
+            // Deep-field starlight + shooting meteors gliding across night sky on scroll
+            const stars = isPreview ? 30 : 95;
+            for (let i = 0; i < stars; i++) {
+                const sx = (((rnd() * w - sc * (4 + (i % 4) * 3)) % w) + w) % w;
+                const sy = rnd() * h * 0.72;
+                const tw = 0.25 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2 + i * 3.1));
+                ctx.fillStyle = _rgba(i % 4 === 0 ? spec.p : '#ffffff', tw);
+                ctx.fillRect(sx, sy, i % 6 === 0 ? 2 : 1.2, i % 6 === 0 ? 2 : 1.2);
+            }
+            // Shooting meteor streak driven by scroll
+            const mPhase = ((t * 0.22 + sc * 0.65) % 1 + 1) % 1;
+            const mx = w * (0.15 + mPhase * 0.72);
+            const my = h * (0.12 + mPhase * 0.26);
+            const mg = ctx.createLinearGradient(mx, my, mx - w * 0.10, my - h * 0.045);
+            mg.addColorStop(0, _rgba('#ffffff', 0.85));
+            mg.addColorStop(0.4, _rgba(spec.p, 0.38));
+            mg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.strokeStyle = mg;
+            ctx.lineWidth = isPreview ? 1.2 : 2;
+            ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(mx - w * 0.10, my - h * 0.045); ctx.stroke();
+
+            // Layered nocturnal mountain/dune silhouettes with rolling silver valley mist
+            for (let l = 0; l < 3; l++) {
+                const base = h * (0.64 + l * 0.09);
+                const sh = sc * (14 + l * 22);
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let x = 0; x <= w; x += (isPreview ? 8 : 10)) {
+                    const nx = (x + sh) / w;
+                    const y = base - Math.sin(nx * (3.6 + l * 1.4) + spec.seed + l * 1.7) * h * (0.08 - l * 0.015) - Math.cos(nx * 8.2) * h * 0.02;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = l === 2 ? '#05060a' : (l === 1 ? 'rgba(9,12,18,0.82)' : 'rgba(15,20,30,0.62)');
+                ctx.fill();
+
+                // Soft silver mist ribbon hovering between ridges
+                const mistG = ctx.createLinearGradient(0, base - h * 0.04, 0, base + h * 0.07);
+                mistG.addColorStop(0, 'rgba(0,0,0,0)');
+                mistG.addColorStop(0.5, _rgba(spec.s, 0.09));
+                mistG.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = mistG;
+                ctx.fillRect(0, base - h * 0.04, w, h * 0.11);
+            }
+            return;
+        }
+
         // pitlane_laser
         const hz = h * 0.52;
         const sweep = Math.sin(t * 0.4 + sc * 1.4) * w * 0.22;
@@ -1192,5 +1976,6 @@
     };
 
     global.AURA_WALLPAPERS_100 = CATALOG;
+    global.AURA_WALLPAPERS_150 = CATALOG;
     global.AuraWallpaperEngine = Engine;
 })(window);

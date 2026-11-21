@@ -289,7 +289,7 @@ def test_part3_remote_control_intelligence_security_and_emergency_stop(srv_url):
 def test_part4_five_center_ui_and_home_screen_sacred():
     html_text = (ROOT / "index.html").read_text(encoding="utf-8")
     sw_text = (ROOT / "sw.js").read_text(encoding="utf-8")
-    assert "aura-core-shell-v1" in sw_text
+    assert re.search(r"aura-core-shell-v\d+", sw_text)
 
     for el_id in (
         "awTabBtn_agents",
@@ -447,15 +447,23 @@ def test_max_4_divisions_deep_upgrades_and_100_scroll_wallpapers(srv_url):
         assert r_rem.status == 200
         assert "AURA Remote Agent Control" in r_rem.read().decode("utf-8", errors="replace")
 
-    # Division 4: 100 Scroll-Driven Realistic Wallpapers (50 Hacker + 50 BMW/Auto) served via /aura_wallpapers.js
+    # Division 4: 150 Scroll-Driven Realistic Wallpapers (50 Hacker + 50 BMW/Auto + 25 Modified Hypercars + 25 Environments) served via /aura_wallpapers.js
     with urllib.request.urlopen(f"{srv_url}/aura_wallpapers.js", timeout=15) as r_wp:
         assert r_wp.status == 200
         wp_text = r_wp.read().decode("utf-8", errors="replace")
     assert "AURA_WALLPAPERS_100" in wp_text
+    assert "AURA_WALLPAPERS_150" in wp_text
     assert "AuraWallpaperEngine" in wp_text
     assert "bmw_laser_drl" in wp_text
     assert "aero_windtunnel" in wp_text
     assert "threat_globe" in wp_text
+    assert "modcar_reel" in wp_text
+    assert "Ferrari SF90 XX Novitec" in wp_text
+    assert "Pagani Zonda R Exposed Carbon" in wp_text
+    assert "Bugatti Chiron Pur Sport Carbon" in wp_text
+    assert "wiper_rain" in wp_text
+    assert "env_aurora_peaks" in wp_text
+    assert "env_rain_storm" in wp_text
 
 
 def test_device_intelligence_conversational_coder_tools_and_jarvis_v2(srv_url):
@@ -587,7 +595,7 @@ def test_device_intelligence_conversational_coder_tools_and_jarvis_v2(srv_url):
         assert r_sw.status == 200
         sw_txt = r_sw.read().decode("utf-8", errors="replace")
     assert "aura_offline_mobile.js" in sw_txt
-    assert "aura-core-shell-v19" in sw_txt
+    assert "aura-core-shell-v20" in sw_txt
 
 
 

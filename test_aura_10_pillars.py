@@ -338,7 +338,7 @@ def test_ui_all_10_pillars_present_and_home_screen_untouched():
     html_text = (ROOT / "index.html").read_text(encoding="utf-8")
     sw_text = (ROOT / "sw.js").read_text(encoding="utf-8")
 
-    assert "aura-core-shell-v1" in sw_text
+    assert re.search(r"aura-core-shell-v\d+", sw_text)
 
     # All 6 unified tabs + 3 orchestrator subviews present
     for el_id in (

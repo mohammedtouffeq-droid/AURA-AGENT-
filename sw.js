@@ -1,4 +1,4 @@
-const AURA_CACHE_NAME = 'aura-core-shell-v19';
+const AURA_CACHE_NAME = 'aura-core-shell-v20';
 const AURA_PRECACHE_URLS = [
   '/',
   '/index.html',

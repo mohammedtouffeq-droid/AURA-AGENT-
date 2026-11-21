@@ -5466,6 +5466,8 @@
         }
         .wallpaper-thumb-badge.hacker { color: #6ee7b7; border-color: rgba(52, 211, 153, 0.35); }
         .wallpaper-thumb-badge.auto { color: #fde68a; border-color: rgba(250, 204, 21, 0.35); }
+        .wallpaper-thumb-badge.modcars { color: #fda4af; border-color: rgba(244, 63, 94, 0.42); }
+        .wallpaper-thumb-badge.environment { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.40); }
         .wallpaper-thumb-motion {
             display: block;
             font-size: 8.5px;
@@ -6744,8 +6746,8 @@
                     <div class="settings-tab-pane" id="settingsTab_appearance">
                         <div class="settings-pane-head">
                             <div>
-                                <h3>Appearance &amp; 100 Scroll-Animated Wallpapers</h3>
-                                <p>50 realistic Cyber/Hacker command backdrops &amp; 50 BMW/Automotive studio motion worlds — every wallpaper responds live to scroll momentum.</p>
+                                <h3>Appearance &amp; 150 Scroll-Animated Wallpapers</h3>
+                                <p>25 Modified Hypercar Reels (BMW, Ferrari, Pagani, Bugatti + RGB Blinking Headlights &amp; Moving Parts), 25 Realistic Environments, 50 Cyber/Hacker &amp; 50 BMW/Auto worlds.</p>
                             </div>
                         </div>
 
@@ -6779,7 +6781,7 @@
 
                         <div class="settings-panel-card">
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-                                <div class="settings-card-eyebrow">100 Scroll-Driven Realistic Wallpapers</div>
+                                <div class="settings-card-eyebrow">150 Scroll-Driven Realistic Wallpapers</div>
                                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                                     <input type="file" id="customWallpaperInput" accept="image/*" multiple style="display:none;" onchange="handleCustomWallpaperUpload(event)">
                                     <button type="button" class="settings-btn-ghost" onclick="document.getElementById('customWallpaperInput').click()" style="padding:5px 10px; font-size:11.5px;">+ Upload Pic</button>
@@ -6788,12 +6790,14 @@
                                 </div>
                             </div>
                             <div class="wp-studio-toolbar">
-                                <div class="wp-cat-pills" role="tablist" aria-label="Wallpaper collection filter">
-                                    <button type="button" class="wp-cat-btn active" id="wpCatBtn_all" onclick="setWallpaperGalleryCategory('all')">All (100)</button>
+                                <div class="wp-cat-pills" role="tablist" aria-label="Wallpaper collection filter" style="flex-wrap:wrap;">
+                                    <button type="button" class="wp-cat-btn active" id="wpCatBtn_all" onclick="setWallpaperGalleryCategory('all')">All (150)</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_modcars" onclick="setWallpaperGalleryCategory('modcars')">Mod Cars (25)</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_environment" onclick="setWallpaperGalleryCategory('environment')">Environment (25)</button>
                                     <button type="button" class="wp-cat-btn" id="wpCatBtn_hacker" onclick="setWallpaperGalleryCategory('hacker')">Hacker (50)</button>
                                     <button type="button" class="wp-cat-btn" id="wpCatBtn_auto" onclick="setWallpaperGalleryCategory('auto')">BMW / Auto (50)</button>
                                 </div>
-                                <input type="search" id="wallpaperSearchInput" class="wp-search-inp" placeholder="Search BMW, Laser, Carbon, Matrix, Radar..." oninput="setWallpaperSearchQuery(this.value)" autocomplete="off">
+                                <input type="search" id="wallpaperSearchInput" class="wp-search-inp" placeholder="Search BMW, Ferrari, Pagani, Bugatti, Wiper, Aurora, Rain..." oninput="setWallpaperSearchQuery(this.value)" autocomplete="off">
                             </div>
                             <div id="settingsWallpaperGrid" class="wallpaper-gallery-grid"></div>
                             <div id="settingsCustomWallpapersWrap" style="display:none; margin-top:4px;">
@@ -13880,8 +13884,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function setWallpaperGalleryCategory(cat) {
-            _wpGalleryCategory = ['all', 'hacker', 'auto'].includes(cat) ? cat : 'all';
-            ['all', 'hacker', 'auto'].forEach(c => {
+            const allowed = ['all', 'modcars', 'environment', 'hacker', 'auto'];
+            _wpGalleryCategory = allowed.includes(cat) ? cat : 'all';
+            allowed.forEach(c => {
                 const b = document.getElementById('wpCatBtn_' + c);
                 if (b) b.classList.toggle('active', c === _wpGalleryCategory);
             });
@@ -14014,8 +14019,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     return true;
                 });
                 settingsGrid.innerHTML = filtered.length ? filtered.map(w => {
-                    const badgeCls = w.category === 'hacker' ? 'hacker' : (w.category === 'auto' ? 'auto' : '');
-                    const badgeTxt = w.category === 'hacker' ? 'HACKER' : (w.category === 'auto' ? 'BMW/AUTO' : 'MATTE');
+                    const badgeCls = w.category === 'modcars' ? 'modcars' : (w.category === 'environment' ? 'environment' : (w.category === 'hacker' ? 'hacker' : (w.category === 'auto' ? 'auto' : '')));
+                    const badgeTxt = w.category === 'modcars' ? 'MOD CAR' : (w.category === 'environment' ? 'ENV' : (w.category === 'hacker' ? 'HACKER' : (w.category === 'auto' ? 'BMW/AUTO' : 'MATTE')));
                     const fallbackBg = w.preview || `radial-gradient(circle at 50% 35%, ${w.g || 'rgba(122,162,255,0.2)'}, ${w.bg || '#08090c'})`;
                     return `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${escapeHtml(w.id)}" data-live-wp="${w.engine && w.engine !== 'none' ? '1' : '0'}" onclick="applyCuratedWallpaper('${escapeHtml(w.id)}')" title="${escapeHtml(w.name)} — Scroll: ${escapeHtml(w.motion || 'Static')}" style="background:${fallbackBg};">` +
                         `<span class="wallpaper-thumb-badge ${badgeCls}">${badgeTxt}</span>` +
@@ -14025,10 +14030,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 _hydrateWallpaperThumbs(settingsGrid);
             }
 
-            // Quick Popover curated top showcase (Obsidian + signature Hacker + BMW scroll worlds)
+            // Quick Popover curated top showcase (Obsidian + Modified Hypercars + Environments + Hacker + BMW)
             const quickGrid = document.getElementById('quickWallpaperGrid');
             if (quickGrid) {
-                const quickPickIds = ['obsidian', 'hacker_01', 'hacker_07', 'hacker_11', 'hacker_21', 'auto_01', 'auto_02', 'auto_06', 'auto_11', 'auto_16'];
+                const quickPickIds = ['obsidian', 'modcar_01', 'modcar_02', 'modcar_06', 'modcar_11', 'modcar_16', 'env_01', 'env_06', 'hacker_07', 'auto_02'];
                 const quickList = quickPickIds.map(id => catalog.find(w => w.id === id)).filter(Boolean);
                 const listToUse = quickList.length ? quickList : catalog.slice(0, 10);
                 quickGrid.innerHTML = listToUse.map(w => {
