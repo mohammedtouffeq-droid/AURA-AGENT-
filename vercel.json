@@ -21,11 +21,11 @@
       "destination": "/api/index?__aura_path__=/v1/$1"
     },
     {
-      "source": "/(manifest\\.json|sw\\.js)",
+      "source": "/(manifest\\.json|sw\\.js|aura_wallpapers\\.js|remote)",
       "destination": "/api/index?__aura_path__=/$1"
     },
     {
-      "source": "/((?!api/|v1/|manifest\\.json|sw\\.js).*)",
+      "source": "/((?!api/|v1/|manifest\\.json|sw\\.js|aura_wallpapers\\.js|remote).*)",
       "destination": "/index.html"
     }
   ]

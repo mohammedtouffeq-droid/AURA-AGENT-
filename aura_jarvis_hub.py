@@ -299,9 +299,15 @@ class AuraJarvisCoordinator:
             f_health = pool.submit(_audit_workspace_health, self.root_dir)
             f_weather = pool.submit(_get_cached_weather)
             f_news = pool.submit(_get_cached_news)
-            health = f_health.result(timeout=4.0)
-            weather = f_weather.result(timeout=3.5)
-            news = f_news.result(timeout=3.5)
+            health = f_health.result(timeout=5.0)
+            try:
+                weather = f_weather.result(timeout=3.5)
+            except Exception:
+                weather = {"location": loc, "note": "Live weather feed timed out; cached offline summary."}
+            try:
+                news = f_news.result(timeout=3.5)
+            except Exception:
+                news = {"articles": [], "note": "Live news feed timed out."}
 
         headlines = [a.get("title", "") for a in (news.get("articles") or [])[:4]]
         return {

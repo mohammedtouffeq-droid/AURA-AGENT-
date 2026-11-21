@@ -5366,6 +5366,115 @@
             color: #e2e8f0;
             line-height: 1.4;
         }
+        /* 100 Scroll-Driven Wallpaper Studio Controls */
+        .wp-studio-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .wp-cat-pills {
+            display: inline-flex;
+            gap: 4px;
+            background: #0d0f14;
+            padding: 3px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .wp-cat-btn {
+            border: 0;
+            background: transparent;
+            color: #939aa8;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .wp-cat-btn.active {
+            background: rgba(122, 162, 255, 0.18);
+            color: #ffffff;
+        }
+        .wp-search-inp {
+            flex: 1;
+            min-width: 155px;
+            background: #0b0d12 !important;
+            color: #f4f5f7 !important;
+            border: 1px solid rgba(255, 255, 255, 0.11) !important;
+            border-radius: 8px !important;
+            padding: 6px 10px !important;
+            font-size: 11.5px !important;
+            margin: 0 !important;
+        }
+        #settingsWallpaperGrid.wallpaper-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-auto-rows: 96px;
+            align-content: start;
+            gap: 9px;
+            max-height: 336px;
+            overflow-y: auto;
+            padding: 2px 4px 4px 0;
+        }
+        #settingsWallpaperGrid .wallpaper-thumb {
+            width: 100%;
+            height: 96px;
+            min-height: 96px;
+            aspect-ratio: auto;
+            display: block;
+            overflow: hidden;
+            background-size: cover !important;
+            background-position: center !important;
+        }
+        #quickWallpaperGrid.wallpaper-gallery-grid {
+            grid-auto-rows: 62px;
+            align-content: start;
+        }
+        #quickWallpaperGrid .wallpaper-thumb {
+            height: 62px;
+            min-height: 62px;
+            aspect-ratio: auto;
+            background-size: cover !important;
+            background-position: center !important;
+        }
+        @media (max-width: 720px) {
+            #settingsWallpaperGrid.wallpaper-gallery-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-auto-rows: 92px;
+            }
+            #settingsWallpaperGrid .wallpaper-thumb {
+                height: 92px;
+                min-height: 92px;
+            }
+        }
+        .wallpaper-thumb-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-family: var(--font-code);
+            font-size: 8.5px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: rgba(7, 9, 14, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #93c5fd;
+        }
+        .wallpaper-thumb-badge.hacker { color: #6ee7b7; border-color: rgba(52, 211, 153, 0.35); }
+        .wallpaper-thumb-badge.auto { color: #fde68a; border-color: rgba(250, 204, 21, 0.35); }
+        .wallpaper-thumb-motion {
+            display: block;
+            font-size: 8.5px;
+            color: #94a3b8;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
@@ -5866,11 +5975,17 @@
                     </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
                         <button type="button" class="aw-icon-btn" onclick="awRunAgentEvaluation()">Evaluate Agents</button>
+                        <button type="button" class="aw-icon-btn" onclick="awRunIsolatedExecJob()">Run Isolated Job</button>
                         <button type="button" class="aw-icon-btn" onclick="openVoiceCallHud()">Voice Agent Mode</button>
                         <button type="button" class="aw-icon-btn" onclick="openApexStudio()">CoderX / Pro Studio</button>
                         <button type="button" class="aw-icon-btn" onclick="openFlagshipHub('bharatcode10')">Sovereign Nexus</button>
                     </div>
                     <div id="awIntelEvalBox" style="font-size:11.5px; color:#a1a1aa;"></div>
+                </div>
+
+                <div class="aw-card">
+                    <div class="aw-section-label"><span>Unified Core Engines Orchestration Bridge</span><span id="awUnifiedEnginesBadge" style="font-family:var(--font-code); color:#6ee7b7;">5 ENGINES</span></div>
+                    <div id="awUnifiedEnginesList" style="display:flex; flex-direction:column; gap:5px;"></div>
                 </div>
 
                 <div class="aw-card">
@@ -6130,6 +6245,7 @@
                         <input type="text" id="awGitBranchInput" class="aw-url-input" style="flex:1; min-width:120px;" placeholder="Branch or agent worktree name...">
                         <button type="button" class="aw-icon-btn" onclick="awGitBranchAction('create')">New Branch</button>
                         <button type="button" class="aw-icon-btn" onclick="awGitBranchAction('switch')">Switch</button>
+                        <button type="button" class="aw-icon-btn" onclick="awGitBranchAction('merge')">Merge</button>
                         <button type="button" class="aw-icon-btn" onclick="awGitWorktreeAction('create')">+ Worktree</button>
                         <button type="button" class="aw-icon-btn" onclick="awRefreshGitPanel()">Refresh</button>
                     </div>
@@ -6593,12 +6709,12 @@
                         <span id="globalExecutionChip" style="display:none;"><span class="nav-pill-sub">Auto-Pilot</span></span>
                     </div>
 
-                    <!-- TAB 2: APPEARANCE & WALLPAPER STUDIO -->
+                    <!-- TAB 2: APPEARANCE & 100 SCROLL-ANIMATED WALLPAPER STUDIO -->
                     <div class="settings-tab-pane" id="settingsTab_appearance">
                         <div class="settings-pane-head">
                             <div>
-                                <h3>Appearance &amp; Wallpaper Studio</h3>
-                                <p>Customize ambient accent palettes, 10 luxury curated backdrops, multi-upload custom photos, dimmer, and glass blur.</p>
+                                <h3>Appearance &amp; 100 Scroll-Animated Wallpapers</h3>
+                                <p>50 realistic Cyber/Hacker command backdrops &amp; 50 BMW/Automotive studio motion worlds — every wallpaper responds live to scroll momentum.</p>
                             </div>
                         </div>
 
@@ -6606,7 +6722,7 @@
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
                                 <label class="aura-switch">
                                     <input type="checkbox" id="toggleSpaceBackdropCheckbox" checked onchange="toggleSpaceBackdropSetting(this.checked)">
-                                    <span style="font-size:13px; font-weight:600; color:#f4f4f5;">Scroll Space Backdrop</span>
+                                    <span style="font-size:13px; font-weight:600; color:#f4f4f5;">Scroll Space Overlay</span>
                                 </label>
                                 <span id="spaceWarpBadge" style="font-family:var(--font-code); font-size:11px; color:#a1a1aa; padding:4px 9px; border-radius:999px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);">Warp 1.0x • 0°</span>
                             </div>
@@ -6632,13 +6748,21 @@
 
                         <div class="settings-panel-card">
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-                                <div class="settings-card-eyebrow">Curated &amp; Personal Wallpapers</div>
+                                <div class="settings-card-eyebrow">100 Scroll-Driven Realistic Wallpapers</div>
                                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                                     <input type="file" id="customWallpaperInput" accept="image/*" multiple style="display:none;" onchange="handleCustomWallpaperUpload(event)">
                                     <button type="button" class="settings-btn-ghost" onclick="document.getElementById('customWallpaperInput').click()" style="padding:5px 10px; font-size:11.5px;">+ Upload Pic</button>
                                     <button type="button" class="settings-btn-ghost" onclick="cycleNextWallpaper()" style="padding:5px 10px; font-size:11.5px;">Cycle Next</button>
                                     <button type="button" class="settings-btn-ghost" onclick="clearCustomWallpaper()" style="padding:5px 10px; font-size:11.5px; color:#a1a1aa;">Reset</button>
                                 </div>
+                            </div>
+                            <div class="wp-studio-toolbar">
+                                <div class="wp-cat-pills" role="tablist" aria-label="Wallpaper collection filter">
+                                    <button type="button" class="wp-cat-btn active" id="wpCatBtn_all" onclick="setWallpaperGalleryCategory('all')">All (100)</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_hacker" onclick="setWallpaperGalleryCategory('hacker')">Hacker (50)</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_auto" onclick="setWallpaperGalleryCategory('auto')">BMW / Auto (50)</button>
+                                </div>
+                                <input type="search" id="wallpaperSearchInput" class="wp-search-inp" placeholder="Search BMW, Laser, Carbon, Matrix, Radar..." oninput="setWallpaperSearchQuery(this.value)" autocomplete="off">
                             </div>
                             <div id="settingsWallpaperGrid" class="wallpaper-gallery-grid"></div>
                             <div id="settingsCustomWallpapersWrap" style="display:none; margin-top:4px;">
@@ -6647,9 +6771,14 @@
                             </div>
                             <div style="display:flex; flex-direction:column; gap:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06);">
                                 <div style="display:flex; align-items:center; gap:12px;">
+                                    <span style="font-size:12px; color:#a1a1aa; width:96px; white-space:nowrap;">Scroll Motion</span>
+                                    <input type="range" id="wallpaperScrollMotionRange" min="0.2" max="2.0" step="0.1" value="1.0" oninput="updateWallpaperScrollMotion(this.value)" style="flex:1; margin:0; padding:0;">
+                                    <span id="wallpaperScrollMotionVal" style="font-size:11px; font-family:var(--font-code); color:#7aa2ff; width:38px; text-align:right;">1.0x</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:12px;">
                                     <span style="font-size:12px; color:#a1a1aa; width:96px; white-space:nowrap;">Wallpaper Dim</span>
-                                    <input type="range" id="wallpaperDimRange" min="0.15" max="0.90" step="0.05" value="0.52" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
-                                    <span id="wallpaperDimVal" style="font-size:11px; font-family:var(--font-code); color:#d4d4d8; width:38px; text-align:right;">52%</span>
+                                    <input type="range" id="wallpaperDimRange" min="0.10" max="0.90" step="0.05" value="0.34" oninput="updateWallpaperDim(this.value)" style="flex:1; margin:0; padding:0;">
+                                    <span id="wallpaperDimVal" style="font-size:11px; font-family:var(--font-code); color:#d4d4d8; width:38px; text-align:right;">34%</span>
                                 </div>
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     <span style="font-size:12px; color:#a1a1aa; width:96px; white-space:nowrap;">Glass Blur</span>
@@ -7897,6 +8026,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         </div>
     </div>
 
+    <script src="/aura_wallpapers.js"></script>
     <script>
         // Security Initialization: Purge legacy shared/bearer keys from localStorage.
         // Session auth uses HttpOnly; SameSite=Strict cookies + tab sessionStorage token + dynamic CSRF.
@@ -13531,6 +13661,38 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             }
         }
 
+        let _wpGalleryCategory = 'all';
+        let _wpGalleryQuery = '';
+
+        function _getAllCuratedWallpapers() {
+            if (Array.isArray(window.AURA_WALLPAPERS_100) && window.AURA_WALLPAPERS_100.length > 1) {
+                return window.AURA_WALLPAPERS_100;
+            }
+            return AURA_CURATED_WALLPAPERS;
+        }
+
+        function setWallpaperGalleryCategory(cat) {
+            _wpGalleryCategory = ['all', 'hacker', 'auto'].includes(cat) ? cat : 'all';
+            ['all', 'hacker', 'auto'].forEach(c => {
+                const b = document.getElementById('wpCatBtn_' + c);
+                if (b) b.classList.toggle('active', c === _wpGalleryCategory);
+            });
+            renderWallpaperGalleries();
+        }
+
+        function setWallpaperSearchQuery(q) {
+            _wpGalleryQuery = String(q || '').trim().toLowerCase();
+            renderWallpaperGalleries();
+        }
+
+        function updateWallpaperScrollMotion(val) {
+            const num = window.AuraWallpaperEngine ? window.AuraWallpaperEngine.setIntensity(val) : parseFloat(val || '1.0');
+            const rng = document.getElementById('wallpaperScrollMotionRange');
+            if (rng) rng.value = String(num);
+            const lbl = document.getElementById('wallpaperScrollMotionVal');
+            if (lbl) lbl.textContent = num.toFixed(1) + 'x';
+        }
+
         function applyCuratedWallpaper(wallId) {
             const layer = document.getElementById('auraWallpaperLayer');
             const customList = _loadSavedCustomWallpapers();
@@ -13540,16 +13702,30 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     localStorage.setItem('aura_active_wallpaper_id', customMatch.id);
                     localStorage.setItem('aura_custom_wallpaper', customMatch.dataUrl);
                 } catch (_) {}
+                if (window.AuraWallpaperEngine) window.AuraWallpaperEngine.hideForCustomImage();
                 _applyCustomWallpaperUrl(customMatch.dataUrl);
                 renderWallpaperGalleries();
                 return;
             }
-            const preset = AURA_CURATED_WALLPAPERS.find(w => w.id === wallId) || AURA_CURATED_WALLPAPERS[0];
+            const catalog = _getAllCuratedWallpapers();
+            const preset = catalog.find(w => w.id === wallId) || catalog[0];
             try {
                 localStorage.setItem('aura_active_wallpaper_id', preset.id);
                 localStorage.removeItem('aura_custom_wallpaper');
             } catch (_) {}
-            if (layer) {
+
+            if (preset.engine && window.AuraWallpaperEngine) {
+                if (preset.id === 'obsidian' || preset.engine === 'none') {
+                    window.AuraWallpaperEngine.setActive('obsidian');
+                    if (layer) {
+                        layer.style.backgroundImage = 'none';
+                        layer.style.opacity = '0';
+                    }
+                } else {
+                    window.AuraWallpaperEngine.setActive(preset.id);
+                }
+            } else if (layer) {
+                if (window.AuraWallpaperEngine) window.AuraWallpaperEngine.hideForCustomImage();
                 if (preset.id === 'obsidian' || preset.bg === 'none') {
                     layer.style.backgroundImage = 'none';
                     layer.style.backgroundSize = 'cover';
@@ -13574,25 +13750,87 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function cycleNextWallpaper() {
-            const allIds = AURA_CURATED_WALLPAPERS.map(w => w.id).concat(_loadSavedCustomWallpapers().map(c => c.id));
+            const allIds = _getAllCuratedWallpapers().map(w => w.id).concat(_loadSavedCustomWallpapers().map(c => c.id));
             const cur = _getActiveWallpaperId();
             const idx = allIds.indexOf(cur);
             const nextId = allIds[(idx + 1) % allIds.length] || 'obsidian';
             applyCuratedWallpaper(nextId);
         }
 
+        function _hydrateWallpaperThumbs(container) {
+            if (!container || !window.AuraWallpaperEngine) return;
+            const buttons = container.querySelectorAll('button.wallpaper-thumb[data-live-wp="1"]');
+            if (!buttons.length) return;
+            const renderOne = (btn) => {
+                if (!btn || btn.dataset.rendered === '1') return;
+                btn.dataset.rendered = '1';
+                const wid = btn.getAttribute('data-wall-id');
+                if (!wid || wid === 'obsidian') return;
+                try {
+                    const url = window.AuraWallpaperEngine.getPreviewDataUrl(wid);
+                    if (url) {
+                        btn.style.backgroundImage = `url("${url}")`;
+                        btn.style.backgroundSize = 'cover';
+                        btn.style.backgroundPosition = 'center';
+                    }
+                } catch (_) {}
+            };
+            if (typeof IntersectionObserver !== 'undefined') {
+                const obs = new IntersectionObserver((entries) => {
+                    entries.forEach(en => {
+                        if (en.isIntersecting) {
+                            renderOne(en.target);
+                            obs.unobserve(en.target);
+                        }
+                    });
+                }, { root: container, rootMargin: '120px' });
+                buttons.forEach(b => obs.observe(b));
+            } else {
+                buttons.forEach(b => renderOne(b));
+            }
+        }
+
         function renderWallpaperGalleries() {
             const activeId = _getActiveWallpaperId();
-            const buildCuratedHtml = () => AURA_CURATED_WALLPAPERS.map(w =>
-                `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${w.id}" onclick="applyCuratedWallpaper('${w.id}')" title="${w.name}" style="background:${w.preview};${w.id === 'monolith_grid' ? 'background-size:10px 10px,10px 10px,auto;' : ''}">` +
-                    `<span class="wallpaper-thumb-label">${w.name}</span>` +
-                `</button>`
-            ).join('');
+            const catalog = _getAllCuratedWallpapers();
 
-            ['settingsWallpaperGrid', 'quickWallpaperGrid'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerHTML = buildCuratedHtml();
-            });
+            // Settings full 100-wallpaper gallery with Category & Search filtering
+            const settingsGrid = document.getElementById('settingsWallpaperGrid');
+            if (settingsGrid) {
+                const filtered = catalog.filter(w => {
+                    if (_wpGalleryCategory !== 'all' && w.category !== _wpGalleryCategory && w.id !== 'obsidian') return false;
+                    if (_wpGalleryQuery) {
+                        const hay = `${w.name} ${w.category || ''} ${w.motion || ''}`.toLowerCase();
+                        if (!hay.includes(_wpGalleryQuery)) return false;
+                    }
+                    return true;
+                });
+                settingsGrid.innerHTML = filtered.length ? filtered.map(w => {
+                    const badgeCls = w.category === 'hacker' ? 'hacker' : (w.category === 'auto' ? 'auto' : '');
+                    const badgeTxt = w.category === 'hacker' ? 'HACKER' : (w.category === 'auto' ? 'BMW/AUTO' : 'MATTE');
+                    const fallbackBg = w.preview || `radial-gradient(circle at 50% 35%, ${w.g || 'rgba(122,162,255,0.2)'}, ${w.bg || '#08090c'})`;
+                    return `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${escapeHtml(w.id)}" data-live-wp="${w.engine && w.engine !== 'none' ? '1' : '0'}" onclick="applyCuratedWallpaper('${escapeHtml(w.id)}')" title="${escapeHtml(w.name)} — Scroll: ${escapeHtml(w.motion || 'Static')}" style="background:${fallbackBg};">` +
+                        `<span class="wallpaper-thumb-badge ${badgeCls}">${badgeTxt}</span>` +
+                        `<span class="wallpaper-thumb-label">${escapeHtml(w.name)}<span class="wallpaper-thumb-motion">${escapeHtml(w.motion || '')}</span></span>` +
+                        `</button>`;
+                }).join('') : '<div style="grid-column:1/-1; font-size:12px; color:#8b93a3; padding:14px; text-align:center;">No matching wallpapers found.</div>';
+                _hydrateWallpaperThumbs(settingsGrid);
+            }
+
+            // Quick Popover curated top showcase (Obsidian + signature Hacker + BMW scroll worlds)
+            const quickGrid = document.getElementById('quickWallpaperGrid');
+            if (quickGrid) {
+                const quickPickIds = ['obsidian', 'hacker_01', 'hacker_07', 'hacker_11', 'hacker_21', 'auto_01', 'auto_02', 'auto_06', 'auto_11', 'auto_16'];
+                const quickList = quickPickIds.map(id => catalog.find(w => w.id === id)).filter(Boolean);
+                const listToUse = quickList.length ? quickList : catalog.slice(0, 10);
+                quickGrid.innerHTML = listToUse.map(w => {
+                    const fallbackBg = w.preview || `radial-gradient(circle at 50% 35%, ${w.g || 'rgba(122,162,255,0.2)'}, ${w.bg || '#08090c'})`;
+                    return `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${escapeHtml(w.id)}" data-live-wp="${w.engine && w.engine !== 'none' ? '1' : '0'}" onclick="applyCuratedWallpaper('${escapeHtml(w.id)}')" title="${escapeHtml(w.name)}" style="background:${fallbackBg};">` +
+                        `<span class="wallpaper-thumb-label">${escapeHtml(w.shortName || w.name)}</span>` +
+                        `</button>`;
+                }).join('');
+                _hydrateWallpaperThumbs(quickGrid);
+            }
 
             const customList = _loadSavedCustomWallpapers();
             const buildCustomHtml = () => customList.map(c =>
@@ -13737,10 +13975,12 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 } else {
                     applyCuratedWallpaper('obsidian');
                 }
-                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.52';
+                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.34';
                 updateWallpaperDim(savedDim);
                 const savedBlur = localStorage.getItem('aura_wallpaper_blur') || '0';
                 updateWallpaperBlur(savedBlur);
+                const savedMotion = localStorage.getItem('aura_wallpaper_scroll_intensity') || '1.0';
+                updateWallpaperScrollMotion(savedMotion);
             } catch (_) {}
 
             const voiceOverlay = document.getElementById('voiceCallOverlay');
@@ -16263,8 +16503,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (!box) return;
             const l = data.layers || {};
             const row = (lbl, arr) => `<div style="margin-bottom:6px;"><strong style="color:#f4f4f5;">${lbl} (${(arr || []).length}):</strong> ${(arr || []).slice(0, 8).map(f => `<button type="button" class="aw-file-chip" style="margin:2px;" onclick="awOpenFileInExplorer('${_awEscArg(f)}')">${escapeHtml(f)}</button>`).join('') || '<span style="color:#71717a;">none</span>'}</div>`;
-            box.innerHTML = row('Frontend', l.frontend) + row('Backend', l.backend) + row('Database', l.database) + row('Tests', l.tests) +
-                `<div style="margin-top:6px; font-family:var(--font-code); font-size:10.5px; color:#93c5fd;">Cross-file imports tracked: ${(data.dependency_edges || []).length}</div>`;
+            const routesHtml = (data.api_routes || []).length ? `<div style="margin-top:6px;"><strong style="color:#f4f4f5;">API Routes (${data.api_routes.length}):</strong> ${data.api_routes.slice(0, 8).map(r => `<span class="aw-pill-tag blue" style="margin:2px;">${escapeHtml(r.route)}</span>`).join('')}</div>` : '';
+            const tablesHtml = (data.db_tables || []).length ? `<div style="margin-top:4px;"><strong style="color:#f4f4f5;">DB Tables (${data.db_tables.length}):</strong> ${data.db_tables.slice(0, 8).map(t => `<span class="aw-pill-tag green" style="margin:2px;">${escapeHtml(t.table)}</span>`).join('')}</div>` : '';
+            box.innerHTML = row('Frontend', l.frontend) + row('Backend', l.backend) + row('Database', l.database) + row('Tests', l.tests) + routesHtml + tablesHtml +
+                `<div style="margin-top:6px; font-family:var(--font-code); font-size:10.5px; color:#93c5fd;">Cross-layer imports & UI→API edges: ${(data.dependency_edges || []).length}</div>`;
         }
 
         async function awRunSmartSearch() {
@@ -16295,6 +16537,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
         async function awRefreshGitPanel() {
             const myGitSeq = ++_awGitRefreshSeq;
+            const diffElInit = document.getElementById('awGitDiffList');
+            if (diffElInit && !diffElInit.innerHTML.trim()) {
+                diffElInit.innerHTML = `<div style="font-size:11px; color:#8b93a3;">Scanning workspace Git diffs...</div>`;
+            }
             awRefreshSnapshotsOnly();
             const resGit = await apiFetch('/api/git/status', { method: 'GET' });
             const git = await safeParseJson(resGit);
@@ -16317,19 +16563,33 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                         diffEl.innerHTML = ch.slice(0, 12).map(c => {
                             const arg = _awEscArg(c.path);
                             const statPill = `<span style="font-family:var(--font-code); font-size:10px; color:#6ee7b7;">+${c.added || 0}</span> <span style="font-family:var(--font-code); font-size:10px; color:#fca5a5;">-${c.removed || 0}</span>`;
+                            const commentsHtml = Array.isArray(c.comments) && c.comments.length
+                                ? `<div style="margin-top:4px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; gap:3px;">` +
+                                  c.comments.slice(0, 4).map(cm => `<div style="font-size:10.5px; color:#cbd5e1; font-family:var(--font-code);"><span class="aw-pill-tag blue">L${Number(cm.line || 1)}</span> ${escapeHtml(cm.comment)}</div>`).join('') +
+                                  `</div>`
+                                : '';
                             return `<div class="aw-phase-card">` +
                                 `<div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">` +
                                 `<span style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-code); font-size:11px; color:#f4f5f7;"><span class="aw-pill-tag ${c.staged ? 'green' : 'amber'}">${escapeHtml(c.status_code)}</span> ${escapeHtml(c.path)} ${statPill}</span>` +
                                 `<div style="display:flex; gap:4px;">` +
+                                `<button type="button" class="aw-fs-mini-btn" style="color:#93c5fd;" onclick="awAddGitDiffComment('${arg}')">+ Note</button>` +
                                 `<button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awGitReviewFile('${arg}', 'approve')">Approve</button>` +
                                 `<button type="button" class="aw-fs-mini-btn" style="color:#fca5a5;" onclick="awGitReviewFile('${arg}', 'reject')">Reject</button>` +
                                 `</div></div>` +
                                 (c.diff ? _renderColorDiffHtml(c.diff) : '') +
+                                commentsHtml +
                                 `</div>`;
                         }).join('');
                     }
                 }
             }
+        }
+
+        async function awAddGitDiffComment(path) {
+            const note = await awAskInput('Inline Diff Review Comment', `Add a review comment for ${path}:`, 'Verify edge-case validation & error handling', 'Post Comment');
+            if (!note || !note.trim()) return;
+            const res = await apiFetch('/api/git/comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path, comment: note.trim(), line: 1 }) });
+            if (res.ok) { showBridgeToast('Diff comment added.', '#7aa2ff'); await awRefreshGitPanel(); }
         }
 
         async function awGitReviewFile(path, decision) {
@@ -16463,7 +16723,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const sEl = document.getElementById('awSkillsList');
             if (sEl) sEl.innerHTML = (data.skills || []).map(s => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(s.name)}</strong><span style="font-size:10px; color:#7aa2ff;">${escapeHtml(s.category || 'Skill')}</span></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(s.instructions || '')}</div></div>`).join('');
             const agEl = document.getElementById('awCustomAgentsList');
-            if (agEl) agEl.innerHTML = (data.custom_agents || []).map(a => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(a.name)}</strong><span style="font-size:10px; color:#93c5fd;">${escapeHtml(a.model)}</span></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.role)} · Tools: ${escapeHtml((a.tools || []).join(', '))}</div></div>`).join('');
+            if (agEl) agEl.innerHTML = (data.custom_agents || []).map(a => `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(a.name)}</strong><div style="display:flex; align-items:center; gap:5px;"><span style="font-size:10px; color:#93c5fd;">${escapeHtml(a.model)}</span><button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awRunCustomAgent('${_awEscArg(a.id)}')">Run</button></div></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(a.role)} · Scope: ${escapeHtml(a.allowed_dir || '.')} · Tools: ${escapeHtml((a.tools || []).join(', '))}</div></div>`).join('');
             const rTxt = document.getElementById('awRulesProjectTxt');
             if (rTxt && document.activeElement !== rTxt) rTxt.value = (data.rules && data.rules.project_rules) || '';
 
@@ -16474,7 +16734,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (pEl) pEl.innerHTML = (data.plugins || []).map(p => {
                 const pid = _awEscArg(p.id);
                 const nextAct = p.enabled ? 'disable' : 'enable';
-                return `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(p.name)} <span style="color:#71717a; font-weight:400;">v${escapeHtml(p.version)}</span></strong><button type="button" class="aw-fs-mini-btn" style="color:${p.enabled ? '#6ee7b7' : '#a1a1aa'};" onclick="awManagePlugin('${pid}', '${nextAct}')">${p.enabled ? 'Enabled' : 'Enable'}</button></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(p.description)}</div></div>`;
+                const runBtn = p.enabled ? `<button type="button" class="aw-fs-mini-btn" style="color:#93c5fd;" onclick="awRunPluginAction('${pid}')">Run</button>` : '';
+                return `<div class="aw-phase-card"><div style="display:flex; justify-content:space-between; align-items:center; gap:6px;"><strong style="font-size:11.5px; color:#f4f4f5;">${escapeHtml(p.name)} <span style="color:#71717a; font-weight:400;">v${escapeHtml(p.version)}</span></strong><div style="display:flex; gap:4px;">${runBtn}<button type="button" class="aw-fs-mini-btn" style="color:${p.enabled ? '#6ee7b7' : '#a1a1aa'};" onclick="awManagePlugin('${pid}', '${nextAct}')">${p.enabled ? 'Enabled' : 'Enable'}</button></div></div><div style="font-size:11px; color:#a1a1aa;">${escapeHtml(p.description)}</div></div>`;
             }).join('');
 
             const wfEl = document.getElementById('awWorkflowsList');
@@ -16482,7 +16743,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
             const stEl = document.getElementById('awSchedulesTriggersList');
             if (stEl) {
-                const sch = (data.schedules || []).map(s => `<div class="aw-ui-row"><span style="display:inline-flex; align-items:center; gap:6px;"><span class="aw-pill-tag blue">CRON</span><span>${escapeHtml(s.name)} (${escapeHtml(s.cron)})</span></span><span style="color:#6ee7b7; font-family:var(--font-code); font-size:10px;">${s.enabled ? 'ACTIVE' : 'PAUSED'}</span></div>`).join('');
+                const sch = (data.schedules || []).map(s => `<div class="aw-ui-row"><span style="display:inline-flex; align-items:center; gap:6px;"><span class="aw-pill-tag blue">CRON</span><span>${escapeHtml(s.name)} (${escapeHtml(s.cron)})</span></span><span style="display:inline-flex; align-items:center; gap:5px;"><button type="button" class="aw-fs-mini-btn" style="color:#6ee7b7;" onclick="awRunScheduleNow('${_awEscArg(s.id)}')">Run Now</button><span style="color:#6ee7b7; font-family:var(--font-code); font-size:10px;">${s.run_count || 0}x</span></span></div>`).join('');
                 const trg = (data.event_triggers || []).map(t => `<div class="aw-ui-row"><span style="display:inline-flex; align-items:center; gap:6px;"><span class="aw-pill-tag amber">TRIGGER</span><span>${escapeHtml(t.event)} &rarr; ${escapeHtml(t.workflow_id)}</span></span><span style="color:#7aa2ff; font-family:var(--font-code); font-size:10px;">${t.fire_count || 0}x</span></div>`).join('');
                 const bgs = (data.background_jobs || []).slice(0, 4).map(b => `<div class="aw-ui-row"><span style="display:inline-flex; align-items:center; gap:6px;"><span class="aw-pill-tag green">WORKER</span><span>${escapeHtml(b.name)}</span></span><span style="color:#93c5fd; font-family:var(--font-code); font-size:10px;">${escapeHtml(b.status.toUpperCase())}</span></div>`).join('');
                 stEl.innerHTML = sch + trg + bgs;
@@ -16520,6 +16781,25 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         async function awManagePlugin(pluginId, action) {
             const res = await apiFetch('/api/platform/plugins/manage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plugin_id: pluginId, action }) });
             if (res.ok) awRefreshAutomationHub();
+        }
+        async function awRunPluginAction(pluginId) {
+            const res = await apiFetch('/api/platform/plugins/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plugin_id: pluginId }) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? d.message : (d.error || 'Plugin run failed'), res.ok ? '#34d399' : '#f87171');
+            awRefreshActionsFeed(true);
+        }
+        async function awRunCustomAgent(agentId) {
+            const res = await apiFetch('/api/platform/agents/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_id: agentId }) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? d.summary : (d.error || 'Agent run failed'), res.ok ? '#34d399' : '#f87171');
+            awRefreshAutomationHub();
+            awRefreshActionsFeed(true);
+        }
+        async function awRunScheduleNow(scheduleId) {
+            const res = await apiFetch('/api/platform/schedules/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedule_id: scheduleId }) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? `Schedule executed (${(d.schedule || {}).run_count || 1}x)` : (d.error || 'Schedule failed'), res.ok ? '#34d399' : '#f87171');
+            awRefreshAutomationHub();
         }
         async function awRunReusableWorkflow(wfId) {
             const res = await apiFetch('/api/platform/workflows/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workflow_id: wfId }) });
@@ -16567,7 +16847,27 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (costLine) costLine.textContent = `${cm.total_input_tokens || 0} in / ${cm.total_output_tokens || 0} out tokens · $${Number(cm.total_est_cost_usd || 0).toFixed(6)} est.`;
             const pChips = document.getElementById('awProjectsChips');
             if (pChips) pChips.innerHTML = (data.projects || []).map(p => `<button type="button" class="aw-file-chip" style="${p.id === data.active_project ? 'border-color:rgba(122,162,255,0.55); color:#fff;' : ''}" onclick="awSwitchWorkspaceProject('${_awEscArg(p.id)}')">${escapeHtml(p.name)}</button>`).join('');
+            const engList = document.getElementById('awUnifiedEnginesList');
+            const engBadge = document.getElementById('awUnifiedEnginesBadge');
+            const ue = data.unified_engines || {};
+            if (engBadge && ue.total_engines) engBadge.textContent = `${ue.ready_count || 0}/${ue.total_engines} READY`;
+            if (engList && Array.isArray(ue.engines)) {
+                engList.innerHTML = ue.engines.map(e => `<div class="aw-ui-row"><span style="display:inline-flex; align-items:center; gap:6px; min-width:0;"><span class="aw-pill-tag ${e.ready ? 'green' : 'amber'}">${escapeHtml(e.status)}</span><strong style="color:#f4f5f7; font-size:11px;">${escapeHtml(e.name)}</strong></span><button type="button" class="aw-fs-mini-btn" style="color:#7aa2ff;" onclick="awDispatchUnifiedEngine('${_awEscArg(e.id)}')">Dispatch</button></div>`).join('');
+            }
             return data;
+        }
+        async function awDispatchUnifiedEngine(engineId) {
+            const res = await apiFetch('/api/control/engines/dispatch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ engine_id: engineId, goal: 'Workspace orchestration diagnostic' }) });
+            const d = await safeParseJson(res);
+            showBridgeToast(res.ok && d.success ? d.summary : (d.error || 'Engine dispatch failed'), res.ok ? '#34d399' : '#f87171');
+            awRefreshActionsFeed(true);
+        }
+        async function awRunIsolatedExecJob() {
+            const res = await apiFetch('/api/control/execute_isolated', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: 'python --version' }) });
+            const d = await safeParseJson(res);
+            const box = document.getElementById('awIntelEvalBox');
+            if (box && res.ok) box.innerHTML = `<span class="aw-pill-tag blue">${escapeHtml(d.execution_mode || 'sandbox')}</span> <code style="color:#6ee7b7;">${escapeHtml((d.stdout || d.stderr || 'OK').trim())}</code> (${d.duration_ms || 0}ms)`;
+            showBridgeToast(res.ok && d.success ? `Isolated job passed [${d.execution_mode}]` : (d.error || 'Isolated job error'), res.ok ? '#34d399' : '#f87171');
         }
         async function awSaveModelRouting() {
             await apiFetch('/api/control/routing', {
@@ -16611,7 +16911,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const res = await apiFetch('/api/control/remote/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: 'Authorized Companion Device' }) });
             const d = await safeParseJson(res);
             const box = document.getElementById('awRemoteTokenBox');
-            if (box && res.ok && d.success) box.textContent = `X-Remote-Token: ${d.pairing.token} (30m TTL · /api/remote/status)`;
+            if (box && res.ok && d.success) {
+                const tok = d.pairing.token;
+                const url = `/remote?token=${encodeURIComponent(tok)}`;
+                box.innerHTML = `X-Remote-Token: <strong>${escapeHtml(tok)}</strong> (30m TTL) · <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:#6ee7b7; text-decoration:underline;">Open Remote Companion</a>`;
+            }
         }
         async function awRevokeRemoteTokens() {
             const res = await apiFetch('/api/control/remote/revoke', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });

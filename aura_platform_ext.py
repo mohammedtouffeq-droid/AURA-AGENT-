@@ -413,17 +413,36 @@ class PlatformExtensibilityHub:
 
         tname = str(tool_name or "").strip()
         if srv["transport"] == "builtin":
-            from aura_dev_studio import analyze_codebase_architecture, detect_bugs, git_get_status_and_diffs
-            from aura_workspace_tools import list_workspace_fs_tree
+            from aura_dev_studio import analyze_codebase_architecture, detect_bugs, git_get_status_and_diffs, smart_search_workspace
+            from aura_workspace_tools import list_workspace_fs_tree, safe_resolve_workspace_path
 
             if tname == "fs.tree":
                 out = list_workspace_fs_tree(user_id, ws_dir)
+            elif tname == "fs.read":
+                rel_p = str((params or {}).get("path") or "").strip()
+                target_fp = safe_resolve_workspace_path(ws_dir, rel_p, allow_root=False) if rel_p else None
+                if target_fp and target_fp.exists() and target_fp.is_file():
+                    out = {
+                        "success": True,
+                        "path": target_fp.relative_to(ws_dir.resolve()).as_posix(),
+                        "content": target_fp.read_text(encoding="utf-8", errors="replace")[:16000],
+                    }
+                else:
+                    out = {"success": False, "error": f"Workspace file not found: {rel_p or '(empty path)'}"}
             elif tname == "git.status":
                 out = git_get_status_and_diffs(user_id, ws_dir)
             elif tname == "dev.codebase_map":
                 out = analyze_codebase_architecture(user_id, ws_dir)
             elif tname == "dev.bug_scan":
                 out = detect_bugs(user_id, ws_dir)
+            elif tname == "dev.smart_search":
+                out = smart_search_workspace(user_id, ws_dir, str((params or {}).get("query") or "def"))
+            elif tname == "security.secret_scan":
+                from aura_control_intelligence import CONTROL_HUB
+                out = CONTROL_HUB.scan_workspace_secrets(user_id, ws_dir)
+            elif tname == "engines.status":
+                from aura_control_intelligence import CONTROL_HUB
+                out = CONTROL_HUB.get_unified_engines_bridge_status()
             else:
                 out = {"server": srv["name"], "tool": tname, "available_tools": srv["tools"]}
             LIVE_ACTION_HUB.record(user_id, "orchestrator", "mcp_invoke", f"MCP {srv['name']} -> {tname}", target=server_id)
@@ -761,6 +780,114 @@ class PlatformExtensibilityHub:
             threading.Thread(target=_worker, daemon=True).start()
 
         return {"success": True, "job": dict(job)}
+
+    def build_active_context_bundle(self, user_id: Any, ws_dir: Path) -> str:
+        """#29 + #33 Injects active Project Rules, Conventions, Memories & top Custom Skills into agent/coding prompts."""
+        st = self._load(user_id, ws_dir)
+        parts: List[str] = []
+        rules = st.get("rules") or {}
+        if rules.get("project_rules"):
+            parts.append(f"Project Rules: {str(rules['project_rules'])[:450]}")
+        if rules.get("coding_conventions"):
+            parts.append(f"Coding Conventions: {str(rules['coding_conventions'])[:350]}")
+        mems = [m.get("text", "") for m in (rules.get("memories") or [])[:5] if isinstance(m, dict) and m.get("text")]
+        if mems:
+            parts.append("Saved Workspace Memories: " + " | ".join(mems))
+        custom_skills = [s for s in (st.get("skills") or []) if not s.get("builtin")][:3]
+        if custom_skills:
+            parts.append("Active Custom Skills: " + "; ".join(f"{s['name']}: {str(s.get('instructions') or '')[:120]}" for s in custom_skills))
+        return "\n".join(parts)
+
+    def run_custom_agent(
+        self,
+        user_id: Any,
+        ws_dir: Path,
+        agent_id: str,
+        goal: str = "",
+        brain: Optional[AuraBrain] = None,
+    ) -> Dict[str, Any]:
+        """#32 + #63 Runs a user-created specialist agent strictly inside its configured directory boundary."""
+        from aura_dev_studio import analyze_codebase_architecture, detect_bugs
+
+        st = self._load(user_id, ws_dir)
+        agent = next((a for a in st["custom_agents"] if a["id"] == agent_id), None)
+        if not agent:
+            return {"success": False, "error": f"Custom agent '{agent_id}' not found."}
+        scope_dir = str(agent.get("allowed_dir") or ".").strip() or "."
+        t0 = time.perf_counter()
+        bugs = detect_bugs(user_id, ws_dir, path=scope_dir if scope_dir != "." else "")
+        arch = analyze_codebase_architecture(user_id, ws_dir)
+        dur = int((time.perf_counter() - t0) * 1000)
+        summary = (
+            f"Specialist '{agent['name']}' ({agent['role']}) audited scope `{scope_dir}`: "
+            f"{arch.get('total_files', 0)} file(s), {bugs.get('total_findings', 0)} finding(s), "
+            f"security score {bugs.get('security_score', 100)}/100."
+        )
+        if goal.strip():
+            summary += f" Goal focus: {goal.strip()[:100]}"
+        self.push_notification(user_id, ws_dir, title=f"Agent Finished: {agent['name']}", message=summary, level="success")
+        LIVE_ACTION_HUB.record(user_id, "orchestrator", "custom_agent_run", summary[:120], target=agent_id, duration_ms=dur)
+        return {
+            "success": True,
+            "agent": dict(agent),
+            "scope_dir": scope_dir,
+            "duration_ms": dur,
+            "summary": summary,
+            "findings_count": bugs.get("total_findings", 0),
+            "security_score": bugs.get("security_score", 100),
+            "files_mapped": arch.get("total_files", 0),
+        }
+
+    def run_schedule_now(self, user_id: Any, ws_dir: Path, schedule_id: str, brain: Optional[AuraBrain] = None) -> Dict[str, Any]:
+        """#35 Executes a scheduled automation on demand and records run count + timestamp."""
+        st = self._load(user_id, ws_dir)
+        sch = next((s for s in st["schedules"] if s["id"] == schedule_id), None)
+        if not sch:
+            return {"success": False, "error": f"Schedule '{schedule_id}' not found."}
+        res = self.run_workflow(user_id, ws_dir, sch["workflow_id"], trigger_source=f"schedule:{sch['name']}", brain=brain)
+        with self._lock:
+            sch["run_count"] = int(sch.get("run_count", 0)) + 1
+            sch["last_run"] = time.strftime("%H:%M:%S")
+            self._save(user_id, ws_dir, st)
+        return {"success": bool(res.get("success")), "schedule": dict(sch), "workflow_run": res}
+
+    def run_plugin_action(self, user_id: Any, ws_dir: Path, plugin_id: str) -> Dict[str, Any]:
+        """#31 Executes a live capability check/action from an installed Marketplace plugin."""
+        st = self._load(user_id, ws_dir)
+        plug = next((p for p in st["plugins"] if p["id"] == plugin_id), None)
+        if not plug:
+            return {"success": False, "error": f"Plugin '{plugin_id}' not found."}
+        if not plug.get("installed") or not plug.get("enabled"):
+            return {"success": False, "error": f"Install & enable '{plug['name']}' before running it."}
+        if plugin_id == "plugin_secret_shield":
+            from aura_control_intelligence import CONTROL_HUB
+            res = CONTROL_HUB.scan_workspace_secrets(user_id, ws_dir)
+            msg = f"Secret Shield scanned {res['files_scanned']} file(s): {res['findings_count']} secret(s) detected."
+        elif plugin_id == "plugin_git_guard":
+            from aura_dev_studio import git_get_status_and_diffs
+            g = git_get_status_and_diffs(user_id, ws_dir)
+            res = {"branch": g.get("branch"), "changed_files": len(g.get("changed_files", [])), "commits": len(g.get("commits", []))}
+            msg = f"Git Guard on `{res['branch']}`: {res['changed_files']} pending change(s), {res['commits']} commit(s)."
+        elif plugin_id == "plugin_sqlite_studio":
+            from aura_dev_studio import analyze_codebase_architecture
+            arch = analyze_codebase_architecture(user_id, ws_dir)
+            res = {"db_tables": arch.get("db_tables", []), "database_files": arch.get("layers", {}).get("database", [])}
+            msg = f"SQLite Studio found {len(res['db_tables'])} table schema(s) across {len(res['database_files'])} DB file(s)."
+        elif plugin_id == "plugin_coderx_bridge":
+            from aura_control_intelligence import CONTROL_HUB
+            res = CONTROL_HUB.get_unified_engines_bridge_status()
+            msg = f"CoderX Bridge active: {res['ready_count']}/{res['total_engines']} existing AURA core engines linked."
+        else:
+            from aura_dev_studio import VISUAL_DELIVERABLES
+            res = VISUAL_DELIVERABLES.list_artifacts(user_id)
+            msg = f"{plug['name']} active: {len(res.get('artifacts', []))} deliverable(s), {len(res.get('feedback_notes', []))} visual note(s)."
+        LIVE_ACTION_HUB.record(user_id, "orchestrator", "plugin_run", msg[:120], target=plugin_id)
+        return {"success": True, "plugin_id": plugin_id, "message": msg, "result": res}
+
+    def check_tool_permission(self, user_id: Any, ws_dir: Path, tool_name: str) -> str:
+        """#34 Returns effective policy ('allow' | 'ask_approval' | 'deny') for a workspace tool."""
+        st = self._load(user_id, ws_dir)
+        return str((st.get("tool_permissions") or {}).get(tool_name, "allow"))
 
     def stop_all_background_agents(self, user_id: Any) -> int:
         uid = self._uid(user_id)

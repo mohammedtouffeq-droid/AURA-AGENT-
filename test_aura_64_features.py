@@ -313,3 +313,147 @@ def test_part4_five_center_ui_and_home_screen_sacred():
     hero = m.group(1).lower()
     for forbidden in ("agent center", "dev studio", "automation hub", "emergency stop", "git worktree", "plugin marketplace"):
         assert forbidden not in hero, f"Home screen welcomeHero polluted with '{forbidden}'"
+
+
+def test_max_4_divisions_deep_upgrades_and_100_scroll_wallpapers(srv_url):
+    """End-to-end verification of all 4 Max-Upgraded Divisions + Unified 5-Engine Bridge + /remote + 100 Scroll Wallpapers."""
+    h = _user(srv_url)
+
+    # 1. Seed a file with real SQL/Shell/None issues + API route + SQL table
+    code = (
+        "import sqlite3, subprocess\n"
+        "def run_q(cur, uid, cmd, items=[]):\n"
+        "    if uid == None:\n"
+        "        return None\n"
+        "    cur.execute(f'SELECT * FROM accounts WHERE id={uid}')\n"
+        "    subprocess.run(cmd, shell=True)\n"
+        "    return items\n"
+        "# CREATE TABLE accounts (id INT);\n"
+        "# @app.route('/api/accounts')\n"
+    )
+    assert _http(srv_url, "/api/workspace/fs/create", "POST", {"path": "srv/db_api.py", "content": code}, h)[0] == 200
+    assert _http(srv_url, "/api/workspace/fs/create", "POST", {"path": "ui/app.js", "content": "fetch('/api/accounts');\n"}, h)[0] == 200
+
+    # Division 1: Deeper Security/Bug Detection (SQLi, Shell, None, security_score)
+    c, bugs = _http(srv_url, "/api/dev/bugs", "POST", {"path": "srv/db_api.py"}, h)
+    assert c == 200 and bugs["success"] is True
+    bug_types = {f["category"] for f in bugs["findings"]}
+    assert "SQLInjectionRisk" in bug_types
+    assert "ShellInjectionRisk" in bug_types
+    assert "NoneIdentityCheck" in bug_types
+    assert "security_score" in bugs and bugs["security_score"] < 100
+
+    # Division 1: Real AST-verified Refactoring (mutable default + == None)
+    c, ref = _http(srv_url, "/api/dev/refactor", "POST", {"path": "srv/db_api.py"}, h)
+    assert c == 200 and ref["success"] is True
+    assert "is None" in ref["refactored_content"]
+    assert "items=None" in ref["refactored_content"]
+
+    # Division 1: Cross-layer Codebase Architecture (API routes + DB tables + UI->API edge)
+    c, arch = _http(srv_url, "/api/dev/codebase_map", "GET", None, h)
+    assert c == 200 and arch["success"] is True
+    assert any(r["route"] == "/api/accounts" for r in arch["api_routes"])
+    assert any(t["table"] == "accounts" for t in arch["db_tables"])
+
+    # Division 1: Inline Diff Review Comment (#41) attached to git status
+    c, cm = _http(
+        srv_url,
+        "/api/git/comment",
+        "POST",
+        {"path": "srv/db_api.py", "line": 4, "comment": "Use parameterized SQL query"},
+        h,
+    )
+    assert c == 200 and cm["success"] is True and cm["entry"]["line"] == 4
+    c, gst = _http(srv_url, "/api/git/status", "GET", None, h)
+    assert c == 200 and gst["success"] is True
+    assert any(
+        f["path"] == "srv/db_api.py" and any("parameterized SQL" in x["comment"] for x in f.get("comments", []))
+        for f in gst["changed_files"]
+    )
+
+    # Division 2: Custom Agent Execution + Plugin Action + Schedule Run-Now + MCP fs.read + Permission Deny
+    c, ag_create = _http(
+        srv_url,
+        "/api/platform/agents/save",
+        "POST",
+        {"name": "SecBot", "role": "Security auditor", "allowed_dir": "srv"},
+        h,
+    )
+    assert c == 200 and ag_create["success"] is True
+    c, ag_run = _http(
+        srv_url,
+        "/api/platform/agents/run",
+        "POST",
+        {"agent_id": ag_create["agent"]["id"], "goal": "Audit srv directory"},
+        h,
+    )
+    assert c == 200 and ag_run["success"] is True and ag_run["files_mapped"] >= 1
+
+    assert _http(srv_url, "/api/platform/plugins/manage", "POST", {"plugin_id": "plugin_secret_shield", "action": "install"}, h)[0] == 200
+    c, pl_run = _http(srv_url, "/api/platform/plugins/run", "POST", {"plugin_id": "plugin_secret_shield"}, h)
+    assert c == 200 and pl_run["success"] is True
+
+    c, sch = _http(
+        srv_url,
+        "/api/platform/schedules/save",
+        "POST",
+        {"name": "Manual Audit", "cron": "0 8 * * *", "workflow_id": "wf_code_quality_pipeline"},
+        h,
+    )
+    assert c == 200 and sch["success"] is True
+    c, sch_run = _http(srv_url, "/api/platform/schedules/run", "POST", {"schedule_id": sch["schedule"]["id"]}, h)
+    assert c == 200 and sch_run["success"] is True
+
+    c, mcp_read = _http(
+        srv_url,
+        "/api/platform/mcp/invoke",
+        "POST",
+        {"server_id": "mcp_aura_workspace", "tool": "fs.read", "params": {"path": "ui/app.js"}},
+        h,
+    )
+    assert c == 200 and mcp_read["success"] is True and "/api/accounts" in mcp_read["result"]["content"]
+
+    # Tool permission deny enforcement on file_delete
+    assert _http(srv_url, "/api/platform/permissions", "POST", {"permissions": {"file_delete": "deny"}}, h)[0] == 200
+    deny_code, _ = _http(srv_url, "/api/workspace/fs/delete", "POST", {"path": "ui/app.js"}, h)
+    assert deny_code == 403
+    assert _http(srv_url, "/api/platform/permissions", "POST", {"permissions": {"file_delete": "allow"}}, h)[0] == 200
+
+    # Division 3: Unified 5-Engine Bridge + Isolated Job + 8GB RAM Guard + Live /remote Companion
+    c, ov = _http(srv_url, "/api/control/overview", "GET", None, h)
+    assert c == 200 and ov["success"] is True
+    assert len(ov["unified_engines"]["engines"]) == 5
+    assert "low_ram_guard" in ov["resources"]
+
+    c, disp = _http(
+        srv_url,
+        "/api/control/engines/dispatch",
+        "POST",
+        {"engine_id": "coderx", "goal": "Audit API surface"},
+        h,
+    )
+    assert c == 200 and disp["success"] is True
+
+    c, iso = _http(
+        srv_url,
+        "/api/control/execute_isolated",
+        "POST",
+        {"command": "echo isolated_ok_42"},
+        h,
+    )
+    assert c == 200 and iso["success"] is True and "isolated_ok_42" in iso["stdout"]
+
+    with urllib.request.urlopen(f"{srv_url}/remote", timeout=15) as r_rem:
+        assert r_rem.status == 200
+        assert "AURA Remote Agent Control" in r_rem.read().decode("utf-8", errors="replace")
+
+    # Division 4: 100 Scroll-Driven Realistic Wallpapers (50 Hacker + 50 BMW/Auto) served via /aura_wallpapers.js
+    with urllib.request.urlopen(f"{srv_url}/aura_wallpapers.js", timeout=15) as r_wp:
+        assert r_wp.status == 200
+        wp_text = r_wp.read().decode("utf-8", errors="replace")
+    assert "AURA_WALLPAPERS_100" in wp_text
+    assert "AuraWallpaperEngine" in wp_text
+    assert "bmw_laser_drl" in wp_text
+    assert "aero_windtunnel" in wp_text
+    assert "threat_globe" in wp_text
+

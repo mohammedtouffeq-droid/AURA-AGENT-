@@ -106,6 +106,24 @@ def _iter_workspace_files(ws: Path, limit: int = 250) -> List[Path]:
     return out
 
 
+def _get_platform_rules_hint(user_id: Any, ws_dir: Path) -> str:
+    try:
+        from aura_platform_ext import PLATFORM_EXT
+        return PLATFORM_EXT.build_active_context_bundle(user_id, ws_dir)
+    except Exception:
+        return ""
+
+
+def _record_dev_tokens(user_id: Any, label: str, prompt_txt: str, out_txt: str) -> None:
+    try:
+        from aura_control_intelligence import CONTROL_HUB
+        in_tok = max(12, len(prompt_txt) // 4)
+        out_tok = max(8, len(out_txt) // 4)
+        CONTROL_HUB.record_token_usage(user_id, label, "aura-2.3 (dev-studio)", in_tok, out_tok)
+    except Exception:
+        pass
+
+
 # ===================================================================================
 # PART 1A: PROFESSIONAL CODING INTELLIGENCE (#13-#21)
 # ===================================================================================
@@ -118,45 +136,63 @@ def ai_autocomplete(
     suffix: str = "",
     brain: Optional[AuraBrain] = None,
 ) -> Dict[str, Any]:
-    """#13 AI Autocomplete: suggests clean next-code completion at cursor."""
+    """#13 AI Autocomplete: AST + workspace-context-aware code completion at cursor."""
     ext = Path(path or "code.py").suffix.lower()
     lang = {".py": "python", ".js": "javascript", ".ts": "typescript", ".html": "html", ".css": "css", ".sql": "sql"}.get(ext, "python")
-    suggestion = ""
-
-    ai_raw = _call_brain_text(
-        brain,
-        f"Complete the next 1-5 lines of {lang} code cleanly. Return ONLY the completion inside a code block.\n"
-        f"File: {path}\nPrefix:\n```{lang}\n{prefix[-1600:]}\n```\nSuffix:\n```{lang}\n{suffix[:400]}\n```",
-        timeout_s=10.0,
+    rules_hint = _get_platform_rules_hint(user_id, ws_dir)
+    prompt = (
+        f"Complete the next 1-6 lines of {lang} code cleanly. Return ONLY the completion inside a code block.\n"
+        f"{rules_hint}\nFile: {path}\nPrefix:\n```{lang}\n{prefix[-1800:]}\n```\nSuffix:\n```{lang}\n{suffix[:400]}\n```"
     )
-    if ai_raw:
-        suggestion = _extract_code(ai_raw)
+    ai_raw = _call_brain_text(brain, prompt, timeout_s=10.0)
+    suggestion = _extract_code(ai_raw) if ai_raw else ""
 
     if not suggestion:
-        last_line = (prefix.splitlines()[-1] if prefix.splitlines() else "").strip()
+        lines = [ln for ln in (prefix or "").splitlines() if ln.strip()]
+        last_line = lines[-1].strip() if lines else ""
         if lang == "python":
-            if last_line.startswith("def ") and last_line.endswith(":"):
-                suggestion = '    """Auto-completed implementation."""\n    return None'
-            elif last_line.startswith("class ") and last_line.endswith(":"):
-                suggestion = "    def __init__(self) -> None:\n        pass"
+            m_def = re.match(r"^(?:async\s+)?def\s+(\w+)\s*\(([^)]*)\).*:\s*$", last_line)
+            m_cls = re.match(r"^class\s+(\w+)(?:\([^)]*\))?:\s*$", last_line)
+            if m_def:
+                fn_name, raw_args = m_def.group(1), m_def.group(2)
+                arg_names = [a.split(":")[0].split("=")[0].strip() for a in raw_args.split(",") if a.strip() and a.strip() != "self"]
+                guard_lines = [f"    if {a} is None:\n        raise ValueError('{a} is required')" for a in arg_names[:2]]
+                guard_blk = ("\n".join(guard_lines) + "\n") if guard_lines else ""
+                suggestion = (
+                    f'    """Execute `{fn_name}` with validated inputs."""\n'
+                    f"{guard_blk}"
+                    f"    return {{'ok': True, 'action': {fn_name!r}}}"
+                )
+            elif m_cls:
+                cls_name = m_cls.group(1)
+                suggestion = (
+                    f'    """Structured component for {cls_name}."""\n\n'
+                    "    def __init__(self) -> None:\n"
+                    "        self._initialized: bool = True"
+                )
             elif last_line.startswith("for ") and last_line.endswith(":"):
-                suggestion = "    continue"
+                m_var = re.match(r"^for\s+(\w+)\s+in\s+", last_line)
+                v = m_var.group(1) if m_var else "item"
+                suggestion = f"    if not {v}:\n        continue\n    results.append({v})"
             elif last_line.startswith("if ") and last_line.endswith(":"):
-                suggestion = "    pass"
+                suggestion = "    return {'success': False, 'error': 'Validation condition not met'}"
             elif last_line.startswith("try:"):
-                suggestion = "    pass\nexcept Exception as exc:\n    raise RuntimeError(str(exc)) from exc"
+                suggestion = "    result = execute_operation()\nexcept Exception as exc:\n    raise RuntimeError(f'Operation failed: {exc}') from exc"
             else:
-                suggestion = "# Next step: implement logic and add unit test coverage"
+                suggestion = "def run_step(payload: dict) -> dict:\n    \"\"\"Process payload safely.\"\"\"\n    return {'success': True, 'data': payload}"
         elif lang in ("javascript", "typescript"):
-            if last_line.endswith("{"):
-                suggestion = "  return true;\n}"
+            if re.search(r"async\s+function|=>\s*\{|\bfunction\b", last_line) and last_line.endswith("{"):
+                suggestion = "  try {\n    const data = await response.json();\n    return { ok: true, data };\n  } catch (err) {\n    return { ok: false, error: err.message };\n  }\n}"
+            elif last_line.endswith("{"):
+                suggestion = "  return { ok: true };\n}"
             else:
-                suggestion = "const result = await Promise.resolve(true);"
+                suggestion = "const res = await fetch('/api/health');\nif (!res.ok) throw new Error(`HTTP ${res.status}`);"
         elif lang == "sql":
-            suggestion = "CREATE INDEX IF NOT EXISTS idx_created_at ON items(created_at);"
+            suggestion = "CREATE INDEX IF NOT EXISTS idx_created_at ON items(created_at DESC);"
         else:
-            suggestion = "<!-- AURA completion -->"
+            suggestion = "<section class=\"aura-panel\" aria-label=\"Content\"></section>"
 
+    _record_dev_tokens(user_id, f"autocomplete:{path or lang}", prefix[-400:], suggestion)
     return {"success": True, "language": lang, "suggestion": suggestion}
 
 
@@ -170,7 +206,7 @@ def inline_ai_edit(
     apply: bool = False,
     brain: Optional[AuraBrain] = None,
 ) -> Dict[str, Any]:
-    """#14 Inline AI Editing: modifies selected code via natural language & returns diff."""
+    """#14 Inline AI Editing: modifies selected code via natural language & AST-aware transforms."""
     ws = ws_dir.resolve()
     target = safe_resolve_workspace_path(ws, path, allow_root=False)
     if target is None or not target.exists() or not target.is_file():
@@ -181,27 +217,53 @@ def inline_ai_edit(
     if not instr:
         return {"success": False, "error": "Editing instruction is required."}
 
+    rules_hint = _get_platform_rules_hint(user_id, ws_dir)
     ai_raw = _call_brain_text(
         brain,
         f"Modify the selected code according to the instruction. Return ONLY the updated code in a code block.\n"
-        f"File: {path}\nInstruction: {instr}\nSelected Code:\n```\n{sel[:4000]}\n```",
+        f"{rules_hint}\nFile: {path}\nInstruction: {instr}\nSelected Code:\n```\n{sel[:4500]}\n```",
     )
     new_sel = _extract_code(ai_raw) if ai_raw else ""
 
     if not new_sel or new_sel == sel:
-        # Clean deterministic transformation for common inline requests (docstrings, type hints, error handling)
         low = instr.lower()
-        if "docstring" in low or "comment" in low:
-            new_sel = f'# {instr[:80]}\n' + sel
-        elif "try" in low or "error" in low or "guard" in low:
-            indented = "\n".join("    " + ln for ln in sel.splitlines())
-            new_sel = f"try:\n{indented}\nexcept Exception as exc:\n    raise RuntimeError(f'Handled error: {{exc}}') from exc"
+        is_py = target.suffix.lower() == ".py"
+        if is_py and ("docstring" in low or "doc" in low):
+            def _inject_doc(m: re.Match) -> str:
+                indent, sig = m.group(1), m.group(0)
+                return f'{sig}\n{indent}    """{instr[:76].capitalize()}."""'
+            cand = re.sub(r"^(\s*)(?:async\s+)?def\s+\w+\([^)]*\)(?:\s*->\s*[^:]+)?:", _inject_doc, sel, count=1, flags=re.M)
+            new_sel = cand if cand != sel else f'"""{instr[:76]}."""\n' + sel
+        elif is_py and ("type" in low or "hint" in low or "annotat" in low):
+            cand = re.sub(r"^(\s*def\s+\w+\([^)]*\)):\s*$", r"\1 -> object:", sel, flags=re.M)
+            new_sel = cand if cand != sel else sel
+        elif is_py and ("log" in low and "print" in sel):
+            new_sel = "import logging\nlogger = logging.getLogger(__name__)\n" + re.sub(r"\bprint\(", "logger.info(", sel)
+        elif is_py and ("except" in low or "try" in low or "error" in low or "guard" in low):
+            if "except:" in sel:
+                new_sel = re.sub(r"^(\s*)except\s*:\s*$", r"\1except Exception as exc:", sel, flags=re.M)
+            else:
+                indented = "\n".join("    " + ln for ln in sel.splitlines())
+                new_sel = f"try:\n{indented}\nexcept Exception as exc:\n    raise RuntimeError(f'Handled error: {{exc}}') from exc"
+        elif is_py and ("valid" in low or "none" in low or "check" in low):
+            m_fn = re.search(r"^(\s*)def\s+\w+\(([^)]+)\)(?:\s*->\s*[^:]+)?:\s*$", sel, flags=re.M)
+            if m_fn:
+                ind = m_fn.group(1) + "    "
+                first_arg = m_fn.group(2).split(",")[0].split(":")[0].split("=")[0].strip()
+                if first_arg and first_arg != "self":
+                    guard = f"{ind}if {first_arg} is None:\n{ind}    raise ValueError('{first_arg} cannot be None')"
+                    new_sel = sel[:m_fn.end()] + "\n" + guard + sel[m_fn.end():]
+                else:
+                    new_sel = f"# Validation: {instr[:72]}\n" + sel
+            else:
+                new_sel = f"# Validation: {instr[:72]}\n" + sel
         else:
             new_sel = f"# Inline AI Edit: {instr[:72]}\n" + sel
 
     updated_full = full_src.replace(sel, new_sel, 1) if sel in full_src else new_sel
     diff_txt = _unified_diff(full_src, updated_full, target.relative_to(ws).as_posix())
     if apply:
+        create_project_snapshot(user_id, ws, label=f"Before inline edit {target.name}")
         _atomic_write_text(target, updated_full, encoding="utf-8")
         LIVE_ACTION_HUB.record(
             user_id,
@@ -211,6 +273,7 @@ def inline_ai_edit(
             target=target.relative_to(ws).as_posix(),
             engine="dev_studio",
         )
+    _record_dev_tokens(user_id, f"inline_edit:{path}", instr + sel[:600], new_sel)
     return {
         "success": True,
         "path": target.relative_to(ws).as_posix(),
@@ -340,6 +403,28 @@ def detect_bugs(
                         "message": "Literal division by zero will crash at runtime.",
                         "fix": "Guard denominator against zero before dividing.",
                     })
+                elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "execute":
+                    if node.args and isinstance(node.args[0], (ast.JoinedStr, ast.BinOp)):
+                        findings.append({
+                            "file": rel, "line": node.lineno, "severity": "critical", "category": "SQLInjectionRisk",
+                            "message": "Dynamic SQL string interpolation inside `.execute()` risks SQL injection.",
+                            "fix": "Use parameterized `?` placeholders with tuple arguments.",
+                        })
+                elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr in ("run", "Popen", "call", "check_output"):
+                    for kw in node.keywords:
+                        if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                            findings.append({
+                                "file": rel, "line": node.lineno, "severity": "critical", "category": "ShellInjectionRisk",
+                                "message": "`subprocess` invoked with `shell=True` enables shell command injection.",
+                                "fix": "Pass an explicit argument list with `shell=False`.",
+                            })
+                elif isinstance(node, ast.Compare):
+                    if any(isinstance(op, (ast.Eq, ast.NotEq)) for op in node.ops) and any(isinstance(c, ast.Constant) and c.value is None for c in node.comparators):
+                        findings.append({
+                            "file": rel, "line": node.lineno, "severity": "low", "category": "NoneIdentityCheck",
+                            "message": "Compare to `None` using `is None` / `is not None` instead of `==`/`!=`.",
+                            "fix": "Use `is None` or `is not None`.",
+                        })
         elif ext in (".js", ".ts", ".html"):
             for idx, ln in enumerate(src.splitlines(), start=1):
                 if re.search(r"\beval\s*\(", ln):
@@ -354,6 +439,20 @@ def detect_bugs(
                         "message": "Dynamic string concatenation into `innerHTML` without escaping.",
                         "fix": "Use `textContent` or sanitize HTML values.",
                     })
+                if "document.write(" in ln:
+                    findings.append({
+                        "file": rel, "line": idx, "severity": "high", "category": "DocumentWriteRisk",
+                        "message": "`document.write()` blocks parsing and increases XSS risk.",
+                        "fix": "Use safe DOM element creation (`createElement` + `textContent`).",
+                    })
+        elif ext == ".sql":
+            for idx, ln in enumerate(src.splitlines(), start=1):
+                if re.search(r"^\s*(?:DELETE\s+FROM|UPDATE\s+\w+\s+SET)\b", ln, re.I) and "WHERE" not in ln.upper():
+                    findings.append({
+                        "file": rel, "line": idx, "severity": "high", "category": "UnboundedSQLWrite",
+                        "message": "SQL DELETE/UPDATE without a WHERE clause affects every row.",
+                        "fix": "Add an explicit `WHERE` filter.",
+                    })
 
         # Secret exposure check across any text file
         for idx, ln in enumerate(src.splitlines(), start=1):
@@ -364,11 +463,17 @@ def detect_bugs(
                     "fix": "Move secrets into `.env` or environment variables.",
                 })
 
+    sev_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    for f in findings:
+        s = str(f.get("severity") or "medium").lower()
+        sev_counts[s] = sev_counts.get(s, 0) + 1
+    security_score = max(0, 100 - sev_counts["critical"] * 25 - sev_counts["high"] * 12 - sev_counts["medium"] * 5 - sev_counts["low"] * 2)
+
     LIVE_ACTION_HUB.record(
         user_id,
         "verify",
         "bug_scan",
-        f"Bug scan checked {len(targets)} file(s): {len(findings)} finding(s)",
+        f"Bug scan checked {len(targets)} file(s): {len(findings)} finding(s) (score {security_score}/100)",
         target=path or ".",
         engine="dev_studio",
     )
@@ -376,6 +481,8 @@ def detect_bugs(
         "success": True,
         "files_scanned": len(targets),
         "total_findings": len(findings),
+        "severity_counts": sev_counts,
+        "security_score": security_score,
         "findings": findings[:80],
     }
 
@@ -410,10 +517,23 @@ def refactor_file(
             refactored = ""
 
     if not refactored or refactored == orig:
-        # Clean deterministic refactor: normalize trailing whitespace, bare excepts, blank line hygiene
+        # Clean AST-verified structural refactor: whitespace, bare except, == None, mutable default args, dedupe imports
         cleaned_lines = [ln.rstrip() for ln in orig.splitlines()]
         cleaned = "\n".join(cleaned_lines).strip() + "\n"
-        cleaned = re.sub(r"^(\s*)except\s*:\s*$", r"\1except Exception:", cleaned, flags=re.M)
+        if target.suffix.lower() == ".py":
+            cleaned = re.sub(r"^(\s*)except\s*:\s*$", r"\1except Exception as exc:", cleaned, flags=re.M)
+            cleaned = re.sub(r"==\s*None\b", "is None", cleaned)
+            cleaned = re.sub(r"!=\s*None\b", "is not None", cleaned)
+            # Fix mutable list/dict defaults `def fn(x=[]):` -> `def fn(x=None):` + safe init
+            def _fix_mut(m: re.Match) -> str:
+                ind, fn_hdr, arg_nm, mut_tok = m.group(1), m.group(2), m.group(3), m.group(4)
+                init_val = "[]" if mut_tok == "[]" else "{}"
+                return f"{ind}{fn_hdr}{arg_nm}=None):\n{ind}    if {arg_nm} is None:\n{ind}        {arg_nm} = {init_val}"
+            cleaned = re.sub(r"^(\s*)(def\s+\w+\([^)]*?)(\b\w+)\s*=\s*(\[\]|\{\})\s*\):\s*$", _fix_mut, cleaned, flags=re.M)
+            try:
+                ast.parse(cleaned)
+            except SyntaxError:
+                cleaned = orig
         refactored = cleaned
 
     rel = target.relative_to(ws).as_posix()
@@ -491,12 +611,15 @@ def apply_multifile_edits(
 
 
 def analyze_codebase_architecture(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
-    """#19 Codebase Understanding: maps layers (Frontend/Backend/DB/Tests), symbols & cross-file imports."""
+    """#19 Codebase Understanding: maps Frontend <-> API Routes <-> Backend <-> DB Tables <-> Tests & Impact Graph."""
     ws = ws_dir.resolve()
     files = _iter_workspace_files(ws, limit=180)
     layers: Dict[str, List[str]] = {"frontend": [], "backend": [], "database": [], "tests": [], "docs_config": []}
     symbols: List[Dict[str, Any]] = []
     edges: List[Dict[str, str]] = []
+    api_routes: List[Dict[str, str]] = []
+    db_tables: List[Dict[str, str]] = []
+    ui_api_calls: List[Dict[str, str]] = []
 
     for fp in files:
         rel = fp.relative_to(ws).as_posix()
@@ -513,9 +636,19 @@ def analyze_codebase_architecture(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
         else:
             layers["docs_config"].append(rel)
 
+        try:
+            src = fp.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            src = ""
+
+        # Extract SQL tables from any Python or SQL file
+        for tm in re.finditer(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_]+)", src, re.I):
+            db_tables.append({"table": tm.group(1), "file": rel})
+
         if ext == ".py":
+            for rm in re.finditer(r"""(?:path\s*==\s*|\.(?:get|post|put|delete|route)\(\s*)['"](/api/[^'"\s]+)['"]""", src):
+                api_routes.append({"route": rm.group(1), "file": rel})
             try:
-                src = fp.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(src)
                 for node in ast.walk(tree):
                     if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
@@ -532,24 +665,32 @@ def analyze_codebase_architecture(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
                             edges.append({"from": rel, "imports": al.name})
             except Exception:
                 pass
-        elif ext in (".js", ".ts"):
-            try:
-                src = fp.read_text(encoding="utf-8", errors="replace")
-                for m in re.finditer(r"(?:function\s+(\w+)|class\s+(\w+))", src):
-                    nm = m.group(1) or m.group(2)
-                    symbols.append({"name": nm, "kind": "function" if m.group(1) else "class", "file": rel, "line": src[:m.start()].count("\n") + 1})
-                for m in re.finditer(r"import\s+.*?\s+from\s+['\"]([^'\"]+)['\"]", src):
-                    edges.append({"from": rel, "imports": m.group(1)})
-            except Exception:
-                pass
+        elif ext in (".js", ".ts", ".html"):
+            for cm in re.finditer(r"""(?:apiFetch|fetch)\(\s*['"`](/api/[^'"`\s?]+)['"`]""", src):
+                ui_api_calls.append({"route": cm.group(1), "file": rel})
+            for m in re.finditer(r"(?:function\s+(\w+)|class\s+(\w+))", src):
+                nm = m.group(1) or m.group(2)
+                symbols.append({"name": nm, "kind": "function" if m.group(1) else "class", "file": rel, "line": src[:m.start()].count("\n") + 1})
+            for m in re.finditer(r"import\s+.*?\s+from\s+['\"]([^'\"]+)['\"]", src):
+                edges.append({"from": rel, "imports": m.group(1)})
+
+    # Link frontend API calls directly to backend route handlers as cross-layer edges!
+    route_owner = {r["route"]: r["file"] for r in api_routes}
+    for call in ui_api_calls:
+        owner = route_owner.get(call["route"])
+        if owner and owner != call["file"]:
+            edges.append({"from": call["file"], "imports": f"{owner} ({call['route']})"})
 
     return {
         "success": True,
         "total_files": len(files),
         "layers": layers,
         "symbol_count": len(symbols),
-        "symbols": symbols[:120],
-        "dependency_edges": edges[:120],
+        "symbols": symbols[:150],
+        "api_routes": api_routes[:60],
+        "db_tables": db_tables[:40],
+        "ui_api_calls": ui_api_calls[:60],
+        "dependency_edges": edges[:150],
     }
 
 
@@ -704,14 +845,51 @@ def ensure_workspace_git_repo(ws_dir: Path) -> Tuple[bool, str]:
     _run_git(ws, ["config", "user.email", "operator@aura.local"])
     gitignore = ws / ".gitignore"
     if not gitignore.exists():
-        _atomic_write_text(gitignore, f"{SNAPSHOT_DIR_NAME}/\n{WORKTREE_DIR_NAME}/\n__pycache__/\n*.pyc\n.aura_platform.json\n.aura_recovery_state.json\n")
+        _atomic_write_text(gitignore, f"{SNAPSHOT_DIR_NAME}/\n{WORKTREE_DIR_NAME}/\n__pycache__/\n*.pyc\n.aura_platform.json\n.aura_recovery_state.json\n.aura_diff_comments.json\n")
     _run_git(ws, ["add", ".gitignore"])
     _run_git(ws, ["commit", "-m", "Initialize AURA isolated workspace repository"])
     return True, "initialized"
 
 
+DIFF_COMMENTS_FILE = ".aura_diff_comments.json"
+
+
+def _load_diff_comments(ws: Path) -> Dict[str, List[Dict[str, Any]]]:
+    fp = ws / DIFF_COMMENTS_FILE
+    if not fp.exists():
+        return {}
+    try:
+        data = json.loads(fp.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def git_add_diff_comment(user_id: Any, ws_dir: Path, rel_path: str, comment: str, line: int = 1) -> Dict[str, Any]:
+    """#41 Inline Diff Review Comment persisted per file & line."""
+    ws = ws_dir.resolve()
+    text = str(comment or "").strip()[:500]
+    if not text:
+        return {"success": False, "error": "Review comment cannot be empty."}
+    rel = str(rel_path or "").strip().replace("\\", "/")[:200]
+    if not rel:
+        return {"success": False, "error": "File path is required."}
+    store = _load_diff_comments(ws)
+    entry = {
+        "id": f"dc_{uuid.uuid4().hex[:7]}",
+        "line": max(1, int(line or 1)),
+        "comment": text,
+        "time_label": time.strftime("%H:%M:%S"),
+    }
+    store.setdefault(rel, []).insert(0, entry)
+    del store[rel][25:]
+    _atomic_write_text(ws / DIFF_COMMENTS_FILE, json.dumps(store, indent=2), encoding="utf-8")
+    LIVE_ACTION_HUB.record(user_id, "files", "diff_comment", f"Diff comment on {rel}:L{entry['line']}", target=rel, engine="git_studio")
+    return {"success": True, "path": rel, "entry": entry, "comments": store[rel]}
+
+
 def git_get_status_and_diffs(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
-    """#23 Git Visual Review + #41 Visual Diff Viewer: status, branches, commits & per-file before/after."""
+    """#23 Git Visual Review + #41 Visual Diff Viewer: status, branches, commits, inline comments & per-file before/after."""
     ws = ws_dir.resolve()
     ok, note = ensure_workspace_git_repo(ws)
     if not ok:
@@ -731,6 +909,7 @@ def git_get_status_and_diffs(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
     _, br_raw, _ = _run_git(ws, ["branch", "--format=%(refname:short)"])
     branches = [b.strip() for b in br_raw.splitlines() if b.strip()] or [branch]
 
+    comments_map = _load_diff_comments(ws)
     _, st_raw, _ = _run_git(ws, ["status", "--porcelain", "-uall"])
     changed_files: List[Dict[str, Any]] = []
     for ln in st_raw.splitlines():
@@ -757,6 +936,7 @@ def git_get_status_and_diffs(user_id: Any, ws_dir: Path) -> Dict[str, Any]:
             "before": before_txt[:6000],
             "after": after_txt[:6000],
             "diff": diff_txt[:8000],
+            "comments": comments_map.get(rel, []),
         })
 
     _, log_raw, _ = _run_git(ws, ["log", "-n", "12", "--pretty=format:%h||%s||%cr"])

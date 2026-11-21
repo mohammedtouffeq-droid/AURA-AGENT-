@@ -551,7 +551,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"success": False, "error": "index.html not found"}, status=404)
 
-        elif path in ("/manifest.json", "/sw.js", "/api/pwa/icon.svg"):
+        elif path in ("/manifest.json", "/sw.js", "/aura_wallpapers.js", "/api/pwa/icon.svg"):
             if path == "/api/pwa/icon.svg":
                 svg_data = (
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">'
@@ -584,6 +584,41 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self.wfile.write(data)
             else:
                 self._send_json({"success": False, "error": "Not found"}, status=404)
+
+        elif path == "/remote":
+            remote_html = (
+                "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                "<title>AURA Remote Agent Companion</title>"
+                "<style>body{margin:0;background:#0b0c0e;color:#f4f5f7;font-family:system-ui,-apple-system,sans-serif;padding:18px;max-width:620px;margin-inline:auto;}"
+                ".card{background:#12141a;border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:14px;margin-bottom:12px;}"
+                "input{width:100%;box-sizing:border-box;background:#0b0d12;color:#f4f5f7;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:9px 11px;font-family:monospace;font-size:12px;}"
+                "button{padding:8px 13px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:#1b1f29;color:#f4f5f7;cursor:pointer;font-weight:600;font-size:12px;}"
+                "button.pri{background:#f4f5f7;color:#0b0c0e;}button.danger{background:rgba(239,68,68,.18);border-color:rgba(248,113,113,.5);color:#fca5a5;}"
+                "button.ok{background:rgba(16,185,129,.18);border-color:rgba(52,211,153,.5);color:#6ee7b7;}"
+                ".row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-top:1px solid rgba(255,255,255,.06);}"
+                "</style></head><body>"
+                "<h2 style='margin:0 0 4px;font-size:18px;'>AURA Remote Agent Control</h2>"
+                "<p style='margin:0 0 14px;font-size:12px;color:#939aa8;'>Monitor running agents, approve pending permissions, or trigger Emergency Stop from any authorized device.</p>"
+                "<div class='card'><label style='font-size:11px;color:#939aa8;display:block;margin-bottom:6px;'>REMOTE PAIRING TOKEN (X-Remote-Token)</label>"
+                "<div style='display:flex;gap:8px;'><input id='tok' placeholder='aura_rem_...'><button class='pri' onclick='refresh()'>Connect</button></div></div>"
+                "<div id='out' class='card' style='font-size:12.5px;color:#939aa8;'>Enter token or open via paired URL to inspect live AURA tasks.</div>"
+                "<script>const qp=new URLSearchParams(location.search);if(qp.get('token')){document.getElementById('tok').value=qp.get('token');setTimeout(refresh,50);}"
+                "async function refresh(){const t=document.getElementById('tok').value.trim();if(!t)return;const r=await fetch('/api/remote/status',{headers:{'X-Remote-Token':t}});"
+                "const d=await r.json();const o=document.getElementById('out');if(!r.ok||!d.success){o.innerHTML='<span style=color:#fca5a5>Invalid or expired remote token.</span>';return;}"
+                "const apps=(d.pending_approvals||[]).map(a=>`<div class='row'><div><strong>${a.action_type}</strong> · ${a.target}<div style='font-size:11px;color:#939aa8;'>${a.reason}</div></div>"
+                "<div style='display:flex;gap:6px;'><button class='ok' onclick=\"act('approve','${a.id}')\">Approve</button><button class='danger' onclick=\"act('reject','${a.id}')\">Reject</button></div></div>`).join('')||'<div style=color:#6ee7b7;padding-top:6px;>No pending approval requests.</div>';"
+                "const res=d.resources||{};o.innerHTML=`<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;'><strong>Live Status · CPU ${res.cpu_percent||0}% · RAM ${res.ram_percent||0}%</strong>"
+                "<button class='danger' onclick=\"act('emergency_stop','')\">EMERGENCY STOP</button></div><div>Active Missions: ${(d.active_missions||[]).length}</div><h4 style='margin:12px 0 4px;font-size:12px;color:#939aa8;'>PENDING APPROVALS</h4>${apps}`;}"
+                "async function act(a,id){const t=document.getElementById('tok').value.trim();await fetch('/api/remote/action',{method:'POST',headers:{'Content-Type':'application/json','X-Remote-Token':t},body:JSON.stringify({action:a,approval_id:id})});refresh();}"
+                "</script></body></html>"
+            ).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(remote_html)))
+            self.send_header("Connection", "close")
+            self._apply_security_and_cors_headers()
+            self.end_headers()
+            self.wfile.write(remote_html)
 
         elif path == "/api/workspace/preview" or path.startswith("/api/workspace/preview/"):
             user = self._get_auth_user()
@@ -1850,6 +1885,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 reply = AURA_MODEL_ROUTER.postprocess_reply(active_tier, prompt, reply, engine_plan)
             tools_used = getattr(brain, "last_tools", [])
             aura_db.save_message(user_id, thread_id, "assistant", reply, tools_used)
+            CONTROL_HUB.record_token_usage(user_id, f"chat:{prompt[:48]}", str(active_tier or "aura-2.3"), max(16, len(dispatch_prompt) // 4), max(12, len(reply) // 4))
 
             self._send_json({
                 "reply": reply,
@@ -1963,6 +1999,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     elif chunk_type == "done":
                         final_reply_text = accumulated_text or chunk.get("reply", "")
                         aura_db.save_message(user_id, thread_id, "assistant", final_reply_text, tools_used)
+                        CONTROL_HUB.record_token_usage(user_id, f"stream:{prompt[:48]}", str(active_tier or "aura-2.3"), max(16, len(dispatch_prompt) // 4), max(12, len(final_reply_text) // 4))
                         fresh_vault = aura_db.export_user_vault(user_id)
                         fresh_threads = aura_db.get_user_threads(user_id)
                         payload = json.dumps({
@@ -3333,7 +3370,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return True
             rel_p = str(body.get("path") or "").strip()
             content = str(body.get("content") or "")
-            res = create_or_save_workspace_file(user["id"], _resolve_workspace_dir(user["id"]), rel_p, content)
+            ws = _resolve_workspace_dir(user["id"])
+            res = create_or_save_workspace_file(user["id"], ws, rel_p, content)
+            if res.get("success"):
+                try:
+                    ev_s = PLATFORM_EXT.fire_event(user["id"], ws, "on_file_save")
+                    res["event_triggers_fired"] = ev_s.get("triggered_count", 0)
+                except Exception:
+                    pass
             self._send_json(res, status=200 if res.get("success") else 400)
             return True
 
@@ -3353,8 +3397,12 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return True
+            ws = _resolve_workspace_dir(user["id"])
+            if PLATFORM_EXT.check_tool_permission(user["id"], ws, "file_delete") == "deny":
+                self._send_json({"success": False, "error": "Blocked by Tool Permission Manager (`file_delete` is set to deny)."}, status=403)
+                return True
             rel_p = str(body.get("path") or "").strip()
-            res = delete_workspace_entry(user["id"], _resolve_workspace_dir(user["id"]), rel_p)
+            res = delete_workspace_entry(user["id"], ws, rel_p)
             self._send_json(res, status=200 if res.get("success") else 400)
             return True
 
@@ -3394,7 +3442,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             self._send_json(res, status=200 if res.get("success") else 400)
             return True
 
-        if path in ("/api/git/review", "/api/git/worktree", "/api/git/branch", "/api/git/commit", "/api/git/pr"):
+        if path in ("/api/git/review", "/api/git/comment", "/api/git/worktree", "/api/git/branch", "/api/git/commit", "/api/git/pr"):
             user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
@@ -3402,6 +3450,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             ws = _resolve_workspace_dir(user["id"])
             if path == "/api/git/review":
                 res = aura_dev_studio.git_review_file_decision(user["id"], ws, str(body.get("path") or ""), str(body.get("decision") or "approve"))
+            elif path == "/api/git/comment":
+                res = aura_dev_studio.git_add_diff_comment(user["id"], ws, str(body.get("path") or ""), str(body.get("comment") or ""), _clamp_int(body.get("line", 1), 1, 1, 99999))
             elif path == "/api/git/worktree":
                 res = aura_dev_studio.git_manage_worktree(user["id"], ws, str(body.get("action") or "create"), str(body.get("name") or ""))
             elif path == "/api/git/branch":
@@ -3471,8 +3521,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 res = PLATFORM_EXT.invoke_mcp_tool(user["id"], ws, str(body.get("server_id") or ""), str(body.get("tool") or ""), body.get("params") if isinstance(body.get("params"), dict) else None)
             elif sub == "plugins/manage":
                 res = PLATFORM_EXT.manage_plugin(user["id"], ws, str(body.get("plugin_id") or ""), str(body.get("action") or "enable"), body.get("config") if isinstance(body.get("config"), dict) else None)
+            elif sub == "plugins/run":
+                res = PLATFORM_EXT.run_plugin_action(user["id"], ws, str(body.get("plugin_id") or ""))
             elif sub == "agents/save":
                 res = PLATFORM_EXT.save_custom_agent(user["id"], ws, body)
+            elif sub == "agents/run":
+                brain = _create_user_brain(user)
+                res = PLATFORM_EXT.run_custom_agent(user["id"], ws, str(body.get("agent_id") or body.get("id") or ""), goal=str(body.get("goal") or ""), brain=brain)
             elif sub == "agents/delete":
                 res = PLATFORM_EXT.delete_custom_agent(user["id"], ws, str(body.get("id") or ""))
             elif sub == "rules":
@@ -3486,6 +3541,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 res = PLATFORM_EXT.run_workflow(user["id"], ws, str(body.get("workflow_id") or ""), trigger_source=str(body.get("trigger_source") or "manual"), brain=brain)
             elif sub == "schedules/save":
                 res = PLATFORM_EXT.save_schedule(user["id"], ws, body)
+            elif sub == "schedules/run":
+                brain = _create_user_brain(user)
+                res = PLATFORM_EXT.run_schedule_now(user["id"], ws, str(body.get("schedule_id") or body.get("id") or ""), brain=brain)
             elif sub == "triggers/save":
                 res = PLATFORM_EXT.save_event_trigger(user["id"], ws, body)
             elif sub == "triggers/fire":
@@ -3538,6 +3596,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             elif sub == "cost/log":
                 ent = CONTROL_HUB.record_token_usage(user["id"], str(body.get("task") or "task"), str(body.get("model") or "gemini-3-flash-preview"), _clamp_int(body.get("input_tokens", 0), 0, 0, 2_000_000), _clamp_int(body.get("output_tokens", 0), 0, 0, 2_000_000))
                 res = {"success": True, "entry": ent}
+            elif sub == "engines/dispatch":
+                res = CONTROL_HUB.dispatch_unified_engine(user["id"], ws, str(body.get("engine_id") or "coderx"), goal=str(body.get("goal") or ""))
+            elif sub == "execute_isolated":
+                res = CONTROL_HUB.run_isolated_execution_job(user["id"], ws, command=str(body.get("command") or "python --version"))
             else:
                 return False
             self._send_json(res, status=200 if res.get("success") else 400)
