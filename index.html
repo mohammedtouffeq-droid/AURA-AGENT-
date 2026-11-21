@@ -8057,7 +8057,28 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         </div>
     </div>
 
+    <!-- Laptop / Desktop Offline Connection Gate (Strictly Hidden on Mobile Phones — Phones Run 100% Smoothly Offline!) -->
+    <div id="auraDesktopOfflineModal" role="dialog" aria-modal="true" aria-labelledby="auraOfflineModalTitle" style="display:none; position:fixed; inset:0; z-index:4800; background:rgba(6,7,10,0.88); backdrop-filter:blur(14px); align-items:center; justify-content:center; padding:20px;">
+        <div style="width:min(440px, 94vw); background:#111216; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:26px 24px; box-shadow:0 24px 72px rgba(0,0,0,0.72); color:#f4f5f7; text-align:center;">
+            <div style="width:46px; height:46px; margin:0 auto 14px; border-radius:12px; background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.3); display:flex; align-items:center; justify-content:center; color:#fca5a5;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            </div>
+            <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:999px; background:rgba(122,162,255,0.12); border:1px solid rgba(122,162,255,0.28); color:#93c5fd; font-family:var(--font-code); font-size:10.5px; margin-bottom:10px;">
+                <span id="auraOfflineModalDeviceLabel">Laptop / Desktop</span>
+            </div>
+            <h3 id="auraOfflineModalTitle" style="margin:0 0 8px; font-size:18px; font-weight:700; letter-spacing:-0.015em; color:#fafafa;">Offline Mode Unavailable on Laptop / Desktop</h3>
+            <p style="margin:0 0 18px; font-size:13px; line-height:1.55; color:#a1a1aa;">
+                AURA cannot run offline on Laptop or Desktop. Please connect to Wi-Fi or Ethernet to use AURA's full desktop &amp; cloud workspace.<br>
+                <span style="color:#d4d4d8;">100% Free Offline Mode runs exclusively on Mobile Phones.</span>
+            </p>
+            <button type="button" id="btnRetryDesktopConnection" onclick="if (window.AuraOfflineMobile) { const st = window.AuraOfflineMobile.enforceDeviceOfflinePolicy(); if (!st.blocked && typeof bootstrapAuthSession === 'function') bootstrapAuthSession(); }" style="width:100%; padding:10px 16px; border-radius:10px; border:1px solid rgba(122,162,255,0.4); background:#7aa2ff; color:#090a0d; font-size:13px; font-weight:700; cursor:pointer;">
+                Retry Connection
+            </button>
+        </div>
+    </div>
+
     <script src="/aura_wallpapers.js"></script>
+    <script src="/aura_offline_mobile.js"></script>
     <script>
         // Security Initialization: Purge legacy shared/bearer keys from localStorage.
         // Session auth uses HttpOnly; SameSite=Strict cookies + tab sessionStorage token + dynamic CSRF.
@@ -9670,6 +9691,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
         function updateUserUI(user) {
             if (!user) return;
+            if (window.AuraOfflineMobile && !user.offlineMode) {
+                window.AuraOfflineMobile.saveLastMobileUser(user);
+            }
             const name = user.display_name || user.username || 'User';
             userName.innerText = name;
             userAvatar.innerText = name[0].toUpperCase();
@@ -9723,6 +9747,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                         }
                     }
                     updateUserUI(currentUser);
+                    if (window.AuraOfflineMobile && typeof window.AuraOfflineMobile.saveLastMobileUser === 'function') {
+                        window.AuraOfflineMobile.saveLastMobileUser(currentUser);
+                    }
                     if (data.membership && typeof applyMembershipStateUI === 'function') {
                         applyMembershipStateUI(data.membership, data.quota);
                     } else if (typeof refreshMembershipStatus === 'function') {
@@ -9732,6 +9759,30 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     return true;
                 }
             } catch (e) {}
+
+            // Seamless Mobile Phone Offline Launch (ZERO popup, ZERO login blocker, identical AURA UI!)
+            if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) {
+                if (window.AuraOfflineMobile.isMobilePhone()) {
+                    const offlineUser = window.AuraOfflineMobile.getLastMobileUser();
+                    currentUser = Object.assign({}, offlineUser, { offlineMode: true });
+                    updateUserUI(currentUser);
+                    restoreScopedActiveThread(currentUser.username);
+                    try {
+                        const localVault = await loadIsolatedUserVault(currentUser.username);
+                        if (localVault && localVault.payload && Array.isArray(localVault.payload.threads)) {
+                            cachedThreads = mergeThreadLists(localVault.payload.threads, cachedThreads);
+                            applyThreadSearchAndRender();
+                        }
+                    } catch (_) {}
+                    authOverlay.style.display = 'none';
+                    return true;
+                }
+                if (window.AuraOfflineMobile.isLaptopOrDesktop()) {
+                    window.AuraOfflineMobile.enforceDeviceOfflinePolicy();
+                    return false;
+                }
+            }
+
             authToken = '';
             csrfToken = '';
             currentUser = null;
@@ -9743,6 +9794,19 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             authOverlay.style.display = 'flex';
             return false;
         }
+
+        window.onAuraBackOnlineSync = async function () {
+            if (!window._auraOfflineDirtySync) return;
+            window._auraOfflineDirtySync = false;
+            try {
+                if (currentUser && currentUser.username) {
+                    const localVault = await loadIsolatedUserVault(currentUser.username);
+                    if (localVault && typeof syncVaultPayloadToServer === 'function') {
+                        await syncVaultPayloadToServer(localVault);
+                    }
+                }
+            } catch (_) {}
+        };
 
         // ---------------- Flagship Repositories Hub Controller ----------------
         function openFlagshipHub(tab = 'openhands') {
@@ -10867,7 +10931,50 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 }
             };
 
+            const _runSeamlessMobileOfflineTurn = async () => {
+                if (!currentThreadId) {
+                    setScopedActiveThread('th_' + Date.now());
+                } else {
+                    setScopedActiveThread(currentThreadId);
+                }
+                await window.AuraOfflineMobile.streamOfflineChatTurn({
+                    prompt: text,
+                    turnData,
+                    renderMarkdown,
+                    scrollToBottom: scrollChatToBottom,
+                    onComplete: async (fullReply) => {
+                        window._auraOfflineDirtySync = true;
+                        try {
+                            await recordLocalChatTurn(currentThreadId, text, fullReply, []);
+                            const uname = (currentUser && currentUser.username) || window.AuraOfflineMobile.getLastMobileUser().username;
+                            const localVault = await loadIsolatedUserVault(uname);
+                            const vThreads = (localVault && localVault.payload && Array.isArray(localVault.payload.threads)) ? localVault.payload.threads : [];
+                            cachedThreads = mergeThreadLists(vThreads, cachedThreads);
+                            applyThreadSearchAndRender();
+                        } catch (_) {}
+                    }
+                });
+            };
+
             try {
+                // Device-aware Offline Routing:
+                // - Laptop/Desktop offline -> clean Obsidian "Internet Required" popup (offline disabled on Laptop/Desktop).
+                // - Mobile Phone offline -> ZERO popup, ZERO UI changes, 100% smooth free offline AURA!
+                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) {
+                    if (window.AuraOfflineMobile.isLaptopOrDesktop()) {
+                        restoreDraftOnFailure();
+                        if (turnData.wrapper && turnData.wrapper.parentNode) {
+                            turnData.wrapper.parentNode.removeChild(turnData.wrapper);
+                        }
+                        window.AuraOfflineMobile.enforceDeviceOfflinePolicy();
+                        return;
+                    }
+                    if (window.AuraOfflineMobile.isMobilePhone()) {
+                        await _runSeamlessMobileOfflineTurn();
+                        return;
+                    }
+                }
+
                 // Ensure current thread is tracked cleanly under current user's scope
                 if (!currentThreadId) {
                     setScopedActiveThread('th_' + Date.now());
@@ -11048,6 +11155,20 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     }
                 }
             } catch (err) {
+                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isMobilePhone()) {
+                    try {
+                        await _runSeamlessMobileOfflineTurn();
+                        return;
+                    } catch (_) {}
+                }
+                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isLaptopOrDesktop() && window.AuraOfflineMobile.isOfflineNow()) {
+                    restoreDraftOnFailure();
+                    if (turnData.wrapper && turnData.wrapper.parentNode) {
+                        turnData.wrapper.parentNode.removeChild(turnData.wrapper);
+                    }
+                    window.AuraOfflineMobile.enforceDeviceOfflinePolicy();
+                    return;
+                }
                 restoreDraftOnFailure();
                 turnData.thinking.style.display = 'none';
                 turnData.bubble.innerHTML = '<span style="color: #fca5a5;">Connection Error: ' + escapeHtml(err.message) + '</span>';
@@ -13365,20 +13486,26 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             _setVoiceHudMode('thinking', 'THINKING • Synthesizing AURA Core...');
             const prefs = getVoicePreferences();
             try {
-                const res = await apiFetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: spokenText,
-                        thread_id: currentThreadId || 'default',
-                        mode: activeExecutionMode || 'auto_pilot',
-                        reasoning_mode: getActiveReasoningMode(),
-                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
-                        voice_turn: true,
-                        preferred_language: prefs.language || 'en'
-                    })
-                });
-                const data = await safeParseJson(res);
+                let data = null;
+                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow() && window.AuraOfflineMobile.isMobilePhone()) {
+                    data = { reply: window.AuraOfflineMobile.generateReply(spokenText, []) };
+                } else {
+                    const res = await apiFetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: spokenText,
+                            thread_id: currentThreadId || 'default',
+                            mode: activeExecutionMode || 'auto_pilot',
+                            reasoning_mode: getActiveReasoningMode(),
+                            aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
+                            voice_turn: true,
+                            preferred_language: prefs.language || 'en',
+                            client_device: typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null
+                        })
+                    });
+                    data = await safeParseJson(res);
+                }
                 const replyText = (data && data.reply) ? String(data.reply) : ((data && data.error) || 'Completed.');
                 _appendVoiceTranscript('AURA', replyText);
                 const plainSpeech = (data && data.speech_text)

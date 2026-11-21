@@ -575,4 +575,19 @@ def test_device_intelligence_conversational_coder_tools_and_jarvis_v2(srv_url):
         c, jres = _http(srv_url, "/api/jarvis/run", "POST", {"routine": routine_key}, h)
         assert c == 200 and jres["success"] is True, f"JARVIS routine {routine_key} failed: {jres}"
 
+    # Verify 100% Free Mobile Offline Engine & PWA Pre-cache Service Worker are served cleanly
+    with urllib.request.urlopen(f"{srv_url}/aura_offline_mobile.js", timeout=15) as r_off:
+        assert r_off.status == 200
+        off_js = r_off.read().decode("utf-8", errors="replace")
+    assert "AuraOfflineMobile" in off_js
+    assert "enforceDeviceOfflinePolicy" in off_js
+    assert "streamOfflineChatTurn" in off_js
+
+    with urllib.request.urlopen(f"{srv_url}/sw.js", timeout=15) as r_sw:
+        assert r_sw.status == 200
+        sw_txt = r_sw.read().decode("utf-8", errors="replace")
+    assert "aura_offline_mobile.js" in sw_txt
+    assert "aura-core-shell-v19" in sw_txt
+
+
 

@@ -556,7 +556,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"success": False, "error": "index.html not found"}, status=404)
 
-        elif path in ("/manifest.json", "/sw.js", "/aura_wallpapers.js", "/api/pwa/icon.svg"):
+        elif path in ("/manifest.json", "/sw.js", "/aura_wallpapers.js", "/aura_offline_mobile.js", "/api/pwa/icon.svg"):
             if path == "/api/pwa/icon.svg":
                 svg_data = (
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">'
