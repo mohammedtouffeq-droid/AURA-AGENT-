@@ -131,7 +131,7 @@ class TestAuraSovereignHttpAndUi(unittest.TestCase):
             st = json.loads(resp.read().decode("utf-8"))
             self.assertTrue(st["success"])
             self.assertFalse(st["halted"])
-            self.assertEqual(len(st["routines"]), 4)
+            self.assertGreaterEqual(len(st["routines"]), 8)
 
         with self._req(
             "/api/jarvis/run",

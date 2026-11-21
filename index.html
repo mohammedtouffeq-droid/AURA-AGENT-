@@ -5698,16 +5698,24 @@
                         <span class="popover-section-title" style="padding:0;">JARVIS Control</span>
                         <span id="jarvisPopoverStatusBadge" style="font-size:10.5px; font-family:var(--font-code); color:#6ee7b7;">ARMED</span>
                     </div>
-                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('repo_health_audit'); openJarvisConsole();">
-                        <span>Workspace Health Audit</span>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('coder_workspace_audit'); openJarvisConsole();">
+                        <span>Coder Workspace Deep Audit</span>
+                        <span style="font-size:11px; color:#6ee7b7;">Run</span>
+                    </button>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('git_auto_checkpoint'); openJarvisConsole();">
+                        <span>Git Auto-Checkpoint &amp; PR</span>
                         <span style="font-size:11px; color:#93c5fd;">Run</span>
+                    </button>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('full_system_diagnostics'); openJarvisConsole();">
+                        <span>5-Engine &amp; Device Diagnostics</span>
+                        <span style="font-size:11px; color:#fde68a;">Run</span>
                     </button>
                     <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('security_threat_scan'); openJarvisConsole();">
                         <span>Cyber &amp; UPI Threat Scan</span>
                         <span style="font-size:11px; color:#7aa2ff;">Run</span>
                     </button>
-                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('code_ast_review'); openJarvisConsole();">
-                        <span>Code AST Quality Review</span>
+                    <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('repo_health_audit'); openJarvisConsole();">
+                        <span>Repo Health &amp; Secret Hygiene</span>
                         <span style="font-size:11px; color:#c4b5fd;">Run</span>
                     </button>
                     <button type="button" id="btnGlobalKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()" style="width:100%; justify-content:space-between; border-radius:9px; padding:8px 10px;">
@@ -5715,8 +5723,8 @@
                         <span id="killSwitchLabel">ARMED</span>
                     </button>
                     <div style="display:flex; gap:6px; margin-top:2px;">
-                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openJarvisConsole();">Logs</button>
-                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openIdeWorkbench('terminal');">AI Files</button>
+                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openJarvisConsole();">Console</button>
+                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openIdeWorkbench('terminal');">Dev Studio</button>
                         <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openFlagshipHub('bharatcode10');">Nexus</button>
                     </div>
                 </div>
@@ -6517,7 +6525,10 @@
         <div class="jarvis-panel" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.09);">
                 <div>
-                    <div style="font-size:16px; font-weight:700; color:#f4f4f5; letter-spacing:-0.015em;">JARVIS Automations &amp; Safety Guardrails</div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span style="font-size:16px; font-weight:700; color:#f4f4f5; letter-spacing:-0.015em;">JARVIS Automations &amp; Safety Guardrails</span>
+                        <span id="jarvisDeviceBadge" style="font-size:10px; font-family:var(--font-code); padding:2px 7px; border-radius:6px; border:1px solid rgba(122,162,255,0.28); background:rgba(122,162,255,0.1); color:#93c5fd;">DETECTING DEVICE...</span>
+                    </div>
                     <div id="jarvisStatusBanner" style="font-size:11.5px; color:#6ee7b7; font-family:var(--font-code); margin-top:2px;">SYSTEM ARMED • Per-Tenant Guardrails Active</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -6527,11 +6538,31 @@
             </div>
 
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; align-items:center;">
-                <input id="jarvisTargetInput" type="text" placeholder="Optional routine target (e.g. coderx_engine.py, Hyderabad, or UPI URI)..." style="flex:1; min-width:200px; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:9px; padding:8px 12px; color:#f4f4f5; font-size:12.5px;">
+                <input id="jarvisTargetInput" type="text" placeholder="Optional routine target (e.g. coderx_engine.py, Hyderabad, UPI URI, or coding goal)..." style="flex:1; min-width:200px; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:9px; padding:8px 12px; color:#f4f4f5; font-size:12.5px;">
                 <button type="button" onclick="syncJarvisStatus()" style="padding:8px 12px; border-radius:9px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#d4d4d8; font-size:12px; cursor:pointer;">Refresh Telemetry</button>
             </div>
 
             <div class="jarvis-routines-grid">
+                <div class="jarvis-routine-card">
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#34d399;"></span>Coder Workspace Deep Audit</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Scans your workspace for SQLi/Shelli/XSS bugs, secrets, API/DB layers &amp; Git diffs.</div>
+                    <button type="button" onclick="runJarvisRoutine('coder_workspace_audit')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run Coder Audit</button>
+                </div>
+                <div class="jarvis-routine-card">
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#60a5fa;"></span>Git Auto-Checkpoint &amp; PR</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Saves an instant rollback snapshot &amp; builds branch/diff/PR readiness telemetry.</div>
+                    <button type="button" onclick="runJarvisRoutine('git_auto_checkpoint')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run Git Checkpoint</button>
+                </div>
+                <div class="jarvis-routine-card">
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#fde68a;"></span>5-Engine &amp; Device Diagnostics</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Audits CoderX, Godot, FLUX, OpenHands, Open Interpreter, 8GB RAM Guard &amp; Device Mode.</div>
+                    <button type="button" onclick="runJarvisRoutine('full_system_diagnostics')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Run Diagnostics</button>
+                </div>
+                <div class="jarvis-routine-card">
+                    <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#7aa2ff;"></span>Multi-Agent Mission Launch</div>
+                    <div style="font-size:11.5px; color:#a1a1aa;">Plans &amp; dispatches parallel specialist coding/QA agents for your target mission.</div>
+                    <button type="button" onclick="runJarvisRoutine('autonomous_mission_dispatch')" style="align-self:flex-start; margin-top:4px; padding:5px 12px; border-radius:7px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">Dispatch Mission</button>
+                </div>
                 <div class="jarvis-routine-card">
                     <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#f4f4f5;"><span style="width:7px; height:7px; border-radius:999px; background:#60a5fa;"></span>Workspace Health Audit</div>
                     <div style="font-size:11.5px; color:#a1a1aa;">Scans Python modules via AST, verifies secret hygiene &amp; inventories test suites.</div>
@@ -8243,6 +8274,32 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             }
         }
 
+        function getClientDeviceProfile() {
+            const ua = navigator.userAgent || '';
+            const platform = navigator.platform || '';
+            const vw = window.innerWidth || (screen && screen.width) || 0;
+            const vh = window.innerHeight || (screen && screen.height) || 0;
+            const maxTouch = Number(navigator.maxTouchPoints || 0);
+            const standalone = Boolean((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone);
+            const isIpad = /iPad/i.test(ua) || (/MacIntel/i.test(platform) && maxTouch >= 2);
+            const isMobileUa = /iPhone|iPod|Android.*Mobile|Mobile|Phone/i.test(ua);
+            const isTabletUa = isIpad || (/Android/i.test(ua) && !/Mobile/i.test(ua)) || /Tablet/i.test(ua);
+            let deviceClass = 'desktop';
+            if (isMobileUa || (vw > 0 && vw < 680 && maxTouch >= 1)) deviceClass = 'mobile';
+            else if (isTabletUa) deviceClass = 'tablet';
+            else if (vw > 0 && vw <= 1680) deviceClass = 'laptop';
+            return {
+                user_agent: ua.slice(0, 260),
+                platform: platform.slice(0, 60),
+                device_class: deviceClass,
+                viewport_w: vw,
+                viewport_h: vh,
+                max_touch_points: maxTouch,
+                standalone,
+                likely_laptop: deviceClass === 'laptop',
+            };
+        }
+
         async function apiFetch(url, options = {}) {
             const skipRecovery = Boolean(options.skipAuthRecovery);
             const backgroundPoll = Boolean(options.backgroundPoll);
@@ -8251,6 +8308,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 delete opts.skipAuthRecovery;
                 delete opts.backgroundPoll;
                 const headers = Object.assign({}, opts.headers || {});
+                if (!headers['X-AURA-Device']) {
+                    try { headers['X-AURA-Device'] = JSON.stringify(getClientDeviceProfile()); } catch (_) {}
+                }
                 if (authToken && !headers['Authorization']) {
                     headers['Authorization'] = `Bearer ${authToken}`;
                 }
@@ -10417,6 +10477,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         // ---------------- Interactive Slash Command Autocomplete Palette ----------------
         const AURA_SLASH_COMMANDS = [
             { cmd: '/help', template: '/help', desc: 'Show all working commands, OS controls & Flagship shortcuts' },
+            { cmd: '/git', template: '/git status', desc: 'Git workflow: status, commit <msg>, push <msg>, branch, merge, pr, snapshot' },
+            { cmd: '/bugs', template: '/bugs', desc: 'Deep AST + SQLi + Shelli + XSS + Secret scan with Security Score' },
+            { cmd: '/refactor', template: '/refactor ', desc: 'AST-verified auto-refactor a workspace file with rollback snapshot' },
+            { cmd: '/map', template: '/map', desc: 'Map codebase Frontend/Backend/DB layers, API routes & SQL tables' },
+            { cmd: '/test', template: '/test pytest -q', desc: 'Run workspace tests in isolated sandbox with AI traceback diagnosis' },
+            { cmd: '/jarvis', template: '/jarvis coder', desc: 'Run JARVIS routines (status, coder, git, diagnostics, security, audit, halt, arm)' },
+            { cmd: '/device', template: '/device', desc: 'Inspect detected Phone/iPad/Laptop/Desktop device & automation capabilities' },
+            { cmd: '/remote', template: '/remote', desc: 'Generate /remote companion link to control Desktop/Laptop AURA from your phone' },
+            { cmd: '/swarm', template: '/swarm ', desc: 'Dispatch parallel Frontend/Backend/DB/QA specialist agents directly from chat' },
+            { cmd: '/browse', template: '/browse https://', desc: 'Open & control any URL directly in AURA Live Browser' },
             { cmd: '/goal', template: '/goal ', desc: 'Autonomous deep multi-step goal execution pipeline' },
             { cmd: '/plan', template: '/plan ', desc: 'Structured step-by-step architecture & build plan' },
             { cmd: '/boost', template: '/boost ', desc: 'Deep multi-perspective verification & optimization' },
@@ -10815,7 +10885,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                         context_files: typeof getAttachedContextFiles === 'function' ? getAttachedContextFiles() : [],
                         mode: activeExecutionMode || 'auto_pilot',
                         reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast',
-                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3'
+                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
+                        client_device: typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null
                     })
                 });
 
@@ -13350,10 +13421,20 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const navLbl = document.getElementById('killSwitchLabel');
             const panelBtn = document.getElementById('btnJarvisPanelKillSwitch');
             const banner = document.getElementById('jarvisStatusBanner');
+            const devBadge = document.getElementById('jarvisDeviceBadge');
             const execChip = document.getElementById('globalExecutionChip');
             const auditBox = document.getElementById('jarvisAuditLogBox');
             const composerDot = document.getElementById('composerJarvisDot');
             const popoverBadge = document.getElementById('jarvisPopoverStatusBadge');
+
+            if (devBadge) {
+                const d = data.device || (typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null);
+                if (d) {
+                    const lbl = d.device_label || (d.device_class ? d.device_class.toUpperCase() : 'DEVICE');
+                    const tierShort = d.is_mobile ? 'MOBILE CHAT + CLOUD CODER' : (d.is_tablet ? 'TABLET STUDIO' : (d.capabilities && d.capabilities.full_desktop_os_automation ? 'FULL DESKTOP AUTOMATION' : 'CLOUD AUTONOMOUS STUDIO'));
+                    devBadge.textContent = `${lbl} · ${tierShort}`.toUpperCase();
+                }
+            }
 
             if (navBtn) navBtn.classList.toggle('halted', halted);
             if (navLbl) navLbl.textContent = halted ? 'HALTED' : 'ARMED';
@@ -16997,7 +17078,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const d = await safeParseJson(res);
             if (res.ok && d.success) {
                 showBridgeToast('EMERGENCY STOP ACTIVATED — all agents & desktop actions halted.', '#f87171');
-                if (typeof refreshJarvisStatus === 'function') refreshJarvisStatus();
+                if (typeof syncJarvisStatus === 'function') syncJarvisStatus();
                 awRefreshSecurityCenter();
                 awRefreshActionsFeed(true);
             }

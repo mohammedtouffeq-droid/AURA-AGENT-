@@ -457,3 +457,122 @@ def test_max_4_divisions_deep_upgrades_and_100_scroll_wallpapers(srv_url):
     assert "aero_windtunnel" in wp_text
     assert "threat_globe" in wp_text
 
+
+def test_device_intelligence_conversational_coder_tools_and_jarvis_v2(srv_url):
+    """Verifies automatic Phone/iPad/MacBook/Desktop detection, conversational Git/Coder/Terminal/Browser/Desktop/Swarm tools, and all 8 JARVIS routines."""
+    from aura_brain import (
+        AVAILABLE_TOOLS,
+        HOST_PRIVILEGED_TOOLS,
+        AuraBrain,
+        tool_desktop_computer_use,
+        tool_dev_code_intelligence,
+        tool_git_operations,
+        tool_jarvis_execute,
+        tool_live_browser_control,
+        tool_multi_agent_orchestrate,
+        tool_unified_engine_dispatch,
+        tool_workspace_terminal,
+    )
+    from aura_device_context import detect_client_device
+
+    # 1. Verify Device Intelligence accurately identifies iPhone, Android Phone, iPad, MacBook, and Windows Desktop
+    iphone = detect_client_device(headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"})
+    assert iphone["device_class"] == "mobile" and iphone["os_name"] == "iOS" and iphone["is_mobile"] is True
+    assert iphone["capabilities"]["full_desktop_os_automation"] is False
+    assert iphone["capabilities"]["cloud_coder_ide_git_terminal"] is True
+
+    android = detect_client_device(headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36"})
+    assert android["device_class"] == "mobile" and android["os_name"] == "Android"
+
+    ipad = detect_client_device(
+        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+        body={"client_device": {"platform": "MacIntel", "max_touch_points": 5, "viewport_w": 1024, "viewport_h": 1366}},
+    )
+    assert ipad["device_class"] == "tablet" and ipad["os_name"] == "iPadOS"
+
+    macbook = detect_client_device(
+        headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)"},
+        body={"client_device": {"platform": "MacIntel", "max_touch_points": 0, "viewport_w": 1440, "viewport_h": 900, "likely_laptop": True}},
+    )
+    assert macbook["device_class"] == "laptop" and macbook["os_name"] == "macOS"
+
+    win_desk = detect_client_device(
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+        body={"client_device": {"platform": "Win32", "viewport_w": 1920, "viewport_h": 1080}},
+    )
+    assert win_desk["device_class"] == "desktop" and win_desk["os_name"] == "Windows"
+
+    # 2. Verify all 8 Antigravity-grade conversational tools are registered & NOT blocked for standard coders
+    for tname in (
+        "tool_git_operations",
+        "tool_workspace_terminal",
+        "tool_dev_code_intelligence",
+        "tool_live_browser_control",
+        "tool_desktop_computer_use",
+        "tool_multi_agent_orchestrate",
+        "tool_jarvis_execute",
+        "tool_unified_engine_dispatch",
+    ):
+        assert tname in AVAILABLE_TOOLS
+        assert tname not in HOST_PRIVILEGED_TOOLS
+
+    # Verify tool inclusion trigger matches Hinglish + English coder/git/jarvis/browser intents
+    for prompt in (
+        "bhai git commit aur push karde",
+        "jarvis coder workspace audit chalao",
+        "mere code mein bugs scan karke refactor kar",
+        "pytest run karke error diagnose kar",
+        "browser open karke screenshot le",
+    ):
+        assert AuraBrain._should_include_tools_for_contents(
+            [{"role": "user", "parts": [{"text": prompt}]}],
+            [{"functionDeclarations": [{"name": "tool_git_operations"}]}],
+        ) is True
+
+    # 3. End-to-end HTTP verification via /api/chat + /api/jarvis/status + /api/jarvis/run
+    h = _user(srv_url)
+    h_mobile = dict(h)
+    h_mobile["User-Agent"] = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"
+
+    # Seed workspace code
+    assert _http(
+        srv_url,
+        "/api/workspace/fs/create",
+        "POST",
+        {"path": "app/service.py", "content": "def calc(a, items=[]):\n    if a == None:\n        return 0\n    return a * 2\n"},
+        h,
+    )[0] == 200
+
+    # Chat slash commands: /device (mobile detected!), /git commit, /bugs, /refactor, /test, /jarvis coder, /remote
+    c, r_dev = _http(srv_url, "/api/chat", "POST", {"prompt": "/device"}, h_mobile)
+    assert c == 200 and r_dev["device"]["device_class"] == "mobile" and "iPhone" in r_dev["reply"]
+
+    c, r_git = _http(srv_url, "/api/chat", "POST", {"prompt": "/git commit Initial service module"}, h)
+    assert c == 200 and "Git Commit Complete" in r_git["reply"]
+
+    c, r_bugs = _http(srv_url, "/api/chat", "POST", {"prompt": "/bugs app/service.py"}, h)
+    assert c == 200 and "Security & Bug Scan" in r_bugs["reply"]
+
+    c, r_ref = _http(srv_url, "/api/chat", "POST", {"prompt": "/refactor app/service.py"}, h)
+    assert c == 200 and "AST-Verified Refactor" in r_ref["reply"]
+
+    c, r_run = _http(srv_url, "/api/chat", "POST", {"prompt": "/run echo coder_sandbox_ok"}, h)
+    assert c == 200 and "coder_sandbox_ok" in r_run["reply"]
+
+    c, r_rem = _http(srv_url, "/api/chat", "POST", {"prompt": "/remote"}, h_mobile)
+    assert c == 200 and "/remote?token=" in r_rem["reply"]
+
+    # Desktop tool called from mobile smartly returns Remote Companion link instead of failing!
+    mob_desk = tool_desktop_computer_use("click", x=100, y=100, device_context=iphone)
+    assert mob_desk["success"] is True and mob_desk["device_aware_route"] == "mobile_remote_companion"
+    assert "/remote?token=" in mob_desk["remote_url"]
+
+    # JARVIS v2: status includes device + all 8 routines; run all 4 new routines cleanly!
+    c, jst = _http(srv_url, "/api/jarvis/status", "GET", None, h_mobile)
+    assert c == 200 and len(jst["routines"]) == 8 and jst["device"]["device_class"] == "mobile"
+
+    for routine_key in ("coder_workspace_audit", "git_auto_checkpoint", "full_system_diagnostics", "autonomous_mission_dispatch"):
+        c, jres = _http(srv_url, "/api/jarvis/run", "POST", {"routine": routine_key}, h)
+        assert c == 200 and jres["success"] is True, f"JARVIS routine {routine_key} failed: {jres}"
+
+

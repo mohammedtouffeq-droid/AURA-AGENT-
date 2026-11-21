@@ -142,6 +142,30 @@ class AuraJarvisCoordinator:
             "category": "Intelligence",
             "description": "Synthesizes workspace health, live tech headlines RSS, and weather telemetry.",
         },
+        {
+            "key": "coder_workspace_audit",
+            "title": "Coder Workspace Deep Audit",
+            "category": "Pro Coding",
+            "description": "Scans your isolated workspace for SQLi/Shelli/XSS bugs, leaked secrets, API/DB layers & Git diffs.",
+        },
+        {
+            "key": "git_auto_checkpoint",
+            "title": "Git Auto-Checkpoint & PR Readiness",
+            "category": "Git & DevOps",
+            "description": "Saves an instant rollback snapshot and reports branch, modified diffs, and commit/PR readiness.",
+        },
+        {
+            "key": "full_system_diagnostics",
+            "title": "Full 5-Engine & Device Diagnostics",
+            "category": "Omni-Core",
+            "description": "Checks CoderX, Godot, Cinema FLUX, OpenHands, Open Interpreter, 8GB RAM guard & active device mode.",
+        },
+        {
+            "key": "autonomous_mission_dispatch",
+            "title": "JARVIS Multi-Agent Mission Launch",
+            "category": "Autonomy",
+            "description": "Plans & dispatches specialist coding/verification agents across your isolated workspace.",
+        },
     ]
 
     def __init__(self, root_dir: Path = ROOT_DIR) -> None:
@@ -216,7 +240,14 @@ class AuraJarvisCoordinator:
             "audit_log": list(st["audit_log"][:15]),
         }
 
-    def run_routine(self, user_id: Any, routine_key: str, target: str = "") -> Dict[str, Any]:
+    def run_routine(
+        self,
+        user_id: Any,
+        routine_key: str,
+        target: str = "",
+        ws_dir: Optional[Path] = None,
+        device_context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Executes a verified JARVIS automation routine unless Kill Switch is engaged."""
         ukey = str(user_id if user_id is not None else "anonymous")
         rkey = (routine_key or "").strip().lower()
@@ -235,6 +266,10 @@ class AuraJarvisCoordinator:
             "security_threat_scan": self._exec_security_scan,
             "code_ast_review": lambda t: _audit_code_ast(t, self.root_dir),
             "executive_briefing": self._exec_briefing,
+            "coder_workspace_audit": lambda t: self._exec_coder_workspace_audit(user_id, ws_dir, t),
+            "git_auto_checkpoint": lambda t: self._exec_git_auto_checkpoint(user_id, ws_dir, t),
+            "full_system_diagnostics": lambda t: self._exec_full_system_diagnostics(user_id, ws_dir, device_context, t),
+            "autonomous_mission_dispatch": lambda t: self._exec_autonomous_mission(user_id, ws_dir, t),
         }
         fn = handlers.get(rkey)
         if fn is None:
@@ -256,6 +291,107 @@ class AuraJarvisCoordinator:
             result["elapsed_ms"] = elapsed_ms
             result["audit_log"] = list(st["audit_log"][:12])
             return result
+
+    def _resolve_user_ws(self, user_id: Any, ws_dir: Optional[Path]) -> Path:
+        if ws_dir is not None:
+            ws = Path(ws_dir).resolve()
+            ws.mkdir(parents=True, exist_ok=True)
+            return ws
+        from aura_brain import _resolve_workspace_dir
+        try:
+            uid_int = int(user_id)
+        except (ValueError, TypeError):
+            uid_int = None
+        return _resolve_workspace_dir(uid_int)
+
+    def _exec_coder_workspace_audit(self, user_id: Any, ws_dir: Optional[Path], target: str) -> Dict[str, Any]:
+        from aura_control_intelligence import CONTROL_HUB
+        from aura_dev_studio import analyze_codebase_architecture, detect_bugs, git_get_status_and_diffs
+
+        ws = self._resolve_user_ws(user_id, ws_dir)
+        bugs = detect_bugs(user_id, ws, path=target.strip())
+        arch = analyze_codebase_architecture(user_id, ws)
+        secrets_res = CONTROL_HUB.scan_workspace_secrets(user_id, ws)
+        git_st = git_get_status_and_diffs(user_id, ws)
+        return {
+            "success": True,
+            "routine": "coder_workspace_audit",
+            "workspace": ws.name,
+            "security_score": bugs.get("security_score", 100),
+            "bug_findings_count": bugs.get("total_findings", 0),
+            "severity_counts": bugs.get("severity_counts", {}),
+            "top_findings": (bugs.get("findings") or [])[:8],
+            "leaked_secrets_count": secrets_res.get("findings_count", 0),
+            "total_files": arch.get("total_files", 0),
+            "symbol_count": arch.get("symbol_count", 0),
+            "api_routes_count": len(arch.get("api_routes") or []),
+            "db_tables_count": len(arch.get("db_tables") or []),
+            "git_branch": git_st.get("branch", "main"),
+            "git_pending_changes": len(git_st.get("changed_files") or []),
+        }
+
+    def _exec_git_auto_checkpoint(self, user_id: Any, ws_dir: Optional[Path], target: str) -> Dict[str, Any]:
+        from aura_dev_studio import create_project_snapshot, git_get_status_and_diffs, git_pull_request_assistant
+
+        ws = self._resolve_user_ws(user_id, ws_dir)
+        label = (target or "JARVIS Auto-Checkpoint").strip()[:80]
+        snap = create_project_snapshot(user_id, ws, label=label)
+        git_st = git_get_status_and_diffs(user_id, ws)
+        pr = git_pull_request_assistant(user_id, ws, title=label)
+        return {
+            "success": True,
+            "routine": "git_auto_checkpoint",
+            "snapshot": snap.get("snapshot"),
+            "branch": git_st.get("branch", "main"),
+            "branches": git_st.get("branches", ["main"]),
+            "pending_files": [f.get("path") for f in (git_st.get("changed_files") or [])[:15]],
+            "recent_commits": (git_st.get("commits") or [])[:5],
+            "pr_title": pr.get("title", ""),
+        }
+
+    def _exec_full_system_diagnostics(
+        self,
+        user_id: Any,
+        ws_dir: Optional[Path],
+        device_context: Optional[Dict[str, Any]],
+        target: str,
+    ) -> Dict[str, Any]:
+        from aura_control_intelligence import CONTROL_HUB
+
+        ws = self._resolve_user_ws(user_id, ws_dir)
+        engines = CONTROL_HUB.get_unified_engines_bridge_status()
+        res_metrics = CONTROL_HUB.get_resource_metrics()
+        ov = CONTROL_HUB.get_control_and_intelligence_overview(user_id, ws)
+        return {
+            "success": True,
+            "routine": "full_system_diagnostics",
+            "device": device_context or {"device_label": "Unknown Client", "automation_tier": "STANDARD"},
+            "unified_engines_ready": f"{engines.get('ready_count', 0)}/{engines.get('total_engines', 5)}",
+            "engines": [{"id": e["id"], "name": e["name"], "status": e["status"]} for e in engines.get("engines", [])],
+            "resources": res_metrics,
+            "pending_approvals": ov.get("pending_approvals", 0),
+            "crash_recovery_available": ov.get("crash_recovery_available", False),
+            "sandbox_active": True,
+        }
+
+    def _exec_autonomous_mission(self, user_id: Any, ws_dir: Optional[Path], target: str) -> Dict[str, Any]:
+        from aura_agent_orchestrator import AGENT_ORCHESTRATOR
+        from aura_dev_studio import detect_bugs
+
+        ws = self._resolve_user_ws(user_id, ws_dir)
+        goal = (target or "Audit workspace architecture, detect issues, and verify all files").strip()[:280]
+        plan = AGENT_ORCHESTRATOR.create_plan(user_id, goal, auto_approve=False, ws_dir=ws)
+        bugs = detect_bugs(user_id, ws)
+        mission = plan.get("mission") or {}
+        return {
+            "success": bool(plan.get("success", True)),
+            "routine": "autonomous_mission_dispatch",
+            "goal": goal,
+            "mission_id": mission.get("id", ""),
+            "agents_planned": len(mission.get("agents") or []),
+            "security_score": bugs.get("security_score", 100),
+            "bug_findings_count": bugs.get("total_findings", 0),
+        }
 
     def _exec_security_scan(self, payload: str) -> Dict[str, Any]:
         sample = (payload or "upi://pay?pa=helpdesk-kyc@okexample&pn=KYC+Refund&am=19999").strip()

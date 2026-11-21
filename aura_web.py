@@ -88,6 +88,7 @@ from aura_brain import AuraBrain
 from aura_computer_use import COMPUTER_USE
 from aura_control_intelligence import CONTROL_HUB, redact_secrets
 import aura_dev_studio
+from aura_device_context import detect_client_device, format_device_context_block
 from aura_engine_base import EngineDispatchPlan, format_thought_block
 from aura_jarvis_hub import JARVIS_HUB
 from aura_live_actions import LIVE_ACTION_HUB
@@ -188,13 +189,16 @@ def _prepare_aura_turn(
     permission_mode: str,
     brain: AuraBrain,
     membership: Optional[Dict[str, Any]] = None,
+    device_ctx: Optional[Dict[str, Any]] = None,
 ) -> Tuple[str, str, Optional[EngineDispatchPlan], Optional[str], str]:
-    """Applies AURA 2.0 / 2.3 / 2.6 engine profile, membership rules & @file context, strict language policy, and Kill Switch guardrails."""
+    """Applies AURA 2.0 / 2.3 / 2.6 engine profile, device intelligence, membership rules & @file context, strict language policy, and Kill Switch guardrails."""
     raw_uid = user.get("id")
     try:
         user_id: Any = int(raw_uid)
     except (ValueError, TypeError):
         user_id = str(raw_uid or "guest")
+    if isinstance(device_ctx, dict):
+        brain.device_context = device_ctx
     prefs = ((user.get("settings") or {}).get("preferences") or {})
     raw_tier = body.get("aura_model") or body.get("model_tier") or prefs.get("aura_model")
     if not raw_tier and isinstance(body.get("model"), str):
@@ -219,13 +223,14 @@ def _prepare_aura_turn(
         ctx_res = aura_pro_studio.read_context_files(_resolve_workspace_dir(user_id), [str(p) for p in raw_ctx_files[:6]])
         ctx_block = ctx_res.get("context_block") or ""
     tier_profile = aura_membership.build_tier_system_profile(mem, context_files_block=ctx_block)
+    device_block = format_device_context_block(device_ctx) if device_ctx else ""
 
     lang_policy = build_language_policy_instruction(resolved_lang, voice_turn=voice_turn)
     if voice_turn or not norm_tier:
         if voice_turn and getattr(brain, "provider", "gemini") == "gemini":
             brain.model = "gemini-3-flash-preview"
-        prefix = f"{lang_policy}\n\n{tier_profile}" if (tier_profile and not voice_turn) else lang_policy
-        return f"{prefix}\n\n{dispatch_prompt}", effective_permission, None, norm_tier, resolved_lang
+        prefix_parts = [p for p in (lang_policy, device_block, tier_profile if not voice_turn else "") if p]
+        return "\n\n".join(prefix_parts) + f"\n\n{dispatch_prompt}", effective_permission, None, norm_tier, resolved_lang
 
     reasoning_mode = str(body.get("reasoning_mode", "fast") or "fast").strip().lower()
     plan = AURA_MODEL_ROUTER.prepare_turn(user_id, norm_tier, prompt, reasoning_mode=reasoning_mode)
@@ -238,8 +243,8 @@ def _prepare_aura_turn(
         brain.thinking_level = "high"
     elif reasoning_mode == "verifier":
         brain.thinking_level = "low"
-    profile_chunk = f"\n\n{tier_profile}" if tier_profile else ""
-    framed_prompt = f"{lang_policy}{profile_chunk}\n\n{plan.system_framing}\n\n{dispatch_prompt}"
+    head_parts = [p for p in (lang_policy, device_block, tier_profile, plan.system_framing) if p]
+    framed_prompt = "\n\n".join(head_parts) + f"\n\n{dispatch_prompt}"
     return framed_prompt, effective_permission, plan, norm_tier, resolved_lang
 
 
@@ -1187,7 +1192,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
-            self._send_json(JARVIS_HUB.get_status(user["id"]))
+            st = JARVIS_HUB.get_status(user["id"])
+            st["device"] = detect_client_device(self.headers, None)
+            self._send_json(st)
 
         elif self._handle_agent_workspace_get(path, query):
             return
@@ -1871,8 +1878,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
             if byok:
                 brain.user_api_key = byok[:120]
+            device_ctx = detect_client_device(self.headers, body)
             dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
-                user, prompt, body, permission_mode, brain, membership=membership
+                user, prompt, body, permission_mode, brain, membership=membership, device_ctx=device_ctx
             )
             reply = brain.think_and_act(
                 dispatch_prompt,
@@ -1892,6 +1900,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "speech_text": prepare_text_for_speech(reply, resolved_lang),
                 "resolved_language": resolved_lang,
                 "tools": tools_used,
+                "device": device_ctx,
                 "aura_model": active_tier,
                 "membership": membership,
                 "quota": quota_status,
@@ -1959,8 +1968,9 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
             if byok:
                 brain.user_api_key = byok[:120]
+            device_ctx = detect_client_device(self.headers, body)
             dispatch_prompt, permission_mode, engine_plan, active_tier, resolved_lang = _prepare_aura_turn(
-                user, prompt, body, permission_mode, brain, membership=membership
+                user, prompt, body, permission_mode, brain, membership=membership, device_ctx=device_ctx
             )
             accumulated_text = ""
             tools_used = []
@@ -2006,6 +2016,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                             "type": "done",
                             "reply": final_reply_text,
                             "tools": tools_used,
+                            "device": device_ctx,
                             "thread_id": thread_id,
                             "threads": fresh_threads,
                             "membership": membership,
@@ -2784,9 +2795,13 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             routine = str(body.get("routine") or "repo_health_audit")[:64]
             target = str(body.get("target") or "")[:500]
-            res = JARVIS_HUB.run_routine(user["id"], routine, target=target)
+            device_ctx = detect_client_device(self.headers, body)
+            ws = _resolve_workspace_dir(user["id"])
+            res = JARVIS_HUB.run_routine(user["id"], routine, target=target, ws_dir=ws, device_context=device_ctx)
             if isinstance(res, dict):
-                res["jarvis_status"] = JARVIS_HUB.get_status(user["id"])
+                jst = JARVIS_HUB.get_status(user["id"])
+                jst["device"] = device_ctx
+                res["jarvis_status"] = jst
             status = 423 if res.get("halted") else (200 if res.get("success", True) else 400)
             self._send_json(res, status=status)
 

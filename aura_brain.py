@@ -2191,7 +2191,346 @@ def tool_workspace_list(user_id: Optional[int] = None) -> Dict[str, Any]:
         return {"success": False, "error": str(exc)}
 
 
+# ===================================================================================
+# 3B. ANTIGRAVITY-GRADE CONVERSATIONAL CODER, GIT, BROWSER, DESKTOP & JARVIS TOOLS
+# ===================================================================================
+def tool_git_operations(
+    action: str = "status",
+    message: str = "",
+    branch: str = "",
+    path: str = "",
+    push_approved: bool = False,
+    snapshot_label: str = "",
+    snapshot_id: str = "",
+    comment: str = "",
+    line: int = 1,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Full Git & DevOps workflow directly from chat: status/diff, commit, push, branch/merge, worktree, PR draft, snapshot/rollback, diff comment."""
+    from aura_dev_studio import (
+        create_project_snapshot,
+        git_add_diff_comment,
+        git_commit_and_push,
+        git_get_status_and_diffs,
+        git_manage_branch,
+        git_manage_worktree,
+        git_pull_request_assistant,
+        rollback_project_snapshot,
+    )
+
+    ws = _resolve_workspace_dir(user_id=user_id)
+    uid = user_id if user_id is not None else "guest"
+    act = str(action or "status").strip().lower()
+    if act in ("status", "diff", "log"):
+        return git_get_status_and_diffs(uid, ws)
+    if act == "commit":
+        return git_commit_and_push(uid, ws, message=message, stage_all=True, push=False, push_approved=False)
+    if act in ("push", "commit_and_push"):
+        return git_commit_and_push(uid, ws, message=message, stage_all=True, push=True, push_approved=bool(push_approved))
+    if act in ("branch_create", "branch_switch", "branch_merge"):
+        sub_act = act.split("_", 1)[1]
+        return git_manage_branch(uid, ws, sub_act, branch or "feature-update")
+    if act in ("worktree_create", "worktree_remove"):
+        sub_act = act.split("_", 1)[1]
+        return git_manage_worktree(uid, ws, sub_act, branch or "agent-worker")
+    if act in ("pr", "pr_draft"):
+        return git_pull_request_assistant(uid, ws, title=message or "")
+    if act in ("snapshot", "snapshot_save"):
+        return create_project_snapshot(uid, ws, label=snapshot_label or message or "Chat Checkpoint")
+    if act in ("rollback", "snapshot_rollback"):
+        return rollback_project_snapshot(uid, ws, snapshot_id or message)
+    if act in ("comment", "diff_comment"):
+        return git_add_diff_comment(uid, ws, path or "", comment or message, line=int(line or 1))
+    return {"success": False, "error": f"Unknown git action '{act}'. Use status, commit, commit_and_push, branch_create, branch_switch, branch_merge, worktree_create, pr_draft, snapshot_save, snapshot_rollback, or diff_comment."}
+
+
+def tool_workspace_terminal(
+    command: str,
+    diagnose_on_error: bool = True,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Executes safe isolated developer shell commands (python, pytest, node, git, ls, grep, cat) inside workspace/user_<id> with automatic AI error diagnosis."""
+    from aura_workspace_tools import WORKSPACE_TERMINAL
+
+    ws = _resolve_workspace_dir(user_id=user_id)
+    uid = user_id if user_id is not None else "guest"
+    res = WORKSPACE_TERMINAL.execute(uid, ws, str(command or "").strip())
+    ent = res.get("entry") if isinstance(res.get("entry"), dict) else {}
+    out: Dict[str, Any] = {
+        "success": bool(res.get("success")),
+        "command": ent.get("command", command),
+        "cwd": res.get("cwd", "."),
+        "exit_code": ent.get("exit_code", 0 if res.get("success") else 1),
+        "stdout": (ent.get("stdout") or "")[:4000],
+        "stderr": (ent.get("stderr") or res.get("error") or "")[:2000],
+        "duration_ms": ent.get("duration_ms", 0),
+    }
+    if diagnose_on_error and out["exit_code"] not in (0, None):
+        diag = WORKSPACE_TERMINAL.diagnose_error(
+            uid,
+            command=out["command"],
+            stdout=out["stdout"],
+            stderr=out["stderr"],
+            exit_code=out["exit_code"],
+        )
+        if diag.get("success"):
+            out["diagnosis"] = diag.get("diagnosis", "")
+    return out
+
+
+def tool_dev_code_intelligence(
+    action: str = "bug_scan",
+    path: str = "",
+    query: str = "",
+    instruction: str = "",
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Pro Coder Intelligence from chat: bug_scan (AST+SQLi+Shelli+security_score), refactor (AST-verified+snapshot), codebase_map (API/DB/UI edges), smart_search, explain, inline_edit, generate_tests."""
+    from aura_dev_studio import (
+        analyze_codebase_architecture,
+        detect_bugs,
+        explain_code,
+        generate_unit_tests,
+        inline_ai_edit,
+        refactor_file,
+        smart_search_workspace,
+    )
+
+    ws = _resolve_workspace_dir(user_id=user_id)
+    uid = user_id if user_id is not None else "guest"
+    act = str(action or "bug_scan").strip().lower()
+    if act in ("bug_scan", "bugs", "security"):
+        return detect_bugs(uid, ws, path=path)
+    if act in ("refactor", "fix"):
+        if not path:
+            return {"success": False, "error": "Provide `path` of the workspace file to refactor."}
+        return refactor_file(uid, ws, path=path, apply=True)
+    if act in ("codebase_map", "architecture", "map"):
+        return analyze_codebase_architecture(uid, ws)
+    if act in ("smart_search", "search"):
+        return smart_search_workspace(uid, ws, query or path or "def")
+    if act == "explain":
+        if not path:
+            return {"success": False, "error": "Provide `path` of the file to explain."}
+        return explain_code(uid, ws, path=path)
+    if act == "inline_edit":
+        if not path or not instruction:
+            return {"success": False, "error": "Provide both `path` and `instruction` for inline edit."}
+        return inline_ai_edit(uid, ws, path=path, instruction=instruction, apply=True)
+    if act in ("generate_tests", "tests"):
+        if not path:
+            return {"success": False, "error": "Provide `path` of the file to generate unit tests for."}
+        return generate_unit_tests(uid, ws, path=path, save=True)
+    return {"success": False, "error": f"Unknown dev intelligence action '{act}'."}
+
+
+def tool_live_browser_control(
+    action: str = "open",
+    url: str = "",
+    selector: str = "",
+    text: str = "",
+    direction: str = "down",
+    tab_id: str = "",
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Controls AURA's embedded Live Browser directly from chat (open URL, click, type, scroll, screenshot/understand page, new_tab, state)."""
+    from aura_live_browser import LIVE_BROWSER
+
+    uid = user_id if user_id is not None else "guest"
+    act = str(action or "open").strip().lower()
+    if act in ("open", "navigate", "goto"):
+        if not url:
+            return {"success": False, "error": "Provide a URL to open in AURA Live Browser."}
+        res = LIVE_BROWSER.navigate(uid, url, tab_id=tab_id or None)
+        if isinstance(res, dict) and isinstance(res.get("active_tab"), dict):
+            # Keep payload lightweight for LLM context (strip huge base64 screenshot)
+            slim = dict(res)
+            tab_copy = dict(res["active_tab"])
+            if tab_copy.get("screenshot_b64"):
+                tab_copy["screenshot_captured"] = True
+                tab_copy["screenshot_b64"] = f"<captured:{len(tab_copy['screenshot_b64'])}b>"
+            slim["active_tab"] = tab_copy
+            return slim
+        return res
+    if act in ("click", "type", "scroll", "back", "forward", "reload", "press"):
+        return LIVE_BROWSER.perform_action(
+            uid,
+            action_type=act,
+            selector=selector,
+            text=text,
+            direction=direction,
+            tab_id=tab_id or None,
+        )
+    if act in ("understand", "inspect", "read", "screenshot"):
+        return LIVE_BROWSER.understand_page(uid, question=text or "Summarize visible page structure and key elements.", tab_id=tab_id or None)
+    if act == "new_tab":
+        return LIVE_BROWSER.new_tab(uid, url=url)
+    if act in ("state", "tabs"):
+        return LIVE_BROWSER.get_state(uid, include_screenshot=False)
+    return {"success": False, "error": f"Unknown browser action '{act}'. Use open, click, type, scroll, understand, new_tab, or state."}
+
+
+def tool_desktop_computer_use(
+    action: str = "status",
+    x: Optional[int] = None,
+    y: Optional[int] = None,
+    text: str = "",
+    keys: str = "",
+    reason: str = "",
+    user_id: Optional[int] = None,
+    device_context: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Device-aware Computer Use & Desktop Automation: executes live on Desktop/Laptop Local Host, or offers Remote Companion (/remote) & Cloud Browser on Mobile/Tablet/Cloud."""
+    from aura_computer_use import COMPUTER_USE
+    from aura_control_intelligence import CONTROL_HUB
+
+    uid = user_id if user_id is not None else "guest"
+    dctx = device_context if isinstance(device_context, dict) else {}
+    dev_class = str(dctx.get("device_class") or "desktop").lower()
+    dev_label = str(dctx.get("device_label") or "Desktop Workstation")
+    caps = dctx.get("capabilities") or {}
+    can_desktop_os = bool(caps.get("full_desktop_os_automation", not bool(os.environ.get("VERCEL")) and dev_class in ("laptop", "desktop")))
+
+    act = str(action or "status").strip().lower()
+    if dev_class in ("mobile", "tablet"):
+        pair = CONTROL_HUB.create_remote_pairing(uid, label=f"{dev_label} Remote Bridge", ttl_minutes=45)
+        return {
+            "success": True,
+            "device_aware_route": "mobile_remote_companion",
+            "detected_device": dev_label,
+            "message": (
+                f"Detected you are messaging from {dev_label}. Direct physical host mouse/keyboard control runs on Laptop/Desktop, "
+                "while your phone has full Chat, Voice, Cloud Coder IDE, Git Commit/Push, and Cloud Browser automation. "
+                "Use the Remote Companion link below to monitor and approve your Desktop/Laptop AURA session from your phone."
+            ),
+            "remote_url": f"/remote?token={pair.get('token', '')}" if pair.get("success") else "/remote",
+            "pairing_expires_min": 45,
+        }
+
+    if not can_desktop_os and act not in ("status", "ui_tree"):
+        return {
+            "success": True,
+            "device_aware_route": "cloud_runtime_notice",
+            "detected_device": dev_label,
+            "runtime_env": dctx.get("runtime_env", "vercel_cloud"),
+            "message": (
+                f"Detected {dev_label} connected via AURA Cloud (Vercel serverless). "
+                "Web/Browser automation (`tool_live_browser_control`), Git, Terminal, and Coder Studio work 100% live right now! "
+                "For physical mouse/keyboard control of your own PC desktop, run AURA locally on your Laptop/Desktop or connect via Remote Pairing."
+            ),
+        }
+
+    if act == "status":
+        st = COMPUTER_USE.get_status(uid)
+        st["detected_device"] = dev_label
+        st["full_desktop_os_automation"] = can_desktop_os
+        return st
+    if act in ("start", "pause", "resume", "stop"):
+        return COMPUTER_USE.control(uid, act)
+    if act == "screenshot":
+        frame = COMPUTER_USE.capture_screen_frame(uid)
+        return {
+            "success": bool(frame.get("success")),
+            "source": frame.get("source"),
+            "width": frame.get("width"),
+            "height": frame.get("height"),
+            "captured": bool(frame.get("image_b64")),
+        }
+    if act == "ui_tree":
+        return COMPUTER_USE.inspect_ui_tree(uid)
+    return COMPUTER_USE.execute_action(
+        uid,
+        action_type=act,
+        x=x,
+        y=y,
+        text=text,
+        keys=keys,
+        reason=reason or f"Chat desktop action: {act}",
+    )
+
+
+def tool_multi_agent_orchestrate(
+    goal: str,
+    auto_launch: bool = True,
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Splits a complex coding mission across Frontend, Backend, Database, and QA Testing specialist agents in parallel right from chat."""
+    from aura_agent_orchestrator import AGENT_ORCHESTRATOR
+
+    ws = _resolve_workspace_dir(user_id=user_id)
+    uid = user_id if user_id is not None else "guest"
+    plan = AGENT_ORCHESTRATOR.create_plan(uid, goal, auto_approve=bool(auto_launch), ws_dir=ws)
+    mission = plan.get("mission") or {}
+    return {
+        "success": bool(plan.get("success")),
+        "mission_id": mission.get("id", ""),
+        "goal": goal,
+        "status": mission.get("status", "planned"),
+        "agents": [{"id": a["id"], "role": a["role"], "status": a["status"]} for a in (mission.get("agents") or [])],
+    }
+
+
+def tool_jarvis_execute(
+    action: str = "status",
+    routine: str = "coder_workspace_audit",
+    target: str = "",
+    halted: Optional[bool] = None,
+    reason: str = "",
+    user_id: Optional[int] = None,
+    device_context: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Direct conversational access to JARVIS Automations & Hardware Kill Switch (status, run_routine, kill_switch across all 8 routines)."""
+    from aura_jarvis_hub import JARVIS_HUB
+
+    ws = _resolve_workspace_dir(user_id=user_id)
+    uid = user_id if user_id is not None else "guest"
+    act = str(action or "status").strip().lower()
+    if act == "status":
+        st = JARVIS_HUB.get_status(uid)
+        if device_context:
+            st["device"] = device_context
+        return st
+    if act in ("kill_switch", "halt", "arm", "rearm"):
+        next_halt = True if act == "halt" else (False if act in ("arm", "rearm") else bool(halted))
+        return JARVIS_HUB.set_kill_switch(uid, halted=next_halt, reason=reason or ("Chat Kill Switch Halt" if next_halt else "Chat Re-Arm"))
+    rkey = routine if act == "run_routine" else act
+    alias = {
+        "audit": "repo_health_audit",
+        "health": "repo_health_audit",
+        "security": "security_threat_scan",
+        "ast": "code_ast_review",
+        "briefing": "executive_briefing",
+        "coder": "coder_workspace_audit",
+        "git": "git_auto_checkpoint",
+        "diagnostics": "full_system_diagnostics",
+        "mission": "autonomous_mission_dispatch",
+    }
+    resolved_key = alias.get(rkey.strip().lower(), rkey.strip().lower())
+    return JARVIS_HUB.run_routine(uid, resolved_key, target=target, ws_dir=ws, device_context=device_context)
+
+
+def tool_unified_engine_dispatch(
+    engine_id: str = "coderx",
+    goal: str = "Run workspace diagnostic",
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Dispatches a task directly from chat to one of AURA's 5 unified core engines: coderx, godot_studio, cinema_flux, openhands, or open_interpreter."""
+    from aura_control_intelligence import CONTROL_HUB
+
+    ws = _resolve_workspace_dir(user_id=user_id)
+    uid = user_id if user_id is not None else "guest"
+    return CONTROL_HUB.dispatch_unified_engine(uid, ws, engine_id, goal=goal)
+
+
 AVAILABLE_TOOLS = {
+    "tool_git_operations": tool_git_operations,
+    "tool_workspace_terminal": tool_workspace_terminal,
+    "tool_dev_code_intelligence": tool_dev_code_intelligence,
+    "tool_live_browser_control": tool_live_browser_control,
+    "tool_desktop_computer_use": tool_desktop_computer_use,
+    "tool_multi_agent_orchestrate": tool_multi_agent_orchestrate,
+    "tool_jarvis_execute": tool_jarvis_execute,
+    "tool_unified_engine_dispatch": tool_unified_engine_dispatch,
     "tool_autonomous_code_loop": tool_autonomous_code_loop,
     "tool_coderx_build": tool_coderx_build,
     "tool_coderx_patch": tool_coderx_patch,
@@ -2859,6 +3198,121 @@ GEMINI_TOOLS_DECLARATION = [{
                 "type": "OBJECT",
                 "properties": {}
             }
+        },
+        {
+            "name": "tool_git_operations",
+            "description": "Full Git & GitHub developer workflow inside the user's workspace: check git status/diffs, commit changes, push (with push_approved=true when user explicitly asks to push), create/switch/merge branches, create isolated agent worktrees, draft Pull Requests, add inline diff review comments, or save/rollback project snapshots.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "One of: 'status', 'commit', 'commit_and_push', 'push', 'branch_create', 'branch_switch', 'branch_merge', 'worktree_create', 'pr_draft', 'snapshot_save', 'snapshot_rollback', 'diff_comment'."},
+                    "message": {"type": "STRING", "description": "Commit message, PR title, or snapshot label."},
+                    "branch": {"type": "STRING", "description": "Branch or agent worktree name."},
+                    "path": {"type": "STRING", "description": "File path for inline diff review comment."},
+                    "push_approved": {"type": "BOOLEAN", "description": "Set true ONLY when the user explicitly asked to push to remote."},
+                    "snapshot_label": {"type": "STRING", "description": "Optional checkpoint label."},
+                    "snapshot_id": {"type": "STRING", "description": "Snapshot ID to roll back to."},
+                    "comment": {"type": "STRING", "description": "Inline diff comment text."},
+                    "line": {"type": "INTEGER", "description": "Line number for inline diff comment."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_workspace_terminal",
+            "description": "Runs safe developer commands inside the user's isolated workspace terminal (python, pytest, node, git, ls, cat, grep, tree, mkdir, touch, mv, rm, echo, pwd) and automatically diagnoses errors/tracebacks when exit_code != 0.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "command": {"type": "STRING", "description": "Exact workspace developer command, e.g. 'pytest -q', 'python main.py', 'ls', 'git log -n 5'."},
+                    "diagnose_on_error": {"type": "BOOLEAN", "description": "Automatically diagnose traceback if command fails (default true)."}
+                },
+                "required": ["command"]
+            }
+        },
+        {
+            "name": "tool_dev_code_intelligence",
+            "description": "Pro coding intelligence on the user's workspace: scan AST/SQLi/Shelli/XSS/secret bugs with security_score ('bug_scan'), auto-refactor Python code safely with snapshot ('refactor'), map Frontend/Backend/DB architecture & API routes ('codebase_map'), search symbols & references ('smart_search'), explain files ('explain'), perform natural-language inline edits ('inline_edit'), or generate unit tests ('generate_tests').",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "One of: 'bug_scan', 'refactor', 'codebase_map', 'smart_search', 'explain', 'inline_edit', 'generate_tests'."},
+                    "path": {"type": "STRING", "description": "Relative workspace file or folder path."},
+                    "query": {"type": "STRING", "description": "Search symbol or text query for smart_search."},
+                    "instruction": {"type": "STRING", "description": "Natural-language edit instruction for inline_edit."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_live_browser_control",
+            "description": "Controls AURA's embedded Live Browser directly from chat: open/navigate URLs, click elements, type into inputs, scroll, inspect/understand page content, open new tabs, or check active tabs.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "One of: 'open', 'click', 'type', 'scroll', 'understand', 'new_tab', 'state', 'back', 'reload'."},
+                    "url": {"type": "STRING", "description": "Target URL to open (e.g. https://example.com)."},
+                    "selector": {"type": "STRING", "description": "CSS selector or visible element label to click/type."},
+                    "text": {"type": "STRING", "description": "Text to type or question for page understanding."},
+                    "direction": {"type": "STRING", "description": "Scroll direction: 'down' or 'up'."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_desktop_computer_use",
+            "description": "Device-aware Desktop/OS Computer Use automation. On Laptop/Desktop local runtime, operates screen capture, UI tree inspection, click, type, hotkey, start/pause/stop. On Mobile Phone/Tablet or Cloud runtime, detects the device automatically and provides a Remote Companion (/remote) pairing link or Cloud Browser path.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "One of: 'status', 'start', 'pause', 'resume', 'stop', 'screenshot', 'ui_tree', 'click', 'type', 'hotkey'."},
+                    "x": {"type": "INTEGER", "description": "Optional screen X coordinate for click."},
+                    "y": {"type": "INTEGER", "description": "Optional screen Y coordinate for click."},
+                    "text": {"type": "STRING", "description": "Text to type."},
+                    "keys": {"type": "STRING", "description": "Hotkey combo (e.g. 'ctrl+s')."},
+                    "reason": {"type": "STRING", "description": "Short reason for audit log."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_multi_agent_orchestrate",
+            "description": "Launches AURA's Multi-Agent Orchestrator directly from chat, dividing a complex software engineering goal across Frontend, Backend, Database, and QA Testing specialist agents in parallel.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "goal": {"type": "STRING", "description": "The full-stack engineering mission or feature to build."},
+                    "auto_launch": {"type": "BOOLEAN", "description": "Automatically approve and run the planned multi-agent phases (default true)."}
+                },
+                "required": ["goal"]
+            }
+        },
+        {
+            "name": "tool_jarvis_execute",
+            "description": "Controls JARVIS Automations & Hardware Kill Switch directly from chat. Supports status checks, engaging/disarming Kill Switch, and running all 8 JARVIS routines: 'repo_health_audit', 'security_threat_scan', 'code_ast_review', 'executive_briefing', 'coder_workspace_audit', 'git_auto_checkpoint', 'full_system_diagnostics', and 'autonomous_mission_dispatch'.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "action": {"type": "STRING", "description": "One of: 'status', 'run_routine', 'halt', 'arm', 'kill_switch', or directly a routine key."},
+                    "routine": {"type": "STRING", "description": "Routine key when action='run_routine'."},
+                    "target": {"type": "STRING", "description": "Optional target file, city, UPI/URL payload, or mission goal."},
+                    "halted": {"type": "BOOLEAN", "description": "True to engage Kill Switch, false to re-arm."},
+                    "reason": {"type": "STRING", "description": "Reason for Kill Switch change."}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "tool_unified_engine_dispatch",
+            "description": "Dispatches a task directly from chat to one of AURA's 5 unified core engines: 'coderx', 'godot_studio', 'cinema_flux', 'openhands', or 'open_interpreter'.",
+            "parameters": {
+                "type": "OBJECT",
+                "properties": {
+                    "engine_id": {"type": "STRING", "description": "One of: 'coderx', 'godot_studio', 'cinema_flux', 'openhands', 'open_interpreter'."},
+                    "goal": {"type": "STRING", "description": "Task or diagnostic goal for the selected engine."}
+                },
+                "required": ["engine_id"]
+            }
         }
     ]
 }]
@@ -2920,6 +3374,7 @@ class AuraBrain:
         self.voice_turn_mode: bool = False
         self.user_id: Optional[int] = None
         self.user_role: str = "admin"  # Overridden to tenant role ('user'/'admin') by aura_web._create_user_brain
+        self.device_context: Dict[str, Any] = {}
         self.history: List[Dict[str, Any]] = []
         self.last_tools: List[Dict[str, Any]] = []
 
@@ -3929,9 +4384,11 @@ The unified pipeline processed your instruction across all core engines (**Time:
             if any("functionResponse" in p or "functionCall" in p or "inlineData" in p or "inline_data" in p for p in last_parts if isinstance(p, dict)):
                 return True
             raw_last = " ".join(str(p.get("text", "")) for p in last_parts if isinstance(p, dict))
-            # Strip injected engine & language framing headers so prompt rules do not falsely trigger 35+ JSON tools
+            # Strip injected engine, device & language framing headers so prompt rules do not falsely trigger 35+ JSON tools
             if "[/ENGINE PROFILE]" in raw_last:
                 raw_last = raw_last.split("[/ENGINE PROFILE]", 1)[-1]
+            if "[/DEVICE CONTEXT]" in raw_last:
+                raw_last = raw_last.split("[/DEVICE CONTEXT]", 1)[-1]
             raw_last = re.sub(r"\[LANGUAGE LOCK:[^\n]*\n?", "", raw_last)
             last_text = raw_last.lower().strip()
             # Keep tools enabled on follow-ups to recent media/image generation turns
@@ -3952,11 +4409,16 @@ The unified pipeline processed your instruction across all core engines (**Time:
             r"whatsapp|chatgpt|chat\s*gpt|youtube|chrome|spotify|gmail|github|weather|temperature|forecast|"
             r"news|headline|game|cyberarena|cybercraft|godot|arena|file|files|folder|workspace|read\s+file|"
             r"write\s+file|save\s+file|edit\s+file|create\s+file|delete\s+file|list\s+files|memory|remember|"
-            r"recall|web\s*search|search\s+(?:the\s+)?web|search\s+files|browse|scrape|localhost|preview|server|port|"
-            r"ram|storage|disk|ssd|cpu|health|specs|terminal|shell|powershell|(?:run|execute)\s+(?:the\s+|this\s+|my\s+)?(?:command|powershell|shell|script|tests?)|"
+            r"recall|web\s*search|search\s+(?:the\s+)?web|search\s+files|browse|browser|website|scrape|localhost|preview|server|port|"
+            r"ram|storage|disk|ssd|cpu|health|specs|terminal|shell|powershell|pytest|unittest|python|node|"
+            r"(?:run|execute|chala|chalao)\s+(?:the\s+|this\s+|my\s+)?(?:command|powershell|shell|script|tests?|code|audit|scan)|"
+            r"git|commit|push|puch|pull|branch|merge|worktree|diff|pr|pull\s+request|snapshot|rollback|checkpoint|"
+            r"bug|bugs|refactor|codebase(?:\s*(?:map|architecture))?|smart\s*search|lint|audit|security|secret|secrets|sqli|xss|"
+            r"jarvis|kill\s*switch|briefing|routine|diagnostics|swarm|multi[- ]?agent|orchestrate|agents|dispatch|coderx|flux|"
+            r"desktop|computer\s*use|mouse|keyboard|hotkey|remote|pair|pairing|device|mobile|phone|laptop|ipad|macbook|"
             r"nexus|trinetra|gitkitty|ashby|learnos|form2fact|orvyn|spare-gpu|payguard|anonymous|"
             r"generate\s+(?:an?\s+)?(?:image|picture|pic|photo|poster|banner|logo|video)|"
-            r"draw\s+(?:an?\s+)?(?:image|picture|pic|photo)|screenshot|click|scroll|adb|phone|"
+            r"draw\s+(?:an?\s+)?(?:image|picture|pic|photo)|screenshot|click|scroll|adb|"
             r"pipeline|omnipipeline|openhands|autogpt|interpreter)\b)"
         )
         return bool(action_pattern.search(last_text))
@@ -4005,12 +4467,22 @@ The unified pipeline processed your instruction across all core engines (**Time:
                     "LANGUAGE RULE: Reply strictly in clear, natural English by default whenever the user writes or speaks in English—NEVER switch into Hinglish or Hindi unless the user explicitly writes/speaks in Hindi/Hinglish OR a `[LANGUAGE LOCK: ...]` directive requests Hindi, Hinglish, or Telugu. "
                     "Always stay directly focused on the user's current question—never parrot the user, repeat generic greetings, or mention unrequested past confusion. "
                     "STRICT FACTUALITY: NEVER output fake completion status or image links such as 'Operation completed successfully', '✨ ...', or '(Click to view full size)' unless you ACTUALLY called `tool_generate_image` or `tool_generate_video` in THIS turn and received a verified result. "
-                    "You have native tools including tool_client_bridge_action (display brightness, audio volume/mute, or opening apps/URLs cleanly), "
-                    "workspace file tools (tool_workspace_list, tool_grep_search, tool_read_file with line ranges, tool_edit_file surgical diff, "
-                    "tool_write_file, tool_delete_file, tool_start_local_preview, tool_coderx_build), live news/weather, memory vault, "
-                    "Godot 4 game builder, and Sovereign 10-Nexus engines. NEVER say 'I am just a language model' or claim you cannot adjust display brightness, audio volume, or open apps (WhatsApp, YouTube, Spotify, Gmail, GitHub, VS Code) when `tool_client_bridge_action` is available — always invoke `tool_client_bridge_action` directly. When `tool_generate_image` succeeds, ALWAYS include a standard Markdown image tag `![description](web_url)` instead of printing raw JSON. "
+                    "You have full Antigravity-grade autonomous coder & operator tools available directly by chat command: "
+                    "`tool_git_operations` (status/diff, commit, push, branches, merge, worktrees, PR draft, snapshot/rollback, inline diff comments), "
+                    "`tool_workspace_terminal` (safe isolated python/pytest/node/git/ls/grep execution with automatic traceback diagnosis), "
+                    "`tool_dev_code_intelligence` (AST/SQLi/Shelli/XSS bug scan + security_score, AST auto-refactor, cross-layer codebase map, smart search, explain, inline edit, unit tests), "
+                    "`tool_live_browser_control` (embedded live browser open URL, click, type, scroll, screenshot/understand page, multi-tabs), "
+                    "`tool_desktop_computer_use` (device-aware OS desktop automation on Laptop/Desktop local host, or Remote Pairing `/remote` on Phone/Tablet), "
+                    "`tool_multi_agent_orchestrate` (parallel specialist agents across Frontend/Backend/DB/QA), "
+                    "`tool_jarvis_execute` (all 8 JARVIS routines + Kill Switch), `tool_unified_engine_dispatch` (CoderX/Godot/Cinema FLUX/OpenHands/Open Interpreter), "
+                    "`tool_client_bridge_action` (display brightness, audio volume/mute, opening WhatsApp/YouTube/Spotify/Gmail/GitHub/VS Code), "
+                    "and workspace file tools (`tool_workspace_list`, `tool_grep_search`, `tool_read_file`, `tool_edit_file`, `tool_write_file`, `tool_delete_file`, `tool_start_local_preview`, `tool_coderx_build`). "
+                    "DEVICE AWARENESS: Read the `[DEVICE CONTEXT]` block in each turn to know whether the user is on Mobile Phone (iOS/Android), Tablet (iPad), Laptop (MacBook/Windows), or Desktop. "
+                    "On Phone/Tablet, keep formatting scannable and still execute full Chat, Cloud Coder, Git, Terminal, Cloud Browser, and JARVIS — and if they ask for physical host PC mouse/keyboard automation, explain their detected device and provide the `/remote` companion link. On Laptop/Desktop, execute full autonomous coder, browser, and desktop workflows seamlessly. "
+                    "NEVER say 'I am just a language model' or claim you cannot commit git, run tests, scan bugs, control the browser, or trigger JARVIS — ALWAYS invoke the matching tool directly and report only verified tool results. "
+                    "When `tool_generate_image` succeeds, ALWAYS include a standard Markdown image tag `![description](web_url)` instead of printing raw JSON. "
                     "When `tool_client_bridge_action` opens a web app like WhatsApp/YouTube/Spotify, also include a clickable Markdown link `[Open App](protocol_uri)`. "
-                    "When editing existing code, prefer tool_grep_search + tool_read_file + tool_edit_file cleanly, and report only verified tool results."
+                    "When editing existing code, prefer `tool_grep_search` + `tool_read_file` + `tool_edit_file` cleanly."
                 )
             }]
         }
@@ -4571,36 +5043,138 @@ The unified pipeline processed your instruction across all core engines (**Time:
             preview = json.dumps({k: v for k, v in res.items() if k != "results"}, indent=2, ensure_ascii=False)[:1800]
             return f"### 🏆 Sovereign Nexus Engine `{cmd_token}` Executed\n\n```json\n{preview}\n```"
 
+        if cmd_token == "/git":
+            sub_parts = cmd_arg.split(maxsplit=1) if cmd_arg else ["status"]
+            g_act = sub_parts[0].lower()
+            g_val = sub_parts[1].strip() if len(sub_parts) > 1 else ""
+            act_map = {
+                "status": ("status", {}),
+                "diff": ("status", {}),
+                "commit": ("commit", {"message": g_val}),
+                "push": ("commit_and_push", {"message": g_val, "push_approved": True}),
+                "branch": ("branch_create", {"branch": g_val or "feature-branch"}),
+                "switch": ("branch_switch", {"branch": g_val or "main"}),
+                "merge": ("branch_merge", {"branch": g_val}),
+                "worktree": ("worktree_create", {"branch": g_val or "agent-wt"}),
+                "pr": ("pr_draft", {"message": g_val}),
+                "snapshot": ("snapshot_save", {"snapshot_label": g_val or "CLI Snapshot"}),
+                "rollback": ("snapshot_rollback", {"snapshot_id": g_val}),
+            }
+            mapped, extra_kw = act_map.get(g_act, ("status", {}))
+            res = tool_git_operations(action=mapped, user_id=self.user_id, **extra_kw)
+            self.last_tools.append({"name": "tool_git_operations", "args": {"action": mapped, **extra_kw}, "output": res})
+            if not res.get("success"):
+                return f"⚠️ Git `{g_act}` notice: {res.get('error', 'Failed')}"
+            if mapped == "status":
+                ch = res.get("changed_files") or []
+                files_md = "\n".join(f"- `{c['status_code']}` `{c['path']}` (`+{c['added']} -{c['removed']}`)" for c in ch[:15]) or "- Working tree clean."
+                return f"### 🔀 Git Workspace Status (`{res.get('branch', 'main')}`)\n\n- **Branches:** `{', '.join(res.get('branches', ['main']))}`\n- **Commits:** `{len(res.get('commits') or [])}`\n\n{files_md}"
+            if mapped in ("commit", "commit_and_push"):
+                return f"✅ **Git Commit Complete:** `{res.get('commit_message', '')}`\n\n- **Files Committed:** `{len(res.get('files_committed') or [])}`\n- **Push Status:** {res.get('push_note', 'Saved locally.')}"
+            if mapped == "pr_draft":
+                return str(res.get("pr_markdown") or res.get("description") or json.dumps(res, indent=2)[:1800])
+            return f"✅ **Git `{g_act}` Completed**\n\n```json\n{json.dumps({k: v for k, v in res.items() if k != 'git'}, indent=2, default=str)[:1600]}\n```"
+
+        if cmd_token in ("/bugs", "/scan"):
+            res = tool_dev_code_intelligence("bug_scan", path=cmd_arg, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_dev_code_intelligence", "args": {"action": "bug_scan", "path": cmd_arg}, "output": res})
+            finds = res.get("findings") or []
+            rows = "\n".join(f"- **[{f.get('severity', 'med').upper()}]** `{f.get('file')}:{f.get('line')}` (`{f.get('category')}`) — {f.get('message')}" for f in finds[:15]) or "- Zero issues detected."
+            return f"### 🛡️ Workspace Security & Bug Scan (Score: **{res.get('security_score', 100)}/100**)\n\n{rows}"
+
+        if cmd_token == "/refactor":
+            if not cmd_arg:
+                return "Usage: `/refactor <workspace_file.py>`"
+            res = tool_dev_code_intelligence("refactor", path=cmd_arg.strip(), user_id=self.user_id)
+            self.last_tools.append({"name": "tool_dev_code_intelligence", "args": {"action": "refactor", "path": cmd_arg.strip()}, "output": res})
+            if not res.get("success"):
+                return f"⚠️ Refactor failed: {res.get('error', 'Error')}"
+            diff_preview = (res.get("diff") or "(No structural changes needed)")[:1800]
+            return f"✅ **AST-Verified Refactor `{res.get('path')}`** (`changed={res.get('changed')}`)\n\n```diff\n{diff_preview}\n```"
+
+        if cmd_token == "/map":
+            res = tool_dev_code_intelligence("codebase_map", user_id=self.user_id)
+            self.last_tools.append({"name": "tool_dev_code_intelligence", "args": {"action": "codebase_map"}, "output": res})
+            layers = res.get("layers") or {}
+            return (
+                f"### 🗺️ Workspace Codebase Architecture ({res.get('total_files', 0)} files · {res.get('symbol_count', 0)} symbols)\n\n"
+                f"- **Frontend:** `{len(layers.get('frontend') or [])}` | **Backend:** `{len(layers.get('backend') or [])}` | **Database:** `{len(layers.get('database') or [])}` | **Tests:** `{len(layers.get('tests') or [])}`\n"
+                f"- **API Routes:** `{len(res.get('api_routes') or [])}` | **DB Tables:** `{len(res.get('db_tables') or [])}` | **Dependency Edges:** `{len(res.get('dependency_edges') or [])}`"
+            )
+
+        if cmd_token == "/test":
+            t_cmd = cmd_arg.strip() or "pytest -q"
+            res = tool_workspace_terminal(t_cmd, diagnose_on_error=True, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_workspace_terminal", "args": {"command": t_cmd}, "output": res})
+            diag = f"\n\n#### AI Diagnosis\n{res['diagnosis']}" if res.get("diagnosis") else ""
+            out_txt = (res.get("stdout") or res.get("stderr") or "(no output)")[:2200]
+            return f"### 🧪 Workspace Test Runner (`{t_cmd}` · exit `{res.get('exit_code')}`)\n\n```\n{out_txt}\n```{diag}"
+
+        if cmd_token == "/jarvis":
+            j_parts = cmd_arg.split(maxsplit=1) if cmd_arg else ["status"]
+            j_act = j_parts[0].lower()
+            j_tgt = j_parts[1].strip() if len(j_parts) > 1 else ""
+            res = tool_jarvis_execute(action=j_act, routine=j_act, target=j_tgt, user_id=self.user_id, device_context=getattr(self, "device_context", None))
+            self.last_tools.append({"name": "tool_jarvis_execute", "args": {"action": j_act, "target": j_tgt}, "output": res})
+            if res.get("halted") and not res.get("success", True):
+                return f"🛑 **JARVIS Kill Switch Engaged:** {res.get('error', 'Re-arm via `/jarvis arm`.')}"
+            return f"### 🛡️ JARVIS Command Executed (`{j_act}`)\n\n```json\n{json.dumps(res, indent=2, default=str)[:2000]}\n```"
+
+        if cmd_token == "/device":
+            dctx = getattr(self, "device_context", None) or {}
+            caps = dctx.get("capabilities") or {}
+            return (
+                "### 📱 Active Client Device Intelligence\n\n"
+                f"- **Detected Device:** `{dctx.get('device_label', 'Desktop Workstation')}`\n"
+                f"- **Class / OS:** `{dctx.get('device_class', 'desktop')}` · `{dctx.get('os_name', 'Unknown')}`\n"
+                f"- **Runtime:** `{dctx.get('runtime_env', 'local_host')}` (`{dctx.get('automation_tier', 'STANDARD')}`)\n"
+                f"- **Chat + Cloud Coder + Git + Live Browser + JARVIS:** `ACTIVE`\n"
+                f"- **Physical Desktop OS Control:** `{'ACTIVE' if caps.get('full_desktop_os_automation') else 'CLOUD / REMOTE BRIDGE (/remote)'}`\n"
+            )
+
+        if cmd_token == "/remote":
+            from aura_control_intelligence import CONTROL_HUB
+            uid = self.user_id if self.user_id is not None else "guest"
+            pair = CONTROL_HUB.create_remote_pairing(uid, label=cmd_arg or "Authorized Remote Companion", ttl_minutes=45)
+            self.last_tools.append({"name": "remote_pairing", "args": {}, "output": pair})
+            tok = pair.get("token", "")
+            return f"### 📡 Remote Agent Control Companion Ready\n\n- **Pairing Link:** [Open Remote Companion](/remote?token={tok})\n- **Expires In:** `45 minutes` — monitor & approve your Desktop/Laptop AURA tasks from your phone or iPad."
+
+        if cmd_token == "/swarm":
+            goal_s = cmd_arg or "Analyze workspace, build requested module, and verify cleanly"
+            res = tool_multi_agent_orchestrate(goal_s, auto_launch=True, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_multi_agent_orchestrate", "args": {"goal": goal_s}, "output": res})
+            ags = "\n".join(f"- **{a['id']}** ({a['role']}) — `{a['status']}`" for a in (res.get("agents") or []))
+            return f"### 🤖 Multi-Agent Orchestration Dispatched (`{res.get('mission_id', '')}`)\n\n**Goal:** {goal_s}\n\n{ags}"
+
+        if cmd_token == "/browse":
+            if not cmd_arg:
+                return "Usage: `/browse <https://url>`"
+            res = tool_live_browser_control("open", url=cmd_arg.strip(), user_id=self.user_id)
+            self.last_tools.append({"name": "tool_live_browser_control", "args": {"action": "open", "url": cmd_arg.strip()}, "output": res})
+            if res.get("success"):
+                tab = res.get("active_tab") or {}
+                return f"### 🌐 AURA Live Browser Opened `{tab.get('url', cmd_arg.strip())}`\n\n- **Title:** {tab.get('title', 'Loaded')}\n- **Engine:** `{res.get('engine', 'live_browser')}`\n\n{(tab.get('text_excerpt') or '')[:900]}"
+            return f"⚠️ Live Browser could not open `{cmd_arg.strip()}`: {res.get('error', 'Blocked')}"
+
         if cmd_token in ("/run", "/shell", "/exec", "/ps"):
             if not cmd_arg:
-                return "Usage: `/run <command>` (e.g. `/run ls`, `/run pwd`, `/run date`, or local admin shell command)"
+                return "Usage: `/run <command>` (e.g. `/run pytest -q`, `/run python app.py`, `/run ls`, `/run git status`)"
             sub = cmd_arg.strip()
-            sub_low = sub.lower()
             if not is_restricted:
                 res = tool_execute_shell(sub, permission_mode=permission_mode, approved=approved)
                 self.last_tools.append({"name": "tool_execute_shell", "args": {"command": sub}, "output": res})
                 if res.get("success"):
                     return f"### 💻 Command Output (`{sub}`)\n\n```\n{res.get('stdout', '') or '(Completed with 0 output)'}\n```"
                 return f"⚠️ Command failed (`{sub}`): {res.get('stderr') or res.get('error', 'Failed')}"
-            # Safe read-only sandbox workspace commands for standard web accounts
-            if sub_low in ("ls", "dir", "files"):
-                return self._execute_direct_command("/files", permission_mode, approved)
-            if sub_low in ("date", "get-date", "time"):
-                import datetime
-                now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-                return f"### 🕒 System Clock\n\n`{now_str}`"
-            if sub_low in ("pwd", "whoami"):
-                ws = _resolve_workspace_dir(self.user_id)
-                return f"### 📁 Active Workspace Context\n\n- **Workspace:** `{ws.name}`\n- **Role:** `{self.user_role}`"
-            if sub_low.startswith("cat ") or sub_low.startswith("type "):
-                return self._execute_direct_command("/read " + sub.split(maxsplit=1)[1], permission_mode, approved)
-            if sub_low.startswith("echo "):
-                return f"```\n{sub[5:]}\n```"
-            return (
-                f"🔒 **Server Host Shell Notice:** Arbitrary host shell (`{sub}`) is restricted to Owner/Admin accounts for multi-user safety.\n\n"
-                "You can run safe workspace commands directly via:\n"
-                "- `/files` (or `/run ls`), `/read <file>`, `/write <file> <text>`, `/code <goal>`, `/calc <expr>`, `/brightness <n>`, `/open <app>`, or `/help`!"
-            )
+            # Execute via safe tenant-isolated Workspace Terminal for EVERY authenticated coder!
+            res = tool_workspace_terminal(sub, diagnose_on_error=True, user_id=self.user_id)
+            self.last_tools.append({"name": "tool_workspace_terminal", "args": {"command": sub}, "output": res})
+            if res.get("success"):
+                out_body = (res.get("stdout") or res.get("stderr") or "(Completed with 0 output)")[:2600]
+                diag = f"\n\n#### AI Error Diagnosis\n{res['diagnosis']}" if res.get("diagnosis") else ""
+                return f"### 💻 Isolated Workspace Terminal (`{sub}` · exit `{res.get('exit_code')}`)\n\n```\n{out_body}\n```{diag}"
+            return f"⚠️ Workspace terminal notice (`{sub}`): {res.get('stderr') or 'Command not permitted in sandbox.'}"
 
         return (
             f"❓ Unknown command `{cmd_token}`. Type `/help` to see all available AURA commands "
@@ -4713,6 +5287,8 @@ The unified pipeline processed your instruction across all core engines (**Time:
                         kwargs["approved"] = approved
                     if "user_id" in tool_sig.parameters and self.user_id is not None:
                         kwargs["user_id"] = int(self.user_id)
+                    if "device_context" in tool_sig.parameters and isinstance(getattr(self, "device_context", None), dict):
+                        kwargs["device_context"] = self.device_context
                     if func_name == "tool_execute_shell" and self.user_id is not None:
                         from aura_permission_system import permission_manager
                         perm = permission_manager.request_permission(
