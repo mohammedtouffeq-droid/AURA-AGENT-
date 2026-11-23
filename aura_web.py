@@ -490,6 +490,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             proof = str(body.get("membership_proof") or "").strip()
         return aura_membership.resolve_user_membership(user, membership_proof=proof)
 
+    def _detect_device_label(self, body: Optional[Dict[str, Any]] = None) -> str:
+        try:
+            info = detect_client_device(self.headers, body)
+            if str(info.get("os_name") or "Unknown") == "Unknown":
+                return ""
+            return str(info.get("device_label") or "").strip()[:80]
+        except Exception:
+            return ""
+
     def _get_auth_user(self, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
         Authenticates via `Authorization: Bearer <token>`, `X-Auth-Token`, or
@@ -518,7 +527,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not aura_db.verify_csrf_token(token, csrf_token):
                 return None
 
-        user = aura_db.authenticate_token(token)
+        dev_label = self._detect_device_label(body)
+        user = aura_db.authenticate_token(token, touch_device=dev_label)
         if user:
             user["csrf_token"] = aura_db.compute_csrf_token(token)
         return user
@@ -1138,6 +1148,30 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             search_q = str((query.get("search") or [""])[0])[:120]
             self._send_json(aura_membership.admin_list_keys(status_filter=status_f, search=search_q))
 
+        elif path == "/api/admin/users/list":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Admin Command Center access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            filter_m = str((query.get("filter") or ["all"])[0])[:24]
+            search_q = str((query.get("search") or [""])[0])[:120]
+            self._send_json(aura_membership.admin_get_users_overview(search=search_q, filter_mode=filter_m))
+
+        elif path == "/api/admin/audit/list":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Admin Command Center access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            self._send_json(aura_membership.admin_get_audit_logs(limit=80))
+
         elif path == "/api/pro/index":
             user = self._get_auth_user()
             if not user:
@@ -1532,7 +1566,8 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         if path == "/api/auth/register":
             username = str(body.get("username", ""))
             password = str(body.get("password", ""))
-            res = aura_db.register_user(username, password)
+            dev_label = self._detect_device_label(body)
+            res = aura_db.register_user(username, password, device_label=dev_label)
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
                 uid = int(res["user"]["id"])
@@ -1555,12 +1590,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             account_proof = str(body.get("account_proof", "") or "") or None
             cookie_proof = self._get_cookie_account_proof(username)
             backup_proofs = [cookie_proof] if cookie_proof else None
+            dev_label = self._detect_device_label(body)
             res = aura_db.login_user(
                 username,
                 password,
                 vault_backup=vault_backup,
                 account_proof=account_proof,
                 backup_proofs=backup_proofs,
+                device_label=dev_label,
             )
             res["storage_status"] = aura_db.get_storage_status()
             if res.get("success") and res.get("token"):
@@ -1577,7 +1614,14 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                     extra.append(("Set-Cookie", ap_cookie))
                 self._send_json(res, status=200, extra_headers=extra)
             else:
-                status = 429 if "Too many failed" in str(res.get("error", "")) else (503 if res.get("storage_unavailable") else 401)
+                if res.get("banned"):
+                    status = 403
+                elif "Too many failed" in str(res.get("error", "")):
+                    status = 429
+                elif res.get("storage_unavailable"):
+                    status = 503
+                else:
+                    status = 401
                 self._send_json(res, status=status)
 
         elif path == "/api/auth/restore_vault":
@@ -2825,42 +2869,102 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             res = aura_membership.unlock_admin_key_vault(user, pw)
             self._send_json(res, status=int(res.get("status", 200 if res.get("success") else 403)))
 
-        elif path in ("/api/admin/keys/generate", "/api/admin/keys/renew", "/api/admin/keys/toggle", "/api/admin/keys/unbind"):
+        elif path in (
+            "/api/admin/keys/generate",
+            "/api/admin/keys/renew",
+            "/api/admin/keys/toggle",
+            "/api/admin/keys/unbind",
+            "/api/admin/keys/delete",
+            "/api/admin/users/gift",
+            "/api/admin/users/renew",
+            "/api/admin/users/revoke",
+            "/api/admin/users/ban",
+        ):
             user = self._get_auth_user(body)
             if not user:
                 self._send_json({"success": False, "error": "Authentication required"}, status=401)
                 return
             vault_tok = str(self.headers.get("X-Admin-Vault-Token") or body.get("admin_vault_token") or "").strip()
             if not aura_membership.verify_admin_vault_token(user, vault_tok):
-                self._send_json({"success": False, "error": "Forbidden: Admin Key Vault access requires @ig.ahmed.irl vault authentication."}, status=403)
+                self._send_json({"success": False, "error": "Forbidden: Admin Command Center access requires @ig.ahmed.irl vault authentication."}, status=403)
                 return
+            admin_uname = str(user.get("username") or "ig.ahmed.irl")
+            raw_days = body.get("duration_days")
+            days_val = int(raw_days) if raw_days is not None and str(raw_days).strip() else None
+            raw_dur_val = body.get("duration_value")
+            dur_val = int(raw_dur_val) if raw_dur_val is not None and str(raw_dur_val).strip() else None
+            dur_unit = str(body.get("duration_unit") or "").strip() or None
+
             if path == "/api/admin/keys/generate":
-                raw_days = body.get("duration_days")
-                days_val = int(raw_days) if raw_days is not None and str(raw_days).strip() else None
                 res = aura_membership.admin_generate_keys(
                     tier_id=str(body.get("tier_id") or "tier_3"),
                     duration_days=days_val,
+                    duration_value=dur_val,
+                    duration_unit=dur_unit,
+                    timer_mode=str(body.get("timer_mode") or "on_activation"),
+                    is_gift=bool(body.get("is_gift", False)),
+                    target_username=str(body.get("target_username") or ""),
                     count=int(body.get("count") or 1),
                     note=str(body.get("note") or ""),
-                    created_by=str(user.get("username") or "ig.ahmed.irl"),
+                    created_by=admin_uname,
                 )
             elif path == "/api/admin/keys/renew":
-                raw_days = body.get("duration_days")
-                days_val = int(raw_days) if raw_days is not None and str(raw_days).strip() else None
                 res = aura_membership.admin_renew_key(
                     key_code=str(body.get("key_code") or body.get("key") or ""),
                     duration_days=days_val,
+                    duration_value=dur_val,
+                    duration_unit=dur_unit,
                     tier_id=str(body.get("tier_id") or "") or None,
                     note=body.get("note"),
+                    admin_username=admin_uname,
                 )
             elif path == "/api/admin/keys/toggle":
                 res = aura_membership.admin_toggle_key_status(
                     key_code=str(body.get("key_code") or body.get("key") or ""),
                     disable=bool(body.get("disable", True)),
+                    admin_username=admin_uname,
                 )
-            else:
+            elif path == "/api/admin/keys/unbind":
                 res = aura_membership.admin_unbind_key(
                     key_code=str(body.get("key_code") or body.get("key") or ""),
+                    admin_username=admin_uname,
+                )
+            elif path == "/api/admin/keys/delete":
+                res = aura_membership.admin_delete_key(
+                    key_code=str(body.get("key_code") or body.get("key") or ""),
+                    admin_username=admin_uname,
+                )
+            elif path == "/api/admin/users/gift":
+                res = aura_membership.admin_gift_user_subscription(
+                    username=str(body.get("username") or ""),
+                    tier_id=str(body.get("tier_id") or "tier_5"),
+                    duration_days=days_val,
+                    duration_value=dur_val,
+                    duration_unit=dur_unit,
+                    note=str(body.get("note") or ""),
+                    admin_username=admin_uname,
+                )
+            elif path == "/api/admin/users/renew":
+                res = aura_membership.admin_renew_user_subscription(
+                    username=str(body.get("username") or ""),
+                    tier_id=str(body.get("tier_id") or "") or None,
+                    duration_days=days_val,
+                    duration_value=dur_val,
+                    duration_unit=dur_unit,
+                    note=body.get("note"),
+                    admin_username=admin_uname,
+                )
+            elif path == "/api/admin/users/revoke":
+                res = aura_membership.admin_revoke_user_subscription(
+                    username=str(body.get("username") or ""),
+                    admin_username=admin_uname,
+                )
+            else:
+                res = aura_membership.admin_set_user_ban(
+                    username=str(body.get("username") or ""),
+                    banned=bool(body.get("banned", True)),
+                    reason=str(body.get("reason") or ""),
+                    admin_username=admin_uname,
                 )
             self._send_json(res, status=200 if res.get("success") else 400)
 

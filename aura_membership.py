@@ -190,7 +190,102 @@ ACTIVATION_KEY_HASHES: Dict[str, Dict[str, Any]] = {
     "4c32426b9cfa3c44afc2ee887ea4455dba2026f224f0337f2b8673f4430529cb": {"tier_id": "tier_5", "slot": "plan_3_key_5", "duration_days": 30},
 }
 
-_DYNAMIC_KEY_RE = re.compile(r"^AURA-(SOV|TTN|APX)-(\d{1,3})D-([A-Z0-9]{6})(?:-R(\d{1,3}))?-([A-F0-9]{8})$")
+_DYNAMIC_KEY_RE = re.compile(r"^AURA-(SOV|TTN|APX)-(\d{1,4})([DHM])-([A-Z0-9]{6})(?:-R(\d{1,3}))?-([A-F0-9]{8})$")
+
+UNIT_TO_SECONDS: Dict[str, int] = {"M": 60, "H": 3600, "D": 86400}
+
+
+def normalize_duration_unit(raw_unit: Optional[str]) -> str:
+    val = str(raw_unit or "days").strip().lower()
+    if val in ("m", "min", "mins", "minute", "minutes"):
+        return "M"
+    if val in ("h", "hr", "hrs", "hour", "hours"):
+        return "H"
+    return "D"
+
+
+def format_duration_seconds(seconds: int) -> str:
+    secs = max(60, int(seconds))
+    if secs % 86400 == 0:
+        d = secs // 86400
+        return f"{d} Day" if d == 1 else f"{d} Days"
+    if secs % 3600 == 0:
+        h = secs // 3600
+        return f"{h} Hour" if h == 1 else f"{h} Hours"
+    if secs % 60 == 0:
+        m = secs // 60
+        return f"{m} Min" if m == 1 else f"{m} Mins"
+    return f"{secs}s"
+
+
+def format_countdown(seconds_left: int) -> str:
+    s = max(0, int(seconds_left))
+    if s <= 0:
+        return "Expired"
+    days, rem = divmod(s, 86400)
+    hrs, rem = divmod(rem, 3600)
+    mins, secs = divmod(rem, 60)
+    if days > 0:
+        return f"{days}d {hrs:02d}h {mins:02d}m"
+    if hrs > 0:
+        return f"{hrs:02d}h {mins:02d}m {secs:02d}s"
+    if mins > 0:
+        return f"{mins:02d}m {secs:02d}s"
+    return f"{secs}s"
+
+
+def _fmt_datetime(ts: Optional[float]) -> str:
+    if not ts:
+        return ""
+    try:
+        return datetime.datetime.fromtimestamp(float(ts)).strftime("%d %b %Y, %H:%M")
+    except Exception:
+        return ""
+
+
+def _fmt_relative_ago(ts: Optional[float], now_ts: Optional[float] = None) -> str:
+    if not ts:
+        return "Never"
+    now = now_ts if now_ts is not None else time.time()
+    diff = max(0, int(now - float(ts)))
+    if diff < 60:
+        return "Just now"
+    if diff < 3600:
+        return f"{diff // 60}m ago"
+    if diff < 86400:
+        return f"{diff // 3600}h ago"
+    if diff < 86400 * 14:
+        return f"{diff // 86400}d ago"
+    return _fmt_date(ts)
+
+
+def resolve_duration_spec(
+    duration_days: Optional[int] = None,
+    duration_value: Optional[int] = None,
+    duration_unit: Optional[str] = None,
+    default_days: int = 20,
+) -> Tuple[int, int, str, int, str]:
+    """
+    Resolves flexible duration input (minutes / hours / days or legacy duration_days) into:
+    (duration_seconds, approx_days_int, unit_code 'M'|'H'|'D', unit_value, human_label).
+    """
+    if duration_value is not None and str(duration_value).strip():
+        unit = normalize_duration_unit(duration_unit or "days")
+        val = int(duration_value)
+        if unit == "M":
+            val = max(1, min(9999, val))
+        elif unit == "H":
+            val = max(1, min(8760, val))
+        else:
+            val = max(1, min(365, val))
+        secs = val * UNIT_TO_SECONDS[unit]
+        approx_days = max(1, (secs + SECONDS_PER_DAY - 1) // SECONDS_PER_DAY)
+        return secs, approx_days, unit, val, format_duration_seconds(secs)
+
+    days = int(duration_days) if duration_days is not None and str(duration_days).strip() else int(default_days or 20)
+    days = max(1, min(365, days))
+    secs = days * SECONDS_PER_DAY
+    return secs, days, "D", days, format_duration_seconds(secs)
 
 
 def normalize_tier_id(raw_tier: str) -> str:
@@ -213,24 +308,39 @@ def hash_activation_key(raw_key: str) -> str:
     return hashlib.sha256((KEY_HASH_SALT + norm).encode("utf-8")).hexdigest()
 
 
-def _sign_dynamic_key(tier_code: str, duration_days: int, nonce: str, renew_gen: int = 0) -> str:
-    tag = f"AURA_KEY_V2:{tier_code}:{int(duration_days)}D:{nonce}"
+def _sign_dynamic_key(tier_code: str, duration_val: int, nonce: str, renew_gen: int = 0, unit_code: str = "D") -> str:
+    u = unit_code if unit_code in ("D", "H", "M") else "D"
+    tag = f"AURA_KEY_V2:{tier_code}:{int(duration_val)}{u}:{nonce}"
     if renew_gen > 0:
         tag += f":R{int(renew_gen)}"
     return aura_db.compute_vault_signature(tag)[:8].upper()
 
 
-def format_dynamic_key(tier_id: str, duration_days: int, nonce: str, renew_gen: int = 0) -> str:
+def format_dynamic_key(
+    tier_id: str,
+    duration_days: int,
+    nonce: str,
+    renew_gen: int = 0,
+    duration_value: Optional[int] = None,
+    duration_unit: str = "D",
+) -> str:
     norm_tier = normalize_tier_id(tier_id)
     if norm_tier not in TIER_ID_TO_CODE:
         norm_tier = "tier_3"
     tcode = TIER_ID_TO_CODE[norm_tier]
-    days = max(1, min(365, int(duration_days)))
+    unit = normalize_duration_unit(duration_unit) if duration_value is not None else "D"
+    val = int(duration_value) if duration_value is not None else int(duration_days)
+    if unit == "M":
+        val = max(1, min(9999, val))
+    elif unit == "H":
+        val = max(1, min(8760, val))
+    else:
+        val = max(1, min(365, val))
     clean_nonce = "".join(ch for ch in str(nonce or "").upper() if ch.isalnum())[:6].ljust(6, "X")
-    sig = _sign_dynamic_key(tcode, days, clean_nonce, renew_gen=renew_gen)
+    sig = _sign_dynamic_key(tcode, val, clean_nonce, renew_gen=renew_gen, unit_code=unit)
     if renew_gen > 0:
-        return f"AURA-{tcode}-{days}D-{clean_nonce}-R{int(renew_gen)}-{sig}"
-    return f"AURA-{tcode}-{days}D-{clean_nonce}-{sig}"
+        return f"AURA-{tcode}-{val}{unit}-{clean_nonce}-R{int(renew_gen)}-{sig}"
+    return f"AURA-{tcode}-{val}{unit}-{clean_nonce}-{sig}"
 
 
 def verify_dynamic_key_format(raw_key: str) -> Optional[Dict[str, Any]]:
@@ -238,20 +348,28 @@ def verify_dynamic_key_format(raw_key: str) -> Optional[Dict[str, Any]]:
     m = _DYNAMIC_KEY_RE.match(norm)
     if not m:
         return None
-    tcode, days_str, nonce, rgen_str, provided_sig = m.groups()
-    days = int(days_str)
+    tcode, val_str, unit_code, nonce, rgen_str, provided_sig = m.groups()
+    val = int(val_str)
     renew_gen = int(rgen_str) if rgen_str else 0
-    if days < 1 or days > 365:
+    if unit_code == "D" and (val < 1 or val > 365):
         return None
-    expected_sig = _sign_dynamic_key(tcode, days, nonce, renew_gen=renew_gen)
+    if unit_code == "H" and (val < 1 or val > 8760):
+        return None
+    if unit_code == "M" and (val < 1 or val > 9999):
+        return None
+    expected_sig = _sign_dynamic_key(tcode, val, nonce, renew_gen=renew_gen, unit_code=unit_code)
     if not hmac.compare_digest(expected_sig, provided_sig):
         return None
     tier_id = TIER_CODE_TO_ID[tcode]
+    dur_secs = val * UNIT_TO_SECONDS[unit_code]
+    approx_days = max(1, (dur_secs + SECONDS_PER_DAY - 1) // SECONDS_PER_DAY)
     return {
         "key_code": norm,
         "key_hash": hash_activation_key(norm),
         "tier_id": tier_id,
-        "duration_days": days,
+        "duration_days": approx_days,
+        "duration_seconds": dur_secs,
+        "duration_label": format_duration_seconds(dur_secs),
         "nonce": nonce,
         "renew_gen": renew_gen,
         "slot": f"dyn_{tcode.lower()}_{nonce.lower()}",
@@ -267,12 +385,17 @@ def lookup_activation_key(raw_key: str) -> Optional[Dict[str, Any]]:
     # 1. Check live SQLite/LibSQL subscription_keys registry first (admin-generated, renewed, or disabled keys)
     db_row = aura_db.get_subscription_key_by_code(norm) or aura_db.get_subscription_key_by_hash(digest)
     if db_row:
+        d_days = max(1, int(db_row.get("duration_days") or 20))
+        d_secs = int(db_row["duration_seconds"]) if db_row.get("duration_seconds") else (d_days * SECONDS_PER_DAY)
         return {
             "source": "db",
             "key_code": db_row["key_code"],
             "key_hash": db_row["key_hash"],
             "tier_id": normalize_tier_id(db_row["tier_id"]),
-            "duration_days": max(1, int(db_row.get("duration_days") or 20)),
+            "duration_days": d_days,
+            "duration_seconds": max(60, d_secs),
+            "duration_label": format_duration_seconds(max(60, d_secs)),
+            "is_gift": bool(db_row.get("is_gift")),
             "slot": db_row["key_code"],
             "db_row": db_row,
         }
@@ -286,6 +409,9 @@ def lookup_activation_key(raw_key: str) -> Optional[Dict[str, Any]]:
             "key_hash": dyn["key_hash"],
             "tier_id": dyn["tier_id"],
             "duration_days": dyn["duration_days"],
+            "duration_seconds": dyn["duration_seconds"],
+            "duration_label": dyn["duration_label"],
+            "is_gift": False,
             "slot": dyn["key_code"],
             "db_row": None,
         }
@@ -301,6 +427,9 @@ def lookup_activation_key(raw_key: str) -> Optional[Dict[str, Any]]:
             "key_hash": digest,
             "tier_id": tid,
             "duration_days": default_days,
+            "duration_seconds": default_days * SECONDS_PER_DAY,
+            "duration_label": format_duration_seconds(default_days * SECONDS_PER_DAY),
+            "is_gift": False,
             "slot": str(entry.get("slot") or norm[:24]),
             "db_row": None,
         }
@@ -479,16 +608,20 @@ def resolve_user_membership(
                 settings.pop("membership", None)
                 aura_db.save_user_settings(uid, settings)
         elif k_status == "active" and (k_exp is None or k_exp > now_ts):
-            # Sync live tier/expiry (picks up instant Admin renewals or plan upgrades!)
+            # Sync live tier/expiry (picks up instant Admin renewals, free gifts or plan upgrades!)
             synced_tier = normalize_tier_id(db_key.get("tier_id", "tier_3"))
             tier_id = synced_tier
+            k_dur_days = int(db_key.get("duration_days") or 20)
+            k_dur_secs = int(db_key["duration_seconds"]) if db_key.get("duration_seconds") else (k_dur_days * SECONDS_PER_DAY)
             mem = {
                 "tier_id": synced_tier,
                 "key_slot": db_key["key_code"],
                 "key_code": db_key["key_code"],
                 "activated_at": float(db_key.get("activated_at") or now_ts),
                 "expires_at": k_exp,
-                "duration_days": int(db_key.get("duration_days") or 20),
+                "duration_days": k_dur_days,
+                "duration_seconds": k_dur_secs,
+                "is_gift": bool(db_key.get("is_gift")),
             }
             if uid is not None and settings.get("membership") != mem:
                 settings["membership"] = mem
@@ -509,11 +642,13 @@ def resolve_user_membership(
     activated_at = float(mem.get("activated_at") or 0) if tier_id != "tier_0" else None
     key_slot = str(mem.get("key_slot") or "") if tier_id != "tier_0" else ""
     active_key_code = str(mem.get("key_code") or "") if tier_id != "tier_0" else ""
+    is_gift = bool(mem.get("is_gift", False)) if tier_id != "tier_0" else False
     seconds_left = max(0, int(expires_at - now_ts)) if (tier_id != "tier_0" and expires_at) else 0
     days_remaining = round(seconds_left / SECONDS_PER_DAY, 1) if seconds_left > 0 else 0
     days_remaining_floor = int(seconds_left // SECONDS_PER_DAY) if seconds_left > 0 else 0
     days_remaining_ceil = int((seconds_left + SECONDS_PER_DAY - 1) // SECONDS_PER_DAY) if seconds_left > 0 else 0
     hours_remaining = (seconds_left % SECONDS_PER_DAY) // 3600 if seconds_left > 0 else 0
+    countdown_label = format_countdown(seconds_left) if (tier_id != "tier_0" and expires_at) else ""
 
     proof = (
         build_membership_proof(
@@ -532,13 +667,17 @@ def resolve_user_membership(
         **spec,
         "activated_at": activated_at,
         "expires_at": expires_at if tier_id != "tier_0" else None,
-        "expires_label": _fmt_date(expires_at) if (tier_id != "tier_0" and expires_at) else "",
+        "expires_label": _fmt_datetime(expires_at) if (tier_id != "tier_0" and expires_at and seconds_left < SECONDS_PER_DAY) else (_fmt_date(expires_at) if (tier_id != "tier_0" and expires_at) else ""),
+        "seconds_remaining": seconds_left if tier_id != "tier_0" else 0,
+        "countdown_label": countdown_label,
         "days_remaining": days_remaining if tier_id != "tier_0" else 0,
         "days_remaining_floor": days_remaining_floor if tier_id != "tier_0" else 0,
         "days_remaining_int": days_remaining_ceil if tier_id != "tier_0" else 0,
         "hours_remaining": hours_remaining if tier_id != "tier_0" else 0,
         "subscription_active": tier_id != "tier_0",
+        "is_gift": is_gift,
         "key_slot": key_slot,
+        "key_code": active_key_code,
         "key_code_masked": _mask_key_code(active_key_code) if active_key_code else "",
         "membership_proof": proof,
         "expired_notice": expired_notice or disabled_notice,
@@ -549,8 +688,8 @@ def resolve_user_membership(
 def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any]:
     """
     Validates a dynamic or hashed subscription key, enforces admin kill-switch,
-    expiry window, and single-account binding, activates the plan, and returns
-    the special subscriber welcome payload.
+    exact second-precision expiry window (minutes/hours/days), and single-account binding,
+    activates the plan, and returns the special subscriber welcome payload.
     """
     match = lookup_activation_key(raw_key)
     if not match:
@@ -565,6 +704,9 @@ def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any
     key_code = str(match["key_code"]).strip().upper()
     key_hash = str(match["key_hash"])
     duration_days = max(1, int(match.get("duration_days") or MEMBERSHIP_TIERS[tier_id].get("duration_days") or 20))
+    duration_seconds = max(60, int(match.get("duration_seconds") or (duration_days * SECONDS_PER_DAY)))
+    duration_label = format_duration_seconds(duration_seconds)
+    is_gift = bool(match.get("is_gift", False))
     db_row = match.get("db_row")
     now_ts = time.time()
 
@@ -587,11 +729,12 @@ def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any
                 aura_db.update_subscription_key(key_code, {"status": "expired"})
             return {
                 "success": False,
-                "error": f"This key expired on {_fmt_date(existing_exp)}. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} to renew your same key.",
+                "error": f"This key expired on {_fmt_datetime(existing_exp) or _fmt_date(existing_exp)}. Message {SUBSCRIPTION_CONTACT['whatsapp_display']} to renew your same key.",
             }
-        # If key already has a future expires_at (e.g. renewed or re-activating on same user), keep it; otherwise start clock now!
-        expires_at = existing_exp if (existing_exp and existing_exp > now_ts) else (now_ts + duration_days * SECONDS_PER_DAY)
+        # If key already has a future expires_at (e.g. fixed_now timer or renewed key), preserve it; otherwise start clock now!
+        expires_at = existing_exp if (existing_exp and existing_exp > now_ts) else (now_ts + duration_seconds)
         activated_at = float(db_row.get("activated_at") or now_ts)
+        is_gift = bool(db_row.get("is_gift", is_gift))
         aura_db.update_subscription_key(
             key_code,
             {
@@ -604,12 +747,14 @@ def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any
         )
     else:
         activated_at = now_ts
-        expires_at = now_ts + duration_days * SECONDS_PER_DAY
+        expires_at = now_ts + duration_seconds
         aura_db.upsert_subscription_key(
             key_code=key_code,
             key_hash=key_hash,
             tier_id=tier_id,
             duration_days=duration_days,
+            duration_seconds=duration_seconds,
+            is_gift=is_gift,
             status="active",
             bound_user_id=uid,
             bound_username=uname,
@@ -628,6 +773,8 @@ def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any
         "activated_at": activated_at,
         "expires_at": expires_at,
         "duration_days": duration_days,
+        "duration_seconds": duration_seconds,
+        "is_gift": is_gift,
     }
     aura_db.save_user_settings(uid, settings)
     aura_db.record_membership_activation(uid, uname, key_hash, tier_id)
@@ -642,17 +789,20 @@ def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any
         "badge": spec["badge"],
         "accent": spec["accent"],
         "theme": spec["theme"],
-        "price_label": spec["price_label"],
+        "price_label": "FREE GIFT" if is_gift else spec["price_label"],
         "duration_days": duration_days,
+        "duration_label": duration_label,
         "expires_label": resolved["expires_label"],
+        "countdown_label": resolved["countdown_label"],
         "daily_limit_label": "Unlimited Chats / Day" if spec["unlimited"] else f"{spec['daily_limit']} Chats / Day",
         "feature_coverage": spec["feature_coverage"],
         "unlocked_features": spec["features"],
         "username": user.get("display_name") or user.get("username") or "Member",
+        "is_gift": is_gift,
     }
     return {
         "success": True,
-        "message": f"{resolved['name']} activated for {duration_days} days (expires {resolved['expires_label']}).",
+        "message": f"{resolved['name']} activated for {duration_label} (expires {resolved['expires_label']}).",
         "membership": resolved,
         "quota": quota,
         "welcome": welcome_payload,
@@ -883,6 +1033,10 @@ def _enrich_admin_key_row(row: Dict[str, Any], now_ts: Optional[float] = None) -
     raw_status = str(row.get("status") or "active").lower()
     exp = float(row["expires_at"]) if row.get("expires_at") is not None else None
     bound_u = str(row.get("bound_username") or "").strip()
+    dur_days = int(row.get("duration_days") or spec.get("duration_days") or 20)
+    dur_secs = int(row["duration_seconds"]) if row.get("duration_seconds") else (dur_days * SECONDS_PER_DAY)
+    timer_mode = "fixed_now" if str(row.get("timer_mode") or "").lower() == "fixed_now" else "on_activation"
+    is_gift = bool(row.get("is_gift", False))
 
     if raw_status == "disabled":
         effective = "disabled"
@@ -895,7 +1049,8 @@ def _enrich_admin_key_row(row: Dict[str, Any], now_ts: Optional[float] = None) -
     else:
         effective = "unused"
 
-    secs_left = max(0, int(exp - now)) if (exp is not None and effective == "active") else 0
+    has_live_timer = exp is not None and effective in ("active", "unused") and exp > now
+    secs_left = max(0, int(exp - now)) if has_live_timer else 0
     days_left = round(secs_left / SECONDS_PER_DAY, 1) if secs_left > 0 else 0
     return {
         "key_code": row["key_code"],
@@ -903,21 +1058,27 @@ def _enrich_admin_key_row(row: Dict[str, Any], now_ts: Optional[float] = None) -
         "plan_number": spec["plan_number"],
         "plan_name": spec["name"],
         "badge": spec["badge"],
-        "price_label": spec["price_label"],
+        "price_label": "FREE GIFT" if is_gift else spec["price_label"],
         "daily_limit": spec["daily_limit"],
         "unlimited": spec["unlimited"],
-        "duration_days": int(row.get("duration_days") or spec.get("duration_days") or 20),
+        "duration_days": dur_days,
+        "duration_seconds": dur_secs,
+        "duration_label": format_duration_seconds(dur_secs),
+        "timer_mode": timer_mode,
+        "is_gift": is_gift,
         "status": effective,
         "raw_status": raw_status,
         "bound_username": bound_u,
         "activated_at": row.get("activated_at"),
         "expires_at": exp,
-        "expires_label": _fmt_date(exp) if exp else "Starts on activation",
+        "expires_label": _fmt_datetime(exp) if exp else "Starts on activation",
+        "seconds_remaining": secs_left,
+        "countdown_label": format_countdown(secs_left) if has_live_timer else ("Expired" if effective == "expired" else "Not started"),
         "days_left": days_left,
         "note": str(row.get("note") or ""),
         "renew_count": int(row.get("renew_count") or 0),
         "created_at": row.get("created_at"),
-        "created_label": _fmt_date(row.get("created_at")),
+        "created_label": _fmt_datetime(row.get("created_at")),
     }
 
 
@@ -927,34 +1088,103 @@ def admin_generate_keys(
     count: int = 1,
     note: str = "",
     created_by: str = ADMIN_OWNER_USERNAME,
+    duration_value: Optional[int] = None,
+    duration_unit: Optional[str] = None,
+    timer_mode: str = "on_activation",
+    is_gift: bool = False,
+    target_username: str = "",
 ) -> Dict[str, Any]:
     norm_tier = normalize_tier_id(tier_id)
     if norm_tier not in PAID_TIER_ORDER:
         return {"success": False, "error": "Select Plan 1 (Sovereign), Plan 2 (Titan), or Plan 3 (Apex Omnis)."}
     spec = get_tier_spec(norm_tier)
-    days = int(duration_days) if duration_days is not None and str(duration_days).strip() else int(spec.get("duration_days") or 20)
-    days = max(1, min(365, days))
-    qty = max(1, min(25, int(count or 1)))
+    default_days = int(spec.get("duration_days") or 20)
+    dur_secs, approx_days, unit_code, unit_val, dur_label = resolve_duration_spec(
+        duration_days=duration_days,
+        duration_value=duration_value,
+        duration_unit=duration_unit,
+        default_days=default_days,
+    )
+    t_mode = "fixed_now" if str(timer_mode or "").strip().lower() == "fixed_now" else "on_activation"
+    target_u = str(target_username or "").strip().lstrip("@").lower()
+    target_row = None
+    if target_u:
+        target_row = aura_db.get_user_by_username(target_u)
+        if not target_row:
+            return {"success": False, "error": f"User '@{target_u}' not found. Ask them to register/login first."}
+        qty = 1
+    else:
+        qty = max(1, min(25, int(count or 1)))
+
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     created: List[Dict[str, Any]] = []
+    now_ts = time.time()
+    clean_note = str(note or "").strip()[:200]
+    if is_gift and not clean_note:
+        clean_note = "Free Gift from Admin"
+
     for _ in range(qty):
         nonce = "".join(secrets.choice(alphabet) for _ in range(6))
-        code = format_dynamic_key(norm_tier, days, nonce)
+        code = format_dynamic_key(
+            norm_tier,
+            approx_days,
+            nonce,
+            duration_value=unit_val if unit_code != "D" else None,
+            duration_unit=unit_code,
+        )
+        key_hash = hash_activation_key(code)
+        exp_ts = (now_ts + dur_secs) if (t_mode == "fixed_now" or target_row is not None) else None
+        act_ts = now_ts if target_row is not None else None
         row = aura_db.upsert_subscription_key(
             key_code=code,
-            key_hash=hash_activation_key(code),
+            key_hash=key_hash,
             tier_id=norm_tier,
-            duration_days=days,
+            duration_days=approx_days,
+            duration_seconds=dur_secs,
+            timer_mode=t_mode,
+            is_gift=bool(is_gift),
             status="active",
+            bound_user_id=int(target_row["id"]) if target_row else None,
+            bound_username=target_u if target_row else "",
+            activated_at=act_ts,
+            expires_at=exp_ts,
             created_by=created_by,
-            note=str(note or "").strip()[:200],
+            note=clean_note,
         )
+        if target_row is not None and exp_ts is not None:
+            aura_db.update_user_membership_by_username(
+                target_u,
+                {
+                    "tier_id": norm_tier,
+                    "key_slot": code,
+                    "key_code": code,
+                    "key_hash_prefix": key_hash[:12],
+                    "activated_at": now_ts,
+                    "expires_at": exp_ts,
+                    "duration_days": approx_days,
+                    "duration_seconds": dur_secs,
+                    "is_gift": bool(is_gift),
+                },
+            )
+            aura_db.record_membership_activation(int(target_row["id"]), target_u, key_hash, norm_tier)
         created.append(_enrich_admin_key_row(row))
+
+    action_tag = "gift_key_created" if is_gift else "key_generated"
+    aura_db.record_admin_audit(
+        created_by,
+        action_tag,
+        target=f"@{target_u}" if target_u else (created[0]["key_code"] if len(created) == 1 else f"{len(created)} keys"),
+        details=f"{spec['name']} · {dur_label} · mode={t_mode}" + (f" · {clean_note}" if clean_note else ""),
+    )
     return {
         "success": True,
         "generated_count": len(created),
         "keys": created,
-        "message": f"Generated {len(created)} {spec['name']} key(s) valid for {days} days.",
+        "message": (
+            f"Activated {'Free Gift ' if is_gift else ''}{spec['name']} on @{target_u} for {dur_label}."
+            if target_u
+            else f"Generated {len(created)} {'Free Gift ' if is_gift else ''}{spec['name']} key(s) valid for {dur_label}."
+        ),
     }
 
 
@@ -993,6 +1223,9 @@ def admin_renew_key(
     duration_days: Optional[int] = None,
     tier_id: Optional[str] = None,
     note: Optional[str] = None,
+    duration_value: Optional[int] = None,
+    duration_unit: Optional[str] = None,
+    admin_username: str = ADMIN_OWNER_USERNAME,
 ) -> Dict[str, Any]:
     norm_code = normalize_activation_key(key_code)
     row = aura_db.get_subscription_key_by_code(norm_code)
@@ -1003,19 +1236,24 @@ def admin_renew_key(
     if target_tier not in PAID_TIER_ORDER:
         target_tier = normalize_tier_id(row["tier_id"])
     spec = get_tier_spec(target_tier)
-    add_days = int(duration_days) if duration_days is not None and str(duration_days).strip() else int(spec.get("duration_days") or 20)
-    add_days = max(1, min(365, add_days))
+    add_secs, add_days, _, _, dur_label = resolve_duration_spec(
+        duration_days=duration_days,
+        duration_value=duration_value,
+        duration_unit=duration_unit,
+        default_days=int(spec.get("duration_days") or 20),
+    )
 
     now_ts = time.time()
     prev_exp = float(row["expires_at"]) if row.get("expires_at") is not None else 0.0
     was_active = str(row.get("status") or "").lower() == "active" and prev_exp > now_ts
     base_ts = prev_exp if was_active else now_ts
-    new_exp = base_ts + add_days * SECONDS_PER_DAY
+    new_exp = base_ts + add_secs
     new_renew_count = int(row.get("renew_count") or 0) + 1
 
     fields: Dict[str, Any] = {
         "tier_id": target_tier,
         "duration_days": add_days,
+        "duration_seconds": add_secs,
         "status": "active",
         "expires_at": new_exp,
         "renew_count": new_renew_count,
@@ -1038,17 +1276,25 @@ def admin_renew_key(
                 "activated_at": float((updated or {}).get("activated_at") or now_ts),
                 "expires_at": new_exp,
                 "duration_days": add_days,
+                "duration_seconds": add_secs,
+                "is_gift": bool((updated or {}).get("is_gift", False)),
             },
         )
     enriched = _enrich_admin_key_row(updated or row)
+    aura_db.record_admin_audit(
+        admin_username,
+        "key_renewed",
+        target=f"{norm_code}" + (f" (@{bound_u})" if bound_u else ""),
+        details=f"{spec['name']} · +{dur_label} · exp {enriched['expires_label']}",
+    )
     return {
         "success": True,
-        "message": f"Key {norm_code} renewed on {spec['name']} for +{add_days} days (expires {enriched['expires_label']}).",
+        "message": f"Key {norm_code} renewed on {spec['name']} for +{dur_label} (expires {enriched['expires_label']}).",
         "key": enriched,
     }
 
 
-def admin_toggle_key_status(key_code: str, disable: bool) -> Dict[str, Any]:
+def admin_toggle_key_status(key_code: str, disable: bool, admin_username: str = ADMIN_OWNER_USERNAME) -> Dict[str, Any]:
     norm_code = normalize_activation_key(key_code)
     row = aura_db.get_subscription_key_by_code(norm_code)
     if not row:
@@ -1059,6 +1305,7 @@ def admin_toggle_key_status(key_code: str, disable: bool) -> Dict[str, Any]:
         updated = aura_db.update_subscription_key(norm_code, {"status": "disabled"})
         if bound_u:
             aura_db.update_user_membership_by_username(bound_u, None)
+        aura_db.record_admin_audit(admin_username, "key_disabled", target=norm_code, details=f"bound=@{bound_u}" if bound_u else "unclaimed")
         return {
             "success": True,
             "message": f"Key {norm_code} disabled immediately." + (f" Account @{bound_u} returned to Standard." if bound_u else ""),
@@ -1068,8 +1315,9 @@ def admin_toggle_key_status(key_code: str, disable: bool) -> Dict[str, Any]:
     # Re-enabling a disabled key
     exp = float(row["expires_at"]) if row.get("expires_at") is not None else None
     days = max(1, int(row.get("duration_days") or 20))
+    dur_secs = int(row["duration_seconds"]) if row.get("duration_seconds") else (days * SECONDS_PER_DAY)
     if bound_u and (exp is None or exp <= now_ts):
-        exp = now_ts + days * SECONDS_PER_DAY
+        exp = now_ts + dur_secs
     fields: Dict[str, Any] = {"status": "active"}
     if exp is not None:
         fields["expires_at"] = exp
@@ -1086,8 +1334,11 @@ def admin_toggle_key_status(key_code: str, disable: bool) -> Dict[str, Any]:
                 "activated_at": float(row.get("activated_at") or now_ts),
                 "expires_at": exp,
                 "duration_days": days,
+                "duration_seconds": dur_secs,
+                "is_gift": bool(row.get("is_gift", False)),
             },
         )
+    aura_db.record_admin_audit(admin_username, "key_enabled", target=norm_code, details=f"bound=@{bound_u}" if bound_u else "unclaimed")
     return {
         "success": True,
         "message": f"Key {norm_code} re-enabled.",
@@ -1095,7 +1346,7 @@ def admin_toggle_key_status(key_code: str, disable: bool) -> Dict[str, Any]:
     }
 
 
-def admin_unbind_key(key_code: str) -> Dict[str, Any]:
+def admin_unbind_key(key_code: str, admin_username: str = ADMIN_OWNER_USERNAME) -> Dict[str, Any]:
     norm_code = normalize_activation_key(key_code)
     row = aura_db.get_subscription_key_by_code(norm_code)
     if not row:
@@ -1107,8 +1358,288 @@ def admin_unbind_key(key_code: str) -> Dict[str, Any]:
         norm_code,
         {"bound_user_id": None, "bound_username": "", "activated_at": None, "expires_at": None, "status": "active"},
     )
+    aura_db.record_admin_audit(admin_username, "key_unbound", target=norm_code, details=f"previous=@{old_user}" if old_user else "")
     return {
         "success": True,
         "message": f"Key {norm_code} unbound and ready for activation.",
         "key": _enrich_admin_key_row(updated or row),
     }
+
+
+def admin_delete_key(key_code: str, admin_username: str = ADMIN_OWNER_USERNAME) -> Dict[str, Any]:
+    norm_code = normalize_activation_key(key_code)
+    row = aura_db.get_subscription_key_by_code(norm_code)
+    if not row:
+        return {"success": False, "error": f"Subscription key '{norm_code}' not found."}
+    old_user = str(row.get("bound_username") or "").strip().lower()
+    if old_user:
+        aura_db.update_user_membership_by_username(old_user, None)
+    deleted = aura_db.delete_subscription_key(norm_code)
+    if not deleted:
+        return {"success": False, "error": f"Could not delete key '{norm_code}'."}
+    aura_db.record_admin_audit(admin_username, "key_deleted", target=norm_code, details=f"previous=@{old_user}" if old_user else "")
+    return {
+        "success": True,
+        "message": f"Key {norm_code} permanently deleted." + (f" @{old_user} returned to Standard." if old_user else ""),
+    }
+
+
+# ===================================================================================
+# EXCLUSIVE ADMIN USERS COMMAND CENTER (REAL LOGINS, BAN, FREE GIFT, RENEW, AUDIT)
+# ===================================================================================
+
+def admin_get_users_overview(search: str = "", filter_mode: str = "all") -> Dict[str, Any]:
+    now_ts = time.time()
+    raw_users = aura_db.list_all_users_for_admin(limit=500)
+    keys_info = admin_list_keys(status_filter="all", search="")
+    allowed_admin = os.environ.get("AURA_KEY_ADMIN_USERNAME", ADMIN_OWNER_USERNAME).strip().lower() or ADMIN_OWNER_USERNAME
+
+    enriched_users: List[Dict[str, Any]] = []
+    online_cutoff = now_ts - (10 * 60)
+    active_24h_cutoff = now_ts - SECONDS_PER_DAY
+
+    for u in raw_users:
+        uname = str(u.get("username") or "").strip().lower()
+        mem = resolve_user_membership(u)
+        last_seen = float(u["last_seen_at"]) if u.get("last_seen_at") else (float(u["last_login_at"]) if u.get("last_login_at") else None)
+        last_login = float(u["last_login_at"]) if u.get("last_login_at") else None
+        is_online = bool(last_seen and last_seen >= online_cutoff and not bool(u.get("is_banned")))
+        is_active_24h = bool(last_seen and last_seen >= active_24h_cutoff)
+        is_banned = bool(u.get("is_banned"))
+        is_owner = hmac.compare_digest(uname, allowed_admin)
+        sub_active = bool(mem.get("subscription_active"))
+        enriched_users.append({
+            "id": int(u["id"]),
+            "username": uname,
+            "display_name": str(u.get("display_name") or uname.capitalize()),
+            "role": str(u.get("role") or "user"),
+            "is_owner": is_owner,
+            "is_banned": is_banned,
+            "ban_reason": str(u.get("ban_reason") or ""),
+            "banned_at": u.get("banned_at"),
+            "created_at": str(u.get("created_at") or ""),
+            "last_login_at": last_login,
+            "last_login_label": _fmt_relative_ago(last_login, now_ts=now_ts),
+            "last_seen_at": last_seen,
+            "last_seen_label": _fmt_relative_ago(last_seen, now_ts=now_ts),
+            "login_count": max(1 if last_login else 0, int(u.get("login_count") or 0)),
+            "last_device": str(u.get("last_device") or "Web Client"),
+            "is_online": is_online,
+            "is_active_24h": is_active_24h,
+            "chats_24h": int(u.get("chats_24h") or 0),
+            "subscription_active": sub_active,
+            "tier_id": mem["id"],
+            "plan_name": mem["name"],
+            "plan_short": mem["short_name"],
+            "plan_badge": mem["badge"],
+            "daily_limit": mem["daily_limit"],
+            "unlimited": bool(mem["unlimited"]),
+            "is_gift": bool(mem.get("is_gift", False)),
+            "key_code": str(mem.get("key_code") or ""),
+            "expires_at": mem.get("expires_at"),
+            "expires_label": str(mem.get("expires_label") or ""),
+            "seconds_remaining": int(mem.get("seconds_remaining") or 0),
+            "countdown_label": str(mem.get("countdown_label") or ""),
+        })
+
+    summary = {
+        "total_users": len(enriched_users),
+        "online_now": sum(1 for x in enriched_users if x["is_online"]),
+        "active_24h": sum(1 for x in enriched_users if x["is_active_24h"]),
+        "subscribed_users": sum(1 for x in enriched_users if x["subscription_active"] and not x["is_banned"]),
+        "free_users": sum(1 for x in enriched_users if not x["subscription_active"] and not x["is_banned"]),
+        "banned_users": sum(1 for x in enriched_users if x["is_banned"]),
+        "keys": keys_info["summary"],
+    }
+
+    fm = str(filter_mode or "all").strip().lower()
+    q = str(search or "").strip().lstrip("@").lower()
+    filtered = []
+    for x in enriched_users:
+        if fm == "online" and not x["is_online"]:
+            continue
+        elif fm == "subscribed" and not x["subscription_active"]:
+            continue
+        elif fm == "free" and (x["subscription_active"] or x["is_banned"]):
+            continue
+        elif fm == "banned" and not x["is_banned"]:
+            continue
+        if q:
+            hay = f"{x['username']} {x['display_name']} {x['plan_name']} {x['last_device']} {x['key_code']}".lower()
+            if q not in hay:
+                continue
+        filtered.append(x)
+
+    return {
+        "success": True,
+        "summary": summary,
+        "users": filtered,
+        "storage_status": aura_db.get_storage_status(),
+        "audit_logs": admin_get_audit_logs(limit=40)["logs"],
+        "tiers": [get_tier_spec(tid) for tid in PAID_TIER_ORDER],
+    }
+
+
+def admin_gift_user_subscription(
+    username: str,
+    tier_id: str = "tier_5",
+    duration_days: Optional[int] = None,
+    duration_value: Optional[int] = None,
+    duration_unit: Optional[str] = None,
+    note: str = "",
+    admin_username: str = ADMIN_OWNER_USERNAME,
+) -> Dict[str, Any]:
+    target_u = str(username or "").strip().lstrip("@").lower()
+    if not target_u:
+        return {"success": False, "error": "Target username is required."}
+    user_row = aura_db.get_user_by_username(target_u)
+    if not user_row:
+        return {"success": False, "error": f"User '@{target_u}' not found."}
+    clean_note = str(note or "").strip() or f"Free Gift from @{admin_username}"
+    return admin_generate_keys(
+        tier_id=tier_id,
+        duration_days=duration_days,
+        duration_value=duration_value,
+        duration_unit=duration_unit,
+        count=1,
+        note=clean_note,
+        created_by=admin_username,
+        timer_mode="fixed_now",
+        is_gift=True,
+        target_username=target_u,
+    )
+
+
+def admin_renew_user_subscription(
+    username: str,
+    tier_id: Optional[str] = None,
+    duration_days: Optional[int] = None,
+    duration_value: Optional[int] = None,
+    duration_unit: Optional[str] = None,
+    note: Optional[str] = None,
+    admin_username: str = ADMIN_OWNER_USERNAME,
+) -> Dict[str, Any]:
+    target_u = str(username or "").strip().lstrip("@").lower()
+    if not target_u:
+        return {"success": False, "error": "Target username is required."}
+    user_row = aura_db.get_user_by_username(target_u)
+    if not user_row:
+        return {"success": False, "error": f"User '@{target_u}' not found."}
+
+    # Look for existing key bound to this user first
+    existing_key = None
+    mem_settings = (user_row.get("settings") or {}).get("membership") if isinstance(user_row.get("settings"), dict) else None
+    if isinstance(mem_settings, dict) and mem_settings.get("key_code"):
+        existing_key = aura_db.get_subscription_key_by_code(str(mem_settings["key_code"]))
+    if not existing_key:
+        for krow in aura_db.list_subscription_keys(limit=500):
+            if str(krow.get("bound_username") or "").strip().lower() == target_u:
+                existing_key = krow
+                break
+
+    if existing_key:
+        return admin_renew_key(
+            key_code=existing_key["key_code"],
+            duration_days=duration_days,
+            duration_value=duration_value,
+            duration_unit=duration_unit,
+            tier_id=tier_id or existing_key.get("tier_id"),
+            note=note,
+            admin_username=admin_username,
+        )
+
+    # No prior key exists — grant & bind a renewed subscription immediately!
+    chosen_tier = normalize_tier_id(tier_id or "tier_3")
+    if chosen_tier not in PAID_TIER_ORDER:
+        chosen_tier = "tier_3"
+    return admin_generate_keys(
+        tier_id=chosen_tier,
+        duration_days=duration_days,
+        duration_value=duration_value,
+        duration_unit=duration_unit,
+        count=1,
+        note=str(note or "Admin Direct Renewal").strip(),
+        created_by=admin_username,
+        timer_mode="fixed_now",
+        is_gift=False,
+        target_username=target_u,
+    )
+
+
+def admin_revoke_user_subscription(username: str, admin_username: str = ADMIN_OWNER_USERNAME) -> Dict[str, Any]:
+    target_u = str(username or "").strip().lstrip("@").lower()
+    if not target_u:
+        return {"success": False, "error": "Target username is required."}
+    user_row = aura_db.get_user_by_username(target_u)
+    if not user_row:
+        return {"success": False, "error": f"User '@{target_u}' not found."}
+    disabled_count = 0
+    for krow in aura_db.list_subscription_keys(limit=500):
+        if str(krow.get("bound_username") or "").strip().lower() == target_u and str(krow.get("status") or "").lower() == "active":
+            aura_db.update_subscription_key(krow["key_code"], {"status": "disabled"})
+            disabled_count += 1
+    aura_db.update_user_membership_by_username(target_u, None)
+    aura_db.record_admin_audit(
+        admin_username,
+        "subscription_revoked",
+        target=f"@{target_u}",
+        details=f"Disabled {disabled_count} active key(s) & returned to Standard.",
+    )
+    return {
+        "success": True,
+        "message": f"Subscription stopped for @{target_u}. Account returned to Free Standard.",
+        "disabled_keys": disabled_count,
+    }
+
+
+def admin_set_user_ban(
+    username: str,
+    banned: bool,
+    reason: str = "",
+    admin_username: str = ADMIN_OWNER_USERNAME,
+) -> Dict[str, Any]:
+    target_u = str(username or "").strip().lstrip("@").lower()
+    if not target_u:
+        return {"success": False, "error": "Target username is required."}
+    allowed_admin = os.environ.get("AURA_KEY_ADMIN_USERNAME", ADMIN_OWNER_USERNAME).strip().lower() or ADMIN_OWNER_USERNAME
+    if banned and hmac.compare_digest(target_u, allowed_admin):
+        return {"success": False, "error": f"Safety guard: Owner account @{allowed_admin} cannot be banned."}
+    updated = aura_db.set_user_ban_status(target_u, banned=bool(banned), reason=reason)
+    if not updated:
+        return {"success": False, "error": f"User '@{target_u}' not found."}
+    aura_db.record_admin_audit(
+        admin_username,
+        "user_banned" if banned else "user_unbanned",
+        target=f"@{target_u}",
+        details=str(reason or "").strip() if banned else "Account restored by admin",
+    )
+    return {
+        "success": True,
+        "message": (
+            f"Account @{target_u} has been BANNED and all active sessions revoked immediately."
+            if banned
+            else f"Account @{target_u} has been UNBANNED and can log in again."
+        ),
+        "username": target_u,
+        "is_banned": bool(banned),
+        "ban_reason": str(updated.get("ban_reason") or ""),
+    }
+
+
+def admin_get_audit_logs(limit: int = 60) -> Dict[str, Any]:
+    now_ts = time.time()
+    rows = aura_db.list_admin_audit_logs(limit=limit)
+    out = []
+    for r in rows:
+        ts = float(r.get("created_at") or now_ts)
+        out.append({
+            "id": int(r["id"]),
+            "admin_username": str(r.get("admin_username") or ADMIN_OWNER_USERNAME),
+            "action": str(r.get("action") or ""),
+            "target": str(r.get("target") or ""),
+            "details": str(r.get("details") or ""),
+            "created_at": ts,
+            "time_label": _fmt_datetime(ts),
+            "ago_label": _fmt_relative_ago(ts, now_ts=now_ts),
+        })
+    return {"success": True, "logs": out}

@@ -595,7 +595,7 @@ def test_device_intelligence_conversational_coder_tools_and_jarvis_v2(srv_url):
         assert r_sw.status == 200
         sw_txt = r_sw.read().decode("utf-8", errors="replace")
     assert "aura_offline_mobile.js" in sw_txt
-    assert "aura-core-shell-v20" in sw_txt
+    assert re.search(r"aura-core-shell-v\d+", sw_txt)
 
 
 

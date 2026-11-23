@@ -381,3 +381,211 @@ def test_apex_omnis_6_stage_pipeline_auto_heals_broken_draft(tmp_path: Path):
     assert "APEX_VERIFIED_OK" in res["verification"]["stdout"]
     assert res["applied"] is True and res["snapshot_id"]
     assert (tmp_path / "bucket.py").exists() and (tmp_path / "test_bucket.py").exists()
+
+
+def test_admin_command_center_users_timed_keys_gift_renew_ban_and_audit(membership_server):
+    """
+    End-to-end verification of the Owner Admin Command Center (@ig.ahmed.irl):
+    - Real users directory, login_count & device tracking
+    - Minute/Hour/Day timed keys & fixed_now auto-expiration (stops working automatically)
+    - 1-click Free Gift subscription, direct user renewal, and subscription stop/revoke
+    - Instant user Ban (kills live session + blocks login with 403), Owner self-ban protection, and Unban
+    - Key deletion & Admin Audit Log + strict 403 isolation for non-admins
+    """
+    base = membership_server["base_url"]
+    admin_pw = membership_server["admin_pw"]
+
+    # Register owner & 2 real users with distinct devices
+    st_a, adm = _http_json(
+        f"{base}/api/auth/register",
+        "POST",
+        {"username": "ig.ahmed.irl", "password": "OwnerLogin!2026"},
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+    )
+    assert st_a == 200 and adm["success"]
+    a_hdrs = {"Authorization": f"Bearer {adm['token']}"}
+
+    st_u1, u1 = _http_json(
+        f"{base}/api/auth/register",
+        "POST",
+        {"username": "real_user_zayd", "password": "ZaydPass!2026"},
+        headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile"},
+    )
+    assert st_u1 == 200 and u1["success"]
+    u1_hdrs = {"Authorization": f"Bearer {u1['token']}"}
+
+    # Log u1 in a second time to verify login_count increments
+    st_u1_login, u1_re = _http_json(
+        f"{base}/api/auth/login",
+        "POST",
+        {"username": "real_user_zayd", "password": "ZaydPass!2026"},
+        headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile"},
+    )
+    assert st_u1_login == 200 and u1_re["success"]
+    u1_hdrs = {"Authorization": f"Bearer {u1_re['token']}"}
+
+    st_u2, u2 = _http_json(
+        f"{base}/api/auth/register",
+        "POST",
+        {"username": "real_user_sara", "password": "SaraPass!2026"},
+        headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)"},
+    )
+    assert st_u2 == 200 and u2["success"]
+    u2_hdrs = {"Authorization": f"Bearer {u2['token']}"}
+
+    # Unlock Admin Vault as @ig.ahmed.irl
+    st_un, un = _http_json(f"{base}/api/admin/keys/unlock", "POST", {"password": admin_pw}, headers=a_hdrs)
+    assert st_un == 200 and un["success"]
+    av_hdrs = {**a_hdrs, "X-Admin-Vault-Token": un["admin_vault_token"]}
+
+    # 1. Strict 403 isolation: non-admin cannot access any new Admin Command Center endpoint
+    for method, ep, payload in (
+        ("GET", "/api/admin/users/list", None),
+        ("GET", "/api/admin/audit/list", None),
+        ("POST", "/api/admin/users/gift", {"username": "real_user_sara", "tier_id": "tier_5", "duration_value": 30, "duration_unit": "minutes"}),
+        ("POST", "/api/admin/users/renew", {"username": "real_user_sara", "tier_id": "tier_4", "duration_value": 2, "duration_unit": "hours"}),
+        ("POST", "/api/admin/users/revoke", {"username": "real_user_sara"}),
+        ("POST", "/api/admin/users/ban", {"username": "real_user_sara", "banned": True}),
+        ("POST", "/api/admin/keys/delete", {"key_code": "AURA-SOV-20D-XXXXXX-12345678"}),
+    ):
+        st_f, _ = _http_json(f"{base}{ep}", method, payload, headers=u1_hdrs)
+        assert st_f == 403, f"Expected 403 for non-admin on {ep}, got {st_f}"
+
+    # 2. Real Users Directory shows exact usernames, device labels, and login counts
+    st_ul, ul = _http_json(f"{base}/api/admin/users/list", "GET", headers=av_hdrs)
+    assert st_ul == 200 and ul["success"]
+    assert ul["summary"]["total_users"] == 3
+    by_name = {row["username"]: row for row in ul["users"]}
+    assert "real_user_zayd" in by_name and "real_user_sara" in by_name and "ig.ahmed.irl" in by_name
+    assert by_name["real_user_zayd"]["login_count"] >= 2
+    assert "Android" in by_name["real_user_zayd"]["last_device"]
+    assert "iPhone" in by_name["real_user_sara"]["last_device"]
+
+    # 3. Minute & Hour Timed Keys + fixed_now automatic expiration even before redemption
+    st_gm, gm = _http_json(
+        f"{base}/api/admin/keys/generate",
+        "POST",
+        {"tier_id": "tier_5", "duration_value": 30, "duration_unit": "minutes", "timer_mode": "fixed_now", "note": "30-min flash trial"},
+        headers=av_hdrs,
+    )
+    assert st_gm == 200 and gm["success"]
+    km = gm["keys"][0]["key_code"]
+    assert km.startswith("AURA-APX-30M-")
+    assert gm["keys"][0]["duration_seconds"] == 1800
+    assert gm["keys"][0]["timer_mode"] == "fixed_now"
+    assert gm["keys"][0]["expires_at"] is not None
+
+    # Simulate the 30-minute fixed timer ending before anyone redeems -> key automatically stops working!
+    aura_db.update_subscription_key(km, {"expires_at": time.time() - 5})
+    st_dead, dead_res = _http_json(f"{base}/api/membership/activate", "POST", {"key": km}, headers=u2_hdrs)
+    assert st_dead == 400 and "expired" in dead_res["error"].lower()
+
+    # Hour key (6H) works on activation and has ~6h remaining
+    st_gh, gh = _http_json(
+        f"{base}/api/admin/keys/generate",
+        "POST",
+        {"tier_id": "tier_4", "duration_value": 6, "duration_unit": "hours", "timer_mode": "on_activation"},
+        headers=av_hdrs,
+    )
+    assert st_gh == 200 and gh["keys"][0]["key_code"].startswith("AURA-TTN-6H-")
+    kh = gh["keys"][0]["key_code"]
+    st_act_h, act_h = _http_json(f"{base}/api/membership/activate", "POST", {"key": kh}, headers=u2_hdrs)
+    assert st_act_h == 200 and act_h["membership"]["id"] == "tier_4"
+    assert 5 * 3600 < act_h["membership"]["seconds_remaining"] <= 6 * 3600
+
+    # 4. 1-Click Direct Free Gift Subscription to @real_user_zayd (no key paste needed!)
+    st_gift, gift_res = _http_json(
+        f"{base}/api/admin/users/gift",
+        "POST",
+        {"username": "real_user_zayd", "tier_id": "tier_5", "duration_value": 2, "duration_unit": "hours", "note": "Best friend VIP gift"},
+        headers=av_hdrs,
+    )
+    assert st_gift == 200 and gift_res["success"]
+    st_z_mem, z_mem = _http_json(f"{base}/api/membership/status", "GET", headers=u1_hdrs)
+    assert st_z_mem == 200 and z_mem["membership"]["id"] == "tier_5"
+    assert z_mem["membership"]["is_gift"] is True
+    assert z_mem["quota"]["unlimited"] is True
+
+    # 5. 1-Click Direct User Renewal (+4 hours) & Stop/Revoke Plan
+    st_uren, uren = _http_json(
+        f"{base}/api/admin/users/renew",
+        "POST",
+        {"username": "real_user_zayd", "tier_id": "tier_5", "duration_value": 4, "duration_unit": "hours"},
+        headers=av_hdrs,
+    )
+    assert st_uren == 200 and uren["success"]
+    st_z2, z2 = _http_json(f"{base}/api/membership/status", "GET", headers=u1_hdrs)
+    assert st_z2 == 200 and z2["membership"]["seconds_remaining"] > 5 * 3600
+
+    st_rev, rev_res = _http_json(f"{base}/api/admin/users/revoke", "POST", {"username": "real_user_zayd"}, headers=av_hdrs)
+    assert st_rev == 200 and rev_res["success"]
+    st_z3, z3 = _http_json(f"{base}/api/membership/status", "GET", headers=u1_hdrs)
+    assert st_z3 == 200 and z3["membership"]["id"] == "tier_0"
+
+    # 6. Ban User -> instant live session kickout + 403 login block + Owner self-ban protection + Unban
+    st_selfban, selfban = _http_json(
+        f"{base}/api/admin/users/ban",
+        "POST",
+        {"username": "ig.ahmed.irl", "banned": True, "reason": "test"},
+        headers=av_hdrs,
+    )
+    assert st_selfban == 400 and "cannot be banned" in selfban["error"].lower()
+
+    st_ban, ban_res = _http_json(
+        f"{base}/api/admin/users/ban",
+        "POST",
+        {"username": "real_user_zayd", "banned": True, "reason": "Terms violation"},
+        headers=av_hdrs,
+    )
+    assert st_ban == 200 and ban_res["success"] and ban_res["is_banned"] is True
+
+    # Active session is IMMEDIATELY kicked out (401)
+    st_kicked, _ = _http_json(f"{base}/api/membership/status", "GET", headers=u1_hdrs)
+    assert st_kicked == 401
+
+    # Fresh login is BLOCKED with 403 and displays ban reason
+    st_blocked_login, bl = _http_json(
+        f"{base}/api/auth/login",
+        "POST",
+        {"username": "real_user_zayd", "password": "ZaydPass!2026"},
+    )
+    assert st_blocked_login == 403 and bl.get("banned") is True and "Terms violation" in bl.get("error", "")
+
+    # Unban restores account access cleanly
+    st_unban, unban_res = _http_json(
+        f"{base}/api/admin/users/ban",
+        "POST",
+        {"username": "real_user_zayd", "banned": False},
+        headers=av_hdrs,
+    )
+    assert st_unban == 200 and unban_res["success"] and unban_res["is_banned"] is False
+    st_relogin, relogin = _http_json(
+        f"{base}/api/auth/login",
+        "POST",
+        {"username": "real_user_zayd", "password": "ZaydPass!2026"},
+    )
+    assert st_relogin == 200 and relogin["success"]
+
+    # 7. Delete Key & Audit Logs
+    st_del, del_res = _http_json(f"{base}/api/admin/keys/delete", "POST", {"key_code": km}, headers=av_hdrs)
+    assert st_del == 200 and del_res["success"]
+    assert aura_db.get_subscription_key_by_code(km) is None
+
+    st_aud, aud_res = _http_json(f"{base}/api/admin/audit/list", "GET", headers=av_hdrs)
+    assert st_aud == 200 and aud_res["success"] and len(aud_res["logs"]) >= 6
+    actions_logged = {l["action"] for l in aud_res["logs"]}
+    assert {"key_generated", "gift_key_created", "user_banned", "user_unbanned", "key_deleted"}.issubset(actions_logged)
+
+    # 8. Verify Admin Command Center UI wiring in index.html
+    html = (Path(__file__).resolve().parent / "index.html").read_text(encoding="utf-8")
+    for marker in (
+        'id="auraAdminCenterOverlay"',
+        'id="headerAdminBtn"',
+        'id="sidebarAdminBtn"',
+        "openAdminCommandCenter",
+        "adminCenterGenerateKeysFromUI",
+        "submitAdminUserPlanAction",
+        "submitAdminBanUser",
+        "adminDeleteKey",
+    ):
+        assert marker in html, f"Missing Admin Command Center UI hook: {marker}"

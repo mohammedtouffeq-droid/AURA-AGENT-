@@ -5284,6 +5284,200 @@
         .admin-pill.unused { color: #93c5fd; border-color: rgba(122, 162, 255, 0.35); background: rgba(122, 162, 255, 0.1); }
         .admin-pill.expired { color: #fde68a; border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.1); }
         .admin-pill.disabled { color: #fca5a5; border-color: rgba(248, 113, 113, 0.35); background: rgba(248, 113, 113, 0.1); }
+        .admin-pill.online { color: #34d399; border-color: rgba(52, 211, 153, 0.45); background: rgba(16, 185, 129, 0.14); }
+        .admin-pill.banned { color: #fecaca; border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.18); }
+        .admin-pill.gift { color: #f5d0fe; border-color: rgba(217, 70, 239, 0.42); background: rgba(217, 70, 239, 0.14); }
+        .admin-pill.owner { color: #e2e8f0; border-color: rgba(226, 232, 240, 0.45); background: rgba(122, 162, 255, 0.22); }
+        .admin-pill.fixed { color: #fcd34d; border-color: rgba(245, 158, 11, 0.42); background: rgba(245, 158, 11, 0.12); }
+
+        /* Exclusive Owner Admin Entry Buttons (@ig.ahmed.irl ONLY) */
+        .btn-header-admin {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(122, 162, 255, 0.48);
+            background: linear-gradient(135deg, rgba(122, 162, 255, 0.18), rgba(99, 102, 241, 0.14));
+            color: #e2e8f0;
+            font-family: var(--font-code);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            flex-shrink: 0;
+        }
+        .btn-header-admin:hover {
+            border-color: rgba(147, 197, 253, 0.85);
+            background: rgba(122, 162, 255, 0.28);
+            color: #ffffff;
+        }
+        .sidebar-admin-btn {
+            display: none;
+            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 11px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(122, 162, 255, 0.4);
+            background: linear-gradient(135deg, #131724, #0f121b);
+            color: #f4f5f7;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.18s ease;
+        }
+        .sidebar-admin-btn:hover {
+            border-color: rgba(147, 197, 253, 0.8);
+            background: linear-gradient(135deg, #181e30, #121725);
+        }
+
+        /* Full-Screen Obsidian Admin Command Center Modal */
+        .admin-center-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100025;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: rgba(5, 6, 9, 0.88);
+            backdrop-filter: blur(16px);
+        }
+        .admin-center-shell {
+            width: 100%;
+            max-width: 1060px;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+            background: #0c0e13;
+            border: 1px solid rgba(122, 162, 255, 0.28);
+            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.78);
+            overflow: hidden;
+        }
+        .admin-center-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 14px 18px;
+            background: #10131a;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .admin-center-body {
+            padding: 16px 18px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            flex: 1;
+        }
+        .admin-center-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .admin-center-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 10px;
+        }
+        .admin-tab-btn {
+            height: 32px;
+            padding: 0 13px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #141720;
+            color: #9ca3af;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.16s ease;
+        }
+        .admin-tab-btn.active {
+            background: rgba(122, 162, 255, 0.18);
+            border-color: rgba(122, 162, 255, 0.55);
+            color: #ffffff;
+        }
+        .admin-center-pane { display: none; flex-direction: column; gap: 11px; }
+        .admin-center-pane.active { display: flex; }
+        .admin-user-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 13px;
+            border-radius: 10px;
+            background: #13161e;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .admin-user-card.is-banned {
+            border-color: rgba(239, 68, 68, 0.38);
+            background: rgba(127, 29, 29, 0.14);
+        }
+        .admin-user-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .admin-inline-drawer {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            background: #0b0d12;
+            border: 1px solid rgba(122, 162, 255, 0.25);
+        }
+        .admin-center-shell input,
+        .admin-center-shell select {
+            background: #090b10 !important;
+            color: #f4f5f7 !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            border-radius: 8px !important;
+            padding: 7px 10px !important;
+            font-size: 12px !important;
+            outline: none;
+        }
+        .admin-center-shell input:focus,
+        .admin-center-shell select:focus {
+            border-color: rgba(122, 162, 255, 0.65) !important;
+        }
+        .admin-audit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: #13161e;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11.5px;
+        }
+        .admin-creator-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 9px;
+        }
+        @media (max-width: 760px) {
+            .admin-center-overlay { padding: 6px; }
+            .admin-center-shell { max-height: 96vh; border-radius: 12px; }
+            .admin-center-head { padding: 11px 12px; }
+            .admin-center-body { padding: 12px; }
+            .admin-center-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .admin-creator-grid { grid-template-columns: 1fr; }
+        }
 
         /* Special Subscriber Activation Welcome Modal */
         .sub-welcome-overlay {
@@ -5543,6 +5737,13 @@
                 </div>
                 <div class="sidebar-sub-meta" id="sidebarSubMeta">100 chats/day · Active Suite</div>
             </div>
+            <button type="button" class="sidebar-admin-btn" id="sidebarAdminBtn" onclick="openAdminCommandCenter('users')" title="Open Owner Admin Command Center (@ig.ahmed.irl)">
+                <div>
+                    <div style="font-family:var(--font-code); font-size:9.5px; font-weight:700; color:#7aa2ff; letter-spacing:0.08em; text-transform:uppercase;">OWNER CONTROL</div>
+                    <div style="font-size:12px; font-weight:700; color:#f4f5f7; margin-top:1px;">Admin Command Center</div>
+                </div>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </button>
             <div class="user-profile-row">
                 <div class="user-meta-left">
                     <div class="user-avatar-circle" id="userAvatar">U</div>
@@ -5576,6 +5777,10 @@
                 </div>
                 <button type="button" id="headerTierBadge" class="tier-header-pill" onclick="openModelSettings('membership')" title="Membership Tier &amp; Activation Key">STANDARD</button>
                 <button type="button" id="headerQuotaPill" class="quota-header-pill" onclick="openModelSettings('membership')" title="Rolling 24-Hour Chat Quota">30/30</button>
+                <button type="button" id="headerAdminBtn" class="btn-header-admin" onclick="openAdminCommandCenter('users')" title="Owner Admin Control Center (@ig.ahmed.irl)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Admin</span>
+                </button>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                 <button type="button" class="nav-icon-btn" id="btnHeaderLiveWorkspace" onclick="toggleAgentWorkspace('browser')" title="AURA Live Browser, Computer Use &amp; Action View" aria-label="AURA Live Browser and Computer Use">
@@ -6885,7 +7090,10 @@
                                     <div style="font-family:var(--font-code); font-size:10px; font-weight:700; color:#7aa2ff; letter-spacing:0.08em; text-transform:uppercase;">Exclusive Admin Control · @ig.ahmed.irl</div>
                                     <div style="font-size:14px; font-weight:700; color:#f4f5f7; margin-top:2px;">Subscription Key Generator, Renewal &amp; Kill-Switch Vault</div>
                                 </div>
-                                <button type="button" id="btnLockAdminVault" class="settings-btn-ghost" onclick="lockAdminKeyVault()" style="display:none; height:30px; font-size:11px;">Lock Vault</button>
+                                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                                    <button type="button" class="settings-btn-primary" onclick="closeModelSettings(); openAdminCommandCenter('users');" style="height:30px; font-size:11px; padding:0 12px;">Open Full Admin Command Center →</button>
+                                    <button type="button" id="btnLockAdminVault" class="settings-btn-ghost" onclick="lockAdminKeyVault()" style="display:none; height:30px; font-size:11px;">Lock Vault</button>
+                                </div>
                             </div>
 
                             <!-- Locked Password Prompt -->
@@ -7152,6 +7360,182 @@
             <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:4px;">
                 <button type="button" class="settings-btn-primary" onclick="closeSubWelcomeModal()" style="min-width:190px; height:38px;">Enter Upgraded Workspace</button>
                 <button type="button" class="settings-btn-ghost" onclick="closeSubWelcomeModal(); openApexStudio();" style="height:38px;">Open Engineering Studio</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ---------------- Exclusive Owner Admin Command Center Modal (@ig.ahmed.irl ONLY) ---------------- -->
+    <div class="admin-center-overlay" id="auraAdminCenterOverlay" role="dialog" aria-modal="true" aria-label="AURA Admin Command Center" onclick="if(event.target===this) closeAdminCommandCenter()">
+        <div class="admin-center-shell" onclick="event.stopPropagation()">
+            <div class="admin-center-head">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                    <div style="width:34px; height:34px; border-radius:9px; background:rgba(122,162,255,0.16); border:1px solid rgba(122,162,255,0.45); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+                            <span style="font-size:15px; font-weight:800; color:#f4f5f7; letter-spacing:-0.015em;">AURA Owner Command Center</span>
+                            <span class="admin-pill owner">@ig.ahmed.irl</span>
+                            <span id="admCenterStoragePill" class="admin-pill unused">DB Checking...</span>
+                        </div>
+                        <div style="font-size:11px; color:#8b93a3;">Real users, live logins, timed subscription keys (min/hr/day auto-expiry), free gifts, renewals &amp; instant ban kill-switch.</div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <button type="button" id="btnAdmCenterRefresh" class="settings-btn-ghost" onclick="refreshAdminCommandCenter()" style="display:none; height:30px; font-size:11px;">Refresh Live</button>
+                    <button type="button" id="btnAdmCenterLock" class="settings-btn-ghost" onclick="lockAdminKeyVault()" style="display:none; height:30px; font-size:11px; color:#fca5a5;">Lock Vault</button>
+                    <button type="button" class="settings-btn-ghost" onclick="closeAdminCommandCenter()" style="height:30px; font-size:11px;">Close</button>
+                </div>
+            </div>
+
+            <div class="admin-center-body">
+                <!-- Vault Lock Screen -->
+                <div id="adminCenterLocked" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:34px 16px; gap:12px;">
+                    <div style="width:52px; height:52px; border-radius:14px; background:rgba(122,162,255,0.14); border:1px solid rgba(122,162,255,0.4); display:flex; align-items:center; justify-content:center;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-size:16px; font-weight:800; color:#ffffff;">Unlock Owner Admin Vault</div>
+                        <div style="font-size:12px; color:#8b93a3; margin-top:4px; max-width:440px;">Enter your exclusive <code>@ig.ahmed.irl</code> Admin Vault password to access live user logins, key creator, free gifts, renewals, and instant account bans.</div>
+                    </div>
+                    <div style="display:flex; gap:8px; width:100%; max-width:420px; flex-wrap:wrap;">
+                        <input id="admCenterPasswordInput" type="password" placeholder="Enter Admin Vault Password..." autocomplete="off" style="flex:1; min-width:200px; margin:0;" onkeydown="if(event.key==='Enter'){unlockAdminCenterFromUI();}">
+                        <button type="button" class="settings-btn-primary" onclick="unlockAdminCenterFromUI()" style="height:36px;">Unlock Controls</button>
+                    </div>
+                    <div id="admCenterAuthMsg" style="font-size:12px; color:#fca5a5; min-height:16px;"></div>
+                </div>
+
+                <!-- Unlocked Full Command Center -->
+                <div id="adminCenterUnlocked" style="display:none; flex-direction:column; gap:13px;">
+                    <div class="admin-center-kpis">
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiUsers">0</div><div class="admin-kpi-lbl">Real Registered Users</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiOnline" style="color:#34d399;">0</div><div class="admin-kpi-lbl">Online Now (10m)</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiSubs" style="color:#a5b4fc;">0</div><div class="admin-kpi-lbl">Paid / Gift Subs</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiBanned" style="color:#fca5a5;">0</div><div class="admin-kpi-lbl">Banned Users</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiKeysTotal">0</div><div class="admin-kpi-lbl">Total Keys</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiKeysActive" style="color:#6ee7b7;">0</div><div class="admin-kpi-lbl">Active Keys</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiKeysUnused" style="color:#93c5fd;">0</div><div class="admin-kpi-lbl">Unused Keys</div></div>
+                        <div class="admin-kpi-box"><div class="admin-kpi-val" id="admCtrKpiKeysDead" style="color:#fde68a;">0</div><div class="admin-kpi-lbl">Expired / Disabled</div></div>
+                    </div>
+
+                    <div id="admCenterStorageBanner" style="display:none; padding:9px 12px; border-radius:9px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.35); font-size:11.5px; color:#fde68a;"></div>
+
+                    <div class="admin-center-tabs" role="tablist">
+                        <button type="button" class="admin-tab-btn active" id="admTabBtn_users" onclick="switchAdminCenterTab('users')">Real Users &amp; Logins</button>
+                        <button type="button" class="admin-tab-btn" id="admTabBtn_creator" onclick="switchAdminCenterTab('creator')">Timed Key Creator</button>
+                        <button type="button" class="admin-tab-btn" id="admTabBtn_keys" onclick="switchAdminCenterTab('keys')">All Keys &amp; Timers</button>
+                        <button type="button" class="admin-tab-btn" id="admTabBtn_audit" onclick="switchAdminCenterTab('audit')">Audit Log</button>
+                    </div>
+
+                    <!-- TAB 1: REAL USERS & LIVE LOGINS -->
+                    <div class="admin-center-pane active" id="admTabPane_users">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <input id="admUserSearchInput" type="search" placeholder="Search real @username, device, or active plan..." oninput="loadAdminUsersOverview()" style="flex:1; min-width:190px; margin:0;">
+                            <select id="admUserFilterSelect" onchange="loadAdminUsersOverview()" style="width:155px; margin:0;">
+                                <option value="all">All Users</option>
+                                <option value="online">Online Now</option>
+                                <option value="subscribed">Subscribed / Gift</option>
+                                <option value="free">Free Standard</option>
+                                <option value="banned">Banned</option>
+                            </select>
+                            <button type="button" class="settings-btn-ghost" onclick="loadAdminUsersOverview()" style="height:34px;">Reload</button>
+                        </div>
+                        <div id="admUsersListWrap" style="display:flex; flex-direction:column; gap:8px;"></div>
+                    </div>
+
+                    <!-- TAB 2: TIMED KEY CREATOR (MIN / HR / DAY AUTO-EXPIRY + FREE GIFT) -->
+                    <div class="admin-center-pane" id="admTabPane_creator">
+                        <div style="padding:14px; border-radius:11px; background:#12151d; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:12px;">
+                            <div style="font-size:11.5px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:0.06em;">Create Auto-Expiring Subscription or Free Gift Keys</div>
+                            <div class="admin-creator-grid">
+                                <div>
+                                    <label for="admCtrTier" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Subscription Plan</label>
+                                    <select id="admCtrTier" style="width:100%; margin:0;">
+                                        <option value="tier_3">Plan 1 · Sovereign (₹40 · 100/day)</option>
+                                        <option value="tier_4">Plan 2 · Titan (₹99 · 300/day)</option>
+                                        <option value="tier_5">Plan 3 · Apex Omnis (₹199 · Unlimited)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="admCtrDurVal" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Exact Timer Value &amp; Unit</label>
+                                    <div style="display:flex; gap:6px;">
+                                        <input id="admCtrDurVal" type="number" min="1" max="9999" value="20" style="width:88px; margin:0;">
+                                        <select id="admCtrDurUnit" style="flex:1; margin:0;">
+                                            <option value="minutes">Minutes</option>
+                                            <option value="hours">Hours</option>
+                                            <option value="days" selected>Days</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="admCtrTimerMode" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Auto-Expiry Timer Mode</label>
+                                    <select id="admCtrTimerMode" style="width:100%; margin:0;">
+                                        <option value="on_activation">Starts when user activates</option>
+                                        <option value="fixed_now">Starts RIGHT NOW (auto-dies even unused)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="admCtrTargetUser" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Direct Activate on @username (Optional)</label>
+                                    <input id="admCtrTargetUser" type="text" placeholder="Leave blank for shareable key" style="width:100%; margin:0;">
+                                </div>
+                                <div>
+                                    <label for="admCtrCount" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Quantity (1–25)</label>
+                                    <input id="admCtrCount" type="number" min="1" max="25" value="1" style="width:100%; margin:0;">
+                                </div>
+                                <div>
+                                    <label for="admCtrNote" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Buyer / Gift Note</label>
+                                    <input id="admCtrNote" type="text" placeholder="e.g. Friend Free Gift / UPI ₹99" style="width:100%; margin:0;">
+                                </div>
+                            </div>
+
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                                <div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">
+                                    <span style="font-size:10.5px; color:#8b93a3;">Quick Timer:</span>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(5,'minutes')">5m</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(30,'minutes')">30m</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(1,'hours')">1h</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(6,'hours')">6h</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(24,'hours')">24h</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(7,'days')">7d</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(20,'days')">20d</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(30,'days')">30d</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(90,'days')">90d</button>
+                                    <button type="button" class="settings-inline-toggle" onclick="setAdmCtrTimer(365,'days')">1yr</button>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                    <label style="display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:#f5d0fe; cursor:pointer;">
+                                        <input id="admCtrIsGift" type="checkbox" style="width:15px; height:15px; margin:0;">
+                                        <span>Mark as Free Gift</span>
+                                    </label>
+                                    <button type="button" id="btnAdmCtrCreate" class="settings-btn-primary" onclick="adminCenterGenerateKeysFromUI()" style="height:36px;">Create Timed Key(s)</button>
+                                </div>
+                            </div>
+
+                            <div id="admCtrGeneratedOut" style="display:none; padding:11px; border-radius:9px; background:rgba(16,185,129,0.08); border:1px solid rgba(52,211,153,0.35); flex-direction:column; gap:7px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: ALL KEYS & LIVE COUNTDOWN TIMERS -->
+                    <div class="admin-center-pane" id="admTabPane_keys">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <input id="admCtrKeySearch" type="search" placeholder="Search key code, @username, or note..." oninput="loadAdminCenterKeysList()" style="flex:1; min-width:180px; margin:0;">
+                            <select id="admCtrKeyFilter" onchange="loadAdminCenterKeysList()" style="width:135px; margin:0;">
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="unused">Unused</option>
+                                <option value="expired">Expired</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                            <button type="button" class="settings-btn-ghost" onclick="loadAdminCenterKeysList()" style="height:34px;">Reload</button>
+                        </div>
+                        <div id="admCtrKeysListWrap" style="display:flex; flex-direction:column; gap:8px;"></div>
+                    </div>
+
+                    <!-- TAB 4: AUDIT LOG -->
+                    <div class="admin-center-pane" id="admTabPane_audit">
+                        <div id="admCtrAuditListWrap" style="display:flex; flex-direction:column; gap:6px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -9347,6 +9731,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 sessionStorage.removeItem('aura_admin_vault_token');
                 const admSec = document.getElementById('adminKeyVaultSection');
                 if (admSec) admSec.style.display = 'none';
+                const hdrAdm = document.getElementById('headerAdminBtn');
+                if (hdrAdm) hdrAdm.style.display = 'none';
+                const sbAdm = document.getElementById('sidebarAdminBtn');
+                if (sbAdm) sbAdm.style.display = 'none';
+                if (typeof closeAdminCommandCenter === 'function') closeAdminCommandCenter();
 
                 const removeSpecific = String(opts.removeUser || '').trim().toLowerCase();
                 if (removeSpecific) {
@@ -14571,23 +14960,147 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             } catch (_) {}
         }
 
-        // --- EXCLUSIVE ADMIN KEY VAULT (@ig.ahmed.irl ONLY) ---
+        // --- EXCLUSIVE ADMIN KEY VAULT & OWNER COMMAND CENTER (@ig.ahmed.irl ONLY) ---
+        let lastAdminUsersList = [];
+        let lastAdminAuditList = [];
+        let activeAdminUserAction = { username: '', mode: '' }; // mode: 'gift' | 'renew' | 'ban'
+        let activeAdminCenterRenewKey = '';
+        let adminCountdownInterval = null;
+
+        function _formatAdminCountdownJS(secs) {
+            const s = Math.max(0, Math.floor(Number(secs) || 0));
+            if (s <= 0) return 'EXPIRED';
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            const pad = n => String(n).padStart(2, '0');
+            if (d > 0) return `${d}d ${pad(h)}h ${pad(m)}m ${pad(sec)}s`;
+            if (h > 0) return `${pad(h)}h ${pad(m)}m ${pad(sec)}s`;
+            if (m > 0) return `${pad(m)}m ${pad(sec)}s`;
+            return `${sec}s`;
+        }
+
+        function _startAdminCountdownTicker() {
+            if (adminCountdownInterval) return;
+            adminCountdownInterval = setInterval(() => {
+                const ov = document.getElementById('auraAdminCenterOverlay');
+                const open = ov && ov.style.display === 'flex';
+                if (!open) {
+                    clearInterval(adminCountdownInterval);
+                    adminCountdownInterval = null;
+                    return;
+                }
+                const nowSec = Date.now() / 1000;
+                document.querySelectorAll('[data-adm-exp-ts]').forEach(el => {
+                    const expTs = Number(el.getAttribute('data-adm-exp-ts') || 0);
+                    if (!expTs) return;
+                    const rem = Math.max(0, Math.floor(expTs - nowSec));
+                    const prefix = el.getAttribute('data-adm-exp-prefix') || '';
+                    if (rem <= 0) {
+                        el.textContent = 'EXPIRED';
+                        el.classList.remove('active', 'unused', 'online');
+                        el.classList.add('expired');
+                    } else {
+                        el.textContent = prefix + _formatAdminCountdownJS(rem);
+                    }
+                });
+            }, 1000);
+        }
+
         function updateAdminKeyVaultVisibility() {
+            const isAdmin = isCurrentUserKeyAdmin();
+            const hdrAdm = document.getElementById('headerAdminBtn');
+            const sbAdm = document.getElementById('sidebarAdminBtn');
+            if (hdrAdm) hdrAdm.style.display = isAdmin ? 'inline-flex' : 'none';
+            if (sbAdm) sbAdm.style.display = isAdmin ? 'flex' : 'none';
+
             const sec = document.getElementById('adminKeyVaultSection');
-            if (!sec) return;
+            if (sec) {
+                if (!isAdmin) {
+                    sec.style.display = 'none';
+                } else {
+                    sec.style.display = 'flex';
+                    const unlocked = Boolean(getAdminVaultToken());
+                    const lockedEl = document.getElementById('adminKeyVaultLocked');
+                    const unlockedEl = document.getElementById('adminKeyVaultUnlocked');
+                    const lockBtn = document.getElementById('btnLockAdminVault');
+                    if (lockedEl) lockedEl.style.display = unlocked ? 'none' : 'flex';
+                    if (unlockedEl) unlockedEl.style.display = unlocked ? 'flex' : 'none';
+                    if (lockBtn) lockBtn.style.display = unlocked ? 'inline-flex' : 'none';
+                    if (unlocked) loadAdminKeysList();
+                }
+            }
+
+            const ctrOv = document.getElementById('auraAdminCenterOverlay');
+            if (ctrOv && !isAdmin) {
+                ctrOv.style.display = 'none';
+            } else if (ctrOv && ctrOv.style.display === 'flex') {
+                _syncAdminCenterLockUI();
+            }
+        }
+
+        function _syncAdminCenterLockUI() {
+            const unlocked = Boolean(getAdminVaultToken());
+            const lck = document.getElementById('adminCenterLocked');
+            const unl = document.getElementById('adminCenterUnlocked');
+            const refBtn = document.getElementById('btnAdmCenterRefresh');
+            const lckBtn = document.getElementById('btnAdmCenterLock');
+            if (lck) lck.style.display = unlocked ? 'none' : 'flex';
+            if (unl) unl.style.display = unlocked ? 'flex' : 'none';
+            if (refBtn) refBtn.style.display = unlocked ? 'inline-flex' : 'none';
+            if (lckBtn) lckBtn.style.display = unlocked ? 'inline-flex' : 'none';
+            if (unlocked) {
+                refreshAdminCommandCenter();
+                _startAdminCountdownTicker();
+            }
+        }
+
+        function openAdminCommandCenter(initialTab = 'users') {
             if (!isCurrentUserKeyAdmin()) {
-                sec.style.display = 'none';
+                if (typeof showBridgeToast === 'function') showBridgeToast('Owner Admin Control Center is restricted to @ig.ahmed.irl.', '#f87171');
                 return;
             }
-            sec.style.display = 'flex';
-            const unlocked = Boolean(getAdminVaultToken());
-            const lockedEl = document.getElementById('adminKeyVaultLocked');
-            const unlockedEl = document.getElementById('adminKeyVaultUnlocked');
-            const lockBtn = document.getElementById('btnLockAdminVault');
-            if (lockedEl) lockedEl.style.display = unlocked ? 'none' : 'flex';
-            if (unlockedEl) unlockedEl.style.display = unlocked ? 'flex' : 'none';
-            if (lockBtn) lockBtn.style.display = unlocked ? 'inline-flex' : 'none';
-            if (unlocked) loadAdminKeysList();
+            const ov = document.getElementById('auraAdminCenterOverlay');
+            if (!ov) return;
+            ov.style.display = 'flex';
+            switchAdminCenterTab(initialTab || 'users');
+            _syncAdminCenterLockUI();
+            if (!getAdminVaultToken()) {
+                const pw = document.getElementById('admCenterPasswordInput');
+                if (pw) setTimeout(() => pw.focus(), 60);
+            }
+        }
+
+        function closeAdminCommandCenter() {
+            const ov = document.getElementById('auraAdminCenterOverlay');
+            if (ov) ov.style.display = 'none';
+            if (adminCountdownInterval) {
+                clearInterval(adminCountdownInterval);
+                adminCountdownInterval = null;
+            }
+        }
+
+        function switchAdminCenterTab(tabName) {
+            const tabs = ['users', 'creator', 'keys', 'audit'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('admTabBtn_' + t);
+                const pane = document.getElementById('admTabPane_' + t);
+                if (btn) btn.classList.toggle('active', t === tabName);
+                if (pane) pane.classList.toggle('active', t === tabName);
+            });
+            if (getAdminVaultToken()) {
+                if (tabName === 'users') loadAdminUsersOverview();
+                else if (tabName === 'keys') loadAdminCenterKeysList();
+                else if (tabName === 'audit') loadAdminUsersOverview();
+            }
+        }
+
+        function setAdmCtrTimer(val, unit) {
+            const vEl = document.getElementById('admCtrDurVal');
+            const uEl = document.getElementById('admCtrDurUnit');
+            if (vEl) vEl.value = String(val);
+            if (uEl) uEl.value = String(unit);
         }
 
         function syncAdminDefaultDays() {
@@ -14597,10 +15110,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             daysInp.value = sel.value === 'tier_3' ? '20' : '30';
         }
 
-        async function unlockAdminKeyVaultFromUI() {
-            const pwInp = document.getElementById('adminVaultPasswordInput');
-            const msgEl = document.getElementById('adminVaultAuthMsg');
-            const pw = pwInp ? pwInp.value : '';
+        async function _performAdminVaultUnlock(pw, msgEl, pwInp) {
             if (!pw) { if (msgEl) msgEl.textContent = 'Enter your Admin Vault password.'; return; }
             if (msgEl) msgEl.textContent = '';
             try {
@@ -14617,23 +15127,298 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (pwInp) pwInp.value = '';
                 sessionStorage.setItem('aura_admin_vault_token', data.admin_vault_token);
                 updateAdminKeyVaultVisibility();
-                if (typeof showBridgeToast === 'function') showBridgeToast('Admin Key Vault unlocked.', '#7aa2ff');
+                if (typeof showBridgeToast === 'function') showBridgeToast('Owner Admin Vault unlocked.', '#7aa2ff');
             } catch (err) {
                 if (msgEl) msgEl.textContent = err.message;
             }
         }
 
+        async function unlockAdminKeyVaultFromUI() {
+            const pwInp = document.getElementById('adminVaultPasswordInput');
+            const msgEl = document.getElementById('adminVaultAuthMsg');
+            await _performAdminVaultUnlock(pwInp ? pwInp.value : '', msgEl, pwInp);
+        }
+
+        async function unlockAdminCenterFromUI() {
+            const pwInp = document.getElementById('admCenterPasswordInput');
+            const msgEl = document.getElementById('admCenterAuthMsg');
+            await _performAdminVaultUnlock(pwInp ? pwInp.value : '', msgEl, pwInp);
+        }
+
         function lockAdminKeyVault() {
             sessionStorage.removeItem('aura_admin_vault_token');
             activeAdminRenewCode = '';
+            activeAdminCenterRenewKey = '';
+            activeAdminUserAction = { username: '', mode: '' };
             const out = document.getElementById('adminGeneratedOutput');
             if (out) { out.style.display = 'none'; out.innerHTML = ''; }
+            const out2 = document.getElementById('admCtrGeneratedOut');
+            if (out2) { out2.style.display = 'none'; out2.innerHTML = ''; }
             updateAdminKeyVaultVisibility();
-            if (typeof showBridgeToast === 'function') showBridgeToast('Admin Key Vault locked.', '#939aa8');
+            if (typeof showBridgeToast === 'function') showBridgeToast('Admin Vault locked.', '#939aa8');
         }
 
         function _adminHeaders() {
             return { 'Content-Type': 'application/json', 'X-Admin-Vault-Token': getAdminVaultToken() };
+        }
+
+        async function refreshAdminCommandCenter() {
+            if (!isCurrentUserKeyAdmin() || !getAdminVaultToken()) return;
+            await Promise.all([loadAdminUsersOverview(), loadAdminCenterKeysList()]);
+        }
+
+        async function loadAdminUsersOverview() {
+            if (!isCurrentUserKeyAdmin() || !getAdminVaultToken()) return;
+            const q = ((document.getElementById('admUserSearchInput') || {}).value || '').trim();
+            const fm = ((document.getElementById('admUserFilterSelect') || {}).value || 'all').trim();
+            try {
+                const res = await apiFetch(`/api/admin/users/list?filter=${encodeURIComponent(fm)}&search=${encodeURIComponent(q)}`, {
+                    method: 'GET',
+                    headers: { 'X-Admin-Vault-Token': getAdminVaultToken() }
+                });
+                if (res.status === 403) { lockAdminKeyVault(); return; }
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+
+                const sum = data.summary || {};
+                const ks = sum.keys || {};
+                const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v ?? 0); };
+                setTxt('admCtrKpiUsers', sum.total_users);
+                setTxt('admCtrKpiOnline', sum.online_now);
+                setTxt('admCtrKpiSubs', sum.subscribed_users);
+                setTxt('admCtrKpiBanned', sum.banned_users);
+                setTxt('admCtrKpiKeysTotal', ks.total);
+                setTxt('admCtrKpiKeysActive', ks.active);
+                setTxt('admCtrKpiKeysUnused', ks.unused);
+                setTxt('admCtrKpiKeysDead', (ks.expired || 0) + (ks.disabled || 0));
+
+                const st = data.storage_status || {};
+                const pill = document.getElementById('admCenterStoragePill');
+                const banner = document.getElementById('admCenterStorageBanner');
+                if (pill) {
+                    pill.textContent = st.persistent ? (st.engine === 'libsql_remote' ? 'CLOUD DB PERSISTENT' : 'LOCAL SQLITE PERSISTENT') : 'EPHEMERAL SERVERLESS DB';
+                    pill.className = 'admin-pill ' + (st.persistent ? 'active' : 'expired');
+                }
+                if (banner) {
+                    if (!st.persistent) {
+                        banner.style.display = 'block';
+                        banner.innerHTML = '<strong>Storage Notice:</strong> Production is currently using Vercel temporary SQLite (resets on cold restarts). Set free <code>TURSO_DATABASE_URL</code> + <code>TURSO_AUTH_TOKEN</code> in Vercel env vars so all user logins, keys &amp; bans persist globally forever.';
+                    } else {
+                        banner.style.display = 'none';
+                    }
+                }
+
+                lastAdminUsersList = Array.isArray(data.users) ? data.users : [];
+                lastAdminAuditList = Array.isArray(data.audit_logs) ? data.audit_logs : [];
+                renderAdminUsersList();
+                renderAdminAuditLogs();
+            } catch (_) {}
+        }
+
+        function openAdminUserDrawer(username, mode) {
+            if (activeAdminUserAction.username === username && activeAdminUserAction.mode === mode) {
+                activeAdminUserAction = { username: '', mode: '' };
+            } else {
+                activeAdminUserAction = { username, mode };
+            }
+            renderAdminUsersList();
+        }
+
+        function renderAdminUsersList() {
+            const wrap = document.getElementById('admUsersListWrap');
+            if (!wrap) return;
+            if (!lastAdminUsersList.length) {
+                wrap.innerHTML = '<div style="font-size:12px; color:#8b93a3; padding:14px; text-align:center;">No matching registered users found yet.</div>';
+                return;
+            }
+            wrap.innerHTML = lastAdminUsersList.map(u => {
+                const uArg = _awEscArg(u.username);
+                const safeId = escapeHtml(u.username).replace(/[^a-zA-Z0-9_-]/g, '_');
+                const badges = [];
+                if (u.is_owner) badges.push('<span class="admin-pill owner">OWNER</span>');
+                if (u.is_banned) badges.push('<span class="admin-pill banned">BANNED</span>');
+                else if (u.is_online) badges.push('<span class="admin-pill online">● ONLINE</span>');
+                if (u.subscription_active) {
+                    badges.push(`<span class="admin-pill active">${escapeHtml(u.plan_short)}</span>`);
+                    if (u.is_gift) badges.push('<span class="admin-pill gift">FREE GIFT</span>');
+                    if (u.expires_at) {
+                        badges.push(`<span class="admin-pill active" data-adm-exp-ts="${Number(u.expires_at)}" data-adm-exp-prefix="⏱ ">⏱ ${escapeHtml(u.countdown_label || '')}</span>`);
+                    }
+                } else {
+                    badges.push('<span class="admin-pill unused">STANDARD FREE</span>');
+                }
+
+                const quotaTxt = u.unlimited ? `${u.chats_24h} / ∞` : `${u.chats_24h} / ${u.daily_limit || 30}`;
+                let drawerHtml = '';
+                if (activeAdminUserAction.username === u.username) {
+                    const m = activeAdminUserAction.mode;
+                    if (m === 'gift' || m === 'renew') {
+                        const isGift = m === 'gift';
+                        const defTier = u.subscription_active && u.tier_id !== 'tier_0' ? u.tier_id : (isGift ? 'tier_5' : 'tier_3');
+                        drawerHtml = `<div class="admin-inline-drawer">` +
+                            `<span style="font-size:11px; font-weight:700; color:${isGift ? '#f5d0fe' : '#6ee7b7'};">${isGift ? '🎁 Gift Free Plan' : '🔄 Renew / +Time'} → @${escapeHtml(u.username)}:</span>` +
+                            `<select id="admUPlan_${safeId}" style="height:30px; font-size:11px; margin:0; min-width:165px;">` +
+                            `<option value="tier_3" ${defTier === 'tier_3' ? 'selected' : ''}>Plan 1 · Sovereign (₹40 · 100/d)</option>` +
+                            `<option value="tier_4" ${defTier === 'tier_4' ? 'selected' : ''}>Plan 2 · Titan (₹99 · 300/d)</option>` +
+                            `<option value="tier_5" ${defTier === 'tier_5' ? 'selected' : ''}>Plan 3 · Apex Omnis (₹199 · Unlim)</option>` +
+                            `</select>` +
+                            `<input id="admUVal_${safeId}" type="number" min="1" max="9999" value="${isGift ? 7 : 30}" style="width:68px; height:30px; font-size:11px; margin:0;">` +
+                            `<select id="admUUnit_${safeId}" style="height:30px; font-size:11px; margin:0; width:92px;">` +
+                            `<option value="minutes">Minutes</option><option value="hours">Hours</option><option value="days" selected>Days</option>` +
+                            `</select>` +
+                            `<input id="admUNote_${safeId}" type="text" placeholder="${isGift ? 'Gift note (optional)' : 'Renewal note (optional)'}" style="flex:1; min-width:130px; height:30px; font-size:11px; margin:0;">` +
+                            `<button type="button" class="settings-btn-primary" style="height:30px; padding:0 12px; font-size:11px;" onclick="submitAdminUserPlanAction('${uArg}', '${safeId}', '${m}')">${isGift ? 'Grant Gift Now' : 'Confirm Renew'}</button>` +
+                            `<button type="button" class="settings-btn-ghost" style="height:30px; padding:0 9px; font-size:11px;" onclick="openAdminUserDrawer('${uArg}','${m}')">Cancel</button>` +
+                            `</div>`;
+                    } else if (m === 'ban') {
+                        drawerHtml = `<div class="admin-inline-drawer" style="border-color:rgba(239,68,68,0.45);">` +
+                            `<span style="font-size:11px; font-weight:700; color:#fca5a5;">⛔ Ban @${escapeHtml(u.username)} (blocks login &amp; kicks out live session):</span>` +
+                            `<input id="admUBanReason_${safeId}" type="text" placeholder="Reason (optional, e.g. Abuse / Payment overdue)" style="flex:1; min-width:180px; height:30px; font-size:11px; margin:0;">` +
+                            `<button type="button" class="settings-btn-primary" style="height:30px; padding:0 12px; font-size:11px; background:#dc2626;" onclick="submitAdminBanUser('${uArg}', true, '${safeId}')">Confirm Ban</button>` +
+                            `<button type="button" class="settings-btn-ghost" style="height:30px; padding:0 9px; font-size:11px;" onclick="openAdminUserDrawer('${uArg}','ban')">Cancel</button>` +
+                            `</div>`;
+                    }
+                }
+
+                return `<div class="admin-user-card ${u.is_banned ? 'is-banned' : ''}">` +
+                    `<div class="admin-user-top">` +
+                    `<div style="display:flex; flex-direction:column; gap:4px; min-width:220px;">` +
+                    `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">` +
+                    `<strong style="font-size:13px; color:#ffffff; font-family:var(--font-code);">@${escapeHtml(u.username)}</strong>` +
+                    `<span style="font-size:11.5px; color:#9ca3af;">(${escapeHtml(u.display_name)})</span>` +
+                    badges.join('') +
+                    `</div>` +
+                    `<div style="font-size:10.5px; color:#8b93a3; font-family:var(--font-code);">` +
+                    `Device: ${escapeHtml(u.last_device)} · Logins: ${u.login_count} · Last Seen: ${escapeHtml(u.last_seen_label)} · Chats 24h: ${escapeHtml(quotaTxt)}` +
+                    (u.key_code ? ` · Key: ${escapeHtml(u.key_code)}` : '') +
+                    (u.ban_reason ? ` · Ban Reason: ${escapeHtml(u.ban_reason)}` : '') +
+                    `</div></div>` +
+                    `<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">` +
+                    `<button type="button" class="settings-inline-toggle" style="color:#f5d0fe;" onclick="openAdminUserDrawer('${uArg}', 'gift')">Gift Free</button>` +
+                    `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="openAdminUserDrawer('${uArg}', 'renew')">Renew / +Time</button>` +
+                    (u.subscription_active ? `<button type="button" class="settings-inline-toggle" style="color:#fde68a;" onclick="adminRevokeUserPlan('${uArg}')">Stop Plan</button>` : '') +
+                    (!u.is_owner ? (u.is_banned
+                        ? `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="submitAdminBanUser('${uArg}', false, '${safeId}')">Unban</button>`
+                        : `<button type="button" class="settings-inline-toggle" style="color:#fca5a5;" onclick="openAdminUserDrawer('${uArg}', 'ban')">Ban User</button>`
+                    ) : '') +
+                    `</div></div>${drawerHtml}</div>`;
+            }).join('');
+        }
+
+        async function submitAdminUserPlanAction(username, safeId, mode) {
+            const tier_id = (document.getElementById('admUPlan_' + safeId) || {}).value || 'tier_5';
+            const duration_value = Number((document.getElementById('admUVal_' + safeId) || {}).value || 7);
+            const duration_unit = (document.getElementById('admUUnit_' + safeId) || {}).value || 'days';
+            const note = ((document.getElementById('admUNote_' + safeId) || {}).value || '').trim();
+            const endpoint = mode === 'gift' ? '/api/admin/users/gift' : '/api/admin/users/renew';
+            const res = await apiFetch(endpoint, {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ username, tier_id, duration_value, duration_unit, note })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                activeAdminUserAction = { username: '', mode: '' };
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#34d399');
+                await refreshAdminCommandCenter();
+                await refreshMembershipStatus();
+            } else if (typeof showBridgeToast === 'function') {
+                showBridgeToast(data.error || 'Action failed', '#f87171');
+            }
+        }
+
+        async function adminRevokeUserPlan(username) {
+            const res = await apiFetch('/api/admin/users/revoke', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ username })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#fde68a');
+                await refreshAdminCommandCenter();
+                await refreshMembershipStatus();
+            } else if (typeof showBridgeToast === 'function') {
+                showBridgeToast(data.error || 'Revoke failed', '#f87171');
+            }
+        }
+
+        async function submitAdminBanUser(username, banned, safeId) {
+            const reasonEl = document.getElementById('admUBanReason_' + safeId);
+            const reason = reasonEl ? reasonEl.value.trim() : '';
+            const res = await apiFetch('/api/admin/users/ban', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ username, banned: Boolean(banned), reason })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                activeAdminUserAction = { username: '', mode: '' };
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, banned ? '#f87171' : '#34d399');
+                await refreshAdminCommandCenter();
+            } else if (typeof showBridgeToast === 'function') {
+                showBridgeToast(data.error || 'Ban update failed', '#f87171');
+            }
+        }
+
+        function _renderGeneratedKeysHtml(data) {
+            const allCodes = data.keys.map(k => k.key_code).join('\n');
+            return `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">` +
+                `<strong style="font-size:11.5px; color:#6ee7b7;">${escapeHtml(data.message)}</strong>` +
+                `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${_awEscArg(allCodes)}', 'Copied all generated keys')">Copy All</button>` +
+                `</div>` +
+                data.keys.map(k => {
+                    const waTxt = `AURA ${k.is_gift ? 'FREE GIFT ' : ''}${k.plan_name} Key (${k.duration_label}): ${k.key_code}\nOpen https://aura-agent.xyz -> Settings -> Subscriptions & Keys -> Paste & Activate!`;
+                    return `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; padding:6px 8px; border-radius:6px; background:rgba(0,0,0,0.35);">` +
+                        `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">` +
+                        `<code class="admin-key-code">${escapeHtml(k.key_code)}</code>` +
+                        `<span class="admin-pill ${k.is_gift ? 'gift' : 'active'}">${escapeHtml(k.duration_label)}</span>` +
+                        (k.timer_mode === 'fixed_now' ? `<span class="admin-pill fixed">FIXED TIMER</span>` : '') +
+                        `</div><div style="display:flex; gap:4px;">` +
+                        `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${_awEscArg(k.key_code)}', 'Key copied')">Copy Key</button>` +
+                        `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="copyAdminText('${_awEscArg(waTxt)}', 'WhatsApp message copied')">Copy WhatsApp Msg</button>` +
+                        `</div></div>`;
+                }).join('');
+        }
+
+        async function adminCenterGenerateKeysFromUI() {
+            const tier_id = (document.getElementById('admCtrTier') || {}).value || 'tier_3';
+            const duration_value = Number((document.getElementById('admCtrDurVal') || {}).value || 20);
+            const duration_unit = (document.getElementById('admCtrDurUnit') || {}).value || 'days';
+            const timer_mode = (document.getElementById('admCtrTimerMode') || {}).value || 'on_activation';
+            const target_username = ((document.getElementById('admCtrTargetUser') || {}).value || '').trim();
+            const count = Number((document.getElementById('admCtrCount') || {}).value || 1);
+            const note = ((document.getElementById('admCtrNote') || {}).value || '').trim();
+            const is_gift = Boolean((document.getElementById('admCtrIsGift') || {}).checked);
+            const btn = document.getElementById('btnAdmCtrCreate');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await apiFetch('/api/admin/keys/generate', {
+                    method: 'POST',
+                    headers: _adminHeaders(),
+                    body: JSON.stringify({ tier_id, duration_value, duration_unit, timer_mode, is_gift, target_username, count, note })
+                });
+                const data = await safeParseJson(res);
+                if (res.status === 403) { lockAdminKeyVault(); return; }
+                if (!res.ok || !data.success) {
+                    if (typeof showBridgeToast === 'function') showBridgeToast(data.error || 'Key generation failed', '#f87171');
+                    return;
+                }
+                const out = document.getElementById('admCtrGeneratedOut');
+                if (out && Array.isArray(data.keys)) {
+                    out.style.display = 'flex';
+                    out.innerHTML = _renderGeneratedKeysHtml(data);
+                }
+                if (document.getElementById('admCtrNote')) document.getElementById('admCtrNote').value = '';
+                if (document.getElementById('admCtrTargetUser')) document.getElementById('admCtrTargetUser').value = '';
+                await refreshAdminCommandCenter();
+                await refreshMembershipStatus();
+            } finally {
+                if (btn) btn.disabled = false;
+            }
         }
 
         async function adminGenerateKeysFromUI() {
@@ -14658,20 +15443,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 const out = document.getElementById('adminGeneratedOutput');
                 if (out && Array.isArray(data.keys)) {
                     out.style.display = 'flex';
-                    const allCodes = data.keys.map(k => k.key_code).join('\n');
-                    out.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">` +
-                        `<strong style="font-size:11.5px; color:#6ee7b7;">${escapeHtml(data.message)}</strong>` +
-                        `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${_awEscArg(allCodes)}', 'Copied all generated keys')">Copy All</button>` +
-                        `</div>` +
-                        data.keys.map(k => {
-                            const waTxt = `AURA ${k.plan_name} Key (${k.duration_days} Days): ${k.key_code}\nOpen AURA -> Settings -> Subscriptions & Keys -> Paste & Activate!`;
-                            return `<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; padding:5px 8px; border-radius:6px; background:rgba(0,0,0,0.35);">` +
-                                `<code class="admin-key-code">${escapeHtml(k.key_code)}</code>` +
-                                `<div style="display:flex; gap:4px;">` +
-                                `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${_awEscArg(k.key_code)}', 'Key copied')">Copy Key</button>` +
-                                `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="copyAdminText('${_awEscArg(waTxt)}', 'WhatsApp message copied')">Copy WhatsApp Msg</button>` +
-                                `</div></div>`;
-                        }).join('');
+                    out.innerHTML = _renderGeneratedKeysHtml(data);
                 }
                 const noteInp = document.getElementById('admGenNote');
                 if (noteInp) noteInp.value = '';
@@ -14707,71 +15479,126 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 setTxt('admKpiDisabled', sum.disabled);
 
                 lastAdminKeyList = Array.isArray(data.keys) ? data.keys : [];
-                renderAdminKeysRows();
+                renderAdminKeysRows('adminKeysListWrap', false);
             } catch (_) {}
         }
 
-        function renderAdminKeysRows() {
-            const wrap = document.getElementById('adminKeysListWrap');
+        async function loadAdminCenterKeysList() {
+            if (!isCurrentUserKeyAdmin() || !getAdminVaultToken()) return;
+            const q = ((document.getElementById('admCtrKeySearch') || {}).value || '').trim();
+            const sf = ((document.getElementById('admCtrKeyFilter') || {}).value || 'all').trim();
+            try {
+                const res = await apiFetch(`/api/admin/keys/list?status=${encodeURIComponent(sf)}&search=${encodeURIComponent(q)}`, {
+                    method: 'GET',
+                    headers: { 'X-Admin-Vault-Token': getAdminVaultToken() }
+                });
+                if (res.status === 403) { lockAdminKeyVault(); return; }
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success) return;
+                const sum = data.summary || {};
+                const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v ?? 0); };
+                setTxt('admCtrKpiKeysTotal', sum.total);
+                setTxt('admCtrKpiKeysActive', sum.active);
+                setTxt('admCtrKpiKeysUnused', sum.unused);
+                setTxt('admCtrKpiKeysDead', (sum.expired || 0) + (sum.disabled || 0));
+                lastAdminKeyList = Array.isArray(data.keys) ? data.keys : [];
+                renderAdminKeysRows('admCtrKeysListWrap', true);
+            } catch (_) {}
+        }
+
+        function renderAdminKeysRows(targetWrapId = 'adminKeysListWrap', isCenter = false) {
+            const wrap = document.getElementById(targetWrapId);
             if (!wrap) return;
             if (!lastAdminKeyList.length) {
-                wrap.innerHTML = '<div style="font-size:11.5px; color:#8b93a3; padding:10px;">No keys found. Generate your first subscription key above.</div>';
+                wrap.innerHTML = '<div style="font-size:11.5px; color:#8b93a3; padding:10px;">No keys found. Create your first timed key in Key Creator.</div>';
                 return;
             }
+            const curRenew = isCenter ? activeAdminCenterRenewKey : activeAdminRenewCode;
+            const prefix = isCenter ? 'admCtrRen' : 'admRen';
             wrap.innerHTML = lastAdminKeyList.map(k => {
                 const arg = _awEscArg(k.key_code);
-                const statusTxt = k.status === 'active' ? `ACTIVE · ${k.days_left}d left` : k.status.toUpperCase();
+                const hasTimer = Boolean(k.expires_at && (k.status === 'active' || (k.status === 'unused' && k.timer_mode === 'fixed_now')));
+                const statusTxt = hasTimer ? `${k.status.toUpperCase()} · ${k.countdown_label}` : k.status.toUpperCase();
                 const isDis = k.status === 'disabled';
-                const showRenewForm = activeAdminRenewCode === k.key_code;
+                const showRenewForm = curRenew === k.key_code;
                 const renewRowHtml = showRenewForm
-                    ? `<div style="width:100%; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:7px; margin-top:4px; border-top:1px solid rgba(255,255,255,0.07);">` +
-                      `<select id="admRenTier_${escapeHtml(k.key_code)}" style="height:28px; font-size:11px; margin:0; flex:1; min-width:130px;">` +
+                    ? `<div class="admin-inline-drawer" style="width:100%; margin-top:4px;">` +
+                      `<select id="${prefix}Tier_${escapeHtml(k.key_code)}" style="height:28px; font-size:11px; margin:0; flex:1; min-width:140px;">` +
                       `<option value="tier_3" ${k.tier_id === 'tier_3' ? 'selected' : ''}>Plan 1 · Sovereign (₹40)</option>` +
                       `<option value="tier_4" ${k.tier_id === 'tier_4' ? 'selected' : ''}>Plan 2 · Titan (₹99)</option>` +
                       `<option value="tier_5" ${k.tier_id === 'tier_5' ? 'selected' : ''}>Plan 3 · Apex Omnis (₹199)</option>` +
                       `</select>` +
-                      `<input id="admRenDays_${escapeHtml(k.key_code)}" type="number" min="1" max="365" value="${k.tier_id === 'tier_3' ? 20 : 30}" style="width:72px; height:28px; font-size:11px; margin:0;">` +
-                      `<span style="font-size:10.5px; color:#8b93a3;">days</span>` +
-                      `<button type="button" class="settings-btn-primary" style="height:28px; padding:0 10px; font-size:11px;" onclick="submitAdminRenewKey('${arg}')">Confirm Renew</button>` +
-                      `<button type="button" class="settings-btn-ghost" style="height:28px; padding:0 8px; font-size:11px;" onclick="activeAdminRenewCode=''; renderAdminKeysRows();">Cancel</button>` +
+                      `<input id="${prefix}Val_${escapeHtml(k.key_code)}" type="number" min="1" max="9999" value="${k.tier_id === 'tier_3' ? 20 : 30}" style="width:68px; height:28px; font-size:11px; margin:0;">` +
+                      `<select id="${prefix}Unit_${escapeHtml(k.key_code)}" style="height:28px; font-size:11px; margin:0; width:88px;">` +
+                      `<option value="minutes">Minutes</option><option value="hours">Hours</option><option value="days" selected>Days</option>` +
+                      `</select>` +
+                      `<button type="button" class="settings-btn-primary" style="height:28px; padding:0 10px; font-size:11px;" onclick="submitAdminRenewKey('${arg}', ${isCenter})">Confirm Renew</button>` +
+                      `<button type="button" class="settings-btn-ghost" style="height:28px; padding:0 8px; font-size:11px;" onclick="${isCenter ? "activeAdminCenterRenewKey=''; renderAdminKeysRows('admCtrKeysListWrap', true);" : "activeAdminRenewCode=''; renderAdminKeysRows('adminKeysListWrap', false);"}">Cancel</button>` +
                       `</div>`
                     : '';
                 return `<div class="admin-key-row">` +
                     `<div style="display:flex; flex-direction:column; gap:3px; min-width:210px;">` +
                     `<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">` +
                     `<span class="admin-key-code">${escapeHtml(k.key_code)}</span>` +
-                    `<span class="admin-pill ${escapeHtml(k.status)}">${escapeHtml(statusTxt)}</span>` +
+                    `<span class="admin-pill ${escapeHtml(k.status)}" ${hasTimer ? `data-adm-exp-ts="${Number(k.expires_at)}" data-adm-exp-prefix="${escapeHtml(k.status.toUpperCase())} · "` : ''}>${escapeHtml(statusTxt)}</span>` +
+                    (k.is_gift ? '<span class="admin-pill gift">GIFT</span>' : '') +
+                    (k.timer_mode === 'fixed_now' ? '<span class="admin-pill fixed">FIXED</span>' : '') +
                     `</div>` +
                     `<div style="font-size:10.5px; color:#939aa8; font-family:var(--font-code);">` +
-                    `${escapeHtml(k.plan_name)} (${escapeHtml(k.price_label)}) · ${k.bound_username ? '@' + escapeHtml(k.bound_username) : 'Unclaimed'} · Exp: ${escapeHtml(k.expires_label)}` +
+                    `${escapeHtml(k.plan_name)} (${escapeHtml(k.price_label)} · ${escapeHtml(k.duration_label || (k.duration_days + 'd'))}) · ${k.bound_username ? '@' + escapeHtml(k.bound_username) : 'Unclaimed'} · Exp: ${escapeHtml(k.expires_label)}` +
                     (k.renew_count ? ` · Renewed ${k.renew_count}x` : '') +
                     (k.note ? ` · ${escapeHtml(k.note)}` : '') +
                     `</div></div>` +
                     `<div style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;">` +
                     `<button type="button" class="settings-inline-toggle" onclick="copyAdminText('${arg}', 'Key copied')">Copy</button>` +
-                    `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="activeAdminRenewCode='${arg}'; renderAdminKeysRows();">Renew</button>` +
+                    `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="${isCenter ? `activeAdminCenterRenewKey='${arg}'; renderAdminKeysRows('admCtrKeysListWrap', true);` : `activeAdminRenewCode='${arg}'; renderAdminKeysRows('adminKeysListWrap', false);`}">Renew</button>` +
                     `<button type="button" class="settings-inline-toggle" style="color:${isDis ? '#93c5fd' : '#fca5a5'};" onclick="adminToggleKeyStatus('${arg}', ${isDis ? 'false' : 'true'})">${isDis ? 'Enable' : 'Disable'}</button>` +
                     (k.bound_username ? `<button type="button" class="settings-inline-toggle" onclick="adminUnbindKey('${arg}')">Unbind</button>` : '') +
+                    `<button type="button" class="settings-inline-toggle" style="color:#f87171;" onclick="adminDeleteKey('${arg}')">Delete</button>` +
                     `</div>${renewRowHtml}</div>`;
             }).join('');
         }
 
-        async function submitAdminRenewKey(keyCode) {
-            const tierSel = document.getElementById('admRenTier_' + keyCode);
-            const daysInp = document.getElementById('admRenDays_' + keyCode);
+        function renderAdminAuditLogs() {
+            const wrap = document.getElementById('admCtrAuditListWrap');
+            if (!wrap) return;
+            if (!lastAdminAuditList.length) {
+                wrap.innerHTML = '<div style="font-size:12px; color:#8b93a3; padding:14px; text-align:center;">No admin actions recorded yet.</div>';
+                return;
+            }
+            wrap.innerHTML = lastAdminAuditList.map(l => (
+                `<div class="admin-audit-row">` +
+                `<div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">` +
+                `<span class="admin-pill unused">${escapeHtml(l.action)}</span>` +
+                `<strong style="color:#f4f5f7; font-family:var(--font-code);">${escapeHtml(l.target)}</strong>` +
+                `<span style="color:#9ca3af;">${escapeHtml(l.details)}</span>` +
+                `</div>` +
+                `<span style="color:#71717a; font-family:var(--font-code); font-size:10.5px;">${escapeHtml(l.ago_label)} · ${escapeHtml(l.time_label)}</span>` +
+                `</div>`
+            )).join('');
+        }
+
+        async function submitAdminRenewKey(keyCode, isCenter = false) {
+            const prefix = isCenter ? 'admCtrRen' : 'admRen';
+            const tierSel = document.getElementById(prefix + 'Tier_' + keyCode);
+            const valInp = document.getElementById(prefix + 'Val_' + keyCode);
+            const unitSel = document.getElementById(prefix + 'Unit_' + keyCode);
             const tier_id = tierSel ? tierSel.value : '';
-            const duration_days = Number(daysInp ? daysInp.value : 20);
+            const duration_value = Number(valInp ? valInp.value : 20);
+            const duration_unit = unitSel ? unitSel.value : 'days';
             const res = await apiFetch('/api/admin/keys/renew', {
                 method: 'POST',
                 headers: _adminHeaders(),
-                body: JSON.stringify({ key_code: keyCode, tier_id, duration_days })
+                body: JSON.stringify({ key_code: keyCode, tier_id, duration_value, duration_unit })
             });
             const data = await safeParseJson(res);
             if (res.status === 403) { lockAdminKeyVault(); return; }
             if (res.ok && data.success) {
                 activeAdminRenewCode = '';
+                activeAdminCenterRenewKey = '';
                 if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#34d399');
                 await loadAdminKeysList();
+                await refreshAdminCommandCenter();
                 await refreshMembershipStatus();
             } else if (typeof showBridgeToast === 'function') {
                 showBridgeToast(data.error || 'Renewal failed', '#f87171');
@@ -14789,6 +15616,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (res.ok && data.success) {
                 if (typeof showBridgeToast === 'function') showBridgeToast(data.message, disable ? '#f87171' : '#34d399');
                 await loadAdminKeysList();
+                await refreshAdminCommandCenter();
                 await refreshMembershipStatus();
             }
         }
@@ -14804,6 +15632,23 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (res.ok && data.success) {
                 if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#93c5fd');
                 await loadAdminKeysList();
+                await refreshAdminCommandCenter();
+            }
+        }
+
+        async function adminDeleteKey(keyCode) {
+            const res = await apiFetch('/api/admin/keys/delete', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ key_code: keyCode })
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message, '#fca5a5');
+                await loadAdminKeysList();
+                await refreshAdminCommandCenter();
+                await refreshMembershipStatus();
             }
         }
 

@@ -598,6 +598,9 @@ def init_database():
             key_hash TEXT NOT NULL UNIQUE,
             tier_id TEXT NOT NULL,
             duration_days INTEGER NOT NULL DEFAULT 20,
+            duration_seconds INTEGER,
+            timer_mode TEXT DEFAULT 'on_activation',
+            is_gift INTEGER NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'active',
             bound_user_id INTEGER,
             bound_username TEXT DEFAULT '',
@@ -611,14 +614,48 @@ def init_database():
         )
     """)
 
-    # Schema migrations for existing local SQLite files
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_username TEXT NOT NULL,
+            action TEXT NOT NULL,
+            target TEXT DEFAULT '',
+            details TEXT DEFAULT '',
+            created_at REAL NOT NULL
+        )
+    """)
+
+    # Schema migrations for existing local SQLite / LibSQL files
     c.execute("PRAGMA table_info(users)")
     user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
-    if "role" not in user_cols:
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
-        except Exception:
-            pass
+    for col_name, col_def in (
+        ("role", "TEXT DEFAULT 'user'"),
+        ("is_banned", "INTEGER DEFAULT 0"),
+        ("ban_reason", "TEXT DEFAULT ''"),
+        ("banned_at", "REAL"),
+        ("last_login_at", "REAL"),
+        ("last_seen_at", "REAL"),
+        ("login_count", "INTEGER DEFAULT 0"),
+        ("last_device", "TEXT DEFAULT ''"),
+    ):
+        if col_name not in user_cols:
+            try:
+                c.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
+
+    c.execute("PRAGMA table_info(subscription_keys)")
+    key_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
+    for col_name, col_def in (
+        ("duration_seconds", "INTEGER"),
+        ("timer_mode", "TEXT DEFAULT 'on_activation'"),
+        ("is_gift", "INTEGER DEFAULT 0"),
+    ):
+        if col_name not in key_cols:
+            try:
+                c.execute(f"ALTER TABLE subscription_keys ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
 
     c.execute("PRAGMA table_info(auth_sessions)")
     existing_cols = [(row["name"] if isinstance(row, dict) else row[1]) for row in c.fetchall()]
@@ -834,7 +871,7 @@ def get_account_proof_for_user(user_id: int) -> str:
         conn.close()
 
 
-def register_user(username: str, password: str) -> Dict[str, Any]:
+def register_user(username: str, password: str, device_label: str = "") -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Username and password must be strings."}
     username = username.strip().lower()
@@ -848,14 +885,16 @@ def register_user(username: str, password: str) -> Dict[str, Any]:
 
     hashed, salt = hash_password(password)
     display_name = username.capitalize()
+    now_ts = time.time()
+    clean_dev = str(device_label or "").strip()[:80]
 
     conn = get_connection()
     c = conn.cursor()
     try:
         c.execute("""
-            INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
-            VALUES (?, ?, ?, ?, ?, 'user')
-        """, (username, hashed, salt, display_name, json.dumps({})))
+            INSERT INTO users (username, password_hash, salt, display_name, settings_json, role, last_login_at, last_seen_at, login_count, last_device)
+            VALUES (?, ?, ?, ?, ?, 'user', ?, ?, 1, ?)
+        """, (username, hashed, salt, display_name, json.dumps({}), now_ts, now_ts, clean_dev))
         user_id = c.lastrowid
 
         token, expires_at = _issue_signed_session_token(int(user_id), username, display_name, "user")
@@ -894,10 +933,12 @@ def login_user(
     vault_backup: Optional[Dict[str, Any]] = None,
     account_proof: Optional[str] = None,
     backup_proofs: Optional[List[str]] = None,
+    device_label: str = "",
 ) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Invalid username or password."}
     username = username.strip().lower()
+    clean_dev = str(device_label or "").strip()[:80]
     allowed, wait_sec = check_login_rate_limit(username)
     if not allowed:
         return {"success": False, "error": f"Too many failed login attempts. Please wait {wait_sec} seconds before trying again."}
@@ -905,10 +946,19 @@ def login_user(
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        "SELECT id, username, password_hash, salt, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = ?",
+        "SELECT id, username, password_hash, salt, display_name, settings_json, COALESCE(role, 'user') as role, COALESCE(is_banned, 0) as is_banned, COALESCE(ban_reason, '') as ban_reason FROM users WHERE username = ?",
         (username,)
     )
     row = c.fetchone()
+    if row and int(row["is_banned"] or 0) == 1:
+        reason = str(row["ban_reason"] or "").strip()
+        conn.close()
+        detail = f" Reason: {reason}." if reason else ""
+        return {
+            "success": False,
+            "banned": True,
+            "error": f"This AURA account has been suspended by the administrator.{detail} Contact +91 9640875528 for assistance.",
+        }
     row_is_shadow = bool(row and _is_shadow_credentials(row["password_hash"], row["salt"]))
 
     if not row or row_is_shadow:
@@ -950,24 +1000,25 @@ def login_user(
                 record_login_failure(username)
                 return {"success": False, "error": "Invalid username or password."}
             eff_hash, eff_salt = hash_password(password) if needs_upgrade else (stored_hash, stored_salt)
+            now_ts = time.time()
             try:
                 if row_is_shadow and row:
                     target_uid = int(row["id"])
                     user_role = row["role"] if "role" in row.keys() else "user"
                     disp_name = row["display_name"] or username.capitalize()
                     c.execute(
-                        "UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
-                        (eff_hash, eff_salt, target_uid),
+                        "UPDATE users SET password_hash = ?, salt = ?, last_login_at = ?, last_seen_at = ?, login_count = COALESCE(login_count, 0) + 1, last_device = CASE WHEN ? != '' THEN ? ELSE last_device END WHERE id = ?",
+                        (eff_hash, eff_salt, now_ts, now_ts, clean_dev, clean_dev, target_uid),
                     )
                 else:
                     disp_name = username.capitalize()
                     user_role = "user"
                     c.execute(
                         """
-                        INSERT INTO users (username, password_hash, salt, display_name, settings_json, role)
-                        VALUES (?, ?, ?, ?, ?, 'user')
+                        INSERT INTO users (username, password_hash, salt, display_name, settings_json, role, last_login_at, last_seen_at, login_count, last_device)
+                        VALUES (?, ?, ?, ?, ?, 'user', ?, ?, 1, ?)
                         """,
-                        (username, eff_hash, eff_salt, disp_name, json.dumps({})),
+                        (username, eff_hash, eff_salt, disp_name, json.dumps({}), now_ts, now_ts, clean_dev),
                     )
                     target_uid = int(c.lastrowid)
                     has_vault_threads = (
@@ -1083,6 +1134,17 @@ def login_user(
         eff_hash, eff_salt = new_hash, new_salt
 
     clear_login_failures(username)
+    now_ts = time.time()
+    if clean_dev:
+        c.execute(
+            "UPDATE users SET last_login_at = ?, last_seen_at = ?, login_count = COALESCE(login_count, 0) + 1, last_device = ? WHERE id = ?",
+            (now_ts, now_ts, clean_dev, user_id),
+        )
+    else:
+        c.execute(
+            "UPDATE users SET last_login_at = ?, last_seen_at = ?, login_count = COALESCE(login_count, 0) + 1 WHERE id = ?",
+            (now_ts, now_ts, user_id),
+        )
     user_role = row["role"] if "role" in row.keys() else "user"
     disp_name = row["display_name"] or row["username"].capitalize()
     token, expires_at = _issue_signed_session_token(int(user_id), row["username"], disp_name, user_role)
@@ -1217,10 +1279,12 @@ def create_session_token(user_id: int) -> str:
     return token
 
 
-def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
+def authenticate_token(token: str, touch_device: str = "") -> Optional[Dict[str, Any]]:
     if not token or not isinstance(token, str):
         return None
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    now_ts = time.time()
+    clean_dev = str(touch_device or "").strip()[:80]
     conn = get_connection()
     c = conn.cursor()
     try:
@@ -1229,7 +1293,11 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
             return None
 
         c.execute("""
-            SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at, COALESCE(u.role, 'user') as role
+            SELECT u.id, u.username, u.display_name, u.settings_json, s.expires_at,
+                   COALESCE(u.role, 'user') as role,
+                   COALESCE(u.is_banned, 0) as is_banned,
+                   u.last_seen_at,
+                   COALESCE(u.last_device, '') as last_device
             FROM auth_sessions s
             JOIN users u ON s.user_id = u.id
             WHERE s.token = ?
@@ -1253,16 +1321,24 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
             uname = str(signed_payload["u"]).strip().lower()
             disp = str(signed_payload.get("dn") or uname.capitalize())
             role = str(signed_payload.get("r") or "user")
-            c.execute("SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = ?", (uname,))
+            c.execute(
+                "SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role, COALESCE(is_banned, 0) as is_banned FROM users WHERE username = ?",
+                (uname,),
+            )
             u_row = c.fetchone()
+            if u_row and int(u_row["is_banned"] or 0) == 1:
+                return None
             if not u_row:
                 c.execute("""
-                    INSERT OR IGNORE INTO users (username, password_hash, salt, display_name, settings_json, role)
-                    VALUES (?, 'SHADOW_SESSION_ONLY', 'SHADOW', ?, ?, ?)
-                """, (uname, disp, json.dumps({}), role))
-                c.execute("SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role FROM users WHERE username = ?", (uname,))
+                    INSERT OR IGNORE INTO users (username, password_hash, salt, display_name, settings_json, role, last_login_at, last_seen_at, login_count, last_device)
+                    VALUES (?, 'SHADOW_SESSION_ONLY', 'SHADOW', ?, ?, ?, ?, ?, 1, ?)
+                """, (uname, disp, json.dumps({}), role, now_ts, now_ts, clean_dev))
+                c.execute(
+                    "SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role, COALESCE(is_banned, 0) as is_banned FROM users WHERE username = ?",
+                    (uname,),
+                )
                 u_row = c.fetchone()
-                if not u_row:
+                if not u_row or int(u_row["is_banned"] or 0) == 1:
                     return None
             actual_uid = int(u_row["id"])
             exp_iso = datetime.datetime.fromtimestamp(float(signed_payload["exp"]), tz=datetime.timezone.utc).isoformat()
@@ -1270,6 +1346,10 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
                 "INSERT OR IGNORE INTO auth_sessions (token, user_id, expires_at) VALUES (?, ?, ?)",
                 (token, actual_uid, exp_iso),
             )
+            if clean_dev:
+                c.execute("UPDATE users SET last_seen_at = ?, last_device = ? WHERE id = ?", (now_ts, clean_dev, actual_uid))
+            else:
+                c.execute("UPDATE users SET last_seen_at = ? WHERE id = ?", (now_ts, actual_uid))
             conn.commit()
             try:
                 parsed_settings = json.loads(u_row["settings_json"] or "{}")
@@ -1282,6 +1362,12 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
                 "role": u_row["role"] if "role" in u_row.keys() else "user",
                 "settings": parsed_settings,
             }
+
+        # Enforce immediate admin ban kill-switch on live sessions
+        if int(row["is_banned"] or 0) == 1:
+            c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
+            conn.commit()
+            return None
 
         # Fail-closed session expiration validation
         expires_at_str = row["expires_at"]
@@ -1302,6 +1388,19 @@ def authenticate_token(token: str) -> Optional[Dict[str, Any]]:
             c.execute("DELETE FROM auth_sessions WHERE token = ?", (token,))
             conn.commit()
             return None
+
+        # Throttled real-time activity heartbeat for Admin Users Directory
+        prev_seen = float(row["last_seen_at"] or 0)
+        prev_dev = str(row["last_device"] or "")
+        if (now_ts - prev_seen) >= 45.0 or (clean_dev and clean_dev != prev_dev):
+            try:
+                if clean_dev:
+                    c.execute("UPDATE users SET last_seen_at = ?, last_device = ? WHERE id = ?", (now_ts, clean_dev, int(row["id"])))
+                else:
+                    c.execute("UPDATE users SET last_seen_at = ? WHERE id = ?", (now_ts, int(row["id"])))
+                conn.commit()
+            except Exception:
+                pass
 
         try:
             parsed_settings = json.loads(row["settings_json"] or "{}")
@@ -1607,8 +1706,15 @@ def upsert_subscription_key(
     created_by: str = "ig.ahmed.irl",
     note: str = "",
     renew_count: int = 0,
+    duration_seconds: Optional[int] = None,
+    timer_mode: str = "on_activation",
+    is_gift: bool = False,
 ) -> Dict[str, Any]:
     now_ts = time.time()
+    dur_days_clean = max(1, int(duration_days))
+    dur_secs_clean = max(60, int(duration_seconds)) if duration_seconds is not None else (dur_days_clean * 86400)
+    t_mode = "fixed_now" if str(timer_mode or "").strip().lower() == "fixed_now" else "on_activation"
+    gift_flag = 1 if bool(is_gift) else 0
     conn = get_connection()
     c = conn.cursor()
     try:
@@ -1618,13 +1724,17 @@ def upsert_subscription_key(
             c.execute(
                 """
                 UPDATE subscription_keys
-                SET tier_id = ?, duration_days = ?, status = ?, bound_user_id = ?, bound_username = ?,
+                SET tier_id = ?, duration_days = ?, duration_seconds = ?, timer_mode = ?, is_gift = ?,
+                    status = ?, bound_user_id = ?, bound_username = ?,
                     activated_at = ?, expires_at = ?, note = ?, renew_count = ?, updated_at = ?
                 WHERE key_code = ?
                 """,
                 (
                     str(tier_id)[:24],
-                    max(1, int(duration_days)),
+                    dur_days_clean,
+                    dur_secs_clean,
+                    t_mode,
+                    gift_flag,
                     str(status or "active")[:24],
                     int(bound_user_id) if bound_user_id is not None else None,
                     str(bound_username or "").strip().lower()[:64],
@@ -1641,16 +1751,19 @@ def upsert_subscription_key(
             c.execute(
                 """
                 INSERT INTO subscription_keys (
-                    key_code, key_hash, tier_id, duration_days, status,
-                    bound_user_id, bound_username, activated_at, expires_at,
+                    key_code, key_hash, tier_id, duration_days, duration_seconds, timer_mode, is_gift,
+                    status, bound_user_id, bound_username, activated_at, expires_at,
                     created_at, created_by, note, renew_count, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     str(key_code).strip().upper()[:64],
                     str(key_hash).strip()[:64],
                     str(tier_id)[:24],
-                    max(1, int(duration_days)),
+                    dur_days_clean,
+                    dur_secs_clean,
+                    t_mode,
+                    gift_flag,
                     str(status or "active")[:24],
                     int(bound_user_id) if bound_user_id is not None else None,
                     str(bound_username or "").strip().lower()[:64],
@@ -1715,7 +1828,8 @@ def update_subscription_key(key_code: str, fields: Dict[str, Any]) -> Optional[D
     if not norm or not fields:
         return None
     allowed = {
-        "tier_id", "duration_days", "status", "bound_user_id", "bound_username",
+        "tier_id", "duration_days", "duration_seconds", "timer_mode", "is_gift",
+        "status", "bound_user_id", "bound_username",
         "activated_at", "expires_at", "note", "renew_count",
     }
     sets = []
@@ -1737,6 +1851,21 @@ def update_subscription_key(key_code: str, fields: Dict[str, Any]) -> Optional[D
         c.execute("SELECT * FROM subscription_keys WHERE key_code = ?", (norm,))
         row = c.fetchone()
         return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def delete_subscription_key(key_code: str) -> bool:
+    norm = str(key_code or "").strip().upper()
+    if not norm:
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("DELETE FROM subscription_keys WHERE key_code = ?", (norm,))
+        affected = c.rowcount > 0
+        conn.commit()
+        return affected
     finally:
         conn.close()
 
@@ -1766,6 +1895,147 @@ def update_user_membership_by_username(username: str, membership_dict: Optional[
         c.execute("UPDATE users SET settings_json = ? WHERE id = ?", (json.dumps(settings), uid))
         conn.commit()
         return True
+    finally:
+        conn.close()
+
+
+def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
+    uname = str(username or "").strip().lower()
+    if not uname:
+        return None
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            """
+            SELECT id, username, display_name, settings_json, COALESCE(role, 'user') as role,
+                   created_at, COALESCE(is_banned, 0) as is_banned, COALESCE(ban_reason, '') as ban_reason,
+                   banned_at, last_login_at, last_seen_at, COALESCE(login_count, 0) as login_count,
+                   COALESCE(last_device, '') as last_device
+            FROM users WHERE LOWER(username) = ?
+            """,
+            (uname,),
+        )
+        row = c.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        try:
+            d["settings"] = json.loads(d.get("settings_json") or "{}")
+            if not isinstance(d["settings"], dict):
+                d["settings"] = {}
+        except Exception:
+            d["settings"] = {}
+        return d
+    finally:
+        conn.close()
+
+
+def list_all_users_for_admin(limit: int = 500) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    c = conn.cursor()
+    cutoff_24h = time.time() - 86400
+    try:
+        c.execute(
+            """
+            SELECT u.id, u.username, u.display_name, u.settings_json,
+                   COALESCE(u.role, 'user') as role, u.created_at,
+                   COALESCE(u.is_banned, 0) as is_banned,
+                   COALESCE(u.ban_reason, '') as ban_reason,
+                   u.banned_at, u.last_login_at, u.last_seen_at,
+                   COALESCE(u.login_count, 0) as login_count,
+                   COALESCE(u.last_device, '') as last_device,
+                   (SELECT COUNT(*) FROM chat_quota_events q WHERE q.user_id = u.id AND q.created_at >= ?) as chats_24h
+            FROM users u
+            ORDER BY COALESCE(u.last_seen_at, u.last_login_at, 0) DESC, u.id DESC
+            LIMIT ?
+            """,
+            (cutoff_24h, max(1, min(1000, int(limit)))),
+        )
+        out: List[Dict[str, Any]] = []
+        for r in c.fetchall():
+            d = dict(r)
+            try:
+                d["settings"] = json.loads(d.get("settings_json") or "{}")
+                if not isinstance(d["settings"], dict):
+                    d["settings"] = {}
+            except Exception:
+                d["settings"] = {}
+            out.append(d)
+        return out
+    finally:
+        conn.close()
+
+
+def set_user_ban_status(username: str, banned: bool, reason: str = "") -> Optional[Dict[str, Any]]:
+    uname = str(username or "").strip().lower()
+    if not uname:
+        return None
+    now_ts = time.time()
+    clean_reason = str(reason or "").strip()[:200]
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, username FROM users WHERE LOWER(username) = ?", (uname,))
+        row = c.fetchone()
+        if not row:
+            return None
+        uid = int(row["id"])
+        if banned:
+            c.execute(
+                "UPDATE users SET is_banned = 1, ban_reason = ?, banned_at = ? WHERE id = ?",
+                (clean_reason, now_ts, uid),
+            )
+            c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (uid,))
+            c.execute(
+                "INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)",
+                (uname, now_ts + 1.0),
+            )
+        else:
+            c.execute(
+                "UPDATE users SET is_banned = 0, ban_reason = '', banned_at = NULL WHERE id = ?",
+                (uid,),
+            )
+            c.execute(
+                "INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)",
+                (uname, now_ts - 0.5),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    return get_user_by_username(uname)
+
+
+def record_admin_audit(admin_username: str, action: str, target: str = "", details: str = "") -> None:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT INTO admin_audit_logs (admin_username, action, target, details, created_at) VALUES (?, ?, ?, ?, ?)",
+            (
+                str(admin_username or "ig.ahmed.irl").strip().lower()[:64],
+                str(action or "action").strip()[:64],
+                str(target or "").strip()[:120],
+                str(details or "").strip()[:300],
+                time.time(),
+            ),
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def list_admin_audit_logs(limit: int = 60) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "SELECT id, admin_username, action, target, details, created_at FROM admin_audit_logs ORDER BY created_at DESC, id DESC LIMIT ?",
+            (max(1, min(200, int(limit))),),
+        )
+        return [dict(r) for r in c.fetchall()]
     finally:
         conn.close()
 
