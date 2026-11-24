@@ -95,17 +95,14 @@
 
         if (labelEl) labelEl.textContent = friendly;
 
-        // STRICT RULE: Laptop/Desktop offline -> show clean obsidian gate popup.
-        // Mobile Phone offline -> NEVER show popup; run 100% smoothly!
-        if (isOfflineNow() && isLaptopOrDesktop()) {
-            if (modal) modal.style.display = 'flex';
-            return { blocked: true, device: friendly, mode: 'desktop_offline_blocked' };
-        }
+        // UNIVERSAL 0-COST OFFLINE POLICY:
+        // Zero blocking popups & zero "Failed to fetch" errors on ANY device (Phone, Tablet, Laptop, Desktop).
+        // When offline or network drops, AURA runs seamlessly via its 0-cost on-device Sovereign Brain.
         if (modal) modal.style.display = 'none';
         return {
             blocked: false,
             device: friendly,
-            mode: isOfflineNow() ? 'mobile_offline_seamless' : 'online',
+            mode: isOfflineNow() ? 'universal_offline_zero_cost' : 'online',
         };
     }
 
@@ -295,6 +292,26 @@
         }
         if (/\b(react|component|hook|usestate|useeffect)\b/.test(low)) {
             return 'Here is a clean **React Functional Component** with `useState`:\n\n```jsx\nimport { useState } from "react";\n\nexport default function CounterCard() {\n  const [count, setCount] = useState(0);\n  return (\n    <div style={{ padding: 20, borderRadius: 12, background: "#111216", color: "#fff" }}>\n      <h3>Count: {count}</h3>\n      <button onClick={() => setCount((c) => c + 1)}>Increment</button>\n    </div>\n  );\n}\n```';
+        }
+        if (/\b(cyber\s*security|owasp|xss|sql\s*injection|sqli|csrf|encryption|hashing|firewall|secure)\b/.test(low)) {
+            return (isHi ? '### Defensive Cybersecurity Essentials\n\n' : '### Defensive Cybersecurity Essentials\n\n') +
+                '- **SQL Injection (SQLi):** Always use parameterized queries (`?` / `$1`), never concatenate user input into SQL strings.\n' +
+                '- **XSS Defense:** Escape untrusted HTML (`textContent` instead of `innerHTML`) and enforce strict `Content-Security-Policy`.\n' +
+                '- **Passwords:** Hash with `scrypt` / `argon2id` + unique per-user random salt, verified with constant-time comparison.\n' +
+                '- **Sessions & Auth:** Use `HttpOnly; Secure; SameSite=Lax` cookies, CSRF tokens on state-changing POSTs, and login rate-limiting.';
+        }
+        if (/\b(ai\s+agent|agentic|llm|rag|transformer|machine\s+learning|neural\s+network)\b/.test(low)) {
+            return '### Modern Agentic AI Architecture\n\n' +
+                '1. **Planner / Orchestrator:** Breaks a user goal into ordered, verifiable steps.\n' +
+                '2. **Tool Runtime:** Executes deterministic actions (code sandbox, file ops, search, APIs) with strict permission guardrails.\n' +
+                '3. **Memory Layer:** Combines short-term conversation context with persistent user/project memory.\n' +
+                '4. **Verification Loop:** Runs tests/checks after edits and self-heals failures before reporting completion.';
+        }
+        if (/\b(python|javascript|typescript|java|c\+\+|node\.?js)\b/.test(low) && /\b(example|hello|starter|script|code|function|class|loop|async)\b/.test(low)) {
+            if (/\b(javascript|typescript|node)\b/.test(low)) {
+                return 'Here is a clean modern **Async JavaScript / Fetch Helper with Retry**:\n\n```js\nasync function fetchWithRetry(url, opts = {}, retries = 2) {\n  for (let i = 0; i <= retries; i++) {\n    try {\n      const res = await fetch(url, opts);\n      if (!res.ok) throw new Error(`HTTP ${res.status}`);\n      return await res.json();\n    } catch (err) {\n      if (i === retries) throw err;\n      await new Promise(r => setTimeout(r, 400 * (i + 1)));\n    }\n  }\n}\n```';
+            }
+            return 'Here is a clean, production-style **Python Starter Utility**:\n\n```python\nfrom dataclasses import dataclass\n\n@dataclass\nclass Task:\n    title: str\n    done: bool = False\n\ndef summarize(tasks: list[Task]) -> str:\n    done_cnt = sum(1 for t in tasks if t.done)\n    return f"Completed {done_cnt}/{len(tasks)} tasks"\n\nprint(summarize([Task("Design API", True), Task("Ship build")]))\n```';
         }
         return null;
     }

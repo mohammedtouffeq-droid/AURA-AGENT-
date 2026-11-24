@@ -2329,7 +2329,7 @@
             word-break: break-word;
         }
 
-        /* Full-Duplex Voice Call HUD (ChatGPT Voice Mode) */
+        /* Full-Duplex VOX Live Call Studio HUD (Photorealistic Acoustic Optics) */
         .voice-hud-overlay {
             position: fixed;
             inset: 0;
@@ -2337,36 +2337,69 @@
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 18px;
-            background: radial-gradient(circle at 50% 35%, rgba(20, 27, 45, 0.97), rgba(6, 7, 11, 0.985));
-            backdrop-filter: blur(18px);
+            padding: 16px;
+            background: radial-gradient(ellipse at 50% 25%, rgba(16, 24, 42, 0.96), rgba(4, 5, 8, 0.99));
+            backdrop-filter: blur(22px);
         }
         .voice-hud-card {
             width: 100%;
-            max-width: 520px;
-            background: rgba(13, 16, 24, 0.92);
-            border: 1px solid var(--accent-gold-border);
-            border-radius: 22px;
-            padding: 24px 22px;
+            max-width: 540px;
+            background: linear-gradient(165deg, rgba(16, 19, 27, 0.96), rgba(9, 11, 16, 0.98));
+            border: 1px solid rgba(147, 197, 253, 0.24);
+            border-radius: 24px;
+            padding: 22px 22px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 14px;
-            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8), 0 0 50px rgba(226, 185, 111, 0.1);
+            gap: 13px;
+            box-shadow: 0 36px 100px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .vox-orb-stage {
+            position: relative;
+            width: 246px;
+            height: 246px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: radial-gradient(circle at 50% 45%, rgba(18, 25, 42, 0.65), rgba(6, 8, 12, 0.92) 72%, transparent 100%);
+            box-shadow: inset 0 0 42px rgba(0, 0, 0, 0.72);
         }
         .voice-orb-canvas {
-            width: 210px;
-            height: 210px;
-            max-width: 60vw;
-            max-height: 60vw;
+            width: 246px;
+            height: 246px;
+            max-width: 64vw;
+            max-height: 64vw;
+            display: block;
+        }
+        .vox-call-timer {
+            font-family: var(--font-code);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: #93c5fd;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: rgba(122, 162, 255, 0.12);
+            border: 1px solid rgba(122, 162, 255, 0.3);
+        }
+        .vox-live-caption {
+            width: 100%;
+            min-height: 22px;
+            text-align: center;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #e2e8f0;
+            letter-spacing: -0.01em;
+            padding: 0 8px;
         }
         .voice-transcript-box {
             width: 100%;
-            max-height: 155px;
-            min-height: 76px;
+            max-height: 145px;
+            min-height: 70px;
             overflow-y: auto;
-            background: rgba(7, 9, 14, 0.88);
-            border: 1px solid var(--border-subtle);
+            background: rgba(6, 8, 13, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 10px 12px;
             font-size: 12.5px;
@@ -5806,10 +5839,14 @@
         <div class="wallpaper-quick-popover" id="wallpaperQuickPopover" role="dialog" aria-label="Wallpaper Studio" onclick="event.stopPropagation()">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
                 <div>
-                    <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Wallpaper Studio</div>
-                    <div style="font-size:11px; color:#71717a;">10 luxury backdrops + personal multi-upload</div>
+                    <div style="font-size:13px; font-weight:700; color:#f4f4f5;">Photorealistic 4K Studio</div>
+                    <div id="quickWpModeSub" style="font-size:10.5px; color:#6ee7b7;">Day/Night Auto-Cycle (10m) · Scroll + Click Motion</div>
                 </div>
                 <button type="button" onclick="closeWallpaperQuickPopover()" aria-label="Close Wallpaper Studio" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:#d4d4d8; border-radius:7px; padding:4px 9px; font-size:11px; cursor:pointer;">Done</button>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button type="button" id="btnQuickWpLockToggle" onclick="toggleWallpaperPermanentLock()" style="flex:1; padding:6px 9px; border-radius:8px; border:1px solid rgba(52,211,153,0.4); background:rgba(16,185,129,0.12); color:#6ee7b7; font-size:11px; font-weight:700; cursor:pointer;">Auto 10m ON · Tap to Lock</button>
+                <button type="button" onclick="cycleNextWallpaper()" style="padding:6px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.06); color:#f4f5f7; font-size:11px; cursor:pointer;">Next 4K</button>
             </div>
             <div id="quickWallpaperGrid" class="wallpaper-gallery-grid"></div>
             <div id="quickCustomWallpapersWrap" style="display:none;">
@@ -5817,8 +5854,8 @@
                 <div id="quickCustomWallpapersGrid" class="wallpaper-gallery-grid"></div>
             </div>
             <div style="display:flex; gap:6px;">
-                <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">+ Add Custom Wallpaper</button>
-                <button type="button" onclick="cycleNextWallpaper()" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#d4d4d8; font-size:11.5px; cursor:pointer;">Next</button>
+                <button type="button" onclick="document.getElementById('customWallpaperInput').click()" style="flex:1; padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.06); color:#f4f4f5; font-size:11.5px; font-weight:600; cursor:pointer;">+ Upload Pic</button>
+                <button type="button" onclick="closeWallpaperQuickPopover(); openModelSettings('appearance');" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(122,162,255,0.35); background:rgba(122,162,255,0.12); color:#93c5fd; font-size:11.5px; font-weight:600; cursor:pointer;">All Categories</button>
                 <button type="button" onclick="clearCustomWallpaper()" style="padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:#a1a1aa; font-size:11.5px; cursor:pointer;">Reset</button>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px; padding-top:4px; border-top:1px solid rgba(255,255,255,0.08);">
@@ -5899,12 +5936,16 @@
                     </button>
                 </div>
 
-                <!-- Popover Right: JARVIS Autonomy & Guardrails -->
-                <div class="composer-popover composer-popover-right" id="composerJarvisPopover" role="dialog" aria-label="JARVIS Controls">
+                <!-- Popover Right: VOX Live Call & Autonomy Guardrails -->
+                <div class="composer-popover composer-popover-right" id="composerJarvisPopover" role="dialog" aria-label="VOX Call &amp; Controls">
                     <div style="display:flex; align-items:center; justify-content:space-between; padding:2px 4px;">
-                        <span class="popover-section-title" style="padding:0;">JARVIS Control</span>
-                        <span id="jarvisPopoverStatusBadge" style="font-size:10.5px; font-family:var(--font-code); color:#6ee7b7;">ARMED</span>
+                        <span class="popover-section-title" style="padding:0;">VOX Live Call &amp; Control</span>
+                        <span id="jarvisPopoverStatusBadge" style="font-size:10.5px; font-family:var(--font-code); color:#6ee7b7;">READY</span>
                     </div>
+                    <button type="button" class="popover-item" style="background:rgba(16,185,129,0.14); border:1px solid rgba(52,211,153,0.35); color:#ecfdf5; font-weight:700;" onclick="closeComposerPopovers(); openVoiceCallHud(true);">
+                        <span>Start VOX Live Voice Call</span>
+                        <span style="font-size:11px; color:#6ee7b7;">Call Now</span>
+                    </button>
                     <button type="button" class="popover-item" onclick="closeComposerPopovers(); runJarvisRoutine('coder_workspace_audit'); openJarvisConsole();">
                         <span>Coder Workspace Deep Audit</span>
                         <span style="font-size:11px; color:#6ee7b7;">Run</span>
@@ -5930,7 +5971,7 @@
                         <span id="killSwitchLabel">ARMED</span>
                     </button>
                     <div style="display:flex; gap:6px; margin-top:2px;">
-                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openJarvisConsole();">Console</button>
+                        <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openJarvisConsole();">VOX Ops</button>
                         <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openIdeWorkbench('terminal');">Dev Studio</button>
                         <button type="button" class="popover-item" style="flex:1; justify-content:center; font-size:11.5px;" onclick="closeComposerPopovers(); openFlagshipHub('bharatcode10');">Nexus</button>
                     </div>
@@ -5967,10 +6008,10 @@
                     </div>
 
                     <div class="input-right-tools">
-                        <button type="button" class="composer-pill-btn" id="btnComposerJarvis" onclick="toggleComposerPopover('jarvis', event)" title="JARVIS Automations &amp; Safety Kill Switch">
+                        <button type="button" class="composer-pill-btn" id="btnComposerJarvis" onclick="toggleComposerPopover('jarvis', event)" title="VOX Live Call, Automations &amp; Safety Kill Switch">
                             <span class="jarvis-status-dot" id="composerJarvisDot"></span>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            <span class="composer-pill-label-hide-xs">JARVIS</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            <span class="composer-pill-label-hide-xs">VOX</span>
                         </button>
                         <button class="btn-dock-icon" id="btnVoiceInput" title="Voice Dictation" onclick="toggleVoiceInput(event)">
                             <svg id="micIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -6668,16 +6709,19 @@
         </div>
     </aside>
 
-    <!-- ---------------- Full-Duplex Voice Call HUD ---------------- -->
-    <div class="voice-hud-overlay" id="voiceCallOverlay" role="dialog" aria-modal="true" aria-label="AURA Live Voice HUD">
+    <!-- ---------------- Full-Duplex VOX Live Voice Call HUD ---------------- -->
+    <div class="voice-hud-overlay" id="voiceCallOverlay" role="dialog" aria-modal="true" aria-label="AURA VOX Live Call">
         <div class="voice-hud-card" onclick="event.stopPropagation()">
-            <div style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <div style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
                 <div>
-                    <div style="font-size:15px; font-weight:700; color:#f4f4f5; letter-spacing:-0.01em;">AURA Voice Mode</div>
-                    <div id="voiceHudStateLabel" style="font-size:11px; color:#93c5fd; font-family:var(--font-code); margin-top:2px;">STANDBY • Click Start Call or Type</div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:16px; font-weight:800; color:#f4f5f7; letter-spacing:-0.02em;">AURA VOX · Live Call</span>
+                        <span id="voxCallTimer" class="vox-call-timer">00:00</span>
+                    </div>
+                    <div id="voiceHudStateLabel" style="font-size:11px; color:#93c5fd; font-family:var(--font-code); margin-top:3px;">READY • Tap Start Call for real-time voice</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
-                    <span id="voiceHudEngineBadge" style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; border:1px solid rgba(52,211,153,0.35); background:rgba(16,185,129,0.1); color:#6ee7b7;">Hybrid HD</span>
+                    <span id="voiceHudEngineBadge" style="font-size:10.5px; font-family:var(--font-code); padding:3px 9px; border-radius:999px; border:1px solid rgba(52,211,153,0.35); background:rgba(16,185,129,0.1); color:#6ee7b7;">VOX Turbo</span>
                     <button type="button" onclick="closeVoiceCallHud()" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#f4f4f5; padding:5px 11px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
                 </div>
             </div>
@@ -6701,44 +6745,48 @@
                     <option value="te_female_01">Telugu Female 01</option>
                 </select>
                 <select id="voiceHudEngineSelect" onchange="saveVoicePreferences({engine:this.value})" aria-label="Voice Engine" style="background:#0a0b10; border:1px solid rgba(255,255,255,0.13); border-radius:8px; padding:7px 8px; color:#e4e4e7; font-size:11.5px;">
-                    <option value="auto">Auto Hybrid</option>
+                    <option value="auto">Auto Turbo</option>
                     <option value="kokoro">Kokoro Offline</option>
                     <option value="edge">Neural HD</option>
                 </select>
             </div>
 
-            <canvas id="voiceCallOrb" class="voice-orb-canvas" width="220" height="220"></canvas>
+            <div class="vox-orb-stage">
+                <canvas id="voiceCallOrb" class="voice-orb-canvas" width="492" height="492"></canvas>
+            </div>
+            <div id="voxLiveCaption" class="vox-live-caption">Tap <strong>Start Call</strong> to talk live with VOX in English, Hindi, or Hinglish.</div>
 
             <div id="voiceHudTranscript" class="voice-transcript-box">
-                Say <strong>"Hello AURA"</strong> or type below to start a spoken dialogue in your chosen voice &amp; language.
+                VOX Live Call is armed with ultra-low-latency streaming &amp; 0-cost offline voice fallback.
             </div>
 
             <form onsubmit="event.preventDefault(); sendVoiceHudTextTurn();" style="width:100%; display:flex; gap:8px;">
-                <input id="voiceHudTextInput" type="text" placeholder="Type voice turn..." autocomplete="off" style="flex:1; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:9px 12px; color:#f4f4f5; font-size:13px;">
-                <button type="submit" style="padding:0 16px; border-radius:10px; border:none; background:#f4f4f5; color:#09090b; font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap;">Speak Turn</button>
+                <input id="voiceHudTextInput" type="text" placeholder="Or type to VOX..." autocomplete="off" style="flex:1; background:#090a0f; border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:9px 12px; color:#f4f4f5; font-size:13px;">
+                <button type="submit" style="padding:0 16px; border-radius:10px; border:none; background:#f4f4f5; color:#09090b; font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap;">Send</button>
             </form>
 
             <div style="width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
-                <button type="button" id="btnVoiceCallToggleMic" onclick="toggleVoiceCallSession()" style="padding:8px 15px; border-radius:999px; border:1px solid rgba(16,185,129,0.5); background:rgba(16,185,129,0.16); color:#6ee7b7; font-size:12px; font-weight:700; cursor:pointer;">Start Call</button>
-                <button type="button" id="btnVoiceCallMute" onclick="toggleVoiceCallMute()" style="padding:8px 13px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#d4d4d8; font-size:12px; cursor:pointer;">Mute</button>
-                <button type="button" onclick="interruptVoicePlayback()" style="padding:8px 13px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#e4e4e7; font-size:12px; cursor:pointer;">Interrupt</button>
-                <button type="button" onclick="toggleGlobalKillSwitch()" style="padding:8px 13px; border-radius:999px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.14); color:#fca5a5; font-size:12px; font-weight:600; cursor:pointer;">Kill Switch</button>
+                <button type="button" id="btnVoiceCallToggleMic" onclick="toggleVoiceCallSession()" style="padding:9px 18px; border-radius:999px; border:1px solid rgba(16,185,129,0.6); background:rgba(16,185,129,0.2); color:#6ee7b7; font-size:12.5px; font-weight:700; cursor:pointer;">Start Call</button>
+                <button type="button" id="btnVoiceCallMute" onclick="toggleVoiceCallMute()" style="padding:9px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#d4d4d8; font-size:12px; cursor:pointer;">Mute</button>
+                <button type="button" onclick="interruptVoicePlayback()" style="padding:9px 14px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.05); color:#e4e4e7; font-size:12px; cursor:pointer;">Interrupt</button>
+                <button type="button" onclick="toggleGlobalKillSwitch()" style="padding:9px 14px; border-radius:999px; border:1px solid rgba(239,68,68,0.45); background:rgba(239,68,68,0.14); color:#fca5a5; font-size:12px; font-weight:600; cursor:pointer;">Kill Switch</button>
             </div>
         </div>
     </div>
 
-    <!-- ---------------- JARVIS Automations & Hardware Kill Switch Console ---------------- -->
-    <div class="jarvis-overlay" id="jarvisOverlay" role="dialog" aria-modal="true" aria-label="JARVIS Command Console">
+    <!-- ---------------- VOX Automations & Hardware Kill Switch Console ---------------- -->
+    <div class="jarvis-overlay" id="jarvisOverlay" role="dialog" aria-modal="true" aria-label="VOX Command Console">
         <div class="jarvis-panel" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.09);">
                 <div>
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="font-size:16px; font-weight:700; color:#f4f4f5; letter-spacing:-0.015em;">JARVIS Automations &amp; Safety Guardrails</span>
+                        <span style="font-size:16px; font-weight:700; color:#f4f4f5; letter-spacing:-0.015em;">VOX Automations &amp; Safety Guardrails</span>
                         <span id="jarvisDeviceBadge" style="font-size:10px; font-family:var(--font-code); padding:2px 7px; border-radius:6px; border:1px solid rgba(122,162,255,0.28); background:rgba(122,162,255,0.1); color:#93c5fd;">DETECTING DEVICE...</span>
                     </div>
                     <div id="jarvisStatusBanner" style="font-size:11.5px; color:#6ee7b7; font-family:var(--font-code); margin-top:2px;">SYSTEM ARMED • Per-Tenant Guardrails Active</div>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <button type="button" onclick="closeJarvisConsole(); openVoiceCallHud(true);" style="background:rgba(16,185,129,0.16); border:1px solid rgba(52,211,153,0.45); color:#6ee7b7; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700;">Start VOX Call</button>
                     <button type="button" id="btnJarvisPanelKillSwitch" class="kill-switch-btn" onclick="toggleGlobalKillSwitch()">ENGAGE KILL SWITCH</button>
                     <button type="button" onclick="closeJarvisConsole()" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#f4f4f5; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px;">Close</button>
                 </div>
@@ -6793,7 +6841,7 @@
             </div>
 
             <div id="jarvisResultBox" style="background:rgba(7,9,14,0.92); color:#e4e4e7; padding:12px; border-radius:10px; font-size:12px; max-height:220px; overflow:auto; border:1px solid rgba(255,255,255,0.1); margin-bottom:12px;">
-                Select any JARVIS routine above to execute live audited diagnostics, or engage the Kill Switch to block autonomous execution.
+                Select any VOX routine above to execute live audited diagnostics, tap Start VOX Call for real-time voice, or engage the Kill Switch to block autonomous execution.
             </div>
 
             <div style="font-size:12px; font-weight:700; color:#d4d4d8; margin-bottom:6px;">Live Tenant Audit Trail</div>
@@ -6986,9 +7034,13 @@
 
                         <div class="settings-panel-card">
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-                                <div class="settings-card-eyebrow">150 Scroll-Driven Realistic Wallpapers</div>
+                                <div>
+                                    <div class="settings-card-eyebrow">Photorealistic 4K Wallpapers (Scroll + Click Motion)</div>
+                                    <div id="settingsWpAutomationSub" style="font-size:11px; color:#6ee7b7; margin-top:2px;">Smart Day/Night Auto-Cycle every 10 minutes — or lock any wallpaper permanently below.</div>
+                                </div>
                                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                                     <input type="file" id="customWallpaperInput" accept="image/*" multiple style="display:none;" onchange="handleCustomWallpaperUpload(event)">
+                                    <button type="button" id="btnSettingsWpLockToggle" class="settings-btn-primary" onclick="toggleWallpaperPermanentLock()" style="padding:5px 11px; font-size:11.5px; height:30px;">Lock Current Permanently</button>
                                     <button type="button" class="settings-btn-ghost" onclick="document.getElementById('customWallpaperInput').click()" style="padding:5px 10px; font-size:11.5px;">+ Upload Pic</button>
                                     <button type="button" class="settings-btn-ghost" onclick="cycleNextWallpaper()" style="padding:5px 10px; font-size:11.5px;">Cycle Next</button>
                                     <button type="button" class="settings-btn-ghost" onclick="clearCustomWallpaper()" style="padding:5px 10px; font-size:11.5px; color:#a1a1aa;">Reset</button>
@@ -6996,13 +7048,16 @@
                             </div>
                             <div class="wp-studio-toolbar">
                                 <div class="wp-cat-pills" role="tablist" aria-label="Wallpaper collection filter" style="flex-wrap:wrap;">
-                                    <button type="button" class="wp-cat-btn active" id="wpCatBtn_all" onclick="setWallpaperGalleryCategory('all')">All (150)</button>
+                                    <button type="button" class="wp-cat-btn active" id="wpCatBtn_all" onclick="setWallpaperGalleryCategory('all')">All 4K</button>
                                     <button type="button" class="wp-cat-btn" id="wpCatBtn_modcars" onclick="setWallpaperGalleryCategory('modcars')">Mod Cars (25)</button>
-                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_environment" onclick="setWallpaperGalleryCategory('environment')">Environment (25)</button>
-                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_hacker" onclick="setWallpaperGalleryCategory('hacker')">Hacker (50)</button>
-                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_auto" onclick="setWallpaperGalleryCategory('auto')">BMW / Auto (50)</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_environment" onclick="setWallpaperGalleryCategory('environment')">Nature (25)</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_aesthetic" onclick="setWallpaperGalleryCategory('aesthetic')">Aesthetic &amp; Luxury</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_kids" onclick="setWallpaperGalleryCategory('kids')">Kids &amp; Space</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_hacker" onclick="setWallpaperGalleryCategory('hacker')">Hacker Ops</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_developer" onclick="setWallpaperGalleryCategory('developer')">Developer</button>
+                                    <button type="button" class="wp-cat-btn" id="wpCatBtn_auto" onclick="setWallpaperGalleryCategory('auto')">BMW / Auto</button>
                                 </div>
-                                <input type="search" id="wallpaperSearchInput" class="wp-search-inp" placeholder="Search BMW, Ferrari, Pagani, Bugatti, Wiper, Aurora, Rain..." oninput="setWallpaperSearchQuery(this.value)" autocomplete="off">
+                                <input type="search" id="wallpaperSearchInput" class="wp-search-inp" placeholder="Search BMW, Ferrari, Sakura, Space, Alps, Desk, Hacker..." oninput="setWallpaperSearchQuery(this.value)" autocomplete="off">
                             </div>
                             <div id="settingsWallpaperGrid" class="wallpaper-gallery-grid"></div>
                             <div id="settingsCustomWallpapersWrap" style="display:none; margin-top:4px;">
@@ -7272,6 +7327,17 @@
                             <div>
                                 <h3>Account Security &amp; Host Terminal Role</h3>
                                 <p>Rotate your scrypt-hashed password, unlock local administrator shell controls, or delete your account permanently.</p>
+                            </div>
+                        </div>
+
+                        <div id="ownerAdminSecurityCard" class="settings-panel-card" style="display:none; border-color:rgba(122,162,255,0.45); background:linear-gradient(135deg, rgba(122,162,255,0.12), rgba(16,19,28,0.92));">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <div>
+                                    <div class="settings-card-eyebrow" style="color:#93c5fd;">Owner Control · @ig.ahmed.irl</div>
+                                    <div style="font-size:14px; font-weight:700; color:#ffffff; margin-top:2px;">Full Owner Admin Command Center</div>
+                                    <p style="margin:4px 0 0; font-size:12px; color:#cbd5e1;">Inspect every registered user &amp; device, generate timed auto-expiring keys (minutes/hours/days), gift free subscriptions, renew access, or ban accounts instantly.</p>
+                                </div>
+                                <button type="button" class="settings-btn-primary" onclick="closeModelSettings(); openAdminCommandCenter('users');" style="white-space:nowrap;">Open Admin Command Center →</button>
                             </div>
                         </div>
 
@@ -9735,6 +9801,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (hdrAdm) hdrAdm.style.display = 'none';
                 const sbAdm = document.getElementById('sidebarAdminBtn');
                 if (sbAdm) sbAdm.style.display = 'none';
+                const secAdmCard = document.getElementById('ownerAdminSecurityCard');
+                if (secAdmCard) secAdmCard.style.display = 'none';
                 if (typeof closeAdminCommandCenter === 'function') closeAdminCommandCenter();
 
                 const removeSpecific = String(opts.removeUser || '').trim().toLowerCase();
@@ -10074,7 +10142,31 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     authErrorMsg.style.display = 'block';
                 }
             } catch (err) {
-                authErrorMsg.innerText = 'Network error: ' + err.message;
+                // Seamless 0-Cost Offline Entry if Wi-Fi is down during Sign In / Register
+                if (window.AuraOfflineMobile && u) {
+                    currentUser = {
+                        id: 'offline_' + u,
+                        username: u,
+                        display_name: u.charAt(0).toUpperCase() + u.slice(1),
+                        role: 'user',
+                        offlineMode: true,
+                        isGuest: String(u).startsWith('guest_')
+                    };
+                    window.AuraOfflineMobile.saveLastMobileUser(currentUser);
+                    updateUserUI(currentUser);
+                    authOverlay.style.display = 'none';
+                    restoreScopedActiveThread(u);
+                    try {
+                        const localVault = await loadIsolatedUserVault(u);
+                        if (localVault && localVault.payload && Array.isArray(localVault.payload.threads)) {
+                            cachedThreads = mergeThreadLists(localVault.payload.threads, cachedThreads);
+                            applyThreadSearchAndRender();
+                        }
+                    } catch (_) {}
+                    if (typeof showBridgeToast === 'function') showBridgeToast('Offline 0-Cost Workspace Ready — chats auto-sync when Wi-Fi returns.', '#6ee7b7');
+                    return;
+                }
+                authErrorMsg.innerText = 'Could not reach server right now. Check connection and try again.';
                 authErrorMsg.style.display = 'block';
             } finally {
                 btnAuthSubmit.disabled = false;
@@ -10092,6 +10184,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             userAvatar.innerText = name[0].toUpperCase();
             if (typeof syncIdeRoleBadges === 'function') {
                 syncIdeRoleBadges(user);
+            }
+            if (typeof updateAdminKeyVaultVisibility === 'function') {
+                updateAdminKeyVaultVisibility();
             }
             if (typeof updateTimeGreeting === 'function') {
                 updateTimeGreeting();
@@ -10153,27 +10248,21 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 }
             } catch (e) {}
 
-            // Seamless Mobile Phone Offline Launch (ZERO popup, ZERO login blocker, identical AURA UI!)
+            // Universal 0-Cost Offline Launch (Phone, Tablet, Laptop & Desktop — ZERO popup, ZERO login blocker!)
             if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) {
-                if (window.AuraOfflineMobile.isMobilePhone()) {
-                    const offlineUser = window.AuraOfflineMobile.getLastMobileUser();
-                    currentUser = Object.assign({}, offlineUser, { offlineMode: true });
-                    updateUserUI(currentUser);
-                    restoreScopedActiveThread(currentUser.username);
-                    try {
-                        const localVault = await loadIsolatedUserVault(currentUser.username);
-                        if (localVault && localVault.payload && Array.isArray(localVault.payload.threads)) {
-                            cachedThreads = mergeThreadLists(localVault.payload.threads, cachedThreads);
-                            applyThreadSearchAndRender();
-                        }
-                    } catch (_) {}
-                    authOverlay.style.display = 'none';
-                    return true;
-                }
-                if (window.AuraOfflineMobile.isLaptopOrDesktop()) {
-                    window.AuraOfflineMobile.enforceDeviceOfflinePolicy();
-                    return false;
-                }
+                const offlineUser = window.AuraOfflineMobile.getLastMobileUser();
+                currentUser = Object.assign({}, offlineUser, { offlineMode: true });
+                updateUserUI(currentUser);
+                restoreScopedActiveThread(currentUser.username);
+                try {
+                    const localVault = await loadIsolatedUserVault(currentUser.username);
+                    if (localVault && localVault.payload && Array.isArray(localVault.payload.threads)) {
+                        cachedThreads = mergeThreadLists(localVault.payload.threads, cachedThreads);
+                        applyThreadSearchAndRender();
+                    }
+                } catch (_) {}
+                authOverlay.style.display = 'none';
+                return true;
             }
 
             authToken = '';
@@ -10939,7 +11028,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             { cmd: '/refactor', template: '/refactor ', desc: 'AST-verified auto-refactor a workspace file with rollback snapshot' },
             { cmd: '/map', template: '/map', desc: 'Map codebase Frontend/Backend/DB layers, API routes & SQL tables' },
             { cmd: '/test', template: '/test pytest -q', desc: 'Run workspace tests in isolated sandbox with AI traceback diagnosis' },
-            { cmd: '/jarvis', template: '/jarvis coder', desc: 'Run JARVIS routines (status, coder, git, diagnostics, security, audit, halt, arm)' },
+            { cmd: '/vox', template: '/jarvis coder', desc: 'Run VOX routines (status, coder, git, diagnostics, security, audit, halt, arm)' },
             { cmd: '/device', template: '/device', desc: 'Inspect detected Phone/iPad/Laptop/Desktop device & automation capabilities' },
             { cmd: '/remote', template: '/remote', desc: 'Generate /remote companion link to control Desktop/Laptop AURA from your phone' },
             { cmd: '/swarm', template: '/swarm ', desc: 'Dispatch parallel Frontend/Backend/DB/QA specialist agents directly from chat' },
@@ -11350,22 +11439,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             };
 
             try {
-                // Device-aware Offline Routing:
-                // - Laptop/Desktop offline -> clean Obsidian "Internet Required" popup (offline disabled on Laptop/Desktop).
-                // - Mobile Phone offline -> ZERO popup, ZERO UI changes, 100% smooth free offline AURA!
+                // Universal 0-Cost Offline Routing: if offline on ANY device, reply instantly via on-device Sovereign Brain!
                 if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) {
-                    if (window.AuraOfflineMobile.isLaptopOrDesktop()) {
-                        restoreDraftOnFailure();
-                        if (turnData.wrapper && turnData.wrapper.parentNode) {
-                            turnData.wrapper.parentNode.removeChild(turnData.wrapper);
-                        }
-                        window.AuraOfflineMobile.enforceDeviceOfflinePolicy();
-                        return;
-                    }
-                    if (window.AuraOfflineMobile.isMobilePhone()) {
-                        await _runSeamlessMobileOfflineTurn();
-                        return;
-                    }
+                    await _runSeamlessMobileOfflineTurn();
+                    return;
                 }
 
                 // Ensure current thread is tracked cleanly under current user's scope
@@ -11375,20 +11452,26 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     setScopedActiveThread(currentThreadId);
                 }
 
+                const chatReqBody = JSON.stringify({
+                    prompt: text,
+                    thread_id: currentThreadId,
+                    attachments: attachedToSend,
+                    context_files: typeof getAttachedContextFiles === 'function' ? getAttachedContextFiles() : [],
+                    mode: activeExecutionMode || 'auto_pilot',
+                    reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast',
+                    aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
+                    client_device: typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null
+                });
+
                 const res = await apiFetch('/api/chat/stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        prompt: text,
-                        thread_id: currentThreadId,
-                        attachments: attachedToSend,
-                        context_files: typeof getAttachedContextFiles === 'function' ? getAttachedContextFiles() : [],
-                        mode: activeExecutionMode || 'auto_pilot',
-                        reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast',
-                        aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
-                        client_device: typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null
-                    })
+                    body: chatReqBody
                 });
+
+                if (res.status === 502 || res.status === 503 || res.status === 504) {
+                    throw new Error('Transient gateway timeout');
+                }
 
                 if (res.status === 401) {
                     restoreDraftOnFailure();
@@ -11548,23 +11631,54 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     }
                 }
             } catch (err) {
-                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isMobilePhone()) {
+                // Step 1: Automatic silent fallback retry to non-streaming /api/chat (recovers flaky hotspot SSE drops!)
+                try {
+                    const retryCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    const retryTimer = retryCtrl ? setTimeout(() => { try { retryCtrl.abort(); } catch (_) {} }, 9000) : null;
+                    const retryRes = await apiFetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: retryCtrl ? retryCtrl.signal : undefined,
+                        body: JSON.stringify({
+                            prompt: text,
+                            thread_id: currentThreadId || ('th_' + Date.now()),
+                            attachments: attachedToSend,
+                            context_files: typeof getAttachedContextFiles === 'function' ? getAttachedContextFiles() : [],
+                            mode: activeExecutionMode || 'auto_pilot',
+                            reasoning_mode: typeof getActiveReasoningMode === 'function' ? getActiveReasoningMode() : 'fast',
+                            aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
+                            client_device: typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null
+                        })
+                    });
+                    if (retryTimer) clearTimeout(retryTimer);
+                    if (retryRes && retryRes.ok) {
+                        const retryData = await safeParseJson(retryRes);
+                        if (retryData && retryData.reply) {
+                            turnData.thinking.style.display = 'none';
+                            turnData.bubble.innerHTML = renderMarkdown(retryData.reply);
+                            if (typeof hydrateInlineVisualCards === 'function') hydrateInlineVisualCards(turnData.bubble);
+                            if (typeof maybeAutoOpenArtifact === 'function') maybeAutoOpenArtifact(retryData.reply);
+                            if (retryData.thread_id) setScopedActiveThread(retryData.thread_id);
+                            if ((retryData.membership || retryData.quota) && typeof applyMembershipStateUI === 'function') {
+                                applyMembershipStateUI(retryData.membership, retryData.quota);
+                            }
+                            if (retryData.user_vault) await saveUserVault(retryData.user_vault);
+                            else if (currentThreadId) await recordLocalChatTurn(currentThreadId, text, retryData.reply, retryData.tools || []);
+                            return;
+                        }
+                    }
+                } catch (_) {}
+
+                // Step 2: NEVER show "Connection Error: Failed to fetch" — seamlessly answer via 0-Cost Local Sovereign Brain!
+                if (window.AuraOfflineMobile && typeof window.AuraOfflineMobile.streamOfflineChatTurn === 'function') {
                     try {
                         await _runSeamlessMobileOfflineTurn();
                         return;
                     } catch (_) {}
                 }
-                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isLaptopOrDesktop() && window.AuraOfflineMobile.isOfflineNow()) {
-                    restoreDraftOnFailure();
-                    if (turnData.wrapper && turnData.wrapper.parentNode) {
-                        turnData.wrapper.parentNode.removeChild(turnData.wrapper);
-                    }
-                    window.AuraOfflineMobile.enforceDeviceOfflinePolicy();
-                    return;
-                }
                 restoreDraftOnFailure();
                 turnData.thinking.style.display = 'none';
-                turnData.bubble.innerHTML = '<span style="color: #fca5a5;">Connection Error: ' + escapeHtml(err.message) + '</span>';
+                turnData.bubble.innerHTML = '<span style="color: #93c5fd;">AURA switched to local mode — please send your message again.</span>';
             } finally {
                 isSending = false;
                 btnSend.disabled = !userPrompt.value.trim() && currentAttachments.length === 0;
@@ -13311,6 +13425,80 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             box.scrollTop = box.scrollHeight;
         }
 
+        const _voxAudioState = {
+            ctx: null,
+            analyser: null,
+            stream: null,
+            freqBins: null,
+            rms: 0,
+            smoothRms: 0,
+            callStartedAt: 0,
+            timerInterval: null,
+            silenceTimer: null,
+        };
+
+        async function _startVoxMicAnalyser() {
+            if (_voxAudioState.analyser) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+                const ctx = new AudioCtx();
+                const src = ctx.createMediaStreamSource(stream);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 128;
+                analyser.smoothingTimeConstant = 0.78;
+                src.connect(analyser);
+                _voxAudioState.ctx = ctx;
+                _voxAudioState.analyser = analyser;
+                _voxAudioState.stream = stream;
+                _voxAudioState.freqBins = new Uint8Array(analyser.frequencyBinCount);
+            } catch (_) {}
+        }
+
+        function _stopVoxMicAnalyser() {
+            if (_voxAudioState.stream) {
+                try { _voxAudioState.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
+                _voxAudioState.stream = null;
+            }
+            if (_voxAudioState.ctx) {
+                try { _voxAudioState.ctx.close(); } catch (_) {}
+                _voxAudioState.ctx = null;
+            }
+            _voxAudioState.analyser = null;
+            _voxAudioState.freqBins = null;
+            _voxAudioState.rms = 0;
+        }
+
+        function _setVoxCaption(txt) {
+            const el = document.getElementById('voxLiveCaption');
+            if (el) el.textContent = String(txt || '');
+        }
+
+        function _startVoxCallTimer() {
+            _voxAudioState.callStartedAt = Date.now();
+            if (_voxAudioState.timerInterval) clearInterval(_voxAudioState.timerInterval);
+            const tick = () => {
+                const el = document.getElementById('voxCallTimer');
+                if (!el) return;
+                const s = Math.max(0, Math.floor((Date.now() - _voxAudioState.callStartedAt) / 1000));
+                const mm = String(Math.floor(s / 60)).padStart(2, '0');
+                const ss = String(s % 60).padStart(2, '0');
+                el.textContent = `${mm}:${ss}`;
+            };
+            tick();
+            _voxAudioState.timerInterval = setInterval(tick, 1000);
+        }
+
+        function _stopVoxCallTimer() {
+            if (_voxAudioState.timerInterval) {
+                clearInterval(_voxAudioState.timerInterval);
+                _voxAudioState.timerInterval = null;
+            }
+            const el = document.getElementById('voxCallTimer');
+            if (el) el.textContent = '00:00';
+        }
+
         function _drawVoiceOrbFrame() {
             if (!voiceHudState.open) {
                 voiceHudState.animFrame = null;
@@ -13326,58 +13514,136 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 ctx.clearRect(0, 0, w, h);
 
                 const mode = voiceHudState.mode;
-                const speed = mode === 'speaking' ? 0.085 : (mode === 'listening' ? 0.055 : (mode === 'thinking' ? 0.11 : 0.022));
-                const amp = mode === 'speaking' ? 12 : (mode === 'listening' ? 8 : (mode === 'thinking' ? 5.5 : 2.2));
+                let liveEnergy = 0;
+                const bins = _voxAudioState.freqBins;
+                if (_voxAudioState.analyser && bins && mode === 'listening' && !voiceHudState.muted) {
+                    _voxAudioState.analyser.getByteFrequencyData(bins);
+                    let sum = 0;
+                    for (let i = 0; i < bins.length; i++) sum += bins[i];
+                    liveEnergy = Math.min(1, (sum / (bins.length * 145)));
+                } else if (mode === 'speaking') {
+                    liveEnergy = 0.42 + Math.abs(Math.sin(voiceHudState.phase * 2.3)) * 0.34 + Math.abs(Math.cos(voiceHudState.phase * 3.7)) * 0.18;
+                } else if (mode === 'thinking') {
+                    liveEnergy = 0.28 + Math.sin(voiceHudState.phase * 1.9) * 0.12;
+                } else {
+                    liveEnergy = 0.08 + Math.sin(voiceHudState.phase * 0.9) * 0.04;
+                }
+                _voxAudioState.smoothRms += (liveEnergy - _voxAudioState.smoothRms) * 0.22;
+                const e = _voxAudioState.smoothRms;
+
+                const speed = mode === 'speaking' ? 0.068 : (mode === 'thinking' ? 0.082 : (mode === 'listening' ? 0.048 : 0.022));
                 voiceHudState.phase += speed;
+                const ph = voiceHudState.phase;
 
-                const palette = mode === 'halted'
-                    ? ['#f87171', 'rgba(239, 68, 68, 0.24)', 'rgba(248, 113, 113, 0.5)']
-                    : (mode === 'speaking'
-                        ? ['#f4f4f5', 'rgba(147, 197, 253, 0.26)', 'rgba(226, 185, 111, 0.45)']
-                        : (mode === 'listening'
-                            ? ['#6ee7b7', 'rgba(16, 185, 129, 0.22)', 'rgba(56, 189, 248, 0.4)']
-                            : ['#cbd5e1', 'rgba(147, 197, 253, 0.18)', 'rgba(255, 255, 255, 0.25)']));
+                // Studio Optical Palette (Zero Cartoon Flat Colors — Photorealistic Glass Caustics)
+                const colors = mode === 'halted'
+                    ? { a: [239, 68, 68], b: [185, 28, 28], rim: 'rgba(254,202,202,0.72)' }
+                    : (mode === 'listening'
+                        ? { a: [16, 185, 129], b: [56, 189, 248], rim: 'rgba(110,231,183,0.78)' }
+                        : (mode === 'speaking'
+                            ? { a: [96, 165, 250], b: [226, 232, 240], rim: 'rgba(191,219,254,0.85)' }
+                            : (mode === 'thinking'
+                                ? { a: [129, 140, 248], b: [56, 189, 248], rim: 'rgba(199,210,254,0.82)' }
+                                : { a: [96, 165, 250], b: [71, 85, 105], rim: 'rgba(203,213,225,0.48)' })));
 
-                const pulseR = 62 + Math.sin(voiceHudState.phase) * (amp * 0.55);
-                const halo = ctx.createRadialGradient(cx, cy, 8, cx, cy, pulseR + 38);
-                halo.addColorStop(0, palette[1]);
-                halo.addColorStop(0.5, palette[1]);
+                const rgba = (rgb, alpha) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha.toFixed(3)})`;
+                const baseR = w * 0.275 + e * (w * 0.032);
+
+                // 1. Deep Atmospheric Volumetric Halo
+                const halo = ctx.createRadialGradient(cx, cy, baseR * 0.45, cx, cy, baseR * 1.75);
+                halo.addColorStop(0, rgba(colors.a, 0.22 + e * 0.28));
+                halo.addColorStop(0.52, rgba(colors.b, 0.08 + e * 0.14));
                 halo.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = halo;
                 ctx.beginPath();
-                ctx.arc(cx, cy, pulseR + 38, 0, Math.PI * 2);
+                ctx.arc(cx, cy, baseR * 1.75, 0, Math.PI * 2);
                 ctx.fill();
 
-                const drawHarmonicRing = (baseR, freqA, freqB, phaseMul, strokeColor, lw, fillCore) => {
+                // 2. 64-Band Photorealistic Acoustic Spectrum Filaments around Optical Iris
+                const barCount = 64;
+                ctx.save();
+                ctx.translate(cx, cy);
+                for (let i = 0; i < barCount; i++) {
+                    const ang = (i / barCount) * Math.PI * 2 - Math.PI / 2;
+                    let mag = 0;
+                    if (bins && mode === 'listening' && !voiceHudState.muted) {
+                        mag = (bins[i % bins.length] || 0) / 255;
+                    } else if (mode === 'speaking') {
+                        mag = 0.22 + 0.58 * Math.abs(Math.sin(ang * 3 + ph * 2.1) * Math.cos(ang * 2 - ph * 1.4)) * (0.65 + e * 0.5);
+                    } else if (mode === 'thinking') {
+                        const wavePos = ((i / barCount) - ((ph * 0.18) % 1) + 1) % 1;
+                        mag = Math.exp(-Math.pow((wavePos - 0.5) * 7, 2)) * 0.72;
+                    } else {
+                        mag = 0.05 + 0.06 * Math.sin(ang * 4 + ph);
+                    }
+                    const innerR = baseR + 10;
+                    const len = 5 + mag * (w * 0.085);
+                    const x0 = Math.cos(ang) * innerR;
+                    const y0 = Math.sin(ang) * innerR;
+                    const x1 = Math.cos(ang) * (innerR + len);
+                    const y1 = Math.sin(ang) * (innerR + len);
+                    ctx.strokeStyle = i % 2 === 0 ? rgba(colors.a, 0.24 + mag * 0.72) : rgba(colors.b, 0.18 + mag * 0.65);
+                    ctx.lineWidth = Math.max(1.4, w * 0.0042);
+                    ctx.lineCap = 'round';
                     ctx.beginPath();
-                    const steps = 72;
-                    for (let i = 0; i <= steps; i++) {
-                        const ang = (i / steps) * Math.PI * 2;
-                        const wave = Math.sin(ang * freqA + voiceHudState.phase * phaseMul) * (amp * 0.42)
-                                   + Math.cos(ang * freqB - voiceHudState.phase * (phaseMul * 0.72)) * (amp * 0.28);
-                        const r = baseR + wave;
-                        const x = cx + Math.cos(ang) * r;
-                        const y = cy + Math.sin(ang) * r;
-                        if (i === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
-                    }
-                    ctx.closePath();
-                    if (fillCore) {
-                        const coreGrad = ctx.createRadialGradient(cx - 14, cy - 16, 4, cx, cy, baseR + 10);
-                        coreGrad.addColorStop(0, 'rgba(255, 255, 255, 0.14)');
-                        coreGrad.addColorStop(0.55, 'rgba(18, 22, 34, 0.94)');
-                        coreGrad.addColorStop(1, 'rgba(7, 9, 14, 0.98)');
-                        ctx.fillStyle = coreGrad;
-                        ctx.fill();
-                    }
-                    ctx.lineWidth = lw;
-                    ctx.strokeStyle = strokeColor;
+                    ctx.moveTo(x0, y0);
+                    ctx.lineTo(x1, y1);
                     ctx.stroke();
-                };
+                }
+                ctx.restore();
 
-                drawHarmonicRing(66, 4, 3, -0.9, palette[2], 1.1, false);
-                drawHarmonicRing(56, 5, 3, 1.35, palette[0], 2.0, true);
-                drawHarmonicRing(44, 3, 2, 1.85, 'rgba(255, 255, 255, 0.18)', 0.9, false);
+                // 3. Obsidian Optical Glass Core with Volumetric Liquid-Light Caustics
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+                ctx.clip();
+
+                const bodyGrad = ctx.createRadialGradient(cx - baseR * 0.28, cy - baseR * 0.3, baseR * 0.05, cx, cy, baseR * 1.15);
+                bodyGrad.addColorStop(0, 'rgba(34,42,60,0.96)');
+                bodyGrad.addColorStop(0.55, 'rgba(11,14,22,0.98)');
+                bodyGrad.addColorStop(1, 'rgba(3,4,7,1)');
+                ctx.fillStyle = bodyGrad;
+                ctx.fillRect(cx - baseR, cy - baseR, baseR * 2, baseR * 2);
+
+                // Internal moving optical caustic blobs (liquid light refraction inside glass!)
+                for (let k = 0; k < 3; k++) {
+                    const orbitR = baseR * (0.34 + e * 0.14);
+                    const ox = cx + Math.cos(ph * (0.9 + k * 0.35) + k * 2.1) * orbitR;
+                    const oy = cy + Math.sin(ph * (1.1 - k * 0.22) + k * 1.7) * orbitR;
+                    const cr = baseR * (0.62 + e * 0.22);
+                    const cg = ctx.createRadialGradient(ox, oy, 2, ox, oy, cr);
+                    cg.addColorStop(0, rgba(k % 2 === 0 ? colors.a : colors.b, 0.42 + e * 0.32));
+                    cg.addColorStop(0.55, rgba(colors.b, 0.12 + e * 0.1));
+                    cg.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = cg;
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, cr, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Precision Specular Studio Lens Reflection (top-left glass highlight)
+                const spec = ctx.createRadialGradient(cx - baseR * 0.36, cy - baseR * 0.38, 2, cx - baseR * 0.32, cy - baseR * 0.34, baseR * 0.56);
+                spec.addColorStop(0, 'rgba(255,255,255,0.44)');
+                spec.addColorStop(0.35, 'rgba(255,255,255,0.10)');
+                spec.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = spec;
+                ctx.beginPath();
+                ctx.arc(cx - baseR * 0.32, cy - baseR * 0.34, baseR * 0.56, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // 4. Precision Machined Fresnel Glass Rim + Rotating Optical Vernier Arc
+                ctx.strokeStyle = colors.rim;
+                ctx.lineWidth = Math.max(1.8, w * 0.0045);
+                ctx.beginPath();
+                ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.strokeStyle = rgba(colors.b, 0.32 + e * 0.45);
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.arc(cx, cy, baseR + 5, ph * 0.85, ph * 0.85 + Math.PI * 0.65);
+                ctx.stroke();
             }
             voiceHudState.animFrame = requestAnimationFrame(_drawVoiceOrbFrame);
         }
@@ -13638,6 +13904,18 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             return { blob, meta: data.speech };
         }
 
+        async function _fetchSentenceCloudAudioFast(sentenceText, prefs, signal) {
+            if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) return null;
+            if (prefs.engine === 'kokoro') {
+                return _fetchSentenceCloudAudio(sentenceText, prefs, signal).catch(() => null);
+            }
+            // Race cloud neural TTS against a 1500ms budget so VOX NEVER stalls silently on slow Wi-Fi!
+            return Promise.race([
+                _fetchSentenceCloudAudio(sentenceText, prefs, signal).catch(() => null),
+                new Promise(resolve => setTimeout(() => resolve(null), 1500))
+            ]);
+        }
+
         async function _speakVoiceSentences(plainSpeech, onDone) {
             const chunks = _splitSpeechSentences(plainSpeech);
             if (!chunks.length || voiceHudState.muted) {
@@ -13648,19 +13926,20 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const prefs = getVoicePreferences();
             const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
             voiceHudState._abortCtrl = ctrl;
-            _setVoiceHudMode('speaking', 'SYNTHESIZING VOICE • Neural Audio');
+            _setVoiceHudMode('speaking', 'VOX SPEAKING • Live Audio');
 
-            let nextPrefetch = _fetchSentenceCloudAudio(chunks[0], prefs, ctrl ? ctrl.signal : undefined).catch(() => null);
+            let nextPrefetch = _fetchSentenceCloudAudioFast(chunks[0], prefs, ctrl ? ctrl.signal : undefined).catch(() => null);
             for (let i = 0; i < chunks.length; i++) {
                 if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted) return;
+                _setVoxCaption(chunks[i]);
                 const item = await nextPrefetch;
                 if (i + 1 < chunks.length && genId === voiceHudState._speechGen && !voiceHudState.muted) {
-                    nextPrefetch = _fetchSentenceCloudAudio(chunks[i + 1], prefs, ctrl ? ctrl.signal : undefined).catch(() => null);
+                    nextPrefetch = _fetchSentenceCloudAudioFast(chunks[i + 1], prefs, ctrl ? ctrl.signal : undefined).catch(() => null);
                 }
                 if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted) return;
 
                 if (!item || !item.blob) {
-                    _setVoiceHudMode('speaking', 'SPEAKING (Browser Fallback) • Tap Interrupt anytime');
+                    _setVoiceHudMode('speaking', 'VOX SPEAKING (Instant Neural) • Tap Interrupt anytime');
                     _speakBrowserFallback(chunks.slice(i), genId, onDone);
                     return;
                 }
@@ -13668,9 +13947,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 const meta = item.meta || {};
                 const badgeEl = document.getElementById('voiceHudEngineBadge');
                 if (badgeEl && meta.engine) {
-                    badgeEl.textContent = `${meta.engine} · ${meta.language || prefs.language}`;
+                    badgeEl.textContent = `VOX ${meta.engine}`;
                 }
-                _setVoiceHudMode('speaking', `SPEAKING (${meta.engine || 'neural'}) • Tap Interrupt anytime`);
+                _setVoiceHudMode('speaking', `VOX SPEAKING (${meta.engine || 'HD'}) • Tap Interrupt anytime`);
 
                 const playedOk = await new Promise((resolve) => {
                     const objUrl = URL.createObjectURL(item.blob);
@@ -13695,7 +13974,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (genId === voiceHudState._speechGen && onDone) onDone();
         }
 
-        function openVoiceCallHud() {
+        function openVoiceCallHud(autoStart = false) {
             if (!isAuthenticated()) {
                 authOverlay.style.display = 'flex';
                 return;
@@ -13706,8 +13985,12 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (!overlay) return;
             overlay.style.display = 'flex';
             voiceHudState.open = true;
-            _setVoiceHudMode(jarvisClientState.halted ? 'halted' : 'standby', jarvisClientState.halted ? 'KILL SWITCH ENGAGED • READ-ONLY' : 'STANDBY • Click Start Call or Type');
+            _setVoiceHudMode(jarvisClientState.halted ? 'halted' : 'standby', jarvisClientState.halted ? 'KILL SWITCH ENGAGED • READ-ONLY' : 'VOX READY • Tap Start Call or Type');
+            _setVoxCaption('Tap Start Call to talk live with VOX.');
             if (!voiceHudState.animFrame) _drawVoiceOrbFrame();
+            if (autoStart && !voiceHudState.callActive && !jarvisClientState.halted) {
+                setTimeout(() => startVoiceCallSession(), 120);
+            }
         }
 
         function closeVoiceCallHud() {
@@ -13728,9 +14011,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 try { window.speechSynthesis.cancel(); } catch (_) {}
             }
             if (voiceHudState.callActive && !voiceHudState.muted) {
-                _setVoiceHudMode('listening', 'LISTENING • Barge-in ready');
+                _setVoiceHudMode('listening', 'VOX LISTENING • Barge-in ready');
             } else {
-                _setVoiceHudMode('standby', 'INTERRUPTED • Ready');
+                _setVoiceHudMode('standby', 'INTERRUPTED • VOX Ready');
             }
         }
 
@@ -13743,7 +14026,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (voiceHudState.recognition) {
                     try { voiceHudState.recognition.stop(); } catch (_) {}
                 }
-                _setVoiceHudMode('standby', 'MUTED • Click Unmute or Type');
+                _setVoiceHudMode('standby', 'MUTED • Tap Unmute or Type');
             } else if (!voiceHudState.muted && voiceHudState.callActive) {
                 _primeVoiceAudio();
                 _startVoiceRecognitionTurn();
@@ -13762,6 +14045,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         function startVoiceCallSession() {
             voiceHudState.callActive = true;
             voiceHudState.muted = false;
+            _startVoxCallTimer();
+            _startVoxMicAnalyser();
             const prefs = getVoicePreferences();
             apiFetch('/v1/calls', {
                 method: 'POST',
@@ -13778,8 +14063,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const btn = document.getElementById('btnVoiceCallToggleMic');
             if (btn) {
                 btn.textContent = 'End Call';
-                btn.style.borderColor = 'rgba(239,68,68,0.6)';
-                btn.style.background = 'rgba(239,68,68,0.2)';
+                btn.style.borderColor = 'rgba(239,68,68,0.65)';
+                btn.style.background = 'rgba(239,68,68,0.22)';
                 btn.style.color = '#fecaca';
             }
             _startVoiceRecognitionTurn();
@@ -13787,6 +14072,12 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
         function stopVoiceCallSession() {
             voiceHudState.callActive = false;
+            if (_voxAudioState.silenceTimer) {
+                clearTimeout(_voxAudioState.silenceTimer);
+                _voxAudioState.silenceTimer = null;
+            }
+            _stopVoxCallTimer();
+            _stopVoxMicAnalyser();
             if (voiceHudState.activeCallId) {
                 const cid = voiceHudState.activeCallId;
                 voiceHudState.activeCallId = '';
@@ -13802,31 +14093,47 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const btn = document.getElementById('btnVoiceCallToggleMic');
             if (btn) {
                 btn.textContent = 'Start Call';
-                btn.style.borderColor = 'rgba(16,185,129,0.55)';
+                btn.style.borderColor = 'rgba(16,185,129,0.6)';
                 btn.style.background = 'rgba(16,185,129,0.2)';
                 btn.style.color = '#6ee7b7';
             }
-            _setVoiceHudMode('standby', 'CALL ENDED • Standby');
+            _setVoiceHudMode('standby', 'CALL ENDED • VOX Standby');
+            _setVoxCaption('Call ended. Tap Start Call anytime.');
         }
 
         function _startVoiceRecognitionTurn() {
             if (!voiceHudState.callActive || voiceHudState.muted) return;
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Rec) {
-                _setVoiceHudMode('standby', 'MIC API UNAVAILABLE • Use Speak Turn input below');
+                _setVoiceHudMode('standby', 'MIC API UNAVAILABLE • Type below to talk to VOX');
                 return;
             }
             try {
                 const rec = new Rec();
                 const prefs = getVoicePreferences();
-                const localeMap = { 'en': 'en-US', 'auto': 'en-US', 'hi': 'hi-IN', 'hi-en': 'en-IN', 'te': 'te-IN' };
-                rec.lang = localeMap[prefs.language] || 'en-US';
+                const localeMap = { 'en': 'en-US', 'auto': 'en-IN', 'hi': 'hi-IN', 'hi-en': 'en-IN', 'te': 'te-IN' };
+                rec.lang = localeMap[prefs.language] || 'en-IN';
                 rec.interimResults = true;
+                rec.continuous = false;
                 rec.maxAlternatives = 1;
                 voiceHudState.recognition = rec;
                 let dispatched = false;
                 let latestTranscript = '';
-                _setVoiceHudMode('listening', `LISTENING (${rec.lang}) • Speak naturally...`);
+
+                const dispatchNow = (txt) => {
+                    if (dispatched || !txt) return;
+                    dispatched = true;
+                    if (_voxAudioState.silenceTimer) {
+                        clearTimeout(_voxAudioState.silenceTimer);
+                        _voxAudioState.silenceTimer = null;
+                    }
+                    try { rec.stop(); } catch (_) {}
+                    sendVoiceTurnToAura(txt);
+                };
+
+                _setVoiceHudMode('listening', `VOX LISTENING (${rec.lang}) • Speak naturally...`);
+                _setVoxCaption('Listening to your voice...');
+
                 rec.onresult = (ev) => {
                     if (dispatched || !ev.results) return;
                     let interim = '';
@@ -13838,19 +14145,32 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                         else interim += ' ' + t;
                     }
                     latestTranscript = (finalTxt || interim).trim();
-                    if (latestTranscript && !finalTxt) {
-                        _setVoiceHudMode('listening', `HEARD: ${latestTranscript.slice(0, 56)}${latestTranscript.length > 56 ? '...' : ''}`);
+                    if (latestTranscript) {
+                        _setVoxCaption(`"${latestTranscript}"`);
                     }
                     if (finalTxt && finalTxt.trim()) {
-                        dispatched = true;
-                        try { rec.stop(); } catch (_) {}
-                        sendVoiceTurnToAura(finalTxt.trim());
+                        dispatchNow(finalTxt.trim());
+                        return;
+                    }
+                    // Ultra-Fast 750ms Silence VAD: dispatch immediately after speaker finishes a phrase!
+                    if (latestTranscript.length >= 2) {
+                        if (_voxAudioState.silenceTimer) clearTimeout(_voxAudioState.silenceTimer);
+                        _voxAudioState.silenceTimer = setTimeout(() => {
+                            if (!dispatched && latestTranscript && voiceHudState.callActive && !voiceHudState.muted) {
+                                dispatchNow(latestTranscript);
+                            }
+                        }, 750);
                     }
                 };
                 rec.onend = () => {
                     if (!dispatched && latestTranscript && voiceHudState.callActive && !voiceHudState.muted) {
-                        dispatched = true;
-                        sendVoiceTurnToAura(latestTranscript);
+                        dispatchNow(latestTranscript);
+                    } else if (!dispatched && voiceHudState.callActive && !voiceHudState.muted && voiceHudState.mode === 'listening') {
+                        setTimeout(() => {
+                            if (voiceHudState.callActive && !voiceHudState.muted && voiceHudState.mode === 'listening') {
+                                _startVoiceRecognitionTurn();
+                            }
+                        }, 250);
                     }
                 };
                 rec.onerror = () => {
@@ -13876,51 +14196,68 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (!spokenText) return;
             interruptVoicePlayback();
             _appendVoiceTranscript('YOU', spokenText);
-            _setVoiceHudMode('thinking', 'THINKING • Synthesizing AURA Core...');
+            _setVoiceHudMode('thinking', 'VOX THINKING • Ultra-Low Latency...');
+            _setVoxCaption('VOX is responding...');
             const prefs = getVoicePreferences();
+
+            const resumeAfterSpeech = () => {
+                if (voiceHudState.open && voiceHudState.callActive && !voiceHudState.muted) {
+                    _startVoiceRecognitionTurn();
+                } else if (voiceHudState.open) {
+                    _setVoiceHudMode('standby', 'VOX READY • Turn complete');
+                }
+            };
+
+            const cleanForSpeech = (raw) => String(raw || '')
+                .replace(/:::thought[\s\S]*?:::/g, ' ')
+                .replace(/```[\s\S]*?```/g, ' Code is ready in your workspace. ')
+                .replace(/[*#`>_]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .slice(0, 720);
+
+            let replyText = '';
+            let speechText = '';
             try {
-                let data = null;
-                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow() && window.AuraOfflineMobile.isMobilePhone()) {
-                    data = { reply: window.AuraOfflineMobile.generateReply(spokenText, []) };
+                if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) {
+                    replyText = window.AuraOfflineMobile.generateReply(spokenText, []);
                 } else {
+                    const vCtrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    const vTimer = vCtrl ? setTimeout(() => { try { vCtrl.abort(); } catch (_) {} }, 12000) : null;
                     const res = await apiFetch('/api/chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        signal: vCtrl ? vCtrl.signal : undefined,
                         body: JSON.stringify({
                             prompt: spokenText,
                             thread_id: currentThreadId || 'default',
                             mode: activeExecutionMode || 'auto_pilot',
-                            reasoning_mode: getActiveReasoningMode(),
-                            aura_model: typeof getActiveAuraModelTier === 'function' ? getActiveAuraModelTier() : 'aura-2.3',
+                            reasoning_mode: 'fast',
+                            aura_model: 'aura-2.0',
                             voice_turn: true,
                             preferred_language: prefs.language || 'en',
                             client_device: typeof getClientDeviceProfile === 'function' ? getClientDeviceProfile() : null
                         })
                     });
-                    data = await safeParseJson(res);
-                }
-                const replyText = (data && data.reply) ? String(data.reply) : ((data && data.error) || 'Completed.');
-                _appendVoiceTranscript('AURA', replyText);
-                const plainSpeech = (data && data.speech_text)
-                    ? String(data.speech_text)
-                    : replyText
-                        .replace(/:::thought[\s\S]*?:::/g, ' ')
-                        .replace(/```[\s\S]*?```/g, ' Code rendered in workspace. ')
-                        .replace(/[*#`>_]/g, ' ')
-                        .replace(/\s+/g, ' ')
-                        .trim()
-                        .slice(0, 750);
-                await _speakVoiceSentences(plainSpeech, () => {
-                    if (voiceHudState.open && voiceHudState.callActive && !voiceHudState.muted) {
-                        _startVoiceRecognitionTurn();
-                    } else if (voiceHudState.open) {
-                        _setVoiceHudMode('standby', 'STANDBY • Turn complete');
+                    if (vTimer) clearTimeout(vTimer);
+                    const data = await safeParseJson(res);
+                    if (res && res.ok && data && data.reply) {
+                        replyText = String(data.reply);
+                        speechText = data.speech_text ? String(data.speech_text) : '';
+                    } else {
+                        throw new Error('Fallback to local VOX brain');
                     }
-                });
-            } catch (err) {
-                _appendVoiceTranscript('SYSTEM', 'Voice turn failed: ' + err.message);
-                _setVoiceHudMode('standby', 'ERROR • Retry');
+                }
+            } catch (_) {
+                // Zero-Cost Local VOX Fallback — NEVER shows "Failed to fetch" during a call!
+                replyText = window.AuraOfflineMobile
+                    ? window.AuraOfflineMobile.generateReply(spokenText, [])
+                    : 'I heard you clearly. Let us solve this together right away.';
             }
+
+            _appendVoiceTranscript('VOX', replyText);
+            const plainSpeech = speechText || cleanForSpeech(replyText);
+            await _speakVoiceSentences(plainSpeech, resumeAfterSpeech);
         }
 
         // ---------------- 3. JARVIS Command Console & Hardware Kill Switch ----------------
@@ -13980,7 +14317,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             }
             if (auditBox) {
                 if (jarvisClientState.auditLog.length === 0) {
-                    auditBox.textContent = 'No JARVIS actions recorded yet for this operator.';
+                    auditBox.textContent = 'No VOX actions recorded yet for this operator.';
                 } else {
                     auditBox.innerHTML = jarvisClientState.auditLog.map(entry => {
                         const clr = entry.status === 'BLOCKED' || entry.status === 'HALTED' ? '#fca5a5' : '#6ee7b7';
@@ -14044,8 +14381,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     const box = document.getElementById('jarvisResultBox');
                     if (box) {
                         box.innerHTML = nextHalted
-                            ? '<strong style="color:#fecaca;">KILL SWITCH ENGAGED:</strong> All autonomous JARVIS routines blocked and chat execution downgraded to strict Ask-First verification.'
-                            : '<strong style="color:#6ee7b7;">SYSTEM RE-ARMED:</strong> Autonomous JARVIS routines restored cleanly.';
+                            ? '<strong style="color:#fecaca;">KILL SWITCH ENGAGED:</strong> All autonomous VOX routines blocked and chat execution downgraded to strict Ask-First verification.'
+                            : '<strong style="color:#6ee7b7;">SYSTEM RE-ARMED:</strong> Autonomous VOX routines restored cleanly.';
                     }
                 }
             } catch (err) {
@@ -14061,7 +14398,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const inp = document.getElementById('jarvisTargetInput');
             const box = document.getElementById('jarvisResultBox');
             const target = inp ? inp.value.trim() : '';
-            if (box) box.textContent = `Running JARVIS routine [${routineKey}]...`;
+            if (box) box.textContent = `Running VOX routine [${routineKey}]...`;
             try {
                 const res = await apiFetch('/api/jarvis/run', {
                     method: 'POST',
@@ -14080,7 +14417,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     await syncJarvisStatus();
                 }
             } catch (err) {
-                if (box) box.textContent = 'JARVIS Error: ' + err.message;
+                if (box) box.textContent = 'VOX Error: ' + err.message;
             }
         }
 
@@ -14273,13 +14610,63 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function setWallpaperGalleryCategory(cat) {
-            const allowed = ['all', 'modcars', 'environment', 'hacker', 'auto'];
+            const allowed = ['all', 'modcars', 'environment', 'aesthetic', 'kids', 'hacker', 'developer', 'auto'];
             _wpGalleryCategory = allowed.includes(cat) ? cat : 'all';
             allowed.forEach(c => {
                 const b = document.getElementById('wpCatBtn_' + c);
                 if (b) b.classList.toggle('active', c === _wpGalleryCategory);
             });
+            if (window.AuraWallpaperEngine && typeof window.AuraWallpaperEngine.setPreferredAudience === 'function') {
+                window.AuraWallpaperEngine.setPreferredAudience(_wpGalleryCategory);
+            }
             renderWallpaperGalleries();
+        }
+
+        function syncWallpaperAutomationUI() {
+            const eng = window.AuraWallpaperEngine;
+            const locked = eng && typeof eng.isLocked === 'function' ? eng.isLocked() : false;
+            const hr = new Date().getHours();
+            const todLabel = (hr >= 6 && hr < 18) ? 'Daytime' : 'Night';
+            const qBtn = document.getElementById('btnQuickWpLockToggle');
+            const qSub = document.getElementById('quickWpModeSub');
+            const sBtn = document.getElementById('btnSettingsWpLockToggle');
+            const sSub = document.getElementById('settingsWpAutomationSub');
+            if (qBtn) {
+                qBtn.textContent = locked ? '🔒 Locked Permanently · Tap for Auto 10m' : `Auto 10m (${todLabel}) · Tap to Lock`;
+                qBtn.style.borderColor = locked ? 'rgba(250,204,21,0.48)' : 'rgba(52,211,153,0.42)';
+                qBtn.style.background = locked ? 'rgba(250,204,21,0.12)' : 'rgba(16,185,129,0.12)';
+                qBtn.style.color = locked ? '#fde68a' : '#6ee7b7';
+            }
+            if (qSub) {
+                qSub.textContent = locked
+                    ? 'Wallpaper pinned permanently (Auto-rotation paused)'
+                    : `${todLabel} Auto-Cycle every 10 min · Scroll + Click Motion`;
+                qSub.style.color = locked ? '#fde68a' : '#6ee7b7';
+            }
+            if (sBtn) {
+                sBtn.textContent = locked ? '🔒 Permanently Locked (Enable Auto 10m)' : 'Lock Current Permanently';
+            }
+            if (sSub) {
+                sSub.textContent = locked
+                    ? 'Current wallpaper is locked permanently across sessions. Click button to re-enable 10-minute Day/Night Auto-Cycle.'
+                    : `Smart ${todLabel} Auto-Cycle active (changes every 10 minutes) — or click Lock Current Permanently anytime.`;
+                sSub.style.color = locked ? '#fde68a' : '#6ee7b7';
+            }
+        }
+
+        function toggleWallpaperPermanentLock() {
+            if (!window.AuraWallpaperEngine) return;
+            const nowLocked = !window.AuraWallpaperEngine.isLocked();
+            window.AuraWallpaperEngine.setLocked(nowLocked);
+            syncWallpaperAutomationUI();
+            if (typeof showBridgeToast === 'function') {
+                showBridgeToast(
+                    nowLocked
+                        ? 'Current wallpaper locked permanently.'
+                        : 'Smart Day/Night 10-minute Auto-Cycle enabled.',
+                    nowLocked ? '#fde68a' : '#6ee7b7'
+                );
+            }
         }
 
         function setWallpaperSearchQuery(q) {
@@ -14352,6 +14739,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function cycleNextWallpaper() {
+            if (window.AuraWallpaperEngine && typeof window.AuraWallpaperEngine.pickNextSmartWallpaperId === 'function') {
+                const nextId = window.AuraWallpaperEngine.pickNextSmartWallpaperId(_getActiveWallpaperId(), _wpGalleryCategory);
+                applyCuratedWallpaper(nextId);
+                return;
+            }
             const allIds = _getAllCuratedWallpapers().map(w => w.id).concat(_loadSavedCustomWallpapers().map(c => c.id));
             const cur = _getActiveWallpaperId();
             const idx = allIds.indexOf(cur);
@@ -14408,21 +14800,30 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     return true;
                 });
                 settingsGrid.innerHTML = filtered.length ? filtered.map(w => {
-                    const badgeCls = w.category === 'modcars' ? 'modcars' : (w.category === 'environment' ? 'environment' : (w.category === 'hacker' ? 'hacker' : (w.category === 'auto' ? 'auto' : '')));
-                    const badgeTxt = w.category === 'modcars' ? 'MOD CAR' : (w.category === 'environment' ? 'ENV' : (w.category === 'hacker' ? 'HACKER' : (w.category === 'auto' ? 'BMW/AUTO' : 'MATTE')));
+                    const badgeMap = {
+                        modcars: ['modcars', 'MOD CAR'],
+                        environment: ['environment', 'NATURE'],
+                        aesthetic: ['environment', 'AESTHETIC'],
+                        kids: ['auto', 'KIDS & SPACE'],
+                        hacker: ['hacker', 'HACKER'],
+                        developer: ['auto', 'DEVELOPER'],
+                        auto: ['auto', 'BMW/AUTO'],
+                    };
+                    const [badgeCls, badgeTxt] = badgeMap[w.category] || ['', 'MATTE'];
+                    const todTag = w.timeOfDay === 'day' ? '☀' : (w.timeOfDay === 'night' ? '🌙' : '');
                     const fallbackBg = w.preview || `radial-gradient(circle at 50% 35%, ${w.g || 'rgba(122,162,255,0.2)'}, ${w.bg || '#08090c'})`;
-                    return `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${escapeHtml(w.id)}" data-live-wp="${w.engine && w.engine !== 'none' ? '1' : '0'}" onclick="applyCuratedWallpaper('${escapeHtml(w.id)}')" title="${escapeHtml(w.name)} — Scroll: ${escapeHtml(w.motion || 'Static')}" style="background:${fallbackBg};">` +
-                        `<span class="wallpaper-thumb-badge ${badgeCls}">${badgeTxt}</span>` +
+                    return `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${escapeHtml(w.id)}" data-live-wp="${w.engine && w.engine !== 'none' ? '1' : '0'}" onclick="applyCuratedWallpaper('${escapeHtml(w.id)}')" title="${escapeHtml(w.name)} — ${escapeHtml(w.motion || 'Static')}" style="background:${fallbackBg};">` +
+                        `<span class="wallpaper-thumb-badge ${badgeCls}">${todTag ? todTag + ' ' : ''}${badgeTxt}</span>` +
                         `<span class="wallpaper-thumb-label">${escapeHtml(w.name)}<span class="wallpaper-thumb-motion">${escapeHtml(w.motion || '')}</span></span>` +
                         `</button>`;
                 }).join('') : '<div style="grid-column:1/-1; font-size:12px; color:#8b93a3; padding:14px; text-align:center;">No matching wallpapers found.</div>';
                 _hydrateWallpaperThumbs(settingsGrid);
             }
 
-            // Quick Popover curated top showcase (Obsidian + Modified Hypercars + Environments + Hacker + BMW)
+            // Quick Popover curated balanced showcase across ALL 6 global audiences (Cars, Nature, Aesthetic, Kids/Space, Hacker, Developer)
             const quickGrid = document.getElementById('quickWallpaperGrid');
             if (quickGrid) {
-                const quickPickIds = ['obsidian', 'modcar_01', 'modcar_02', 'modcar_06', 'modcar_11', 'modcar_16', 'env_01', 'env_06', 'hacker_07', 'auto_02'];
+                const quickPickIds = ['modcar_01', 'modcar_06', 'modcar_13', 'env_01', 'env_03', 'aesthetic_01', 'aesthetic_06', 'kids_01', 'hacker_04', 'dev_01'];
                 const quickList = quickPickIds.map(id => catalog.find(w => w.id === id)).filter(Boolean);
                 const listToUse = quickList.length ? quickList : catalog.slice(0, 10);
                 quickGrid.innerHTML = listToUse.map(w => {
@@ -14433,6 +14834,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 }).join('');
                 _hydrateWallpaperThumbs(quickGrid);
             }
+            syncWallpaperAutomationUI();
 
             const customList = _loadSavedCustomWallpapers();
             const buildCustomHtml = () => customList.map(c =>
@@ -14569,20 +14971,28 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
                 const savedWallId = localStorage.getItem('aura_active_wallpaper_id');
                 const legacyWall = localStorage.getItem('aura_custom_wallpaper');
-                if (savedWallId) {
+                const eng = window.AuraWallpaperEngine;
+                const isPinned = eng && typeof eng.isLocked === 'function' ? eng.isLocked() : false;
+                if (isPinned && savedWallId) {
                     applyCuratedWallpaper(savedWallId);
-                } else if (legacyWall) {
+                } else if (legacyWall && isPinned) {
                     _applyCustomWallpaperUrl(legacyWall);
                     renderWallpaperGalleries();
+                } else if (eng && typeof eng.getSmartInitialWallpaperId === 'function') {
+                    // Automatic Day/Night Smart Showcase (starts with Modified Supercar matching Day/Night & auto-cycles every 10 min!)
+                    applyCuratedWallpaper(eng.getSmartInitialWallpaperId());
+                } else if (savedWallId) {
+                    applyCuratedWallpaper(savedWallId);
                 } else {
-                    applyCuratedWallpaper('obsidian');
+                    applyCuratedWallpaper('modcar_01');
                 }
-                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.34';
+                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.42';
                 updateWallpaperDim(savedDim);
                 const savedBlur = localStorage.getItem('aura_wallpaper_blur') || '0';
                 updateWallpaperBlur(savedBlur);
                 const savedMotion = localStorage.getItem('aura_wallpaper_scroll_intensity') || '1.0';
                 updateWallpaperScrollMotion(savedMotion);
+                syncWallpaperAutomationUI();
             } catch (_) {}
 
             const voiceOverlay = document.getElementById('voiceCallOverlay');
@@ -14650,7 +15060,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function isCurrentUserKeyAdmin() {
-            const uname = String((currentUser && currentUser.username) || '').trim().toLowerCase();
+            const uname = String((currentUser && currentUser.username) || '').trim().toLowerCase().replace(/^@+/, '');
             return uname === 'ig.ahmed.irl';
         }
 
@@ -15012,8 +15422,10 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const isAdmin = isCurrentUserKeyAdmin();
             const hdrAdm = document.getElementById('headerAdminBtn');
             const sbAdm = document.getElementById('sidebarAdminBtn');
+            const secCard = document.getElementById('ownerAdminSecurityCard');
             if (hdrAdm) hdrAdm.style.display = isAdmin ? 'inline-flex' : 'none';
             if (sbAdm) sbAdm.style.display = isAdmin ? 'flex' : 'none';
+            if (secCard) secCard.style.display = isAdmin ? 'flex' : 'none';
 
             const sec = document.getElementById('adminKeyVaultSection');
             if (sec) {
