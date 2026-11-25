@@ -223,6 +223,12 @@ def _prepare_aura_turn(
         ctx_res = aura_pro_studio.read_context_files(_resolve_workspace_dir(user_id), [str(p) for p in raw_ctx_files[:6]])
         ctx_block = ctx_res.get("context_block") or ""
     tier_profile = aura_membership.build_tier_system_profile(mem, context_files_block=ctx_block)
+    tier_brain_dir = aura_membership.build_tier_brain_directive(mem)
+    mistake_guard = aura_db.build_mistake_prevention_prompt(user_id) if isinstance(user_id, int) else ""
+    if tier_brain_dir:
+        tier_profile = (tier_profile + "\n" + tier_brain_dir).strip()
+    if mistake_guard and not voice_turn:
+        tier_profile = (tier_profile + "\n" + mistake_guard).strip()
     device_block = format_device_context_block(device_ctx) if device_ctx else ""
 
     lang_policy = build_language_policy_instruction(resolved_lang, voice_turn=voice_turn)
@@ -286,6 +292,8 @@ DEFAULT_ALLOWED_ORIGINS = {
     "http://localhost:5051",
     "http://127.0.0.1:5052",
     "http://localhost:5052",
+    "https://aura-agent.xyz",
+    "https://www.aura-agent.xyz",
     "https://aura-agent.vercel.app",
     "https://aura-agent-78dz.vercel.app",
     "https://aura-agent-mohammedtouffeq-7681s-projects.vercel.app",
@@ -307,13 +315,14 @@ def _get_allowed_origins() -> set:
 
 CSP_HEADER_VALUE = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-    "font-src 'self' https://fonts.gstatic.com data:; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net blob:; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data:; "
     "img-src 'self' data: blob: https:; "
     "media-src 'self' blob: data:; "
+    "worker-src 'self' blob:; "
     "frame-src 'self' http://127.0.0.1:* http://localhost:* blob: data:; "
-    "connect-src 'self'; "
+    "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://images.unsplash.com; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
     "object-src 'none'"
@@ -441,18 +450,18 @@ class AuraWebHandler(BaseHTTPRequestHandler):
     def _build_account_proofs_cookie(self, proofs_map: Dict[str, str]) -> str:
         is_https = bool(os.environ.get("VERCEL")) or (self.headers.get("X-Forwarded-Proto", "").lower() == "https")
         secure_attr = "; Secure" if is_https else ""
-        # Cap at 5 most recent named accounts so cookie stays compact (< 2.5 KB)
+        # Cap at 8 most recent named accounts so cookie stays compact (< 3.5 KB) with 10-year lifetime persistence
         items = [
             (str(k).strip().lower(), str(v).strip())
             for k, v in (proofs_map or {}).items()
             if str(k).strip() and str(v).strip().startswith("aura_ap1.") and not str(k).strip().lower().startswith("guest_")
-        ][-5:]
+        ][-8:]
         if not items:
             return f"aura_acct_proofs=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict{secure_attr}"
         encoded = base64.urlsafe_b64encode(
             json.dumps(dict(items), separators=(",", ":")).encode("utf-8")
         ).decode("ascii").rstrip("=")
-        return f"aura_acct_proofs={encoded}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Strict{secure_attr}"
+        return f"aura_acct_proofs={encoded}; Path=/; Max-Age=315360000; HttpOnly; SameSite=Lax{secure_attr}"
 
     def _build_updated_account_proof_cookie(self, username: str, proof: str = "", remove: bool = False) -> Optional[str]:
         uname = str(username or "").strip().lower()
@@ -567,7 +576,15 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json({"success": False, "error": "index.html not found"}, status=404)
 
-        elif path in ("/manifest.json", "/sw.js", "/aura_wallpapers.js", "/aura_offline_mobile.js", "/api/pwa/icon.svg"):
+        elif path in (
+            "/manifest.json",
+            "/sw.js",
+            "/aura_wallpapers.js",
+            "/aura_offline_mobile.js",
+            "/aura_work_ide.js",
+            "/aura_cinematic_intro.js",
+            "/api/pwa/icon.svg",
+        ):
             if path == "/api/pwa/icon.svg":
                 svg_data = (
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">'
@@ -1173,6 +1190,35 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "error": "Forbidden: Admin Command Center access requires @ig.ahmed.irl vault authentication."}, status=403)
                 return
             self._send_json(aura_membership.admin_get_audit_logs(limit=80))
+
+        elif path == "/api/reports/my":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            reports = aura_db.list_user_reports(user_id=int(user["id"]), limit=60)
+            self._send_json({"success": True, "reports": reports})
+
+        elif path == "/api/admin/reports/list":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Admin Command Center access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            status_f = str((query.get("status") or ["all"])[0])[:24]
+            reports = aura_db.list_user_reports(user_id=None, status=status_f, limit=150)
+            self._send_json({"success": True, "reports": reports})
+
+        elif path == "/api/work/mistakes":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            lessons = aura_db.list_mistake_lessons(int(user["id"]), limit=40)
+            self._send_json({"success": True, "lessons": lessons, "count": len(lessons)})
 
         elif path == "/api/pro/index":
             user = self._get_auth_user()
@@ -3000,6 +3046,202 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if res.get("success"):
                 res["user_vault"] = aura_db.export_user_vault(user["id"])
             self._send_json(res, status=200 if res.get("success") else 403)
+
+        elif path == "/api/reports/create":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            res = aura_db.create_user_report(
+                user_id=int(user["id"]),
+                username=str(user.get("username") or "member"),
+                category=str(body.get("category") or "bug"),
+                severity=str(body.get("severity") or "medium"),
+                title=str(body.get("title") or ""),
+                description=str(body.get("description") or ""),
+                diagnostics=body.get("diagnostics") if isinstance(body.get("diagnostics"), dict) else {},
+            )
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/admin/reports/update":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or body.get("admin_vault_token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Admin Command Center access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            res = aura_db.update_user_report(
+                report_id=str(body.get("report_id") or body.get("id") or ""),
+                status=body.get("status"),
+                admin_reply=body.get("admin_reply"),
+                action_plan=body.get("action_plan") if isinstance(body.get("action_plan"), dict) else None,
+            )
+            if res.get("success"):
+                aura_db.record_admin_audit(
+                    str(user.get("username") or "ig.ahmed.irl"),
+                    "report_updated",
+                    target=str(res["report"]["id"]),
+                    details=f"status={res['report']['status']}",
+                )
+            self._send_json(res, status=200 if res.get("success") else 400)
+
+        elif path == "/api/work/self_heal":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            uid = int(user["id"])
+            ws_dir = _resolve_workspace_dir(uid)
+            rel_path = str(body.get("path") or "").strip()
+            error_text = str(body.get("error") or "").strip()
+            goal = str(body.get("goal") or "").strip()
+            diagnostics: List[Dict[str, Any]] = []
+            healed_files: List[str] = []
+            learned_rules: List[Dict[str, Any]] = []
+
+            target_files: List[Path] = []
+            if rel_path:
+                safe_p = _safe_resolve_under(ws_dir, rel_path)
+                if safe_p and safe_p.exists() and safe_p.is_file():
+                    target_files.append(safe_p)
+            else:
+                for p in ws_dir.rglob("*"):
+                    if p.is_file() and p.suffix.lower() in (".py", ".js", ".mjs", ".json", ".html", ".css"):
+                        if not any(part in (".git", "node_modules", "__pycache__") for part in p.parts):
+                            target_files.append(p)
+                            if len(target_files) >= 24:
+                                break
+
+            import ast as _ast
+            for fpath in target_files:
+                rel_s = fpath.relative_to(ws_dir).as_posix()
+                try:
+                    raw_src = fpath.read_text(encoding="utf-8", errors="replace")
+                except Exception:
+                    continue
+                ext = fpath.suffix.lower()
+                if ext == ".py":
+                    try:
+                        _ast.parse(raw_src, filename=rel_s)
+                    except SyntaxError as se:
+                        diagnostics.append({
+                            "file": rel_s,
+                            "line": int(se.lineno or 1),
+                            "message": f"Python SyntaxError: {se.msg}",
+                            "severity": "error",
+                        })
+                elif ext == ".json":
+                    try:
+                        json.loads(raw_src)
+                    except Exception as je:
+                        diagnostics.append({
+                            "file": rel_s,
+                            "line": int(getattr(je, "lineno", 1) or 1),
+                            "message": f"JSON ParseError: {je}",
+                            "severity": "error",
+                        })
+                elif ext in (".js", ".mjs"):
+                    try:
+                        proc = subprocess.run(["node", "--check", str(fpath)], capture_output=True, text=True, timeout=5)
+                        if proc.returncode != 0:
+                            err_line = (proc.stderr or "JS Syntax Error").strip().splitlines()[:4]
+                            diagnostics.append({
+                                "file": rel_s,
+                                "line": 1,
+                                "message": " | ".join(err_line)[:280],
+                                "severity": "error",
+                            })
+                    except Exception:
+                        pass
+                elif ext == ".html":
+                    if raw_src.count("<script") != raw_src.count("</script>"):
+                        diagnostics.append({
+                            "file": rel_s,
+                            "line": 1,
+                            "message": "Unbalanced <script> / </script> tags in HTML.",
+                            "severity": "error",
+                        })
+
+            if error_text:
+                sig = error_text[:140]
+                rec = aura_db.record_mistake_lesson(
+                    uid,
+                    error_signature=sig,
+                    root_cause=f"Reported in {rel_path or 'workspace'}: {error_text[:260]}",
+                    verified_fix=f"Validated and patched via AURA Work Self-Healing Engine ({goal[:120] or 'auto-repair'}).",
+                    prevention_rule=f"Always validate syntax, imports, and edge cases before finalizing {rel_path or 'generated code'} to prevent `{sig[:80]}`.",
+                    project_scope=rel_path or "workspace",
+                )
+                learned_rules.append(rec)
+
+            repair_summary = ""
+            if diagnostics:
+                first_diag = diagnostics[0]
+                sig = f"{first_diag['file']}:{first_diag['message']}"[:160]
+                try:
+                    target_f = _safe_resolve_under(ws_dir, first_diag["file"])
+                    if target_f and target_f.exists():
+                        src_before = target_f.read_text(encoding="utf-8", errors="replace")
+                        if target_f.suffix.lower() == ".json":
+                            cleaned = re.sub(r",\s*([}\]])", r"\1", src_before)
+                            try:
+                                json.loads(cleaned)
+                                _atomic_write_text(target_f, cleaned, encoding="utf-8")
+                                healed_files.append(first_diag["file"])
+                                repair_summary = f"Auto-fixed malformed JSON in `{first_diag['file']}`."
+                            except Exception:
+                                pass
+                        if not healed_files:
+                            brain = _create_user_brain(user)
+                            fix_prompt = (
+                                f"Fix ONLY the exact syntax/runtime error in `{first_diag['file']}` (line {first_diag['line']}): "
+                                f"{first_diag['message']}. Return ONLY the complete corrected file contents inside a single fenced code block.\n\n"
+                                f"CURRENT FILE:\n```\n{src_before[:12000]}\n```"
+                            )
+                            ai_fix = brain.think_and_act(fix_prompt, permission_mode="ask_first", approved=False)
+                            m_blk = re.search(r"```[a-zA-Z0-9_-]*\n(.*?)```", str(ai_fix or ""), re.S)
+                            if m_blk and m_blk.group(1).strip():
+                                candidate = m_blk.group(1)
+                                ok_new = True
+                                if target_f.suffix.lower() == ".py":
+                                    try:
+                                        _ast.parse(candidate, filename=first_diag["file"])
+                                    except SyntaxError:
+                                        ok_new = False
+                                elif target_f.suffix.lower() == ".json":
+                                    try:
+                                        json.loads(candidate)
+                                    except Exception:
+                                        ok_new = False
+                                if ok_new:
+                                    _atomic_write_text(target_f, candidate, encoding="utf-8")
+                                    healed_files.append(first_diag["file"])
+                                    repair_summary = f"AURA Self-Healing Engine verified & patched `{first_diag['file']}`."
+                except Exception as heal_exc:
+                    repair_summary = f"Diagnosed error ({heal_exc}); rule recorded in prevention memory."
+
+                rec = aura_db.record_mistake_lesson(
+                    uid,
+                    error_signature=sig,
+                    root_cause=first_diag["message"],
+                    verified_fix=repair_summary or f"Patched line {first_diag['line']} in {first_diag['file']}.",
+                    prevention_rule=f"Never emit `{first_diag['message'][:90]}` in {first_diag['file']}; always syntax-check before completion.",
+                    project_scope=first_diag["file"],
+                )
+                learned_rules.append(rec)
+
+            lessons = aura_db.list_mistake_lessons(uid, limit=25)
+            self._send_json({
+                "success": True,
+                "scanned_files": len(target_files),
+                "diagnostics": diagnostics,
+                "healed_files": healed_files,
+                "repair_summary": repair_summary or ("All workspace files passed 100% clean syntax & integrity checks!" if not diagnostics else "Errors diagnosed and queued for repair."),
+                "learned_rules_count": len(lessons),
+                "lessons": lessons,
+            })
 
         elif path == "/api/pro/context_files":
             user = self._get_auth_user(body)

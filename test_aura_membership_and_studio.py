@@ -183,7 +183,8 @@ def test_exclusive_admin_vault_expiry_renewal_disable_and_quotas(membership_serv
     assert act1["membership"]["id"] == "tier_3"
     assert act1["membership"]["days_remaining_int"] == 20
     assert act1["quota"]["limit"] == 100 and act1["quota"]["remaining"] == 70
-    assert act1["welcome"]["plan_name"] == "AURA Sovereign"
+    assert act1["welcome"]["plan_name"] == "AURA Plus"
+    assert act1["welcome"]["brain_boost"] and act1["welcome"]["activated_label"]
     assert len(act1["welcome"]["unlocked_features"]) >= 5
 
     # 7. Another user CANNOT steal/reuse an already bound key
@@ -589,3 +590,117 @@ def test_admin_command_center_users_timed_keys_gift_renew_ban_and_audit(membersh
         "adminDeleteKey",
     ):
         assert marker in html, f"Missing Admin Command Center UI hook: {marker}"
+
+
+def test_liberty_mega_upgrade_plus_pro_ultra_reports_work_self_heal_and_lifetime_login(membership_server, monkeypatch):
+    base = membership_server["base_url"]
+    admin_pw = membership_server["admin_pw"]
+
+    # 1. Verify Plus / Pro / Ultra tier branding & escalating brain directives
+    tiers = {t["id"]: t for t in aura_membership.list_public_tiers()}
+    assert tiers["tier_3"]["name"] == "AURA Plus" and tiers["tier_3"]["price_usd"] == 40
+    assert tiers["tier_4"]["name"] == "AURA Pro" and len(tiers["tier_4"]["unlocked_voices"]) >= 6
+    assert tiers["tier_5"]["name"] == "AURA Ultra" and tiers["tier_5"]["unlimited"] is True
+    assert "+40%" in aura_membership.build_tier_brain_directive(tiers["tier_3"])
+    assert "+60%" in aura_membership.build_tier_brain_directive(tiers["tier_4"])
+    assert "ANTIGRAVITY" in aura_membership.build_tier_brain_directive(tiers["tier_5"]).upper()
+
+    # 2. Lifetime login seed stability (VERCEL_PROJECT_PRODUCTION_URL excluded from primary seed)
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("VERCEL_PROJECT_ID", "prj_stable_123")
+    monkeypatch.setenv("VERCEL_PROJECT_PRODUCTION_URL", "aura-agent-78dz.vercel.app")
+    seed_a = aura_db._resolve_shared_deployment_seed(include_legacy_url=False)
+    monkeypatch.setenv("VERCEL_PROJECT_PRODUCTION_URL", "aura-agent.xyz")
+    seed_b = aura_db._resolve_shared_deployment_seed(include_legacy_url=False)
+    assert seed_a == seed_b and "aura-agent.xyz" not in seed_b
+
+    # 3. Owner cold-start zero-plaintext lifetime login works cleanly for @ig.ahmed.irl
+    st_own, own_login = _http_json(
+        f"{base}/api/auth/login",
+        "POST",
+        {"username": "@Ig.Ahmed.IRL", "password": admin_pw},
+    )
+    assert st_own == 200 and own_login["success"] and own_login["user"]["username"] == "ig.ahmed.irl"
+    a_hdrs = {"Authorization": f"Bearer {own_login['token']}"}
+    st_un, un_res = _http_json(f"{base}/api/admin/keys/unlock", "POST", {"password": admin_pw}, headers=a_hdrs)
+    assert st_un == 200 and un_res["success"]
+    av_hdrs = {**a_hdrs, "X-Admin-Vault-Token": un_res["admin_vault_token"]}
+
+    # 4. Complaints & Reports with Automated 4-Step Action Planning + Owner Reply
+    st_u, u_reg = _http_json(f"{base}/api/auth/register", "POST", {"username": "dev_kabir", "password": "KabirPass!2026"})
+    assert st_u == 200
+    u_hdrs = {"Authorization": f"Bearer {u_reg['token']}"}
+
+    st_cr, cr_res = _http_json(
+        f"{base}/api/reports/create",
+        "POST",
+        {
+            "category": "ui",
+            "severity": "high",
+            "title": "Preview port status card alignment",
+            "description": "On 1366px laptop screens, the live preview reload button wraps slightly.",
+            "diagnostics": {"tier": "AURA Plus", "model": "aura-2.3"},
+        },
+        headers=u_hdrs,
+    )
+    assert st_cr == 200 and cr_res["success"]
+    rid = cr_res["report"]["id"]
+    assert rid.startswith("AURA-RPT-")
+    assert len(cr_res["report"]["action_plan"]["steps"]) == 4
+
+    # Non-admin blocked from admin reports list
+    assert _http_json(f"{base}/api/admin/reports/list", "GET", headers=u_hdrs)[0] == 403
+
+    # Owner inspects report, updates status to resolved & sends reply
+    st_rl, rl_res = _http_json(f"{base}/api/admin/reports/list", "GET", headers=av_hdrs)
+    assert st_rl == 200 and any(r["id"] == rid for r in rl_res["reports"])
+    st_up, up_res = _http_json(
+        f"{base}/api/admin/reports/update",
+        "POST",
+        {"report_id": rid, "status": "resolved", "admin_reply": "Fixed in release v23 — verified on 1366px!"},
+        headers=av_hdrs,
+    )
+    assert st_up == 200 and up_res["report"]["status"] == "resolved"
+    assert all(s["status"] == "done" for s in up_res["report"]["action_plan"]["steps"])
+
+    st_my, my_res = _http_json(f"{base}/api/reports/my", "GET", headers=u_hdrs)
+    assert st_my == 200 and my_res["reports"][0]["admin_reply"].startswith("Fixed in release")
+
+    # 5. Work IDE Self-Healing Mistake-Prevention Memory (catches malformed JSON, auto-fixes & memorizes rule!)
+    st_sv, _ = _http_json(
+        f"{base}/api/workspace/save",
+        "POST",
+        {"path": "broken_config.json", "content": '{"app": "AURA", "port": 5050,}'},
+        headers=u_hdrs,
+    )
+    assert st_sv == 200
+    st_sh, sh_res = _http_json(
+        f"{base}/api/work/self_heal",
+        "POST",
+        {"path": "broken_config.json"},
+        headers=u_hdrs,
+    )
+    assert st_sh == 200 and sh_res["success"]
+    assert "broken_config.json" in sh_res["healed_files"]
+    assert sh_res["learned_rules_count"] >= 1
+    st_mk, mk_res = _http_json(f"{base}/api/work/mistakes", "GET", headers=u_hdrs)
+    assert st_mk == 200 and mk_res["count"] >= 1
+    assert "NEVER REPEAT THESE PAST ERRORS" in aura_db.build_mistake_prevention_prompt(int(u_reg["user"]["id"]))
+
+    # 6. Verify static assets & HTML wiring for Work IDE, 60s Liberty Intro, Chat|Work switcher & Reports tab
+    root = Path(__file__).resolve().parent
+    assert (root / "aura_work_ide.js").exists()
+    assert (root / "aura_cinematic_intro.js").exists()
+    html = (root / "index.html").read_text(encoding="utf-8")
+    for marker in (
+        'src="/aura_work_ide.js"',
+        'src="/aura_cinematic_intro.js"',
+        'id="auraModeSwitcher"',
+        'id="settingsTab_workide"',
+        'id="settingsTab_reports"',
+        'id="admTabPane_reports"',
+        "AuraCinematicIntro.play",
+        "downloadLifetimeAccountKey",
+        "submitUserReportWithPlan",
+    ):
+        assert marker in html, f"Missing Liberty Mega Upgrade UI marker: {marker}"

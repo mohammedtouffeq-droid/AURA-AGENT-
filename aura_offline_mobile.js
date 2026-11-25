@@ -87,6 +87,19 @@
         return typeof navigator !== 'undefined' && navigator.onLine === false;
     }
 
+    const OFFLINE_ALLOWED_MODEL = 'aura-2.0';
+
+    function isModelOfflineCapable(modelId) {
+        const m = String(modelId || '').trim().toLowerCase();
+        return m === 'aura-2.0' || m === 'aura 2.0' || m === '2.0';
+    }
+
+    function isDeveloperWorkIntent(text) {
+        const t = String(text || '').trim().toLowerCase();
+        if (!t) return false;
+        return /\b(open vs\s*code|vs\s*code|work ide|launch work|run terminal|npm run|pip install|git push|deploy to vercel|localhost:\d+|start dev server|build full[\s-]?stack|create react app|scaffold repo|compile project|run pytest)\b/i.test(t);
+    }
+
     function enforceDeviceOfflinePolicy() {
         const modal = document.getElementById('auraDesktopOfflineModal');
         const labelEl = document.getElementById('auraOfflineModalDeviceLabel');
@@ -95,14 +108,15 @@
 
         if (labelEl) labelEl.textContent = friendly;
 
-        // UNIVERSAL 0-COST OFFLINE POLICY:
-        // Zero blocking popups & zero "Failed to fetch" errors on ANY device (Phone, Tablet, Laptop, Desktop).
-        // When offline or network drops, AURA runs seamlessly via its 0-cost on-device Sovereign Brain.
+        // STRICT SINGLE-MODEL OFFLINE POLICY:
+        // Only AURA 2.0 supports 0-cost Offline Simple Chat (on Phone, Tablet, Laptop, Desktop).
+        // Developer Work IDE & other models (AURA 2.3 / 2.6 / Cloud) require Wi-Fi / Internet.
         if (modal) modal.style.display = 'none';
         return {
             blocked: false,
             device: friendly,
-            mode: isOfflineNow() ? 'universal_offline_zero_cost' : 'online',
+            offlineModel: OFFLINE_ALLOWED_MODEL,
+            mode: isOfflineNow() ? 'aura_20_offline_simple_chat' : 'online',
         };
     }
 
@@ -548,8 +562,22 @@
         const renderMd = opts.renderMarkdown;
         const scrollFn = opts.scrollToBottom;
         const onComplete = opts.onComplete;
+        const activeModel = String((opts && opts.modelId) || OFFLINE_ALLOWED_MODEL);
 
-        const fullReply = generateReply(prompt, opts.history || []);
+        let fullReply;
+        if (opts && opts.enforceSingleOfflineModel && !isModelOfflineCapable(activeModel)) {
+            const isHi = _detectHinglish(prompt);
+            fullReply = isHi
+                ? `**Wi-Fi / Internet Required for \`${activeModel.toUpperCase()}\`**\n\nOffline mode mein sirf **AURA 2.0 (Simple Chat)** kaam karta hai — bina Wi-Fi aur bina data ke ₹0 cost par!\n\nNeeche model selector se **AURA 2.0** choose karo aur simple chat continue karo. Developer Work / Coding IDE ke liye Wi-Fi zaroori hai.`
+                : `**Internet Required for \`${activeModel.toUpperCase()}\`**\n\nOnly **AURA 2.0** supports offline simple chat with zero Wi-Fi or mobile data.\n\nSwitch the model selector to **AURA 2.0 (Offline Chat)** to continue chatting offline, or reconnect to Wi-Fi for \`${activeModel.toUpperCase()}\` and Developer Work.`;
+        } else if (isOfflineNow() && isDeveloperWorkIntent(prompt)) {
+            const isHi = _detectHinglish(prompt);
+            fullReply = isHi
+                ? `**Developer Work & VS Code IDE ke liye Wi-Fi zaroori hai**\n\n**AURA 2.0 Offline Mode** sirf **Simple Chat** (sawaal-jawaab, math, notes, study plan, writing, ideas) ke liye design kiya gaya hai.\n\nJaise hi Wi-Fi connect hoga, top bar se **Work** mode open karke poora VS Code IDE, terminal, extensions aur live preview chalao!`
+                : `**Wi-Fi Required for Developer Work & VS Code IDE**\n\n**AURA 2.0 Offline Mode** is strictly for **Simple Chat** (Q&A, math, study plans, writing, and local notes).\n\nReconnect to Wi-Fi and switch to **Work** mode on a PC to build full apps, run terminal commands, and use VS Code extensions.`;
+        } else {
+            fullReply = generateReply(prompt, opts.history || []);
+        }
         if (turnData && turnData.thinking) turnData.thinking.style.display = 'none';
 
         // Stream smoothly word-by-word just like live SSE
@@ -596,6 +624,9 @@
     }
 
     global.AuraOfflineMobile = {
+        OFFLINE_ALLOWED_MODEL,
+        isModelOfflineCapable,
+        isDeveloperWorkIntent,
         detectDeviceNow,
         getFriendlyDeviceLabel,
         isMobilePhone,

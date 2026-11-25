@@ -715,6 +715,15 @@
             if (spec && spec.photo) return spec.photo;
             return '';
         },
+
+        getTierSignatureWallpaperId(rank) {
+            const slot = getTimeOfDaySlot();
+            const r = Number(rank || 0);
+            if (r >= 5) return slot === 'day' ? 'modcar_06' : 'modcar_03'; // Ultra Flagship Pagani / Bugatti Carbon
+            if (r >= 4) return slot === 'day' ? 'modcar_05' : 'env_aurora_peaks'; // Pro Executive Sapphire
+            if (r >= 3) return slot === 'day' ? 'modcar_04' : 'modcar_01'; // Plus Champagne Atelier
+            return this.getSmartInitialWallpaperId();
+        },
     };
 
     global.AURA_WALLPAPERS_100 = CATALOG;

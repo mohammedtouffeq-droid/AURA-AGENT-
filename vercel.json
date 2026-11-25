@@ -11,7 +11,7 @@
       ]
     },
     {
-      "source": "/(|index\\.html|sw\\.js|aura_wallpapers\\.js|aura_offline_mobile\\.js)",
+      "source": "/(|index\\.html|sw\\.js|aura_wallpapers\\.js|aura_offline_mobile\\.js|aura_work_ide\\.js|aura_cinematic_intro\\.js)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
@@ -27,11 +27,11 @@
       "destination": "/api/index?__aura_path__=/v1/$1"
     },
     {
-      "source": "/(manifest\\.json|sw\\.js|aura_wallpapers\\.js|aura_offline_mobile\\.js|remote)",
+      "source": "/(manifest\\.json|sw\\.js|aura_wallpapers\\.js|aura_offline_mobile\\.js|aura_work_ide\\.js|aura_cinematic_intro\\.js|remote)",
       "destination": "/api/index?__aura_path__=/$1"
     },
     {
-      "source": "/((?!api/|v1/|manifest\\.json|sw\\.js|aura_wallpapers\\.js|aura_offline_mobile\\.js|remote).*)",
+      "source": "/((?!api/|v1/|manifest\\.json|sw\\.js|aura_wallpapers\\.js|aura_offline_mobile\\.js|aura_work_ide\\.js|aura_cinematic_intro\\.js|remote).*)",
       "destination": "/index.html"
     }
   ]

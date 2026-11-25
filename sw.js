@@ -1,10 +1,12 @@
-const AURA_CACHE_NAME = 'aura-core-shell-v22';
+const AURA_CACHE_NAME = 'aura-core-shell-v23';
 const AURA_PHOTO_CACHE = 'aura-wallpaper-photos-v1';
 const AURA_PRECACHE_URLS = [
   '/',
   '/index.html',
   '/aura_wallpapers.js',
   '/aura_offline_mobile.js',
+  '/aura_work_ide.js',
+  '/aura_cinematic_intro.js',
   '/manifest.json',
   '/api/pwa/icon.svg',
 ];

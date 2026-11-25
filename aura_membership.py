@@ -80,90 +80,116 @@ MEMBERSHIP_TIERS: Dict[str, Dict[str, Any]] = {
         "id": "tier_3",
         "plan_number": 1,
         "rank": 3,
-        "name": "AURA Sovereign",
-        "short_name": "Sovereign",
-        "badge": "SOVEREIGN · PLAN 1",
+        "name": "AURA Plus",
+        "short_name": "Plus",
+        "badge": "AURA PLUS · PLAN 1",
         "multiplier": "100/DAY · 20D",
         "price_inr": 40,
-        "price_label": "₹40",
+        "price_usd": 40,
+        "price_label": "$40",
         "duration_days": 20,
         "duration_label": "20 Days",
         "daily_limit": 100,
         "unlimited": False,
-        "theme": "amethyst",
-        "accent": "#818cf8",
-        "feature_coverage": "50% Flagship Suite",
-        "tagline": "100 chats/day for 20 days with half of AURA's flagship engineering & agent capabilities unlocked.",
+        "theme": "plus-champagne",
+        "theme_title": "Champagne-Obsidian Atelier",
+        "accent": "#e5c17b",
+        "brain_boost": "+40% Enhanced AURA Brain",
+        "feature_coverage": "+40% Brain · Plus Luxury Suite",
+        "unlocked_wallpapers_label": "12 Exclusive Plus 4K Atelier Wallpapers",
+        "unlocked_voices": ["VOX Executive", "VOX Studio Neutral"],
+        "tagline": "+40% stronger AURA Brain with real web apps, live localhost previews, terminal execution, and Champagne-Obsidian Luxury Workspace.",
         "features": [
-            "100 Chats / Day (24h Rolling Refresh)",
-            "20-Day Validity (Auto-Deactivates · Admin Renewable)",
-            "Dev Studio AI Code (Autocomplete, Explain, Bug Scan & Refactor)",
-            "AST Symbol Indexer, @file Context & Polyglot Code Sandbox",
-            "Multi-File Diffs, Snapshots, Repo Scaffolder & Self-Healing Repair",
-            "AURA Live Browser & Persistent .aura-rules Memory",
-            "Upgraded Sapphire-Amethyst Obsidian Executive Design",
+            "+40% Enhanced AURA Brain — Real Web Apps, Games & Live Localhost Links",
+            "100 Chats / Day (24h Rolling) · 20-Day Validity (Admin Renewable)",
+            "Full Terminal Execution, Live Split Preview & Multi-File Diffs",
+            "Exclusive Champagne-Obsidian Luxury UI Transformation & 4K Wallpapers",
+            "Dev Studio AI Code (Autocomplete, Bug Scan, Refactor & Polyglot Sandbox)",
+            "AURA Live Browser Inspection & Self-Healing Error Repair",
         ],
     },
     "tier_4": {
         "id": "tier_4",
         "plan_number": 2,
         "rank": 4,
-        "name": "AURA Titan",
-        "short_name": "Titan",
-        "badge": "TITAN · PLAN 2",
+        "name": "AURA Pro",
+        "short_name": "Pro",
+        "badge": "AURA PRO · PLAN 2",
         "multiplier": "300/DAY · 30D",
         "price_inr": 99,
-        "price_label": "₹99",
+        "price_usd": 79,
+        "price_label": "$79",
         "duration_days": 30,
         "duration_label": "30 Days",
         "daily_limit": 300,
         "unlimited": False,
-        "theme": "champagne",
+        "theme": "pro-sapphire",
+        "theme_title": "Sapphire-Titanium Executive",
         "accent": "#60a5fa",
-        "feature_coverage": "80% Flagship Suite",
-        "tagline": "300 chats/day for 30 days with parallel multi-agent war room, desktop automation, Git diffs, and workflows.",
+        "brain_boost": "+60% Beyond Plus · Pro Architect Brain",
+        "feature_coverage": "+60% Over Plus · Pro Executive Suite",
+        "unlocked_wallpapers_label": "24 Exclusive Pro 4K Executive Wallpapers",
+        "unlocked_voices": [
+            "VOX Executive",
+            "VOX Clarisse (Studio)",
+            "VOX London Architect",
+            "VOX Sovereign Baritone",
+            "VOX Tokyo Synth",
+            "VOX Cyber Analyst",
+        ],
+        "tagline": "+60% stronger than AURA Plus with 6 VOX neural voice personas, parallel 4-agent war room, and Sapphire-Titanium Executive Workspace.",
         "features": [
-            "300 Chats / Day (3x Sovereign Capacity)",
-            "30-Day Validity (Auto-Deactivates · Admin Renewable)",
-            "Everything Included in AURA Sovereign (Plan 1)",
-            "Parallel 4-Agent War Room & Multi-Agent Orchestrator",
-            "Computer Use Desktop Automation with Guarded Allow/Deny Control",
-            "Git Visual Diffs, Worktrees, PR Assistant & Security AST Audits",
-            "Automation Hub: Reusable Workflows, Cron Schedules & Custom Skills",
-            "Upgraded Indigo-Titanium Obsidian Executive Design",
+            "+60% Stronger Pro Brain Beyond AURA Plus — Multi-Pass Deep Architecture",
+            "6 Unlocked VOX Neural Voice Personas + Real-Time Speed & Pitch Control",
+            "300 Chats / Day (3x Plus Capacity) · 30-Day Validity (Admin Renewable)",
+            "Distinct Sapphire-Titanium Executive UI Transformation & Pro 4K Wallpapers",
+            "Parallel 4-Agent War Room, Git Diffs, Security AST Audits & Workflows",
+            "Everything Included in AURA Plus + Guarded Desktop Automation",
         ],
     },
     "tier_5": {
         "id": "tier_5",
         "plan_number": 3,
         "rank": 5,
-        "name": "AURA Apex Omnis",
-        "short_name": "Apex Omnis",
-        "badge": "APEX OMNIS · PLAN 3",
+        "name": "AURA Ultra",
+        "short_name": "Ultra",
+        "badge": "AURA ULTRA · FLAGSHIP",
         "multiplier": "UNLIMITED · 30D",
         "price_inr": 199,
-        "price_label": "₹199",
+        "price_usd": 149,
+        "price_label": "$149",
         "duration_days": 30,
         "duration_label": "30 Days",
         "daily_limit": None,
         "unlimited": True,
-        "theme": "platinum",
-        "accent": "#e2e8f0",
-        "feature_coverage": "100% Complete Flagship",
-        "tagline": "Unlimited daily chats for 30 days with 100% of all 64 AURA autonomous engineering, remote control, and Platinum Monolith studio capabilities.",
+        "theme": "ultra-diamond",
+        "theme_title": "Liquid-Chrome Diamond Sovereign",
+        "accent": "#f8fafc",
+        "brain_boost": "Flagship Ultra · Antigravity + Codex + Cloud Class",
+        "feature_coverage": "100% Sovereign Ultra Flagship",
+        "unlocked_wallpapers_label": "ALL 170+ Sovereign 4K Wallpapers Unlocked",
+        "unlocked_voices": [
+            "ALL VOX Studio Neural Voices",
+            "Ultra Sovereign Cinema Voice",
+            "Zero-Latency Dual-Stream Call Mode",
+        ],
+        "tagline": "Antigravity + Codex + Cloud-class power: Live Browser Control, Self-Healing VS Code Work IDE, Unlimited Chats & Liquid-Chrome Diamond Workspace.",
         "features": [
-            "Unlimited Daily Chats (Zero 24h Cap)",
-            "30-Day Validity (Custom Admin Duration & Instant Renewal)",
-            "Everything Included in Sovereign (Plan 1) & Titan (Plan 2)",
-            "6-Stage Apex Omnis Autonomous Build, Verify & Self-Heal Pipeline",
-            "Full-Screen Apex Engineering Studio IDE & 20+ Language Mastery",
-            "Remote Agent Control, MCP Servers, Plugins & Deep Reasoning Routing",
-            "Exclusive Platinum Monolith Executive Workspace Design & Priority Engine",
+            "Antigravity + Codex + Cloud-Class Flagship Ultra Autonomous Brain",
+            "Full Live Browser Control, Computer-Use & Autonomous Multi-Agent Ops",
+            "Unlimited Daily Chats (Zero 24h Cap) · 30-Day Custom Admin Validity",
+            "Distinct Liquid-Chrome Diamond Sovereign UI + ALL 170+ 4K Wallpapers",
+            "Full VS Code Work IDE, 32+ Zero-Cost Extensions & Self-Healing Memory",
+            "All VOX Neural Voices + Priority Inference + Remote Agent Control",
         ],
     },
 }
 
-TIER_CODE_TO_ID: Dict[str, str] = {"SOV": "tier_3", "TTN": "tier_4", "APX": "tier_5"}
+TIER_CODE_TO_ID: Dict[str, str] = {
+    "SOV": "tier_3", "PLS": "tier_3",
+    "TTN": "tier_4", "PRO": "tier_4",
+    "APX": "tier_5", "ULT": "tier_5",
+}
 TIER_ID_TO_CODE: Dict[str, str] = {"tier_3": "SOV", "tier_4": "TTN", "tier_5": "APX"}
 PAID_TIER_ORDER: Tuple[str, ...] = ("tier_3", "tier_4", "tier_5")
 
@@ -190,7 +216,7 @@ ACTIVATION_KEY_HASHES: Dict[str, Dict[str, Any]] = {
     "4c32426b9cfa3c44afc2ee887ea4455dba2026f224f0337f2b8673f4430529cb": {"tier_id": "tier_5", "slot": "plan_3_key_5", "duration_days": 30},
 }
 
-_DYNAMIC_KEY_RE = re.compile(r"^AURA-(SOV|TTN|APX)-(\d{1,4})([DHM])-([A-Z0-9]{6})(?:-R(\d{1,3}))?-([A-F0-9]{8})$")
+_DYNAMIC_KEY_RE = re.compile(r"^AURA-(SOV|TTN|APX|PLS|PRO|ULT)-(\d{1,4})([DHM])-([A-Z0-9]{6})(?:-R(\d{1,3}))?-([A-F0-9]{8})$")
 
 UNIT_TO_SECONDS: Dict[str, int] = {"M": 60, "H": 3600, "D": 86400}
 
@@ -786,18 +812,28 @@ def activate_membership_key(user: Dict[str, Any], raw_key: str) -> Dict[str, Any
         "plan_id": tier_id,
         "plan_number": spec["plan_number"],
         "plan_name": spec["name"],
+        "short_name": spec.get("short_name", spec["name"]),
         "badge": spec["badge"],
         "accent": spec["accent"],
         "theme": spec["theme"],
+        "theme_title": spec.get("theme_title", "Sovereign Luxury Workspace"),
+        "brain_boost": spec.get("brain_boost", "+40% Enhanced AURA Brain"),
         "price_label": "FREE GIFT" if is_gift else spec["price_label"],
         "duration_days": duration_days,
         "duration_label": duration_label,
+        "activated_at": activated_at,
+        "activated_label": _fmt_datetime(activated_at) or _fmt_date(activated_at),
+        "expires_at": expires_at,
         "expires_label": resolved["expires_label"],
+        "expires_datetime_label": _fmt_datetime(expires_at) or resolved["expires_label"],
         "countdown_label": resolved["countdown_label"],
         "daily_limit_label": "Unlimited Chats / Day" if spec["unlimited"] else f"{spec['daily_limit']} Chats / Day",
         "feature_coverage": spec["feature_coverage"],
+        "unlocked_wallpapers_label": spec.get("unlocked_wallpapers_label", "Exclusive 4K Wallpapers Unlocked"),
+        "unlocked_voices": spec.get("unlocked_voices", []),
         "unlocked_features": spec["features"],
         "username": user.get("display_name") or user.get("username") or "Member",
+        "key_code_masked": resolved.get("key_code_masked", ""),
         "is_gift": is_gift,
     }
     return {
@@ -1643,3 +1679,33 @@ def admin_get_audit_logs(limit: int = 60) -> Dict[str, Any]:
             "ago_label": _fmt_relative_ago(ts, now_ts=now_ts),
         })
     return {"success": True, "logs": out}
+
+
+def build_tier_brain_directive(membership: Optional[Dict[str, Any]]) -> str:
+    """
+    Returns tier-escalated engineering & reasoning instructions so paid subscribers
+    receive genuinely stronger architecture, live previews, localhost links, and verification.
+    """
+    if not isinstance(membership, dict):
+        return ""
+    rank = int(membership.get("rank") or 0)
+    if rank >= 5:
+        return (
+            "[AURA ULTRA · FLAGSHIP ANTIGRAVITY + CODEX + CLOUD ENGINE ACTIVE]: "
+            "Operate at peak staff-engineer depth. Deliver complete, production-ready multi-file systems, "
+            "web apps, games, and APIs with zero placeholders, zero cartoony filler, real terminal verification, "
+            "clickable localhost/preview links, live browser verification steps, and self-healing root-cause checks."
+        )
+    if rank >= 4:
+        return (
+            "[AURA PRO · +60% BEYOND PLUS ARCHITECT ENGINE ACTIVE]: "
+            "Perform multi-pass architectural reasoning, edge-case & security auditing, clean modular file generation, "
+            "and verified runnable builds with live preview and localhost instructions."
+        )
+    if rank >= 3:
+        return (
+            "[AURA PLUS · +40% ENHANCED ENGINEERING BRAIN ACTIVE]: "
+            "Deliver complete, working web apps, apps, and code with zero stubs or excuses. Always provide runnable "
+            "workspace files, live preview entrypoints, localhost/terminal run commands, and crisp luxury-grade UI output."
+        )
+    return ""

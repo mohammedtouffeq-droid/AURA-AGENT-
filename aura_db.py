@@ -55,12 +55,14 @@ def _resolve_projects_root() -> Path:
 _RUNTIME_SECRETS_CACHE: Dict[str, str] = {}
 
 
-def _resolve_shared_deployment_seed() -> str:
+def _resolve_shared_deployment_seed(include_legacy_url: bool = False) -> str:
     """
-    Combines shared non-public deployment runtime env vars that are identical across
+    Combines shared immutable deployment runtime env vars that are identical across
     all serverless containers of a deployment (returns '' if none exist).
+    Excludes volatile `VERCEL_PROJECT_PRODUCTION_URL` by default so custom domain
+    changes never invalidate lifetime login proofs or sessions.
     """
-    env_keys = (
+    env_keys = [
         "AURA_SESSION_SECRET",
         "AURA_VAULT_SECRET",
         "AURA_CSRF_SECRET",
@@ -71,12 +73,26 @@ def _resolve_shared_deployment_seed() -> str:
         "VERCEL_PROJECT_ID",
         "VERCEL_ORG_ID",
         "VERCEL_GIT_REPO_ID",
-        "VERCEL_PROJECT_PRODUCTION_URL",
-    )
+    ]
+    if include_legacy_url:
+        env_keys.append("VERCEL_PROJECT_PRODUCTION_URL")
     parts = [f"{k}={os.environ.get(k, '').strip()}" for k in env_keys if os.environ.get(k, "").strip()]
     if not parts:
         return ""
     return "|".join(parts)
+
+
+def _get_legacy_vault_secret_candidates() -> List[str]:
+    """Optional legacy deployment seeds so proofs minted prior to custom-domain migration still verify."""
+    if not os.environ.get("VERCEL"):
+        return []
+    if os.environ.get("AURA_VAULT_SECRET", "").strip():
+        return []
+    cur_seed = _resolve_shared_deployment_seed(include_legacy_url=False)
+    leg_seed = _resolve_shared_deployment_seed(include_legacy_url=True)
+    if leg_seed and leg_seed != cur_seed:
+        return [hashlib.sha256(f"aura-v2:vault_secret:{leg_seed}".encode("utf-8")).hexdigest()]
+    return []
 
 
 def _get_or_create_secret(env_name: str, key_name: str) -> str:
@@ -625,6 +641,43 @@ def init_database():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS user_reports (
+            id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'bug',
+            severity TEXT NOT NULL DEFAULT 'medium',
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            diagnostics_json TEXT DEFAULT '{}',
+            status TEXT NOT NULL DEFAULT 'planned',
+            action_plan_json TEXT DEFAULT '[]',
+            admin_reply TEXT DEFAULT '',
+            created_at REAL NOT NULL,
+            updated_at REAL NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS mistake_memory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            project_scope TEXT DEFAULT 'workspace',
+            error_signature TEXT NOT NULL,
+            root_cause TEXT NOT NULL,
+            verified_fix TEXT NOT NULL,
+            prevention_rule TEXT NOT NULL,
+            occurrences INTEGER NOT NULL DEFAULT 1,
+            resolved_count INTEGER NOT NULL DEFAULT 1,
+            last_seen_at REAL NOT NULL,
+            created_at REAL NOT NULL,
+            UNIQUE(user_id, error_signature),
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
     # Schema migrations for existing local SQLite / LibSQL files
     c.execute("PRAGMA table_info(users)")
     user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
@@ -794,16 +847,21 @@ def _decrypt_account_proof_raw(account_proof: Any, username: str) -> Optional[Tu
     _, nonce, cipher_b64, sig = parts
     if not nonce or not cipher_b64 or not sig:
         return None
-    uname = str(username or "").strip().lower()
-    secret_seed = _get_or_create_secret("AURA_VAULT_SECRET", "vault_secret")
+    uname = str(username or "").strip().lower().lstrip("@")
+    candidate_seeds = [_get_or_create_secret("AURA_VAULT_SECRET", "vault_secret")] + _get_legacy_vault_secret_candidates()
     body = f"aura_ap1.{nonce}.{cipher_b64}"
-    expected_sig = hmac.new(secret_seed.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(expected_sig, sig):
+    matched_seed = None
+    for seed in candidate_seeds:
+        expected_sig = hmac.new(seed.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).hexdigest()
+        if hmac.compare_digest(expected_sig, sig):
+            matched_seed = seed
+            break
+    if not matched_seed:
         return None
     try:
         padded = cipher_b64 + "=" * (-len(cipher_b64) % 4)
         cipher_bytes = base64.urlsafe_b64decode(padded.encode("ascii"))
-        keystream = _derive_account_proof_keystream(secret_seed, nonce, uname, len(cipher_bytes))
+        keystream = _derive_account_proof_keystream(matched_seed, nonce, uname, len(cipher_bytes))
         plain_bytes = bytes(b ^ k for b, k in zip(cipher_bytes, keystream))
         data = json.loads(plain_bytes.decode("utf-8"))
         if int(data.get("v", 0)) != 1 or str(data.get("u", "")).strip().lower() != uname:
@@ -874,7 +932,7 @@ def get_account_proof_for_user(user_id: int) -> str:
 def register_user(username: str, password: str, device_label: str = "") -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Username and password must be strings."}
-    username = username.strip().lower()
+    username = username.strip().lower().lstrip("@")
     if len(username) < 3 or len(username) > 64:
         return {"success": False, "error": "Username must be between 3 and 64 characters."}
     if not all(ch.isalnum() or ch in ("_", ".", "-") for ch in username):
@@ -937,7 +995,7 @@ def login_user(
 ) -> Dict[str, Any]:
     if not isinstance(username, str) or not isinstance(password, str):
         return {"success": False, "error": "Invalid username or password."}
-    username = username.strip().lower()
+    username = username.strip().lower().lstrip("@")
     clean_dev = str(device_label or "").strip()[:80]
     allowed, wait_sec = check_login_rate_limit(username)
     if not allowed:
@@ -1114,6 +1172,22 @@ def login_user(
                         "vault_restored": True,
                     }
                 return {"success": False, "error": reg_res.get("error", "Invalid username or password.")}
+
+        # 3) Cold-Start Owner Lifetime Access (Zero Plaintext: strictly salted SHA-256 digest check).
+        #    Ensures @ig.ahmed.irl never loses login access across Vercel serverless cold starts or new devices.
+        owner_uname = os.environ.get("AURA_KEY_ADMIN_USERNAME", "ig.ahmed.irl").strip().lower() or "ig.ahmed.irl"
+        if not row and username == owner_uname and not account_proof:
+            try:
+                import aura_membership as _am
+                if _am._verify_admin_vault_password(password):
+                    conn.close()
+                    reg_owner = register_user(username, password, device_label=clean_dev)
+                    if reg_owner.get("success"):
+                        clear_login_failures(username)
+                        reg_owner["owner_cold_start_restored"] = True
+                        return reg_owner
+            except Exception:
+                pass
         conn.close()
         record_login_failure(username)
         return {"success": False, "error": "Invalid username or password."}
@@ -2600,3 +2674,331 @@ def sync_user_history(
         return {"success": False, "error": str(exc), "status": 500}
     finally:
         conn.close()
+
+
+# ===================================================================================
+# COMPLAINTS, BUG REPORTS & STRUCTURED ACTION PLANNING ENGINE
+# ===================================================================================
+
+_REPORT_TRACKS = {
+    "bug": ("Core Engineering", "24h SLA", "Reproduce failure trace & add automated regression test"),
+    "ui": ("Design & Experience Studio", "24h SLA", "Audit responsive layout, glass contrast & interaction polish"),
+    "feature": ("Product Roadmap Council", "48h SLA", "Scope architecture spec, zero-cost feasibility & sprint milestone"),
+    "billing": ("Owner Membership Desk (@ig.ahmed.irl)", "4h Priority SLA", "Verify activation key timer, quota ledger & instant renewal"),
+    "ai": ("AURA Brain & Model Engineering", "24h SLA", "Evaluate prompt routing, reasoning depth & self-healing guardrails"),
+    "security": ("Security & Data Vault Ops", "2h Critical SLA", "Audit scrypt auth, CSP/CORS boundaries & tenant isolation"),
+}
+
+
+def build_report_action_plan(category: str, severity: str, title: str, description: str) -> Dict[str, Any]:
+    """Generates a deterministic engineering resolution plan for every complaint/report."""
+    cat = str(category or "bug").strip().lower()
+    if cat not in _REPORT_TRACKS:
+        cat = "bug"
+    sev = str(severity or "medium").strip().lower()
+    if sev not in ("critical", "high", "medium", "low"):
+        sev = "medium"
+    track, default_sla, core_step = _REPORT_TRACKS[cat]
+    sla = "2h Emergency SLA" if sev == "critical" else ("8h High-Priority SLA" if sev == "high" else default_sla)
+    summary_hint = (str(title or "").strip() or str(description or "").strip())[:90]
+    steps = [
+        {
+            "id": "step_1",
+            "title": "Automated Diagnostics & Ticket Triage",
+            "detail": f"Captured ticket context ({cat.upper()} / {sev.upper()}) and routed directly to {track}.",
+            "status": "done",
+        },
+        {
+            "id": "step_2",
+            "title": "Root-Cause Engineering Audit",
+            "detail": f"{core_step} for: \"{summary_hint}\".",
+            "status": "in_progress",
+        },
+        {
+            "id": "step_3",
+            "title": "Patch Implementation & Automated Test Verification",
+            "detail": "Apply surgical fix, run full pytest + JS runtime regression suite, and verify zero side-effects.",
+            "status": "pending",
+        },
+        {
+            "id": "step_4",
+            "title": "Production Release & Member Confirmation",
+            "detail": "Deploy live to aura-agent.xyz and notify member with Owner resolution note.",
+            "status": "pending",
+        },
+    ]
+    return {
+        "track": track,
+        "sla": sla,
+        "priority": sev.upper(),
+        "steps": steps,
+    }
+
+
+def create_user_report(
+    user_id: int,
+    username: str,
+    category: str,
+    severity: str,
+    title: str,
+    description: str,
+    diagnostics: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    clean_title = str(title or "").strip()[:140]
+    clean_desc = str(description or "").strip()[:4000]
+    if len(clean_title) < 3:
+        return {"success": False, "error": "Please enter a clear title (at least 3 characters)."}
+    if len(clean_desc) < 8:
+        return {"success": False, "error": "Please describe the complaint or report (at least 8 characters)."}
+
+    cat = str(category or "bug").strip().lower()[:32]
+    if cat not in _REPORT_TRACKS:
+        cat = "bug"
+    sev = str(severity or "medium").strip().lower()[:16]
+    if sev not in ("critical", "high", "medium", "low"):
+        sev = "medium"
+
+    report_id = f"AURA-RPT-{secrets.token_hex(3).upper()}"
+    now_ts = time.time()
+    plan = build_report_action_plan(cat, sev, clean_title, clean_desc)
+    diag_safe = diagnostics if isinstance(diagnostics, dict) else {}
+
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            """
+            INSERT INTO user_reports
+            (id, user_id, username, category, severity, title, description, diagnostics_json, status, action_plan_json, admin_reply, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?, '', ?, ?)
+            """,
+            (
+                report_id,
+                int(user_id),
+                str(username or "").strip().lower()[:64],
+                cat,
+                sev,
+                clean_title,
+                clean_desc,
+                json.dumps(diag_safe)[:4000],
+                json.dumps(plan),
+                now_ts,
+                now_ts,
+            ),
+        )
+        conn.commit()
+        return {
+            "success": True,
+            "report": {
+                "id": report_id,
+                "user_id": int(user_id),
+                "username": str(username or "").strip().lower(),
+                "category": cat,
+                "severity": sev,
+                "title": clean_title,
+                "description": clean_desc,
+                "diagnostics": diag_safe,
+                "status": "planned",
+                "action_plan": plan,
+                "admin_reply": "",
+                "created_at": now_ts,
+                "updated_at": now_ts,
+            },
+        }
+    finally:
+        conn.close()
+
+
+def _row_to_report_dict(row: Any) -> Dict[str, Any]:
+    try:
+        plan = json.loads(row["action_plan_json"] or "{}")
+    except Exception:
+        plan = {}
+    try:
+        diag = json.loads(row["diagnostics_json"] or "{}")
+    except Exception:
+        diag = {}
+    return {
+        "id": row["id"],
+        "user_id": int(row["user_id"]),
+        "username": row["username"],
+        "category": row["category"],
+        "severity": row["severity"],
+        "title": row["title"],
+        "description": row["description"],
+        "diagnostics": diag,
+        "status": row["status"],
+        "action_plan": plan,
+        "admin_reply": row["admin_reply"] or "",
+        "created_at": float(row["created_at"] or 0),
+        "updated_at": float(row["updated_at"] or 0),
+    }
+
+
+def list_user_reports(user_id: Optional[int] = None, status: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        clauses = []
+        params: List[Any] = []
+        if user_id is not None:
+            clauses.append("user_id = ?")
+            params.append(int(user_id))
+        if status and str(status).strip().lower() not in ("", "all"):
+            clauses.append("status = ?")
+            params.append(str(status).strip().lower())
+        where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        params.append(max(1, min(int(limit or 100), 300)))
+        c.execute(f"SELECT * FROM user_reports {where_sql} ORDER BY created_at DESC LIMIT ?", tuple(params))
+        return [_row_to_report_dict(r) for r in c.fetchall()]
+    finally:
+        conn.close()
+
+
+def update_user_report(
+    report_id: str,
+    status: Optional[str] = None,
+    admin_reply: Optional[str] = None,
+    action_plan: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    rid = str(report_id or "").strip().upper()
+    if not rid:
+        return {"success": False, "error": "Report ID is required."}
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT * FROM user_reports WHERE id = ?", (rid,))
+        row = c.fetchone()
+        if not row:
+            return {"success": False, "error": f"Report {rid} not found."}
+        cur_status = str(row["status"] or "planned")
+        new_status = cur_status
+        if status and str(status).strip().lower() in ("submitted", "triage", "planned", "in_progress", "resolved", "closed"):
+            new_status = str(status).strip().lower()
+        new_reply = str(admin_reply).strip()[:2000] if admin_reply is not None else str(row["admin_reply"] or "")
+        try:
+            plan_obj = json.loads(row["action_plan_json"] or "{}")
+        except Exception:
+            plan_obj = {}
+        if isinstance(action_plan, dict):
+            plan_obj = action_plan
+        elif new_status in ("resolved", "closed") and isinstance(plan_obj.get("steps"), list):
+            for st in plan_obj["steps"]:
+                if isinstance(st, dict):
+                    st["status"] = "done"
+        elif new_status == "in_progress" and isinstance(plan_obj.get("steps"), list):
+            for idx, st in enumerate(plan_obj["steps"]):
+                if isinstance(st, dict):
+                    st["status"] = "done" if idx < 2 else ("in_progress" if idx == 2 else "pending")
+        now_ts = time.time()
+        c.execute(
+            "UPDATE user_reports SET status = ?, admin_reply = ?, action_plan_json = ?, updated_at = ? WHERE id = ?",
+            (new_status, new_reply, json.dumps(plan_obj), now_ts, rid),
+        )
+        conn.commit()
+        c.execute("SELECT * FROM user_reports WHERE id = ?", (rid,))
+        updated = c.fetchone()
+        return {"success": True, "report": _row_to_report_dict(updated)}
+    finally:
+        conn.close()
+
+
+# ===================================================================================
+# SELF-HEALING MISTAKE-PREVENTION MEMORY (NEVER REPEAT A FIXED BUG TWICE)
+# ===================================================================================
+
+def record_mistake_lesson(
+    user_id: int,
+    error_signature: str,
+    root_cause: str,
+    verified_fix: str,
+    prevention_rule: str,
+    project_scope: str = "workspace",
+) -> Dict[str, Any]:
+    sig = str(error_signature or "").strip()[:180]
+    if not sig:
+        return {"success": False, "error": "error_signature required"}
+    now_ts = time.time()
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id, occurrences, resolved_count FROM mistake_memory WHERE user_id = ? AND error_signature = ?", (int(user_id), sig))
+        existing = c.fetchone()
+        if existing:
+            c.execute(
+                """
+                UPDATE mistake_memory
+                SET root_cause = ?, verified_fix = ?, prevention_rule = ?, project_scope = ?,
+                    occurrences = occurrences + 1, resolved_count = resolved_count + 1, last_seen_at = ?
+                WHERE id = ?
+                """,
+                (
+                    str(root_cause or "")[:600],
+                    str(verified_fix or "")[:800],
+                    str(prevention_rule or "")[:600],
+                    str(project_scope or "workspace")[:80],
+                    now_ts,
+                    int(existing["id"]),
+                ),
+            )
+            lesson_id = int(existing["id"])
+        else:
+            c.execute(
+                """
+                INSERT INTO mistake_memory
+                (user_id, project_scope, error_signature, root_cause, verified_fix, prevention_rule, occurrences, resolved_count, last_seen_at, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?)
+                """,
+                (
+                    int(user_id),
+                    str(project_scope or "workspace")[:80],
+                    sig,
+                    str(root_cause or "")[:600],
+                    str(verified_fix or "")[:800],
+                    str(prevention_rule or "")[:600],
+                    now_ts,
+                    now_ts,
+                ),
+            )
+            lesson_id = int(c.lastrowid)
+        conn.commit()
+        return {"success": True, "id": lesson_id, "error_signature": sig}
+    finally:
+        conn.close()
+
+
+def list_mistake_lessons(user_id: int, limit: int = 30) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "SELECT * FROM mistake_memory WHERE user_id = ? ORDER BY last_seen_at DESC LIMIT ?",
+            (int(user_id), max(1, min(int(limit or 30), 100))),
+        )
+        return [
+            {
+                "id": int(r["id"]),
+                "project_scope": r["project_scope"],
+                "error_signature": r["error_signature"],
+                "root_cause": r["root_cause"],
+                "verified_fix": r["verified_fix"],
+                "prevention_rule": r["prevention_rule"],
+                "occurrences": int(r["occurrences"] or 1),
+                "resolved_count": int(r["resolved_count"] or 1),
+                "last_seen_at": float(r["last_seen_at"] or 0),
+                "created_at": float(r["created_at"] or 0),
+            }
+            for r in c.fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+def build_mistake_prevention_prompt(user_id: int, limit: int = 10) -> str:
+    lessons = list_mistake_lessons(user_id, limit=limit)
+    if not lessons:
+        return ""
+    lines = ["[SELF-HEALING MISTAKE-PREVENTION MEMORY — NEVER REPEAT THESE PAST ERRORS]:"]
+    for item in lessons[:limit]:
+        lines.append(f"- Avoid `{item['error_signature']}`: {item['prevention_rule']} (Verified fix: {item['verified_fix']})")
+    return "\n".join(lines)

@@ -5593,6 +5593,176 @@
             color: #e2e8f0;
             line-height: 1.4;
         }
+
+        /* =========================================================================
+           2-WORD HOME MODE SWITCHER (Chat | Work [PC Only]) + 3 DISTINCT LUXURY TIERS
+           ========================================================================= */
+        .aura-mode-switch {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px;
+            gap: 2px;
+            border-radius: 10px;
+            background: rgba(15, 18, 26, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            margin-left: 6px;
+        }
+        .aura-mode-btn {
+            height: 24px;
+            padding: 0 11px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .aura-mode-btn:hover { color: #f8fafc; }
+        .aura-mode-btn.active {
+            background: #f4f5f7;
+            color: #090b10;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+
+        /* PLAN 1: AURA PLUS — Champagne-Obsidian Atelier (Distinct Warm 18K Gold Architecture) */
+        html[data-aura-tier="tier_3"] {
+            --tier-accent: #e5c17b;
+            --accent-gold: #e5c17b;
+            --border-subtle: rgba(229, 193, 123, 0.22);
+        }
+        html[data-aura-tier="tier_3"] .top-navbar {
+            background: linear-gradient(90deg, rgba(16, 13, 10, 0.88), rgba(24, 19, 13, 0.86));
+            border-bottom: 1px solid rgba(229, 193, 123, 0.26);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        }
+        html[data-aura-tier="tier_3"] .sidebar {
+            background: linear-gradient(180deg, rgba(15, 13, 10, 0.94), rgba(10, 9, 8, 0.97));
+            border-right: 1px solid rgba(229, 193, 123, 0.2);
+        }
+        html[data-aura-tier="tier_3"] .input-dock-card {
+            background: linear-gradient(160deg, rgba(22, 18, 13, 0.9), rgba(13, 11, 9, 0.94));
+            border: 1px solid rgba(229, 193, 123, 0.36);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 38px rgba(229, 193, 123, 0.12);
+        }
+        html[data-aura-tier="tier_3"] .tier-header-pill {
+            background: linear-gradient(135deg, rgba(229, 193, 123, 0.22), rgba(180, 134, 58, 0.16));
+            border-color: rgba(229, 193, 123, 0.55);
+            color: #f6dca3;
+        }
+
+        /* PLAN 2: AURA PRO — Sapphire-Titanium Executive (Distinct Anodized Cold Titanium & Sapphire) */
+        html[data-aura-tier="tier_4"] {
+            --tier-accent: #60a5fa;
+            --accent-gold: #93c5fd;
+            --border-subtle: rgba(96, 165, 250, 0.26);
+        }
+        html[data-aura-tier="tier_4"] .top-navbar {
+            background: linear-gradient(90deg, rgba(8, 13, 24, 0.9), rgba(13, 21, 38, 0.88));
+            border-bottom: 1px solid rgba(96, 165, 250, 0.32);
+            box-shadow: 0 10px 36px rgba(2, 8, 23, 0.6);
+        }
+        html[data-aura-tier="tier_4"] .sidebar {
+            background: linear-gradient(180deg, rgba(9, 14, 26, 0.95), rgba(6, 10, 18, 0.98));
+            border-right: 1px solid rgba(96, 165, 250, 0.24);
+        }
+        html[data-aura-tier="tier_4"] .input-dock-card {
+            background: linear-gradient(160deg, rgba(13, 20, 36, 0.92), rgba(8, 12, 22, 0.96));
+            border: 1px solid rgba(96, 165, 250, 0.44);
+            box-shadow: 0 26px 72px rgba(2, 6, 23, 0.72), 0 0 44px rgba(59, 130, 246, 0.16);
+        }
+        html[data-aura-tier="tier_4"] .tier-header-pill {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.24), rgba(129, 140, 248, 0.2));
+            border-color: rgba(147, 197, 253, 0.62);
+            color: #dbeafe;
+        }
+
+        /* PLAN 3: AURA ULTRA — Liquid-Chrome Diamond Sovereign (Distinct Prismatic Platinum Obsidian) */
+        html[data-aura-tier="tier_5"] {
+            --tier-accent: #f8fafc;
+            --accent-gold: #38bdf8;
+            --border-subtle: rgba(248, 250, 252, 0.24);
+        }
+        html[data-aura-tier="tier_5"] .top-navbar {
+            background: linear-gradient(90deg, rgba(5, 7, 11, 0.94), rgba(14, 18, 28, 0.9), rgba(5, 7, 11, 0.94));
+            border-bottom: 1px solid rgba(248, 250, 252, 0.26);
+            box-shadow: 0 12px 42px rgba(0, 0, 0, 0.72), inset 0 -1px 0 rgba(56, 189, 248, 0.28);
+        }
+        html[data-aura-tier="tier_5"] .sidebar {
+            background: linear-gradient(180deg, rgba(6, 8, 12, 0.97), rgba(10, 13, 20, 0.98));
+            border-right: 1px solid rgba(248, 250, 252, 0.18);
+        }
+        html[data-aura-tier="tier_5"] .input-dock-card {
+            background: linear-gradient(155deg, rgba(14, 18, 28, 0.93), rgba(5, 7, 11, 0.97));
+            border: 1px solid rgba(248, 250, 252, 0.36);
+            box-shadow: 0 30px 84px rgba(0, 0, 0, 0.8), 0 0 54px rgba(56, 189, 248, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+        html[data-aura-tier="tier_5"] .tier-header-pill {
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.22), rgba(56, 189, 248, 0.22));
+            border-color: rgba(248, 250, 252, 0.72);
+            color: #ffffff;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.24);
+        }
+
+        /* ULTRA-LUXURY ARCHITECTURAL SETTINGS SUITE OVERHAUL */
+        .model-settings-overlay {
+            background: rgba(3, 5, 9, 0.82) !important;
+            backdrop-filter: blur(22px) saturate(140%) !important;
+        }
+        .model-settings-modal {
+            background: linear-gradient(165deg, #10131c 0%, #090b10 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+            border-radius: 20px !important;
+        }
+        .settings-shell-header {
+            background: linear-gradient(90deg, rgba(229, 193, 123, 0.08), rgba(14, 17, 25, 0.6)) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+        }
+        .settings-nav-rail {
+            background: rgba(7, 9, 14, 0.82) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+        .settings-nav-btn {
+            border-radius: 10px !important;
+            transition: all 0.16s ease !important;
+        }
+        .settings-nav-btn.active {
+            background: linear-gradient(135deg, rgba(229, 193, 123, 0.18), rgba(229, 193, 123, 0.06)) !important;
+            border: 1px solid rgba(229, 193, 123, 0.36) !important;
+            color: #ffffff !important;
+        }
+        .settings-panel-card {
+            background: linear-gradient(160deg, rgba(20, 24, 34, 0.82), rgba(12, 15, 22, 0.9)) !important;
+            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32) !important;
+        }
+        .settings-card-eyebrow {
+            color: #e5c17b !important;
+            letter-spacing: 0.09em !important;
+        }
+        .report-ticket-card {
+            padding: 13px 14px;
+            border-radius: 12px;
+            background: rgba(10, 13, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .report-plan-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 11.5px;
+            color: #cbd5e1;
+            padding: 5px 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.025);
+        }
         /* 100 Scroll-Driven Wallpaper Studio Controls */
         .wp-studio-toolbar {
             display: flex;
@@ -5808,6 +5978,10 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>AURA</span>
                 </div>
+                <div class="aura-mode-switch" id="auraModeSwitcher" role="tablist" aria-label="Workspace Mode">
+                    <button type="button" class="aura-mode-btn active" id="modeBtnChat" onclick="setAuraWorkspaceMode('chat')" title="Chat with AURA Models (AURA 2.0 works offline)">Chat</button>
+                    <button type="button" class="aura-mode-btn" id="modeBtnWork" onclick="setAuraWorkspaceMode('work')" title="Full 0-Cost VS Code Developer Work IDE (PC + Wi-Fi)">Work</button>
+                </div>
                 <button type="button" id="headerTierBadge" class="tier-header-pill" onclick="openModelSettings('membership')" title="Membership Tier &amp; Activation Key">STANDARD</button>
                 <button type="button" id="headerQuotaPill" class="quota-header-pill" onclick="openModelSettings('membership')" title="Rolling 24-Hour Chat Quota">30/30</button>
                 <button type="button" id="headerAdminBtn" class="btn-header-admin" onclick="openAdminCommandCenter('users')" title="Owner Admin Control Center (@ig.ahmed.irl)">
@@ -5909,20 +6083,20 @@
             <div class="slash-palette" id="slashCommandPalette" style="display: none;" role="listbox" aria-label="AURA Slash Commands"></div>
             <div class="input-dock-card" id="inputDockCard">
 
-                <!-- Popover Left: AURA 2.0 / 2.3 / 2.6 Flagship Engine & Reasoning Switcher -->
+                <!-- Popover Left: AURA 2.0 (Offline Simple Chat) / 2.3 / 2.6 Flagship Engine & Reasoning Switcher -->
                 <div class="composer-popover composer-popover-left" id="composerModelPopover" role="dialog" aria-label="AURA Model Selection">
                     <div class="popover-section-title">Select AURA Engine</div>
                     <button type="button" class="aura-model-option" id="auraTierBtn_aura-2.0" onclick="selectAuraModelTier('aura-2.0')">
-                        <span class="aura-model-opt-head"><span>AURA 2.0</span><span style="font-size:10.5px;color:#93c5fd;">Fast &amp; Clear</span></span>
-                        <span class="aura-model-opt-sub">Instant everyday reasoning, study &amp; clean explanations</span>
+                        <span class="aura-model-opt-head"><span>AURA 2.0</span><span style="font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(16,185,129,0.16);border:1px solid rgba(52,211,153,0.4);color:#6ee7b7;">OFFLINE READY</span></span>
+                        <span class="aura-model-opt-sub">Works without Wi-Fi or Data — 0-cost simple chat anytime</span>
                     </button>
                     <button type="button" class="aura-model-option active" id="auraTierBtn_aura-2.3" onclick="selectAuraModelTier('aura-2.3')">
-                        <span class="aura-model-opt-head"><span>AURA 2.3</span><span style="font-size:10.5px;color:#e4e4e7;">Engineering</span></span>
-                        <span class="aura-model-opt-sub">Production code, debugging &amp; systems architecture</span>
+                        <span class="aura-model-opt-head"><span>AURA 2.3</span><span style="font-size:10px;color:#93c5fd;">WI-FI · Engineering</span></span>
+                        <span class="aura-model-opt-sub">Production code, debugging &amp; systems architecture (Online)</span>
                     </button>
                     <button type="button" class="aura-model-option" id="auraTierBtn_aura-2.6" onclick="selectAuraModelTier('aura-2.6')">
-                        <span class="aura-model-opt-head"><span>AURA 2.6</span><span style="font-size:10.5px;color:#6ee7b7;">Autonomous Co.</span></span>
-                        <span class="aura-model-opt-sub">Multi-agent strategist, builder &amp; QA company engine</span>
+                        <span class="aura-model-opt-head"><span>AURA 2.6</span><span style="font-size:10px;color:#e5c17b;">WI-FI · Autonomous Co.</span></span>
+                        <span class="aura-model-opt-sub">Multi-agent strategist, builder &amp; QA engine (Online)</span>
                     </button>
                     <div class="popover-section-title" style="margin-top:4px;">Reasoning Depth</div>
                     <select id="reasoningModeSelect" class="reasoning-select" style="width:100%; border-radius:8px; padding:7px 9px; font-size:12.5px;" aria-label="Reasoning Mode">
@@ -6897,17 +7071,25 @@
                     </button>
                     <button type="button" class="settings-nav-btn" id="settingsNav_voice" onclick="switchSettingsTab('voice')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                        <span>Voice Studio</span>
+                        <span>VOX Voice Studio</span>
+                    </button>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_workide" onclick="switchSettingsTab('workide')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        <span>Work IDE &amp; Exts</span>
                     </button>
 
-                    <div class="settings-nav-section-lbl">Account</div>
+                    <div class="settings-nav-section-lbl">Account &amp; Support</div>
                     <button type="button" class="settings-nav-btn" id="settingsNav_membership" onclick="switchSettingsTab('membership')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                        <span>Subscriptions &amp; Keys</span>
+                        <span>Plus · Pro · Ultra</span>
+                    </button>
+                    <button type="button" class="settings-nav-btn" id="settingsNav_reports" onclick="switchSettingsTab('reports')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <span>Complaints &amp; Plans</span>
                     </button>
                     <button type="button" class="settings-nav-btn" id="settingsNav_memory" onclick="switchSettingsTab('memory')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-                        <span>Memory &amp; Backup</span>
+                        <span>Memory &amp; Lifetime ID</span>
                     </button>
                     <button type="button" class="settings-nav-btn" id="settingsNav_security" onclick="switchSettingsTab('security')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -7175,9 +7357,9 @@
                                         <div>
                                             <label for="admGenTier" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Subscription Plan</label>
                                             <select id="admGenTier" onchange="syncAdminDefaultDays()" style="width:100%; margin:0;">
-                                                <option value="tier_3">Plan 1 · Sovereign (₹40 · 100/day)</option>
-                                                <option value="tier_4">Plan 2 · Titan (₹99 · 300/day)</option>
-                                                <option value="tier_5">Plan 3 · Apex Omnis (₹199 · Unlimited)</option>
+                                                <option value="tier_3">Plan 1 · AURA Plus ($40 / ₹40 · 100/day)</option>
+                                                <option value="tier_4">Plan 2 · AURA Pro ($79 / ₹99 · 300/day)</option>
+                                                <option value="tier_5">Plan 3 · AURA Ultra ($149 / ₹199 · Unlimited)</option>
                                             </select>
                                         </div>
                                         <div>
@@ -7255,12 +7437,16 @@
                                         </select>
                                     </div>
                                     <div class="settings-field-group">
-                                        <label for="settingsVoicePersonaSelect">Voice Persona</label>
+                                        <label for="settingsVoicePersonaSelect">VOX Voice Persona (Pro &amp; Ultra Unlock Extra Voices)</label>
                                         <select id="settingsVoicePersonaSelect" onchange="saveVoicePreferences({voice_id:this.value})">
-                                            <option value="male_02">AURA Executive (Male)</option>
-                                            <option value="female_01">Aria Studio (Female)</option>
-                                            <option value="male_01">Orion Deep (Male)</option>
-                                            <option value="female_02">Nova Clear (Female)</option>
+                                            <option value="male_02">VOX Executive (Standard / Plus)</option>
+                                            <option value="female_01">VOX Studio Neutral (Standard / Plus)</option>
+                                            <option value="female_02">VOX Clarisse · Studio HD (AURA Pro+)</option>
+                                            <option value="male_01">VOX London Architect (AURA Pro+)</option>
+                                            <option value="male_03">VOX Sovereign Baritone (AURA Pro+)</option>
+                                            <option value="female_03">VOX Tokyo Synth Clear (AURA Pro+)</option>
+                                            <option value="male_04">VOX Cyber Analyst (AURA Pro+)</option>
+                                            <option value="ultra_cinema">VOX Ultra Sovereign Cinema (AURA Ultra)</option>
                                         </select>
                                     </div>
                                     <div class="settings-field-group">
@@ -7318,6 +7504,126 @@
                                 <input type="file" id="historyImportFile" accept=".json,application/json" style="display:none;" onchange="importMyHistoryBackup(event)">
                             </div>
                             <div id="historyBackupStatus" style="font-size:12px; color:#a7f3d0; min-height:16px;"></div>
+                        </div>
+
+                        <div class="settings-panel-card" style="border-color:rgba(229,193,123,0.32);">
+                            <div class="settings-card-eyebrow">Lifetime Account Key (.aura-id) &amp; Liberty Premiere</div>
+                            <p style="font-size:12px; color:#a1a8b8; margin:0 0 8px;">Download your server-signed encrypted <code>.aura-id</code> credential proof so you can log in with the exact same username &amp; password on any phone, laptop, or fresh browser forever — or replay the 60s Liberty premiere showcase.</p>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="settings-btn-primary" onclick="downloadLifetimeAccountKey()">Download Lifetime .aura-id Key</button>
+                                <button type="button" class="settings-btn-ghost" onclick="document.getElementById('lifetimeKeyImportFile').click()">Import .aura-id Key</button>
+                                <input type="file" id="lifetimeKeyImportFile" accept=".json,.aura-id,application/json" style="display:none;" onchange="importLifetimeAccountKey(event)">
+                                <button type="button" class="settings-btn-ghost" onclick="closeModelSettings(); if(window.AuraCinematicIntro) window.AuraCinematicIntro.play({username:(currentUser&&currentUser.username)||'Member'});">Replay 60s Liberty Intro</button>
+                            </div>
+                            <div id="lifetimeKeyStatus" style="font-size:12px; color:#6ee7b7; min-height:16px; margin-top:4px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5B: WORK IDE & EXTENSIONS -->
+                    <div class="settings-tab-pane" id="settingsTab_workide">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>AURA Work IDE &amp; 0-Cost Extensions</h3>
+                                <p>Configure your PC-only Monaco VS Code engine, 32+ zero-cost extensions, and Self-Healing Mistake-Prevention loop.</p>
+                            </div>
+                            <button type="button" class="settings-btn-primary" onclick="closeModelSettings(); setAuraWorkspaceMode('work');">Launch Work IDE →</button>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div class="settings-card-eyebrow">VS Code Monaco Editor Preferences</div>
+                            <div class="settings-field-grid-3">
+                                <div class="settings-field-group">
+                                    <label for="workIdeFontSize">Editor Font Size (px)</label>
+                                    <select id="workIdeFontSize" onchange="updateWorkIdeSettingFromUI()">
+                                        <option value="12">12 px (Compact)</option>
+                                        <option value="13" selected>13 px (Standard)</option>
+                                        <option value="14">14 px (Executive)</option>
+                                        <option value="16">16 px (Presentation)</option>
+                                    </select>
+                                </div>
+                                <div class="settings-field-group">
+                                    <label for="workIdeThemeSelect">Editor Color Theme</label>
+                                    <select id="workIdeThemeSelect" onchange="updateWorkIdeSettingFromUI()">
+                                        <option value="obsidian-gold">Liberty Obsidian Gold</option>
+                                        <option value="one-dark-pro">One Dark Pro</option>
+                                        <option value="tokyo-night">Tokyo Night</option>
+                                        <option value="github-dark">GitHub Dark Dimmed</option>
+                                        <option value="monokai-pro">Monokai Pro Obsidian</option>
+                                        <option value="nord-arctic">Nord Arctic</option>
+                                    </select>
+                                </div>
+                                <div class="settings-field-group">
+                                    <label for="workIdeWordWrap">Word Wrap</label>
+                                    <select id="workIdeWordWrap" onchange="updateWorkIdeSettingFromUI()">
+                                        <option value="off">Off (Wide Code)</option>
+                                        <option value="on">On (Wrapped)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:8px;">
+                                <label class="aura-switch"><input type="checkbox" id="workIdeMinimapToggle" checked onchange="updateWorkIdeSettingFromUI()"><span style="font-size:12px;color:#e2e8f0;">Show Code Minimap</span></label>
+                                <label class="aura-switch"><input type="checkbox" id="workIdeSelfHealToggle" checked onchange="updateWorkIdeSettingFromUI()"><span style="font-size:12px;color:#6ee7b7;">Auto Self-Heal &amp; Never Repeat Fixed Bugs</span></label>
+                            </div>
+                            <div id="workIdeStatsSummary" style="margin-top:8px; font-family:var(--font-code); font-size:11.5px; color:#93c5fd; padding:9px 11px; border-radius:9px; background:rgba(0,0,0,0.34); border:1px solid rgba(255,255,255,0.08);">Checking Work IDE extensions &amp; Self-Healing memory...</div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5C: COMPLAINTS, BUG REPORTS & ACTION PLANNING -->
+                    <div class="settings-tab-pane" id="settingsTab_reports">
+                        <div class="settings-pane-head">
+                            <div>
+                                <h3>Complaints, Bug Reports &amp; Resolution Planning</h3>
+                                <p>Every complaint or bug report automatically generates a 4-step Engineering Resolution Plan, SLA target, and live Owner tracking.</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div class="settings-card-eyebrow">Submit New Complaint / Report</div>
+                            <div class="settings-field-grid">
+                                <div class="settings-field-group">
+                                    <label for="reportCategorySelect">Category</label>
+                                    <select id="reportCategorySelect">
+                                        <option value="bug">Bug / Error / Crash</option>
+                                        <option value="ui">UI / Luxury Design Complaint</option>
+                                        <option value="ai">AI Brain / Code Quality</option>
+                                        <option value="billing">Subscription Key / Billing</option>
+                                        <option value="feature">New Feature Request</option>
+                                        <option value="security">Security / Data Privacy</option>
+                                    </select>
+                                </div>
+                                <div class="settings-field-group">
+                                    <label for="reportSeveritySelect">Priority / Severity</label>
+                                    <select id="reportSeveritySelect">
+                                        <option value="high">High (8h SLA)</option>
+                                        <option value="critical">Critical (2h Emergency SLA)</option>
+                                        <option value="medium" selected>Medium (24h SLA)</option>
+                                        <option value="low">Low (Enhancement)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="settings-field-group">
+                                <label for="reportTitleInput">Issue / Complaint Title</label>
+                                <input id="reportTitleInput" type="text" maxlength="140" placeholder="e.g. Live Preview port did not reload automatically">
+                            </div>
+                            <div class="settings-field-group">
+                                <label for="reportDescInput">Detailed Description &amp; Expected Behavior</label>
+                                <textarea id="reportDescInput" rows="3" maxlength="4000" placeholder="Describe what happened, steps to reproduce, or what upgrade you want planned..." style="width:100%; box-sizing:border-box; background:#090b10; color:#f4f5f7; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px 12px; font-size:12.5px; resize:vertical;"></textarea>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <label class="aura-switch"><input type="checkbox" id="reportIncludeDiag" checked><span style="font-size:11.5px; color:#94a3b8;">Auto-attach active tier, model &amp; device diagnostics</span></label>
+                                <button type="button" id="btnSubmitAuraReport" class="settings-btn-primary" onclick="submitUserReportWithPlan()">Submit &amp; Generate Action Plan</button>
+                            </div>
+                            <div id="reportSubmitStatus" style="font-size:12px; color:#6ee7b7; min-height:16px;"></div>
+                        </div>
+
+                        <div class="settings-panel-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <div class="settings-card-eyebrow">My Tickets &amp; Live Resolution Plans</div>
+                                <button type="button" class="settings-btn-ghost" onclick="loadMyReportsList()" style="padding:4px 10px; font-size:11px;">Refresh</button>
+                            </div>
+                            <div id="myReportsListWrap" style="display:flex; flex-direction:column; gap:10px; max-height:320px; overflow-y:auto;">
+                                <div style="font-size:12px; color:#94a3b8;">Loading your complaints &amp; action plans...</div>
+                            </div>
                         </div>
                     </div>
 
@@ -7405,20 +7711,25 @@
                 <h2 id="subWelcomeTitle" style="font-size:23px; font-weight:800; color:#ffffff; letter-spacing:-0.025em; margin:6px 0 4px;">Welcome to AURA Sovereign</h2>
                 <p id="subWelcomeSub" style="font-size:12.5px; color:#939aa8; margin:0;">Your upgraded workspace theme and flagship engineering capabilities are now active.</p>
             </div>
-            <div class="sub-welcome-kpis">
+            <div class="sub-welcome-kpis" style="grid-template-columns:repeat(2,minmax(0,1fr));">
                 <div class="sub-welcome-kpi">
-                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Daily Chat Limit</div>
-                    <div id="subWelcomeKpiLimit" style="font-family:var(--font-code); font-size:14px; font-weight:700; color:#ffffff; margin-top:3px;">100 / Day</div>
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Activated On</div>
+                    <div id="subWelcomeKpiActivated" style="font-family:var(--font-code); font-size:12.5px; font-weight:700; color:#f8fafc; margin-top:3px;">Just Now</div>
                 </div>
                 <div class="sub-welcome-kpi">
-                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Validity Window</div>
-                    <div id="subWelcomeKpiExpiry" style="font-family:var(--font-code); font-size:14px; font-weight:700; color:#6ee7b7; margin-top:3px;">20 Days</div>
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Valid Until (Expiry)</div>
+                    <div id="subWelcomeKpiExpiry" style="font-family:var(--font-code); font-size:12.5px; font-weight:700; color:#6ee7b7; margin-top:3px;">20 Days</div>
                 </div>
                 <div class="sub-welcome-kpi">
-                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Unlocked Suite</div>
-                    <div id="subWelcomeKpiSuite" style="font-family:var(--font-code); font-size:14px; font-weight:700; color:#a5b4fc; margin-top:3px;">Flagship</div>
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Brain Upgrade &amp; Quota</div>
+                    <div id="subWelcomeKpiLimit" style="font-family:var(--font-code); font-size:12.5px; font-weight:700; color:#e5c17b; margin-top:3px;">+40% Brain · 100/Day</div>
+                </div>
+                <div class="sub-welcome-kpi">
+                    <div style="font-size:10px; color:#8b93a3; text-transform:uppercase; letter-spacing:0.06em;">Luxury Theme &amp; Wallpapers</div>
+                    <div id="subWelcomeKpiSuite" style="font-family:var(--font-code); font-size:12.5px; font-weight:700; color:#93c5fd; margin-top:3px;">Atelier Unlocked</div>
                 </div>
             </div>
+            <div id="subWelcomeVoicesBanner" style="display:none; padding:9px 12px; border-radius:10px; background:rgba(122,162,255,0.1); border:1px solid rgba(122,162,255,0.3); font-size:11.5px; color:#dbeafe;"></div>
             <div>
                 <div style="font-size:10.5px; font-weight:700; color:#8b93a3; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Newly Unlocked Capabilities</div>
                 <div class="sub-welcome-grid" id="subWelcomeFeaturesGrid"></div>
@@ -7490,6 +7801,7 @@
                         <button type="button" class="admin-tab-btn active" id="admTabBtn_users" onclick="switchAdminCenterTab('users')">Real Users &amp; Logins</button>
                         <button type="button" class="admin-tab-btn" id="admTabBtn_creator" onclick="switchAdminCenterTab('creator')">Timed Key Creator</button>
                         <button type="button" class="admin-tab-btn" id="admTabBtn_keys" onclick="switchAdminCenterTab('keys')">All Keys &amp; Timers</button>
+                        <button type="button" class="admin-tab-btn" id="admTabBtn_reports" onclick="switchAdminCenterTab('reports')">Complaints &amp; Plans</button>
                         <button type="button" class="admin-tab-btn" id="admTabBtn_audit" onclick="switchAdminCenterTab('audit')">Audit Log</button>
                     </div>
 
@@ -7517,9 +7829,9 @@
                                 <div>
                                     <label for="admCtrTier" style="font-size:10.5px; color:#8b93a3; display:block; margin-bottom:4px;">Subscription Plan</label>
                                     <select id="admCtrTier" style="width:100%; margin:0;">
-                                        <option value="tier_3">Plan 1 · Sovereign (₹40 · 100/day)</option>
-                                        <option value="tier_4">Plan 2 · Titan (₹99 · 300/day)</option>
-                                        <option value="tier_5">Plan 3 · Apex Omnis (₹199 · Unlimited)</option>
+                                        <option value="tier_3">Plan 1 · AURA Plus ($40 / ₹40 · 100/day)</option>
+                                        <option value="tier_4">Plan 2 · AURA Pro ($79 / ₹99 · 300/day)</option>
+                                        <option value="tier_5">Plan 3 · AURA Ultra ($149 / ₹199 · Unlimited)</option>
                                     </select>
                                 </div>
                                 <div>
@@ -7597,7 +7909,16 @@
                         <div id="admCtrKeysListWrap" style="display:flex; flex-direction:column; gap:8px;"></div>
                     </div>
 
-                    <!-- TAB 4: AUDIT LOG -->
+                    <!-- TAB 4B: COMPLAINTS, REPORTS & OWNER ACTION PLANS -->
+                    <div class="admin-center-pane" id="admTabPane_reports">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div style="font-size:12px; color:#94a3b8;">Inspect every user complaint/bug report, update plan progress, and send an official Owner reply.</div>
+                            <button type="button" class="settings-btn-ghost" onclick="loadAdminReportsList()" style="height:32px;">Reload Reports</button>
+                        </div>
+                        <div id="admCtrReportsListWrap" style="display:flex; flex-direction:column; gap:10px;"></div>
+                    </div>
+
+                    <!-- TAB 5: AUDIT LOG -->
                     <div class="admin-center-pane" id="admTabPane_audit">
                         <div id="admCtrAuditListWrap" style="display:flex; flex-direction:column; gap:6px;"></div>
                     </div>
@@ -8533,6 +8854,8 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
     <script src="/aura_wallpapers.js"></script>
     <script src="/aura_offline_mobile.js"></script>
+    <script src="/aura_work_ide.js"></script>
+    <script src="/aura_cinematic_intro.js"></script>
     <script>
         // Security Initialization: Purge legacy shared/bearer keys from localStorage.
         // Session auth uses HttpOnly; SameSite=Strict cookies + tab sessionStorage token + dynamic CSRF.
@@ -8946,7 +9269,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         let activeSettingsTab = 'ai';
 
         function switchSettingsTab(tabKey = 'ai') {
-            const validTabs = ['ai', 'appearance', 'membership', 'voice', 'memory', 'security'];
+            const validTabs = ['ai', 'appearance', 'membership', 'voice', 'workide', 'reports', 'memory', 'security'];
             const next = validTabs.includes(tabKey) ? tabKey : 'ai';
             activeSettingsTab = next;
             validTabs.forEach(t => {
@@ -8960,12 +9283,18 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 syncAppearanceControlsUi();
             } else if (next === 'voice' && typeof syncVoiceStudioSettingsUi === 'function') {
                 syncVoiceStudioSettingsUi();
+            } else if (next === 'workide' && typeof syncWorkIdeSettingsUI === 'function') {
+                syncWorkIdeSettingsUI();
+            } else if (next === 'reports' && typeof loadMyReportsList === 'function') {
+                loadMyReportsList();
             } else if (next === 'memory') {
                 loadUserMemoriesInspector();
             } else if (next === 'membership' && typeof renderMembershipTierMatrix === 'function') {
                 renderMembershipTierMatrix();
                 if (typeof refreshMembershipStatus === 'function') refreshMembershipStatus();
                 if (typeof updateAdminKeyVaultVisibility === 'function') updateAdminKeyVaultVisibility();
+            } else if (next === 'security' && typeof updateAdminKeyVaultVisibility === 'function') {
+                updateAdminKeyVaultVisibility();
             }
         }
 
@@ -10025,7 +10354,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
         async function handleAuthSubmit(e) {
             e.preventDefault();
-            const u = authUsername.value.trim().toLowerCase();
+            const u = authUsername.value.trim().toLowerCase().replace(/^@+/, '');
             const p = authPassword.value;
             if (!u || !p) {
                 authErrorMsg.innerText = 'Please enter both username and password.';
@@ -10119,6 +10448,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
                     updateUserUI(currentUser);
                     authOverlay.style.display = 'none';
+                    if (window.AuraCinematicIntro && typeof window.AuraCinematicIntro.play === 'function') {
+                        window.AuraCinematicIntro.play({
+                            username: (currentUser && (currentUser.display_name || currentUser.username)) || u
+                        });
+                    }
                     await refreshActiveModelLabel();
                     authUsername.value = '';
                     authPassword.value = '';
@@ -11419,12 +11753,22 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 } else {
                     setScopedActiveThread(currentThreadId);
                 }
+                const curModel = (typeof activeAuraModelTier === 'string' && activeAuraModelTier) ? activeAuraModelTier : 'aura-2.3';
+                const enforceSingle = Boolean(window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow());
                 await window.AuraOfflineMobile.streamOfflineChatTurn({
                     prompt: text,
+                    modelId: curModel,
+                    enforceSingleOfflineModel: enforceSingle,
                     turnData,
                     renderMarkdown,
                     scrollToBottom: scrollChatToBottom,
                     onComplete: async (fullReply) => {
+                        if (enforceSingle && window.AuraOfflineMobile && !window.AuraOfflineMobile.isModelOfflineCapable(curModel) && turnData && turnData.bubble) {
+                            const btnWrap = document.createElement('div');
+                            btnWrap.style.cssText = 'margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;';
+                            btnWrap.innerHTML = `<button type="button" onclick="selectAuraModelTier('aura-2.0'); if(typeof showBridgeToast==='function') showBridgeToast('Switched to AURA 2.0 Offline Simple Chat!', '#34d399');" style="height:32px; padding:0 14px; border-radius:9px; border:none; background:#34d399; color:#06120e; font-size:12px; font-weight:700; cursor:pointer;">Switch to AURA 2.0 (Offline Chat)</button>`;
+                            turnData.bubble.appendChild(btnWrap);
+                        }
                         window._auraOfflineDirtySync = true;
                         try {
                             await recordLocalChatTurn(currentThreadId, text, fullReply, []);
@@ -15217,9 +15561,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const tabReqs = { workspace: 3, diff: 3, heal: 3, warroom: 4, apex: 5 };
             const tabPlanLabel = { 3: 'P1', 4: 'P2', 5: 'P3' };
             const tabTierNames = {
-                3: 'Plan 1 · AURA Sovereign (₹40 / 20 Days)',
-                4: 'Plan 2 · AURA Titan (₹99 / 30 Days)',
-                5: 'Plan 3 · AURA Apex Omnis (₹199 / 30 Days)'
+                3: 'Plan 1 · AURA Plus ($40 / 20 Days)',
+                4: 'Plan 2 · AURA Pro ($79 / 30 Days)',
+                5: 'Plan 3 · AURA Ultra ($149 / 30 Days)'
             };
             Object.keys(tabReqs).forEach(tabKey => {
                 const reqRank = tabReqs[tabKey];
@@ -15250,9 +15594,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const box = document.getElementById('membershipTierMatrix');
             if (!box) return;
             const fallbackPlans = [
-                { id: 'tier_3', plan_number: 1, rank: 3, name: 'AURA Sovereign', price_label: '₹40', duration_label: '20 Days', daily_limit: 100, unlimited: false, feature_coverage: '50% Flagship Suite', features: ['100 Chats / Day (24h Rolling)', '20-Day Validity (Admin Renewable)', 'Half of All AURA Flagship Dev & Browser Tools', 'AST Indexer, Polyglot Sandbox & Self-Heal', 'Upgraded Sapphire-Amethyst Design'] },
-                { id: 'tier_4', plan_number: 2, rank: 4, name: 'AURA Titan', price_label: '₹99', duration_label: '30 Days', daily_limit: 300, unlimited: false, feature_coverage: '80% Flagship Suite', features: ['300 Chats / Day (3x Sovereign)', '30-Day Validity (Admin Renewable)', 'Everything in Sovereign (Plan 1)', 'Parallel 4-Agent War Room & Computer Use', 'Git Diffs, Worktrees, Workflows & Security Audit'] },
-                { id: 'tier_5', plan_number: 3, rank: 5, name: 'AURA Apex Omnis', price_label: '₹199', duration_label: '30 Days', daily_limit: null, unlimited: true, feature_coverage: '100% Complete Suite', features: ['Unlimited Daily Chats (No 24h Cap)', '30-Day Validity (Custom Admin Renewal)', 'Everything in Sovereign & Titan', '6-Stage Apex Autonomous IDE & Remote Control', 'MCP Servers, Plugins & Platinum Monolith Theme'] }
+                { id: 'tier_3', plan_number: 1, rank: 3, name: 'AURA Plus', price_label: '$40', duration_label: '20 Days', daily_limit: 100, unlimited: false, feature_coverage: '+40% Brain · Plus Luxury Suite', features: ['+40% Enhanced AURA Brain — Real Web Apps & Localhost Preview', '100 Chats / Day (24h Rolling) · 20-Day Admin Renewable', 'Champagne-Obsidian Luxury Workspace & 12 Exclusive 4K Wallpapers', 'Terminal Execution, Live Split Preview & Multi-File Diffs', 'Self-Healing Error Repair & Polyglot Code Sandbox'] },
+                { id: 'tier_4', plan_number: 2, rank: 4, name: 'AURA Pro', price_label: '$79', duration_label: '30 Days', daily_limit: 300, unlimited: false, feature_coverage: '+60% Over Plus · Pro Executive', features: ['+60% Stronger Pro Brain Beyond Plus — Deep Architecture', '6 Unlocked VOX Neural Voice Personas + Studio Controls', '300 Chats / Day (3x Plus Capacity) · 30-Day Validity', 'Distinct Sapphire-Titanium Executive UI & 24 Pro 4K Wallpapers', 'Parallel 4-Agent War Room, Git Diffs & Security AST Audits'] },
+                { id: 'tier_5', plan_number: 3, rank: 5, name: 'AURA Ultra', price_label: '$149', duration_label: '30 Days', daily_limit: null, unlimited: true, feature_coverage: 'Antigravity + Codex + Cloud Class', features: ['Flagship Ultra Autonomous Brain (Antigravity + Codex + Cloud)', 'Full Live Browser Control & Computer-Use Automation', 'Unlimited Daily Chats (Zero 24h Cap) · 30-Day Custom Validity', 'Distinct Liquid-Chrome Diamond UI + ALL 170+ 4K Wallpapers', 'Full VS Code Work IDE, 32+ Free Extensions & Self-Healing Memory'] }
             ];
             const paidPlans = (cachedMembershipTiers && cachedMembershipTiers.length)
                 ? cachedMembershipTiers.filter(t => Number(t.rank || 0) >= 3)
@@ -15282,19 +15626,31 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         function showSubWelcomeModal(welcome) {
             const ov = document.getElementById('auraSubWelcomeOverlay');
             if (!ov || !welcome) return;
+            window._pendingSubWelcomeUpgrade = welcome;
             const ey = document.getElementById('subWelcomeEyebrow');
             const ti = document.getElementById('subWelcomeTitle');
             const su = document.getElementById('subWelcomeSub');
+            const ka = document.getElementById('subWelcomeKpiActivated');
             const kl = document.getElementById('subWelcomeKpiLimit');
             const ke = document.getElementById('subWelcomeKpiExpiry');
             const ks = document.getElementById('subWelcomeKpiSuite');
+            const vb = document.getElementById('subWelcomeVoicesBanner');
             const gr = document.getElementById('subWelcomeFeaturesGrid');
-            if (ey) ey.textContent = `SUBSCRIPTION ACTIVATED · ${welcome.badge || 'PRO'}`;
-            if (ti) ti.textContent = `Welcome to ${welcome.plan_name || 'AURA Pro'}, ${welcome.username || 'Member'}`;
-            if (su) su.textContent = `Your ${welcome.plan_name} workspace theme and expanded engineering tools are now live.`;
-            if (kl) kl.textContent = welcome.daily_limit_label || '100 Chats / Day';
-            if (ke) ke.textContent = `${welcome.duration_days || 20} Days · ${welcome.expires_label || ''}`;
-            if (ks) ks.textContent = welcome.feature_coverage || 'Unlocked';
+            if (ey) ey.textContent = `SUBSCRIPTION ACTIVATED · ${welcome.badge || 'AURA PRO'}`;
+            if (ti) ti.textContent = `Welcome to ${welcome.plan_name || 'AURA Plus'}, ${welcome.username || 'Member'}`;
+            if (su) su.textContent = `Close this card to transform your entire AURA screen into ${welcome.theme_title || 'Luxury Executive Mode'} with exclusive 4K wallpapers and ${welcome.brain_boost || 'upgraded AURA Brain'}.`;
+            if (ka) ka.textContent = welcome.activated_label || new Date().toLocaleString();
+            if (ke) ke.textContent = `${welcome.duration_label || ((welcome.duration_days || 20) + ' Days')} · Exp ${welcome.expires_datetime_label || welcome.expires_label || ''}`;
+            if (kl) kl.textContent = `${welcome.brain_boost || '+40% Brain'} · ${welcome.daily_limit_label || '100/Day'}`;
+            if (ks) ks.textContent = `${welcome.theme_title || 'Atelier'} · ${welcome.unlocked_wallpapers_label || '4K Unlocked'}`;
+            if (vb) {
+                if (Array.isArray(welcome.unlocked_voices) && welcome.unlocked_voices.length) {
+                    vb.style.display = 'block';
+                    vb.innerHTML = `<strong style="color:#ffffff;">Unlocked VOX Voices:</strong> ${escapeHtml(welcome.unlocked_voices.join(' · '))}`;
+                } else {
+                    vb.style.display = 'none';
+                }
+            }
             const checkSvg = '<svg width="13" height="13" style="flex-shrink:0; margin-top:2px; color:#6ee7b7;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
             if (gr) {
                 gr.innerHTML = (welcome.unlocked_features || []).map(f => `<div class="sub-welcome-feat">${checkSvg}<span>${escapeHtml(f)}</span></div>`).join('');
@@ -15305,6 +15661,22 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         function closeSubWelcomeModal() {
             const ov = document.getElementById('auraSubWelcomeOverlay');
             if (ov) ov.classList.remove('open');
+            const pending = window._pendingSubWelcomeUpgrade;
+            window._pendingSubWelcomeUpgrade = null;
+            if (pending) {
+                const rank = pending.plan_id === 'tier_5' ? 5 : (pending.plan_id === 'tier_4' ? 4 : 3);
+                if (window.AuraWallpaperEngine && typeof window.AuraWallpaperEngine.getTierSignatureWallpaperId === 'function' && !window.AuraWallpaperEngine.isLocked()) {
+                    const sigWp = window.AuraWallpaperEngine.getTierSignatureWallpaperId(rank);
+                    if (typeof selectWallpaperPreset === 'function') {
+                        selectWallpaperPreset(sigWp, { keepAuto: true });
+                    } else {
+                        window.AuraWallpaperEngine.setActive(sigWp);
+                    }
+                }
+                if (typeof showBridgeToast === 'function') {
+                    showBridgeToast(`Screen upgraded to ${pending.plan_name} (${pending.theme_title || 'Luxury Edition'})!`, pending.accent || '#e5c17b');
+                }
+            }
         }
 
         async function refreshMembershipStatus() {
@@ -15494,7 +15866,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function switchAdminCenterTab(tabName) {
-            const tabs = ['users', 'creator', 'keys', 'audit'];
+            const tabs = ['users', 'creator', 'keys', 'reports', 'audit'];
             tabs.forEach(t => {
                 const btn = document.getElementById('admTabBtn_' + t);
                 const pane = document.getElementById('admTabPane_' + t);
@@ -15504,6 +15876,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (getAdminVaultToken()) {
                 if (tabName === 'users') loadAdminUsersOverview();
                 else if (tabName === 'keys') loadAdminCenterKeysList();
+                else if (tabName === 'reports') loadAdminReportsList();
                 else if (tabName === 'audit') loadAdminUsersOverview();
             }
         }
@@ -15576,7 +15949,239 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
         async function refreshAdminCommandCenter() {
             if (!isCurrentUserKeyAdmin() || !getAdminVaultToken()) return;
-            await Promise.all([loadAdminUsersOverview(), loadAdminCenterKeysList()]);
+            await Promise.all([loadAdminUsersOverview(), loadAdminCenterKeysList(), loadAdminReportsList()]);
+        }
+
+        // ---------------- Chat | Work Mode Switcher, Work IDE Settings, Complaints/Plans & Lifetime .aura-id ----------------
+        function setAuraModePillVisual(mode) {
+            const bChat = document.getElementById('modeBtnChat');
+            const bWork = document.getElementById('modeBtnWork');
+            if (bChat) bChat.classList.toggle('active', mode !== 'work');
+            if (bWork) bWork.classList.toggle('active', mode === 'work');
+        }
+
+        function setAuraWorkspaceMode(mode) {
+            if (mode === 'work') {
+                if (window.AuraWorkIDE && typeof window.AuraWorkIDE.open === 'function') {
+                    window.AuraWorkIDE.open();
+                } else if (typeof showBridgeToast === 'function') {
+                    showBridgeToast('AURA Work IDE module is loading...', '#e5c17b');
+                }
+            } else {
+                if (window.AuraWorkIDE && typeof window.AuraWorkIDE.close === 'function') {
+                    window.AuraWorkIDE.close();
+                }
+                setAuraModePillVisual('chat');
+            }
+        }
+
+        function syncWorkIdeSettingsUI() {
+            if (!window.AuraWorkIDE || typeof window.AuraWorkIDE.getStats !== 'function') return;
+            const st = window.AuraWorkIDE.getStats();
+            const fs = document.getElementById('workIdeFontSize');
+            const th = document.getElementById('workIdeThemeSelect');
+            const ww = document.getElementById('workIdeWordWrap');
+            const mm = document.getElementById('workIdeMinimapToggle');
+            const sh = document.getElementById('workIdeSelfHealToggle');
+            const sum = document.getElementById('workIdeStatsSummary');
+            if (fs) fs.value = String(st.prefs.fontSize || 13);
+            if (th) th.value = String(st.prefs.theme || 'obsidian-gold');
+            if (ww) ww.value = String(st.prefs.wordWrap || 'off');
+            if (mm) mm.checked = Boolean(st.prefs.minimap);
+            if (sh) sh.checked = Boolean(st.prefs.selfHealAuto);
+            if (sum) {
+                sum.textContent = `VS Code Monaco Engine (₹0 Cost) · ${st.installedExtensions}/${st.totalExtensions} Extensions Active · ${st.mistakesCount} Self-Healing Prevention Rule(s) Learned`;
+            }
+        }
+
+        function updateWorkIdeSettingFromUI() {
+            if (!window.AuraWorkIDE || typeof window.AuraWorkIDE.updateIdePrefs !== 'function') return;
+            window.AuraWorkIDE.updateIdePrefs({
+                fontSize: Number((document.getElementById('workIdeFontSize') || {}).value || 13),
+                theme: String((document.getElementById('workIdeThemeSelect') || {}).value || 'obsidian-gold'),
+                wordWrap: String((document.getElementById('workIdeWordWrap') || {}).value || 'off'),
+                minimap: Boolean((document.getElementById('workIdeMinimapToggle') || {}).checked),
+                selfHealAuto: Boolean((document.getElementById('workIdeSelfHealToggle') || {}).checked),
+            });
+            syncWorkIdeSettingsUI();
+            if (typeof showBridgeToast === 'function') showBridgeToast('Work IDE preferences saved!', '#6ee7b7');
+        }
+
+        function _renderReportCardHtml(r, isAdminView) {
+            const plan = (r && r.action_plan) || {};
+            const steps = Array.isArray(plan.steps) ? plan.steps : [];
+            const stColor = r.status === 'resolved' ? '#6ee7b7' : (r.status === 'in_progress' ? '#93c5fd' : '#fcd34d');
+            const stepsHtml = steps.map(s => {
+                const icon = s.status === 'done' ? '<span style="color:#6ee7b7;font-weight:800;">✓</span>' : (s.status === 'in_progress' ? '<span style="color:#93c5fd;font-weight:800;">◉</span>' : '<span style="color:#64748b;">○</span>');
+                return `<div class="report-plan-step">${icon}<div><strong style="color:#f8fafc;">${escapeHtml(s.title || '')}</strong><div style="color:#94a3b8;font-size:11px;margin-top:1px;">${escapeHtml(s.detail || '')}</div></div></div>`;
+            }).join('');
+            const safeRid = escapeHtml(r.id || '').replace(/'/g, "\\'");
+            return `<div class="report-ticket-card">` +
+                `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">` +
+                `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">` +
+                `<code style="font-size:11px;color:#e5c17b;font-weight:700;">${escapeHtml(r.id)}</code>` +
+                `<span style="font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,0.08);color:${stColor};text-transform:uppercase;font-weight:700;">${escapeHtml(r.status || 'planned')}</span>` +
+                `<span style="font-size:10px;color:#94a3b8;text-transform:uppercase;">${escapeHtml(r.category)} · ${escapeHtml(r.severity)}</span>` +
+                (isAdminView ? `<span style="font-size:10.5px;color:#93c5fd;">@${escapeHtml(r.username)}</span>` : '') +
+                `</div>` +
+                `<span style="font-size:10.5px;color:#6ee7b7;font-family:var(--font-code);">${escapeHtml(plan.track || 'Engineering')} · ${escapeHtml(plan.sla || '24h SLA')}</span>` +
+                `</div>` +
+                `<div style="font-size:13px;font-weight:700;color:#ffffff;">${escapeHtml(r.title)}</div>` +
+                `<div style="font-size:12px;color:#cbd5e1;line-height:1.5;">${escapeHtml(r.description)}</div>` +
+                (stepsHtml ? `<div style="display:flex;flex-direction:column;gap:4px;margin-top:2px;">${stepsHtml}</div>` : '') +
+                (r.admin_reply ? `<div style="padding:8px 10px;border-radius:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(52,211,153,0.32);font-size:11.5px;color:#d1fae5;"><strong>Owner (@ig.ahmed.irl) Reply:</strong> ${escapeHtml(r.admin_reply)}</div>` : '') +
+                (isAdminView ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);">` +
+                    `<select id="admRptStatus_${escapeHtml(r.id)}" style="width:140px;margin:0;height:32px;font-size:11.5px;">` +
+                    ['planned', 'triage', 'in_progress', 'resolved', 'closed'].map(st => `<option value="${st}" ${r.status === st ? 'selected' : ''}>${st}</option>`).join('') +
+                    `</select>` +
+                    `<input id="admRptReply_${escapeHtml(r.id)}" type="text" placeholder="Write official Owner reply..." value="${escapeHtml(r.admin_reply || '')}" style="flex:1;min-width:180px;margin:0;height:32px;font-size:11.5px;">` +
+                    `<button type="button" class="settings-btn-primary" style="height:32px;font-size:11px;padding:0 12px;" onclick="saveAdminReportUpdate('${safeRid}')">Save &amp; Reply</button>` +
+                    `</div>` : '') +
+                `</div>`;
+        }
+
+        async function submitUserReportWithPlan() {
+            const cat = (document.getElementById('reportCategorySelect') || {}).value || 'bug';
+            const sev = (document.getElementById('reportSeveritySelect') || {}).value || 'medium';
+            const titleEl = document.getElementById('reportTitleInput');
+            const descEl = document.getElementById('reportDescInput');
+            const diagCb = document.getElementById('reportIncludeDiag');
+            const statusEl = document.getElementById('reportSubmitStatus');
+            const btn = document.getElementById('btnSubmitAuraReport');
+            const title = (titleEl ? titleEl.value : '').trim();
+            const description = (descEl ? descEl.value : '').trim();
+            if (title.length < 3 || description.length < 8) {
+                if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = 'Please enter a clear title (3+ chars) and description (8+ chars).'; }
+                return;
+            }
+            if (btn) btn.disabled = true;
+            if (statusEl) { statusEl.style.color = '#93c5fd'; statusEl.textContent = 'Creating ticket & generating 4-step Resolution Action Plan...'; }
+            try {
+                const diagnostics = (diagCb && diagCb.checked) ? {
+                    tier: activeMembershipState.name || 'Standard',
+                    model: typeof activeAuraModelTier === 'string' ? activeAuraModelTier : 'aura-2.3',
+                    viewport: `${window.innerWidth}x${window.innerHeight}`,
+                    online: navigator.onLine !== false,
+                } : {};
+                const res = await apiFetch('/api/reports/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category: cat, severity: sev, title, description, diagnostics })
+                });
+                const data = await safeParseJson(res);
+                if (res.ok && data.success) {
+                    if (titleEl) titleEl.value = '';
+                    if (descEl) descEl.value = '';
+                    if (statusEl) { statusEl.style.color = '#6ee7b7'; statusEl.textContent = `Ticket ${data.report.id} logged with automated 4-step Resolution Action Plan!`; }
+                    await loadMyReportsList();
+                } else {
+                    if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = (data && data.error) || 'Could not submit report.'; }
+                }
+            } catch (err) {
+                if (statusEl) { statusEl.style.color = '#fca5a5'; statusEl.textContent = err.message || 'Network error while submitting report.'; }
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function loadMyReportsList() {
+            const box = document.getElementById('myReportsListWrap');
+            if (!box || !isAuthenticated()) return;
+            try {
+                const res = await apiFetch('/api/reports/my', { method: 'GET' });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success || !Array.isArray(data.reports) || !data.reports.length) {
+                    box.innerHTML = '<div style="font-size:12px;color:#94a3b8;">No complaints or bug reports submitted yet. Submit one above to generate an instant structured Resolution Action Plan.</div>';
+                    return;
+                }
+                box.innerHTML = data.reports.map(r => _renderReportCardHtml(r, false)).join('');
+            } catch (_) {
+                box.innerHTML = '<div style="font-size:12px;color:#94a3b8;">Connect to Wi-Fi to load synced tickets.</div>';
+            }
+        }
+
+        async function loadAdminReportsList() {
+            const box = document.getElementById('admCtrReportsListWrap');
+            if (!box || !isCurrentUserKeyAdmin() || !getAdminVaultToken()) return;
+            try {
+                const res = await apiFetch('/api/admin/reports/list', {
+                    method: 'GET',
+                    headers: { 'X-Admin-Vault-Token': getAdminVaultToken() }
+                });
+                const data = await safeParseJson(res);
+                if (!res.ok || !data.success || !Array.isArray(data.reports) || !data.reports.length) {
+                    box.innerHTML = '<div style="font-size:12px;color:#94a3b8;">Zero user complaints or bug reports right now — everything is running smoothly!</div>';
+                    return;
+                }
+                box.innerHTML = data.reports.map(r => _renderReportCardHtml(r, true)).join('');
+            } catch (_) {}
+        }
+
+        async function saveAdminReportUpdate(reportId) {
+            const stEl = document.getElementById('admRptStatus_' + reportId);
+            const repEl = document.getElementById('admRptReply_' + reportId);
+            const res = await apiFetch('/api/admin/reports/update', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({
+                    report_id: reportId,
+                    status: stEl ? stEl.value : 'in_progress',
+                    admin_reply: repEl ? repEl.value.trim() : ''
+                })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(`Updated ${reportId} (${data.report.status})`, '#34d399');
+                await loadAdminReportsList();
+            } else if (typeof showBridgeToast === 'function') {
+                showBridgeToast((data && data.error) || 'Update failed', '#f87171');
+            }
+        }
+
+        async function downloadLifetimeAccountKey() {
+            const st = document.getElementById('lifetimeKeyStatus');
+            const uname = String((currentUser && currentUser.username) || '').trim().toLowerCase();
+            if (!uname) return;
+            const proof = await loadAccountProofAsync(uname);
+            if (!proof) {
+                if (st) { st.style.color = '#fcd34d'; st.textContent = 'Log in once online to mint your server-signed encrypted .aura-id key.'; }
+                return;
+            }
+            const payload = {
+                format: 'AURA_LIFETIME_ID_V1',
+                username: uname,
+                account_proof: proof,
+                exported_at: new Date().toISOString(),
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${uname}.aura-id.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+            if (st) { st.style.color = '#6ee7b7'; st.textContent = `Downloaded ${uname}.aura-id.json — keep it safe for lifetime cross-device login!`; }
+        }
+
+        async function importLifetimeAccountKey(event) {
+            const st = document.getElementById('lifetimeKeyStatus');
+            const file = event && event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            try {
+                const txt = await file.text();
+                const obj = JSON.parse(txt);
+                if (!obj || !obj.username || !obj.account_proof || !String(obj.account_proof).startsWith('aura_ap1.')) {
+                    throw new Error('Invalid .aura-id key file.');
+                }
+                const cleanU = String(obj.username).trim().toLowerCase().replace(/^@+/, '');
+                saveAccountProof(cleanU, obj.account_proof);
+                if (st) { st.style.color = '#6ee7b7'; st.textContent = `Lifetime key restored for @${cleanU}! You can now log in anytime with your original password.`; }
+            } catch (err) {
+                if (st) { st.style.color = '#fca5a5'; st.textContent = err.message || 'Could not import .aura-id file.'; }
+            }
+            if (event && event.target) event.target.value = '';
         }
 
         async function loadAdminUsersOverview() {
