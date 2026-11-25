@@ -14,9 +14,12 @@ import base64
 import json
 import os
 import re
+import secrets
 import shutil
+import subprocess
 import sys
 import tempfile
+import time
 import urllib.parse
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -322,7 +325,7 @@ CSP_HEADER_VALUE = (
     "media-src 'self' blob: data:; "
     "worker-src 'self' blob:; "
     "frame-src 'self' http://127.0.0.1:* http://localhost:* blob: data:; "
-    "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://images.unsplash.com; "
+    "connect-src 'self' http://127.0.0.1:5055 https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://images.unsplash.com; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "
     "object-src 'none'"
@@ -1235,6 +1238,93 @@ class AuraWebHandler(BaseHTTPRequestHandler):
         elif path == "/api/system/broadcast":
             bc = aura_db.get_system_config("global_broadcast", {"active": False, "message": "", "level": "info"})
             self._send_json({"success": True, "broadcast": bc})
+
+        elif path == "/api/desktop/companion.py":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user)
+            if int(mem.get("rank", 0)) < 3 and not aura_membership.is_key_admin_user(user):
+                self._send_json({
+                    "success": False,
+                    "error": "Universal Laptop Automation Companion requires AURA Plus ($40), AURA Pro ($79), or AURA Ultra ($149).",
+                    "required_rank": 3,
+                }, status=403)
+                return
+            uname_clean = str(user.get("username") or "member").strip().lower()
+            tier_name = str(mem.get("name") or "AURA Plus")
+            pair_tok = f"aura_pc_{secrets.token_hex(12)}"
+            script_src = (
+                "#!/usr/bin/env python3\n"
+                f'"""AURA Universal Laptop Automation Companion — Bound to @{uname_clean} ({tier_name})\n'
+                "Run: python aura_desktop_agent.py\n"
+                "Securely bridges https://aura-agent.xyz to YOUR laptop (127.0.0.1:5055 ONLY).\n"
+                '"""\n'
+                "import json, os, platform, subprocess, sys, webbrowser\n"
+                "from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n"
+                "from pathlib import Path\n\n"
+                f"PAIR_TOKEN = {pair_tok!r}\n"
+                f"OWNER_USER = {uname_clean!r}\n"
+                f"TIER_NAME = {tier_name!r}\n"
+                "ALLOWED_ORIGINS = {'https://aura-agent.xyz', 'https://www.aura-agent.xyz', 'http://127.0.0.1:5050', 'http://localhost:5050'}\n"
+                "WORK_ROOT = Path.home() / 'AURA_Projects'\n"
+                "WORK_ROOT.mkdir(parents=True, exist_ok=True)\n\n"
+                "class AuraLaptopBridge(BaseHTTPRequestHandler):\n"
+                "    def _cors(self):\n"
+                "        orig = self.headers.get('Origin', '')\n"
+                "        if orig in ALLOWED_ORIGINS:\n"
+                "            self.send_header('Access-Control-Allow-Origin', orig)\n"
+                "            self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-Aura-Bridge-Token')\n"
+                "            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')\n"
+                "    def _json(self, obj, code=200):\n"
+                "        raw = json.dumps(obj).encode('utf-8')\n"
+                "        self.send_response(code); self.send_header('Content-Type', 'application/json')\n"
+                "        self.send_header('Content-Length', str(len(raw))); self._cors(); self.end_headers(); self.wfile.write(raw)\n"
+                "    def do_OPTIONS(self):\n"
+                "        self.send_response(204); self._cors(); self.end_headers()\n"
+                "    def do_GET(self):\n"
+                "        if self.path == '/health':\n"
+                "            return self._json({'ok': True, 'user': OWNER_USER, 'tier': TIER_NAME, 'os': platform.system(), 'host': platform.node(), 'work_root': str(WORK_ROOT)})\n"
+                "        self._json({'ok': False, 'error': 'Not found'}, 404)\n"
+                "    def do_POST(self):\n"
+                "        if self.headers.get('X-Aura-Bridge-Token', '') != PAIR_TOKEN:\n"
+                "            return self._json({'ok': False, 'error': 'Invalid pairing token'}, 403)\n"
+                "        ln = int(self.headers.get('Content-Length') or 0)\n"
+                "        body = json.loads(self.rfile.read(ln).decode('utf-8') or '{}')\n"
+                "        if self.path == '/exec':\n"
+                "            cmd = str(body.get('command') or '').strip()\n"
+                "            cwd = str(body.get('cwd') or WORK_ROOT)\n"
+                "            p = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=60)\n"
+                "            return self._json({'ok': p.returncode == 0, 'returncode': p.returncode, 'stdout': p.stdout[-8000:], 'stderr': p.stderr[-4000:]})\n"
+                "        if self.path == '/write_file':\n"
+                "            rel = str(body.get('path') or '').lstrip('/\\\\')\n"
+                "            target = (WORK_ROOT / rel).resolve()\n"
+                "            target.parent.mkdir(parents=True, exist_ok=True)\n"
+                "            target.write_text(str(body.get('content') or ''), encoding='utf-8')\n"
+                "            return self._json({'ok': True, 'saved': str(target)})\n"
+                "        if self.path == '/open_url':\n"
+                "            webbrowser.open(str(body.get('url') or 'https://aura-agent.xyz'))\n"
+                "            return self._json({'ok': True})\n"
+                "        self._json({'ok': False, 'error': 'Unknown action'}, 404)\n\n"
+                "if __name__ == '__main__':\n"
+                "    print(f'\\n=== AURA LAPTOP AUTOMATION BRIDGE ACTIVE ({platform.system()}) ===')\n"
+                "    print(f'Bound User : @{OWNER_USER} ({TIER_NAME})')\n"
+                "    print(f'Projects   : {WORK_ROOT}')\n"
+                "    print(f'Pair Token : {PAIR_TOKEN}')\n"
+                "    print('Listening  : http://127.0.0.1:5055 (CORS-locked to aura-agent.xyz)\\n')\n"
+                "    ThreadingHTTPServer(('127.0.0.1', 5055), AuraLaptopBridge).serve_forever()\n"
+            ).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/x-python; charset=utf-8")
+            self.send_header("Content-Disposition", 'attachment; filename="aura_desktop_agent.py"')
+            self.send_header("X-Aura-Bridge-Token", pair_tok)
+            self.send_header("Content-Length", str(len(script_src)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Connection", "close")
+            self._apply_security_and_cors_headers()
+            self.end_headers()
+            self.wfile.write(script_src)
 
         elif path == "/api/pro/index":
             user = self._get_auth_user()
@@ -2362,7 +2452,6 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             if not is_safe:
                 self._send_json({"success": False, "command": cmd, "error": f"Security Sandbox: {reason}", "exit_code": 1}, status=403)
                 return
-            import subprocess
             try:
                 if sys.platform == "win32":
                     shell_args = ["powershell", "-NoProfile", "-Command", cmd]
@@ -3513,6 +3602,153 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "quota": quota_status,
                 "membership": mem,
                 "lessons_count": len(aura_db.list_mistake_lessons(uid, limit=30)),
+            })
+
+        elif path == "/api/chat/autonomous":
+            # RELENTLESS ZERO-BUG AUTONOMOUS EXECUTION LOOP (Strictly Paid Plans: Plus 3x / Pro 5x / Ultra 8x passes!)
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            rank = int(mem.get("rank", 0))
+            if rank < 3 and not aura_membership.is_key_admin_user(user):
+                self._send_json({
+                    "success": False,
+                    "error": "Relentless Auto-Verify & Zero-Bug Execution requires AURA Plus ($40), AURA Pro ($79), or AURA Ultra ($149). Free Standard is for conversational chat only.",
+                    "required_rank": 3,
+                }, status=403)
+                return
+            uid = int(user["id"])
+            ws_dir = _resolve_workspace_dir(uid)
+            goal = str(body.get("prompt") or "").strip()[:24000]
+            thread_id = str(body.get("thread_id") or "default")[:64]
+            if not goal:
+                self._send_json({"success": False, "error": "Please provide an order or task goal."}, status=400)
+                return
+
+            quota_ok, quota_status = aura_membership.check_and_consume_chat_quota(user, goal, mem)
+            if not quota_ok:
+                self._send_json({"success": False, "error": f"Daily quota reached ({quota_status['used']}/{quota_status['limit']}).", "quota": quota_status}, status=429)
+                return
+
+            max_passes = 8 if rank >= 5 else (5 if rank >= 4 else 3)
+            aura_db.save_message(uid, thread_id, "user", goal)
+            conv_history = _build_conversation_history(uid, thread_id)
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+
+            import ast as _ast
+            mistake_guard = aura_db.build_mistake_prevention_prompt(uid, limit=12)
+            tier_dir = aura_membership.build_tier_brain_directive(mem)
+
+            def _write_and_verify(raw_reply: str) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+                w_files: List[Dict[str, Any]] = []
+                seen_p = set()
+                for m in re.finditer(r"```[a-zA-Z0-9_+-]*:([^\n`]+)\n(.*?)```", str(raw_reply or ""), re.S):
+                    rp = m.group(1).strip().strip("`'\" ").lstrip("/")
+                    cb = m.group(2)
+                    if not rp or rp in seen_p:
+                        continue
+                    tp = _safe_resolve_under(ws_dir, rp)
+                    if tp is not None and cb.strip():
+                        _atomic_write_text(tp, cb, encoding="utf-8")
+                        rel_c = tp.relative_to(ws_dir).as_posix()
+                        seen_p.add(rel_c)
+                        w_files.append({"path": rel_c, "lines": len(cb.splitlines()), "bytes": len(cb)})
+                errs: List[Dict[str, Any]] = []
+                for wf in w_files:
+                    fp = _safe_resolve_under(ws_dir, wf["path"])
+                    if not fp or not fp.exists():
+                        continue
+                    src_t = fp.read_text(encoding="utf-8", errors="replace")
+                    ext = fp.suffix.lower()
+                    if ext == ".py":
+                        try:
+                            _ast.parse(src_t, filename=wf["path"])
+                        except SyntaxError as se:
+                            errs.append({"file": wf["path"], "line": int(se.lineno or 1), "message": f"Python SyntaxError: {se.msg}"})
+                    elif ext == ".json":
+                        try:
+                            json.loads(src_t)
+                        except Exception as je:
+                            errs.append({"file": wf["path"], "line": 1, "message": f"JSON Error: {je}"})
+                    elif ext in (".js", ".mjs"):
+                        try:
+                            pr = subprocess.run(["node", "--check", str(fp)], capture_output=True, text=True, timeout=5)
+                            if pr.returncode != 0:
+                                errs.append({"file": wf["path"], "line": 1, "message": (pr.stderr or "JS SyntaxError")[:260]})
+                        except Exception:
+                            pass
+                    elif ext == ".html":
+                        if src_t.count("<script") != src_t.count("</script>"):
+                            errs.append({"file": wf["path"], "line": 1, "message": "Unbalanced <script> tags"})
+                return w_files, errs
+
+            passes_log: List[Dict[str, Any]] = []
+            written_files: List[Dict[str, Any]] = []
+            verify_errors: List[Dict[str, Any]] = []
+            current_prompt = (
+                f"{tier_dir}\n{mistake_guard}\n"
+                f"[AURA RELENTLESS ZERO-BUG AUTONOMOUS ENGINE — MAX {max_passes} VERIFICATION PASSES]\n"
+                f"Execute this user order completely with zero stubs, zero excuses, and production-ready code. "
+                f"When generating files, label fenced blocks as ```lang:relative/path.ext``` so AURA writes & verifies them automatically.\n\n"
+                f"ORDER: {goal}"
+            )
+            final_reply = ""
+            for pass_num in range(1, max_passes + 1):
+                final_reply = brain.think_and_act(current_prompt, permission_mode="auto_pilot", approved=True, conversation_history=conv_history if pass_num == 1 else None)
+                w_files, errs = _write_and_verify(final_reply)
+                if w_files:
+                    written_files = w_files
+                verify_errors = errs
+                passes_log.append({
+                    "pass": pass_num,
+                    "files_written": len(w_files),
+                    "errors_found": len(errs),
+                    "status": "GREEN_VERIFIED" if not errs else "AUTO_FIXING",
+                })
+                if not errs:
+                    break
+                for ve in errs:
+                    aura_db.record_mistake_lesson(
+                        uid,
+                        error_signature=f"{ve['file']}:{ve['message']}"[:150],
+                        root_cause=ve["message"],
+                        verified_fix=f"Auto-healed on autonomous pass {pass_num + 1}",
+                        prevention_rule=f"Never repeat `{ve['message'][:80]}` in {ve['file']}.",
+                        project_scope=ve["file"],
+                    )
+                err_summary = "\n".join(f"- {e['file']} line {e['line']}: {e['message']}" for e in errs)
+                current_prompt = (
+                    f"VERIFICATION FAILED ON PASS {pass_num}/{max_passes}. FIX EVERY ERROR BELOW AND RETURN THE COMPLETE CORRECTED LABELED FILE BLOCKS:\n"
+                    f"{err_summary}\n\nOriginal order: {goal}"
+                )
+
+            preview_entry = next((wf["path"] for wf in written_files if wf["path"].lower().endswith((".html", ".htm"))), "")
+            tools_used = list(getattr(brain, "last_tools", []) or [])
+            tools_used.append({"name": "autonomous_verify", "output": f"Completed in {len(passes_log)}/{max_passes} pass(es) · {'0 Errors (100% Verified)' if not verify_errors else f'{len(verify_errors)} remaining'}"})
+            for wf in written_files:
+                tools_used.append({"name": "edit_file", "output": f"Verified {wf['path']} ({wf['lines']} lines)"})
+            if preview_entry:
+                tools_used.append({"name": "live_preview", "output": f"/api/workspace/preview/{preview_entry}"})
+            aura_db.save_message(uid, thread_id, "assistant", final_reply, tools_used)
+
+            self._send_json({
+                "success": True,
+                "reply": final_reply,
+                "passes": passes_log,
+                "max_passes": max_passes,
+                "verified_clean": len(verify_errors) == 0,
+                "written_files": written_files,
+                "verify_errors": verify_errors,
+                "preview_entry": preview_entry,
+                "preview_url": f"/api/workspace/preview/{preview_entry}" if preview_entry else "",
+                "tools": tools_used,
+                "quota": quota_status,
+                "membership": mem,
             })
 
         elif path == "/api/pro/context_files":

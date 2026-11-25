@@ -718,3 +718,31 @@ def test_liberty_mega_upgrade_plus_pro_ultra_reports_work_self_heal_and_lifetime
     for cid in ("ultra_002", "ultra_031", "ultra_042", "ultra_044", "ultra_061"):
         st_ex, ex_res = _http_json(f"{base}/api/ultra/execute", "POST", {"capability_id": cid}, headers=a_hdrs)
         assert st_ex == 200 and ex_res["success"] and ex_res["capability_id"] == cid
+
+    # 8. Verify v26 CEO Overhaul: Strict Paid Gating on Laptop Companion & Relentless Autonomous Loop + Super-Admin Broadcast
+    assert _http_json(f"{base}/api/desktop/companion.py", "GET", headers=u_hdrs)[0] == 403
+    assert _http_json(f"{base}/api/chat/autonomous", "POST", {"prompt": "Build a calculator"}, headers=u_hdrs)[0] == 403
+
+    req_comp = urllib.request.Request(f"{base}/api/desktop/companion.py", method="GET", headers=a_hdrs)
+    with urllib.request.urlopen(req_comp, timeout=10) as resp_comp:
+        comp_src = resp_comp.read().decode("utf-8")
+        assert resp_comp.status == 200
+        assert "AuraLaptopBridge" in comp_src and "127.0.0.1" in comp_src and "5055" in comp_src
+        assert "http://127.0.0.1:5055" in (resp_comp.headers.get("Content-Security-Policy") or "")
+
+    st_bc_set, bc_set = _http_json(
+        f"{base}/api/admin/system/broadcast",
+        "POST",
+        {"active": True, "message": "AURA v26 Sovereign Engine Live!", "level": "promo"},
+        headers=av_hdrs,
+    )
+    assert st_bc_set == 200 and bc_set["success"]
+    st_bc_get, bc_get = _http_json(f"{base}/api/system/broadcast", "GET", headers=u_hdrs)
+    assert st_bc_get == 200 and bc_get["broadcast"]["active"] is True and "v26" in bc_get["broadcast"]["message"]
+    st_rq, rq_res = _http_json(
+        f"{base}/api/admin/users/reset_quota",
+        "POST",
+        {"username": "dev_kabir"},
+        headers=av_hdrs,
+    )
+    assert st_rq == 200 and rq_res["success"]

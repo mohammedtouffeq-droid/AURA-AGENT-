@@ -6074,9 +6074,9 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>AURA</span>
                 </div>
-                <div class="aura-mode-switch" id="auraModeSwitcher" role="tablist" aria-label="Workspace Mode">
-                    <button type="button" class="aura-mode-btn active" id="modeBtnChat" onclick="setAuraWorkspaceMode('chat')" title="Chat with AURA Models (AURA 2.0 works offline)">Chat</button>
-                    <button type="button" class="aura-mode-btn" id="modeBtnWork" onclick="setAuraWorkspaceMode('work')" title="Full 0-Cost VS Code Developer Work IDE (PC + Wi-Fi)">Work</button>
+                <div class="aura-mode-switch" id="auraModeSwitcher" style="display:none;" role="tablist" aria-label="Workspace Mode">
+                    <button type="button" class="aura-mode-btn active" id="modeBtnChat" onclick="setAuraWorkspaceMode('chat')">Chat</button>
+                    <button type="button" class="aura-mode-btn" id="modeBtnWork" onclick="setAuraWorkspaceMode('work')">Work</button>
                 </div>
                 <button type="button" id="headerTierBadge" class="tier-header-pill" onclick="openModelSettings('membership')" title="Membership Tier &amp; Activation Key">STANDARD</button>
                 <button type="button" id="headerQuotaPill" class="quota-header-pill" onclick="openModelSettings('membership')" title="Rolling 24-Hour Chat Quota">30/30</button>
@@ -6086,17 +6086,20 @@
                 </button>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                <button type="button" class="btn-header-ultra" id="btnHeaderUltra100" onclick="if(window.AuraUltra100) window.AuraUltra100.open();" title="AURA Ultra — 100 Antigravity Flagship Capabilities">
+                <button type="button" class="btn-header-ultra" id="btnHeaderUpgradeFree" onclick="openModelSettings('membership')" title="Unlock Autonomous Zero-Bug Mode, Laptop Automation &amp; Live Browser">
+                    <span>✦ Upgrade Plus · Pro · Ultra</span>
+                </button>
+                <button type="button" class="btn-header-ultra" id="btnHeaderUltra100" style="display:none;" onclick="if(window.AuraUltra100) window.AuraUltra100.open();" title="AURA Ultra — 100 Antigravity Flagship Capabilities">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     <span class="studio-hide-xs">Ultra 100</span>
                 </button>
-                <button type="button" class="btn-header-studio" id="btnHeaderLiveWorkspace" onclick="toggleAgentWorkspace('browser')" title="AURA Live Browser &amp; Screen Control (Ask-Permission Guarded)" aria-label="AURA Live Browser and Computer Use">
+                <button type="button" class="btn-header-studio" id="btnHeaderLiveWorkspace" style="display:none;" onclick="toggleAgentWorkspace('browser')" title="AURA Live Browser &amp; Screen Control (Pro / Ultra · Ask-Permission Guarded)" aria-label="AURA Live Browser and Computer Use">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                     <span class="studio-hide-xs">Browser &amp; Screen</span>
                 </button>
-                <button type="button" class="btn-header-studio" id="btnHeaderStudio" onclick="openApexStudio()" title="Open AURA Engineering Studio (Tiers 1-5)">
+                <button type="button" class="btn-header-studio" id="btnHeaderStudio" style="display:none;" onclick="openModelSettings('workide')" title="Universal Laptop Automation Bridge (Plus / Pro / Ultra)">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                    <span class="studio-hide-xs">Studio</span>
+                    <span class="studio-hide-xs" id="laptopBridgeHeaderTxt">Laptop Agent</span>
                 </button>
                 <button type="button" class="nav-icon-btn" id="btnHeaderWallpaper" onclick="toggleWallpaperQuickPopover(event)" title="Wallpapers &amp; Ambient Themes" aria-label="Wallpapers and Ambient Themes">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -7187,8 +7190,8 @@
                         <span>VOX Voice Studio</span>
                     </button>
                     <button type="button" class="settings-nav-btn" id="settingsNav_workide" onclick="switchSettingsTab('workide')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                        <span>Work IDE &amp; Exts</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        <span>Laptop Automation</span>
                     </button>
 
                     <div class="settings-nav-section-lbl">Account &amp; Support</div>
@@ -7632,52 +7635,35 @@
                         </div>
                     </div>
 
-                    <!-- TAB 5B: WORK IDE & EXTENSIONS -->
+                    <!-- TAB 5B: UNIVERSAL LAPTOP AUTOMATION BRIDGE & RELENTLESS ZERO-BUG MODE -->
                     <div class="settings-tab-pane" id="settingsTab_workide">
                         <div class="settings-pane-head">
                             <div>
-                                <h3>AURA Work IDE &amp; 0-Cost Extensions</h3>
-                                <p>Configure your PC-only Monaco VS Code engine, 32+ zero-cost extensions, and Self-Healing Mistake-Prevention loop.</p>
+                                <h3>Universal Laptop Automation &amp; Relentless Bug-Fix Agent</h3>
+                                <p>Let AURA safely automate ANY subscriber's Windows, macOS, or Linux laptop (create apps, run commands, fix bugs relentlessly until 0 errors) — strictly unlocked for Plus, Pro &amp; Ultra.</p>
                             </div>
-                            <button type="button" class="settings-btn-primary" onclick="closeModelSettings(); setAuraWorkspaceMode('work');">Launch Work IDE →</button>
+                        </div>
+
+                        <div class="settings-panel-card" style="border-color:rgba(56,189,248,0.38);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                                <div class="settings-card-eyebrow">1-Click Universal Laptop Companion Bridge</div>
+                                <span id="laptopBridgeStatusBadge" style="font-family:var(--font-code);font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,0.06);color:#94a3b8;">Checking Local Bridge...</span>
+                            </div>
+                            <p style="font-size:12px;color:#cbd5e1;margin:0;line-height:1.55;">Because cloud websites cannot directly touch your PC for browser security, paid subscribers (<strong>AURA Plus / Pro / Ultra</strong>) run this tiny zero-dependency local Python companion (<code>127.0.0.1:5055</code>, CORS-locked ONLY to <code>aura-agent.xyz</code>). Once running, AURA automates files, builds, tests, and apps right on your laptop with Ask-Permission guardrails!</p>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                                <button type="button" class="settings-btn-primary" onclick="downloadAuraLaptopCompanion()">Download aura_desktop_agent.py</button>
+                                <button type="button" class="settings-btn-ghost" onclick="checkLocalLaptopBridgeStatus()">Re-Check Connection</button>
+                                <button type="button" class="settings-btn-ghost" onclick="closeModelSettings(); openApexStudio();">Open Engineering Studio</button>
+                            </div>
+                            <div id="laptopCompanionNote" style="font-size:11.5px;color:#6ee7b7;font-family:var(--font-code);min-height:16px;"></div>
                         </div>
 
                         <div class="settings-panel-card">
-                            <div class="settings-card-eyebrow">VS Code Monaco Editor Preferences</div>
-                            <div class="settings-field-grid-3">
-                                <div class="settings-field-group">
-                                    <label for="workIdeFontSize">Editor Font Size (px)</label>
-                                    <select id="workIdeFontSize" onchange="updateWorkIdeSettingFromUI()">
-                                        <option value="12">12 px (Compact)</option>
-                                        <option value="13" selected>13 px (Standard)</option>
-                                        <option value="14">14 px (Executive)</option>
-                                        <option value="16">16 px (Presentation)</option>
-                                    </select>
-                                </div>
-                                <div class="settings-field-group">
-                                    <label for="workIdeThemeSelect">Editor Color Theme</label>
-                                    <select id="workIdeThemeSelect" onchange="updateWorkIdeSettingFromUI()">
-                                        <option value="obsidian-gold">Liberty Obsidian Gold</option>
-                                        <option value="one-dark-pro">One Dark Pro</option>
-                                        <option value="tokyo-night">Tokyo Night</option>
-                                        <option value="github-dark">GitHub Dark Dimmed</option>
-                                        <option value="monokai-pro">Monokai Pro Obsidian</option>
-                                        <option value="nord-arctic">Nord Arctic</option>
-                                    </select>
-                                </div>
-                                <div class="settings-field-group">
-                                    <label for="workIdeWordWrap">Word Wrap</label>
-                                    <select id="workIdeWordWrap" onchange="updateWorkIdeSettingFromUI()">
-                                        <option value="off">Off (Wide Code)</option>
-                                        <option value="on">On (Wrapped)</option>
-                                    </select>
-                                </div>
+                            <div class="settings-card-eyebrow">Relentless Zero-Bug Auto-Verify Loop</div>
+                            <p style="font-size:12px;color:#a1a8b8;margin:0 0 8px;">When enabled on paid plans, AURA runs automatic multi-pass <strong>Write → Verify (Python AST / Node / JSON / HTML) → Auto-Fix</strong> (3 passes on Plus · 5 passes on Pro · 8 passes on Ultra) until <strong>0 errors</strong> remain, and saves every fix into Mistake-Prevention Memory.</p>
+                            <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+                                <label class="aura-switch"><input type="checkbox" id="toggleRelentlessAutoMode" onchange="toggleRelentlessAutonomousMode(this.checked)"><span style="font-size:12.5px;color:#6ee7b7;font-weight:700;">Enable Relentless Zero-Bug Execution Mode in Chat</span></label>
                             </div>
-                            <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:8px;">
-                                <label class="aura-switch"><input type="checkbox" id="workIdeMinimapToggle" checked onchange="updateWorkIdeSettingFromUI()"><span style="font-size:12px;color:#e2e8f0;">Show Code Minimap</span></label>
-                                <label class="aura-switch"><input type="checkbox" id="workIdeSelfHealToggle" checked onchange="updateWorkIdeSettingFromUI()"><span style="font-size:12px;color:#6ee7b7;">Auto Self-Heal &amp; Never Repeat Fixed Bugs</span></label>
-                            </div>
-                            <div id="workIdeStatsSummary" style="margin-top:8px; font-family:var(--font-code); font-size:11.5px; color:#93c5fd; padding:9px 11px; border-radius:9px; background:rgba(0,0,0,0.34); border:1px solid rgba(255,255,255,0.08);">Checking Work IDE extensions &amp; Self-Healing memory...</div>
                         </div>
                     </div>
 
@@ -11930,6 +11916,70 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     setScopedActiveThread(currentThreadId);
                 }
 
+                // Relentless Zero-Bug Auto-Verify Execution Loop (Paid Plus/Pro/Ultra + Owner only)
+                const _paidRankNow = Number((activeMembershipState && activeMembershipState.rank) || 0);
+                const _isRelentlessOn = (() => {
+                    try { return localStorage.getItem('aura_relentless_auto_mode') === '1'; } catch (_) { return false; }
+                })();
+                const _isOwnerNow = typeof isCurrentUserKeyAdmin === 'function' && isCurrentUserKeyAdmin();
+                if (_isRelentlessOn && (_paidRankNow >= 3 || _isOwnerNow) && text && !text.startsWith('/') && (!attachedToSend || attachedToSend.length === 0)) {
+                    try {
+                        const _maxP = (_paidRankNow >= 5 || _isOwnerNow) ? 8 : (_paidRankNow >= 4 ? 5 : 3);
+                        if (turnData && turnData.thinking) {
+                            turnData.thinking.style.display = 'flex';
+                            const tLbl = turnData.thinking.querySelector('span');
+                            if (tLbl) tLbl.textContent = `Relentless Zero-Bug Loop running (up to ${_maxP} auto-verify passes)...`;
+                        }
+                        const autoRes = await apiFetch('/api/chat/autonomous', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt: text, thread_id: currentThreadId })
+                        });
+                        if (autoRes && autoRes.ok) {
+                            const autoData = await safeParseJson(autoRes);
+                            if (autoData && autoData.success && autoData.reply) {
+                                turnData.thinking.style.display = 'none';
+                                const passesArr = Array.isArray(autoData.passes) ? autoData.passes : [];
+                                const writtenArr = Array.isArray(autoData.written_files) ? autoData.written_files : [];
+                                const cleanOk = Boolean(autoData.verified_clean);
+                                const badgeBg = cleanOk ? 'rgba(52,211,153,0.14)' : 'rgba(251,191,36,0.14)';
+                                const badgeClr = cleanOk ? '#34d399' : '#fbbf24';
+                                const badgeBorder = cleanOk ? 'rgba(52,211,153,0.34)' : 'rgba(251,191,36,0.34)';
+                                const filesHtml = writtenArr.length
+                                    ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">` +
+                                      writtenArr.map(wf => `<span style="padding:2px 8px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);font-size:11px;color:#e4e4e7;">✓ ${escapeHtml(wf.path)} (${wf.lines}L)</span>`).join('') +
+                                      `</div>`
+                                    : '';
+                                const prevHtml = autoData.preview_url
+                                    ? `<a href="${escapeHtml(autoData.preview_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:4px 10px;border-radius:8px;background:rgba(56,189,248,0.16);border:1px solid rgba(56,189,248,0.35);color:#7dd3fc;font-size:11.5px;font-weight:700;text-decoration:none;">↗ Open Verified Live Preview</a>`
+                                    : '';
+                                const summaryCard = `<div style="margin-bottom:12px;padding:10px 12px;border-radius:11px;background:${badgeBg};border:1px solid ${badgeBorder};font-size:12px;">` +
+                                    `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">` +
+                                    `<strong style="color:${badgeClr};">⚡ Relentless Auto-Verify · ${cleanOk ? '0 Errors (100% Verified)' : ((autoData.verify_errors || []).length + ' issue(s) noted')}</strong>` +
+                                    `<span style="color:#a1a1aa;font-size:11px;">Pass ${passesArr.length || 1}/${autoData.max_passes || _maxP}</span>` +
+                                    `</div>${filesHtml}${prevHtml}</div>`;
+                                turnData.bubble.innerHTML = summaryCard + renderMarkdown(autoData.reply);
+                                if (typeof hydrateInlineVisualCards === 'function') hydrateInlineVisualCards(turnData.bubble);
+                                if (typeof maybeAutoOpenArtifact === 'function') maybeAutoOpenArtifact(autoData.reply);
+                                if ((autoData.membership || autoData.quota) && typeof applyMembershipStateUI === 'function') {
+                                    applyMembershipStateUI(autoData.membership, autoData.quota);
+                                }
+                                await recordLocalChatTurn(currentThreadId, text, autoData.reply, autoData.tools || []);
+                                if (typeof loadThreads === 'function') loadThreads(false);
+                                return;
+                            }
+                        } else if (autoRes && autoRes.status === 429) {
+                            restoreDraftOnFailure();
+                            const errBody = await safeParseJson(autoRes);
+                            turnData.thinking.style.display = 'none';
+                            turnData.bubble.innerHTML = `<span style="color:#fde68a;">${escapeHtml(errBody.error || 'Daily chat limit reached.')}</span>`;
+                            return;
+                        }
+                    } catch (_) {
+                        // Gracefully fall through to standard streaming chat
+                    }
+                }
+
                 const chatReqBody = JSON.stringify({
                     prompt: text,
                     thread_id: currentThreadId,
@@ -15002,6 +15052,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         async function selectAuraModelTier(tierId) {
+            const _rankTier = Number((activeMembershipState && activeMembershipState.rank) || 0);
+            const _ownerTier = typeof isCurrentUserKeyAdmin === 'function' && isCurrentUserKeyAdmin();
+            if (tierId === 'aura-2.6' && _rankTier < 3 && !_ownerTier) {
+                closeComposerPopovers();
+                if (typeof showBridgeToast === 'function') {
+                    showBridgeToast('AURA 2.6 Autonomous Engine requires AURA Plus ($40), Pro ($79), or Ultra ($149).', '#fbbf24');
+                }
+                if (typeof openModelSettings === 'function') openModelSettings('membership');
+                return;
+            }
             syncAuraTierUi(tierId);
             closeComposerPopovers();
             if (!isAuthenticated()) return;
@@ -15798,24 +15858,34 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             renderMembershipTierMatrix();
             updateAdminKeyVaultVisibility();
 
+            // 0. STRICT FREE vs PAID HEADER GATING (Free = Clean Chat Only; Plus/Pro/Ultra = Full Power!)
+            const upgFreeBtn = document.getElementById('btnHeaderUpgradeFree');
+            const ultBtn = document.getElementById('btnHeaderUltra100');
+            const brwBtn = document.getElementById('btnHeaderLiveWorkspace');
+            const lapBtn = document.getElementById('btnHeaderStudio');
+            if (upgFreeBtn) upgFreeBtn.style.display = (rank < 3) ? 'inline-flex' : 'none';
+            if (lapBtn) lapBtn.style.display = (rank >= 3) ? 'inline-flex' : 'none';
+            if (brwBtn) brwBtn.style.display = (rank >= 4) ? 'inline-flex' : 'none';
+            if (ultBtn) ultBtn.style.display = (rank >= 5) ? 'inline-flex' : 'none';
+
             // 1. Update Night-and-Day Exclusive Subscriber Luxury Telemetry Ribbon!
             const ribLbl = document.getElementById('auraTierRibbonLabel');
             const ribActs = document.getElementById('auraTierRibbonActions');
             if (ribLbl && ribActs && rank >= 3) {
                 if (rank >= 5) {
-                    ribLbl.textContent = `✦ ${activeMembershipState.is_owner_auto ? 'OWNER · AURA ULTRA ∞' : 'AURA ULTRA FLAGSHIP'} · ANTIGRAVITY + CODEX · 100 POWERS ACTIVE`;
+                    ribLbl.textContent = `✦ ${activeMembershipState.is_owner_auto ? 'OWNER · AURA ULTRA ∞' : 'AURA ULTRA FLAGSHIP'} · 8-PASS ZERO-BUG ENGINE · 100 POWERS · UNLIMITED`;
                     ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="if(window.AuraUltra100) window.AuraUltra100.open()">100 Ultra Powers</button>` +
-                        `<button type="button" class="tier-ribbon-btn" onclick="setAuraWorkspaceMode('work')">Antigravity Work IDE</button>` +
                         `<button type="button" class="tier-ribbon-btn" onclick="toggleAgentWorkspace('browser')">Using Browser</button>` +
-                        `<button type="button" class="tier-ribbon-btn" onclick="toggleAgentWorkspace('computer')">Screen Control</button>`;
+                        `<button type="button" class="tier-ribbon-btn" onclick="toggleAgentWorkspace('computer')">Screen Control</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('workide')">Laptop Agent</button>`;
                 } else if (rank >= 4) {
-                    ribLbl.textContent = `◆ AURA PRO EXECUTIVE · +60% ARCHITECT BRAIN · 6 VOX VOICES · 300/DAY`;
-                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="setAuraWorkspaceMode('work')">Work IDE</button>` +
+                    ribLbl.textContent = `◆ AURA PRO EXECUTIVE · 5-PASS ZERO-BUG ENGINE · 6 VOX VOICES · LIVE BROWSER`;
+                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="toggleAgentWorkspace('browser')">Using Browser</button>` +
                         `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('voice')">6 VOX Voices</button>` +
-                        `<button type="button" class="tier-ribbon-btn" onclick="openApexStudio()">4-Agent War Room</button>`;
+                        `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('workide')">Laptop Agent</button>`;
                 } else {
-                    ribLbl.textContent = `❖ AURA PLUS ATELIER · +40% ENHANCED BRAIN · 100/DAY · LIVE PREVIEW & LOCALHOST`;
-                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="setAuraWorkspaceMode('work')">Open Work IDE</button>` +
+                    ribLbl.textContent = `❖ AURA PLUS ATELIER · 3-PASS ZERO-BUG ENGINE · +40% BRAIN · LAPTOP AGENT`;
+                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('workide')">Laptop Agent</button>` +
                         `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('appearance')">Plus 4K Wallpapers</button>`;
                 }
             }
@@ -16222,21 +16292,77 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function syncWorkIdeSettingsUI() {
-            if (!window.AuraWorkIDE || typeof window.AuraWorkIDE.getStats !== 'function') return;
-            const st = window.AuraWorkIDE.getStats();
-            const fs = document.getElementById('workIdeFontSize');
-            const th = document.getElementById('workIdeThemeSelect');
-            const ww = document.getElementById('workIdeWordWrap');
-            const mm = document.getElementById('workIdeMinimapToggle');
-            const sh = document.getElementById('workIdeSelfHealToggle');
-            const sum = document.getElementById('workIdeStatsSummary');
-            if (fs) fs.value = String(st.prefs.fontSize || 13);
-            if (th) th.value = String(st.prefs.theme || 'obsidian-gold');
-            if (ww) ww.value = String(st.prefs.wordWrap || 'off');
-            if (mm) mm.checked = Boolean(st.prefs.minimap);
-            if (sh) sh.checked = Boolean(st.prefs.selfHealAuto);
-            if (sum) {
-                sum.textContent = `VS Code Monaco Engine (₹0 Cost) · ${st.installedExtensions}/${st.totalExtensions} Extensions Active · ${st.mistakesCount} Self-Healing Prevention Rule(s) Learned`;
+            const cb = document.getElementById('toggleRelentlessAutoMode');
+            if (cb) cb.checked = localStorage.getItem('aura_relentless_auto_mode') === '1';
+            checkLocalLaptopBridgeStatus();
+        }
+
+        function toggleRelentlessAutonomousMode(enabled) {
+            const rank = Number((activeMembershipState && activeMembershipState.rank) || 0);
+            if (enabled && rank < 3) {
+                const cb = document.getElementById('toggleRelentlessAutoMode');
+                if (cb) cb.checked = false;
+                if (typeof showBridgeToast === 'function') showBridgeToast('Relentless Zero-Bug Execution requires AURA Plus, Pro, or Ultra!', '#fbbf24');
+                switchSettingsTab('membership');
+                return;
+            }
+            try { localStorage.setItem('aura_relentless_auto_mode', enabled ? '1' : '0'); } catch (_) {}
+            if (typeof showBridgeToast === 'function') {
+                showBridgeToast(enabled ? 'Relentless Zero-Bug Auto-Verify Mode ENABLED!' : 'Standard Chat Mode active.', enabled ? '#34d399' : '#94a3b8');
+            }
+        }
+
+        async function checkLocalLaptopBridgeStatus() {
+            const badge = document.getElementById('laptopBridgeStatusBadge');
+            const hdrTxt = document.getElementById('laptopBridgeHeaderTxt');
+            try {
+                const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                const t = ac ? setTimeout(() => ac.abort(), 1200) : null;
+                const res = await fetch('http://127.0.0.1:5055/health', { signal: ac ? ac.signal : undefined });
+                if (t) clearTimeout(t);
+                const data = await res.json();
+                if (res.ok && data && data.ok) {
+                    window._auraLocalLaptopBridge = data;
+                    if (badge) { badge.style.color = '#6ee7b7'; badge.textContent = `● Connected: ${data.os} (${data.host})`; }
+                    if (hdrTxt) hdrTxt.textContent = '● Laptop Live';
+                    return;
+                }
+            } catch (_) {}
+            window._auraLocalLaptopBridge = null;
+            if (badge) { badge.style.color = '#94a3b8'; badge.textContent = 'Not Running Locally'; }
+            if (hdrTxt) hdrTxt.textContent = 'Laptop Agent';
+        }
+
+        async function downloadAuraLaptopCompanion() {
+            const note = document.getElementById('laptopCompanionNote');
+            const rank = Number((activeMembershipState && activeMembershipState.rank) || 0);
+            if (rank < 3) {
+                if (note) { note.style.color = '#fca5a5'; note.textContent = 'Upgrade to AURA Plus ($40), Pro ($79), or Ultra ($149) to download the Universal Laptop Automation Companion.'; }
+                switchSettingsTab('membership');
+                return;
+            }
+            if (note) { note.style.color = '#93c5fd'; note.textContent = 'Generating your signed personal aura_desktop_agent.py...'; }
+            try {
+                const res = await apiFetch('/api/desktop/companion.py', { method: 'GET' });
+                if (!res.ok) {
+                    const err = await safeParseJson(res);
+                    if (note) { note.style.color = '#fca5a5'; note.textContent = (err && err.error) || 'Download requires an active Plus/Pro/Ultra subscription.'; }
+                    return;
+                }
+                const pairTok = res.headers.get('X-Aura-Bridge-Token') || '';
+                if (pairTok) try { localStorage.setItem('aura_laptop_bridge_token', pairTok); } catch (_) {}
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'aura_desktop_agent.py';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                if (note) { note.style.color = '#6ee7b7'; note.textContent = '✓ Downloaded aura_desktop_agent.py! Run `python aura_desktop_agent.py` on your PC, then click Re-Check Connection.'; }
+            } catch (e) {
+                if (note) { note.style.color = '#fca5a5'; note.textContent = e.message || 'Download failed.'; }
             }
         }
 

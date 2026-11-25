@@ -1,4 +1,4 @@
-const AURA_CACHE_NAME = 'aura-core-shell-v25';
+const AURA_CACHE_NAME = 'aura-core-shell-v26';
 const AURA_PHOTO_CACHE = 'aura-wallpaper-photos-v1';
 const AURA_PRECACHE_URLS = [
   '/',
