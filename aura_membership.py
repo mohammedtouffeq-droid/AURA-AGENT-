@@ -665,16 +665,27 @@ def resolve_user_membership(
             aura_db.save_user_settings(uid, settings)
 
     spec = get_tier_spec(tier_id)
-    activated_at = float(mem.get("activated_at") or 0) if tier_id != "tier_0" else None
-    key_slot = str(mem.get("key_slot") or "") if tier_id != "tier_0" else ""
-    active_key_code = str(mem.get("key_code") or "") if tier_id != "tier_0" else ""
+    is_owner_auto = False
+    if tier_id == "tier_0" and is_key_admin_user(user):
+        # Owner @ig.ahmed.irl ALWAYS gets Lifetime Unlimited AURA Ultra automatically (never STANDARD 30/30!)
+        tier_id = "tier_5"
+        spec = get_tier_spec("tier_5")
+        is_owner_auto = True
+
+    activated_at = float(mem.get("activated_at") or now_ts) if tier_id != "tier_0" else None
+    key_slot = str(mem.get("key_slot") or ("OWNER_LIFETIME" if is_owner_auto else "")) if tier_id != "tier_0" else ""
+    active_key_code = str(mem.get("key_code") or ("OWNER-ULTRA-LIFETIME" if is_owner_auto else "")) if tier_id != "tier_0" else ""
     is_gift = bool(mem.get("is_gift", False)) if tier_id != "tier_0" else False
     seconds_left = max(0, int(expires_at - now_ts)) if (tier_id != "tier_0" and expires_at) else 0
     days_remaining = round(seconds_left / SECONDS_PER_DAY, 1) if seconds_left > 0 else 0
     days_remaining_floor = int(seconds_left // SECONDS_PER_DAY) if seconds_left > 0 else 0
     days_remaining_ceil = int((seconds_left + SECONDS_PER_DAY - 1) // SECONDS_PER_DAY) if seconds_left > 0 else 0
     hours_remaining = (seconds_left % SECONDS_PER_DAY) // 3600 if seconds_left > 0 else 0
-    countdown_label = format_countdown(seconds_left) if (tier_id != "tier_0" and expires_at) else ""
+    countdown_label = "Lifetime Owner" if is_owner_auto else (format_countdown(seconds_left) if (tier_id != "tier_0" and expires_at) else "")
+    expires_label_val = "Lifetime Owner" if is_owner_auto else (
+        _fmt_datetime(expires_at) if (tier_id != "tier_0" and expires_at and seconds_left < SECONDS_PER_DAY)
+        else (_fmt_date(expires_at) if (tier_id != "tier_0" and expires_at) else "")
+    )
 
     proof = (
         build_membership_proof(
@@ -689,11 +700,46 @@ def resolve_user_membership(
         else ""
     )
 
+    welcome_auto = None
+    if tier_id != "tier_0" and not is_owner_auto:
+        dur_secs_eff = int(mem.get("duration_seconds") or (int(mem.get("duration_days") or spec.get("duration_days") or 20) * SECONDS_PER_DAY))
+        welcome_auto = {
+            "plan_id": tier_id,
+            "plan_number": spec["plan_number"],
+            "plan_name": spec["name"],
+            "short_name": spec.get("short_name", spec["name"]),
+            "badge": spec["badge"],
+            "accent": spec["accent"],
+            "theme": spec["theme"],
+            "theme_title": spec.get("theme_title", "Sovereign Luxury Workspace"),
+            "brain_boost": spec.get("brain_boost", "+40% Enhanced AURA Brain"),
+            "price_label": "FREE GIFT" if is_gift else spec["price_label"],
+            "duration_days": int(mem.get("duration_days") or spec.get("duration_days") or 20),
+            "duration_label": format_duration_seconds(dur_secs_eff),
+            "activated_at": activated_at,
+            "activated_label": _fmt_datetime(activated_at) or _fmt_date(activated_at),
+            "expires_at": expires_at,
+            "expires_label": expires_label_val,
+            "expires_datetime_label": _fmt_datetime(expires_at) or expires_label_val,
+            "countdown_label": countdown_label,
+            "daily_limit_label": "Unlimited Chats / Day" if spec["unlimited"] else f"{spec['daily_limit']} Chats / Day",
+            "feature_coverage": spec["feature_coverage"],
+            "unlocked_wallpapers_label": spec.get("unlocked_wallpapers_label", "Exclusive 4K Wallpapers Unlocked"),
+            "unlocked_voices": spec.get("unlocked_voices", []),
+            "unlocked_features": spec["features"],
+            "username": (user.get("display_name") or user.get("username") or "Member") if isinstance(user, dict) else "Member",
+            "key_code": active_key_code,
+            "key_code_masked": _mask_key_code(active_key_code) if active_key_code else "",
+            "is_gift": is_gift,
+        }
+
     return {
         **spec,
+        "badge": "OWNER · ULTRA ∞" if is_owner_auto else spec["badge"],
+        "is_owner_auto": is_owner_auto,
         "activated_at": activated_at,
-        "expires_at": expires_at if tier_id != "tier_0" else None,
-        "expires_label": _fmt_datetime(expires_at) if (tier_id != "tier_0" and expires_at and seconds_left < SECONDS_PER_DAY) else (_fmt_date(expires_at) if (tier_id != "tier_0" and expires_at) else ""),
+        "expires_at": expires_at if (tier_id != "tier_0" and not is_owner_auto) else None,
+        "expires_label": expires_label_val,
         "seconds_remaining": seconds_left if tier_id != "tier_0" else 0,
         "countdown_label": countdown_label,
         "days_remaining": days_remaining if tier_id != "tier_0" else 0,
@@ -708,6 +754,7 @@ def resolve_user_membership(
         "membership_proof": proof,
         "expired_notice": expired_notice or disabled_notice,
         "aura_rules": str(settings.get("aura_rules") or ""),
+        "welcome_auto": welcome_auto,
     }
 
 

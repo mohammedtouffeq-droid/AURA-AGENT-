@@ -678,6 +678,14 @@ def init_database():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS system_config (
+            key TEXT PRIMARY KEY,
+            value_json TEXT NOT NULL DEFAULT '{}',
+            updated_at REAL NOT NULL
+        )
+    """)
+
     # Schema migrations for existing local SQLite / LibSQL files
     c.execute("PRAGMA table_info(users)")
     user_cols = [(col["name"] if isinstance(col, dict) else col[1]) for col in c.fetchall()]
@@ -3002,3 +3010,139 @@ def build_mistake_prevention_prompt(user_id: int, limit: int = 10) -> str:
     for item in lessons[:limit]:
         lines.append(f"- Avoid `{item['error_signature']}`: {item['prevention_rule']} (Verified fix: {item['verified_fix']})")
     return "\n".join(lines)
+
+
+# ===================================================================================
+# FULL OWNER SUPER-ADMIN USER & SYSTEM CONTROLS
+# ===================================================================================
+
+def get_system_config(key: str, default: Any = None) -> Any:
+    k = str(key or "").strip()[:64]
+    if not k:
+        return default
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT value_json FROM system_config WHERE key = ?", (k,))
+        row = c.fetchone()
+        if not row:
+            return default
+        return json.loads(row["value_json"] or "{}")
+    except Exception:
+        return default
+    finally:
+        conn.close()
+
+
+def set_system_config(key: str, value: Any) -> bool:
+    k = str(key or "").strip()[:64]
+    if not k:
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT OR REPLACE INTO system_config (key, value_json, updated_at) VALUES (?, ?, ?)",
+            (k, json.dumps(value), time.time()),
+        )
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def admin_delete_user_by_username(username: str) -> bool:
+    uname = str(username or "").strip().lower().lstrip("@")
+    if not uname:
+        return False
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id FROM users WHERE username = ?", (uname,))
+        row = c.fetchone()
+        if not row:
+            return False
+        uid = int(row["id"])
+        c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (uid,))
+        c.execute("DELETE FROM messages WHERE user_id = ?", (uid,))
+        c.execute("DELETE FROM threads WHERE user_id = ?", (uid,))
+        c.execute("DELETE FROM user_memories WHERE user_id = ?", (uid,))
+        c.execute("DELETE FROM users WHERE id = ?", (uid,))
+        c.execute("INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)", (uname, time.time() + 1.0))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def admin_reset_user_password(username: str, new_password: str) -> Dict[str, Any]:
+    uname = str(username or "").strip().lower().lstrip("@")
+    ok_pw, pw_err = validate_password_strength(new_password)
+    if not ok_pw:
+        return {"success": False, "error": pw_err}
+    new_hash, new_salt = hash_password(new_password)
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id FROM users WHERE username = ?", (uname,))
+        row = c.fetchone()
+        if not row:
+            return {"success": False, "error": f"User @{uname} not found."}
+        uid = int(row["id"])
+        c.execute("UPDATE users SET password_hash = ?, salt = ? WHERE id = ?", (new_hash, new_salt, uid))
+        c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (uid,))
+        c.execute("INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)", (uname, time.time()))
+        conn.commit()
+        return {"success": True, "username": uname}
+    finally:
+        conn.close()
+
+
+def admin_reset_user_quota(username: str) -> Dict[str, Any]:
+    uname = str(username or "").strip().lower().lstrip("@")
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id FROM users WHERE username = ?", (uname,))
+        row = c.fetchone()
+        if not row:
+            return {"success": False, "error": f"User @{uname} not found."}
+        uid = int(row["id"])
+        c.execute("DELETE FROM chat_quota_events WHERE user_id = ?", (uid,))
+        conn.commit()
+        return {"success": True, "username": uname}
+    finally:
+        conn.close()
+
+
+def admin_set_user_role(username: str, role: str) -> Dict[str, Any]:
+    uname = str(username or "").strip().lower().lstrip("@")
+    clean_role = "admin" if str(role or "").strip().lower() == "admin" else "user"
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("UPDATE users SET role = ? WHERE username = ?", (clean_role, uname))
+        if c.rowcount <= 0:
+            return {"success": False, "error": f"User @{uname} not found."}
+        conn.commit()
+        return {"success": True, "username": uname, "role": clean_role}
+    finally:
+        conn.close()
+
+
+def admin_force_logout_user(username: str) -> Dict[str, Any]:
+    uname = str(username or "").strip().lower().lstrip("@")
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("SELECT id FROM users WHERE username = ?", (uname,))
+        row = c.fetchone()
+        if not row:
+            return {"success": False, "error": f"User @{uname} not found."}
+        uid = int(row["id"])
+        c.execute("DELETE FROM auth_sessions WHERE user_id = ?", (uid,))
+        c.execute("INSERT OR REPLACE INTO user_revocations (username, revoked_before) VALUES (?, ?)", (uname, time.time() + 1.0))
+        conn.commit()
+        return {"success": True, "username": uname}
+    finally:
+        conn.close()

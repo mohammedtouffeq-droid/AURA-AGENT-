@@ -1232,6 +1232,10 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             data = aura_ultra_capabilities.list_all_ultra_capabilities()
             self._send_json({"success": True, "unlocked": unlocked, "active_tier": mem.get("name", "AURA Standard"), **data})
 
+        elif path == "/api/system/broadcast":
+            bc = aura_db.get_system_config("global_broadcast", {"active": False, "message": "", "level": "info"})
+            self._send_json({"success": True, "broadcast": bc})
+
         elif path == "/api/pro/index":
             user = self._get_auth_user()
             if not user:
@@ -3315,6 +3319,200 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "capability_name": cap["name"],
                 "summary": summary,
                 "result": result_obj,
+            })
+
+        elif path in (
+            "/api/admin/users/delete",
+            "/api/admin/users/reset_password",
+            "/api/admin/users/reset_quota",
+            "/api/admin/users/set_role",
+            "/api/admin/users/force_logout",
+            "/api/admin/system/broadcast",
+        ):
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            vault_tok = str(self.headers.get("X-Admin-Vault-Token") or body.get("admin_vault_token") or "").strip()
+            if not aura_membership.verify_admin_vault_token(user, vault_tok):
+                self._send_json({"success": False, "error": "Forbidden: Owner Super-Admin access requires @ig.ahmed.irl vault authentication."}, status=403)
+                return
+            admin_uname = str(user.get("username") or "ig.ahmed.irl")
+            target_u = str(body.get("username") or "").strip().lower().lstrip("@")
+            owner_u = os.environ.get("AURA_KEY_ADMIN_USERNAME", "ig.ahmed.irl").strip().lower() or "ig.ahmed.irl"
+
+            if path == "/api/admin/system/broadcast":
+                msg = str(body.get("message") or "").strip()[:320]
+                active = bool(body.get("active", bool(msg)))
+                level = str(body.get("level") or "info").strip().lower()
+                if level not in ("info", "gold", "warn", "critical"):
+                    level = "info"
+                bc_obj = {"active": active and bool(msg), "message": msg, "level": level, "updated_by": admin_uname, "updated_at": time.time()}
+                aura_db.set_system_config("global_broadcast", bc_obj)
+                aura_db.record_admin_audit(admin_uname, "broadcast_updated", target="global", details=msg[:120] or "cleared")
+                self._send_json({"success": True, "broadcast": bc_obj, "message": "Global broadcast updated live for all users!"})
+            elif path == "/api/admin/users/delete":
+                if not target_u or target_u == owner_u:
+                    self._send_json({"success": False, "error": "Cannot delete owner account or empty username."}, status=400)
+                    return
+                ok_d = aura_db.admin_delete_user_by_username(target_u)
+                if ok_d:
+                    aura_db.record_admin_audit(admin_uname, "user_deleted", target=f"@{target_u}", details="Permanently deleted by owner")
+                    self._send_json({"success": True, "message": f"User @{target_u} permanently deleted."})
+                else:
+                    self._send_json({"success": False, "error": f"User @{target_u} not found."}, status=404)
+            elif path == "/api/admin/users/reset_password":
+                new_pw = str(body.get("new_password") or body.get("password") or "")
+                res_pw = aura_db.admin_reset_user_password(target_u, new_pw)
+                if res_pw.get("success"):
+                    aura_db.record_admin_audit(admin_uname, "password_reset", target=f"@{target_u}", details="Owner reset password & revoked sessions")
+                    res_pw["message"] = f"Password reset for @{target_u} — active sessions revoked."
+                self._send_json(res_pw, status=200 if res_pw.get("success") else 400)
+            elif path == "/api/admin/users/reset_quota":
+                res_q = aura_db.admin_reset_user_quota(target_u)
+                if res_q.get("success"):
+                    aura_db.record_admin_audit(admin_uname, "quota_reset", target=f"@{target_u}", details="Refilled 24h chat quota")
+                    res_q["message"] = f"Refilled 24h chat quota to 100% for @{target_u}."
+                self._send_json(res_q, status=200 if res_q.get("success") else 400)
+            elif path == "/api/admin/users/set_role":
+                role_v = str(body.get("role") or "user")
+                res_r = aura_db.admin_set_user_role(target_u, role_v)
+                if res_r.get("success"):
+                    aura_db.record_admin_audit(admin_uname, "role_changed", target=f"@{target_u}", details=f"role={res_r['role']}")
+                    res_r["message"] = f"Updated @{target_u} role to {res_r['role']}."
+                self._send_json(res_r, status=200 if res_r.get("success") else 400)
+            else:
+                res_lo = aura_db.admin_force_logout_user(target_u)
+                if res_lo.get("success"):
+                    aura_db.record_admin_audit(admin_uname, "force_logout", target=f"@{target_u}", details="All sessions invalidated")
+                    res_lo["message"] = f"Forced immediate logout for @{target_u}."
+                self._send_json(res_lo, status=200 if res_lo.get("success") else 400)
+
+        elif path == "/api/work/agent_build":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            uid = int(user["id"])
+            ws_dir = _resolve_workspace_dir(uid)
+            goal = str(body.get("prompt") or "").strip()[:24000]
+            thread_id = str(body.get("thread_id") or "default")[:64]
+            active_file = str(body.get("active_file") or "").strip()
+            if not goal:
+                self._send_json({"success": False, "error": "Please describe what to build or fix."}, status=400)
+                return
+
+            mem = self._resolve_membership(user, body)
+            quota_ok, quota_status = aura_membership.check_and_consume_chat_quota(user, goal, mem)
+            if not quota_ok:
+                self._send_json({"success": False, "error": f"Daily quota reached ({quota_status['used']}/{quota_status['limit']}).", "quota": quota_status}, status=429)
+                return
+
+            # Link 100% to Chat HQ thread
+            aura_db.save_message(uid, thread_id, "user", f"[WORK IDE] {goal}")
+            conv_history = _build_conversation_history(uid, thread_id)
+            brain = _create_user_brain(user)
+            byok = str(self.headers.get("X-Gemini-Key") or body.get("user_gemini_key") or "").strip()
+            if byok:
+                brain.user_api_key = byok[:120]
+
+            mistake_guard = aura_db.build_mistake_prevention_prompt(uid, limit=10)
+            tier_dir = aura_membership.build_tier_brain_directive(mem)
+            structured_prompt = (
+                f"{tier_dir}\n{mistake_guard}\n"
+                f"[AURA ANTIGRAVITY WORK IDE — REAL MULTI-FILE BUILD MODE]\n"
+                f"Active open file: {active_file or 'none'}\n"
+                f"User goal: {goal}\n\n"
+                f"STRICT OUTPUT FORMAT: Output complete, runnable, zero-placeholder code files using exact fenced blocks labeled with their relative workspace path:\n"
+                f"```html:app/index.html\n...full code...\n```\n"
+                f"```css:app/styles.css\n...full code...\n```\n"
+                f"```js:app/app.js\n...full code...\n```\n"
+                f"Also write a concise engineering summary and run instructions."
+            )
+            reply = brain.think_and_act(structured_prompt, permission_mode="auto_pilot", approved=True, conversation_history=conv_history)
+
+            # Parse every labeled file block (` ```lang:path/to/file ` or `FILE: path/to/file\n``` `) and atomically write to workspace!
+            written_files: List[Dict[str, Any]] = []
+            seen_paths = set()
+            for m in re.finditer(r"```[a-zA-Z0-9_+-]*:([^\n`]+)\n(.*?)```", str(reply or ""), re.S):
+                raw_p = m.group(1).strip().strip("`'\" ").lstrip("/")
+                code_body = m.group(2)
+                if not raw_p or raw_p in seen_paths:
+                    continue
+                target_p = _safe_resolve_under(ws_dir, raw_p)
+                if target_p is not None and code_body.strip():
+                    _atomic_write_text(target_p, code_body, encoding="utf-8")
+                    rel_clean = target_p.relative_to(ws_dir).as_posix()
+                    seen_paths.add(rel_clean)
+                    written_files.append({"path": rel_clean, "lines": len(code_body.splitlines()), "bytes": len(code_body)})
+
+            # Secondary fallback: if model wrote a single ```html``` block without path label, materialize into `work_app/index.html`
+            if not written_files:
+                m_html = re.search(r"```html\n(.*?)```", str(reply or ""), re.S | re.I)
+                if m_html and m_html.group(1).strip():
+                    target_p = _safe_resolve_under(ws_dir, "work_app/index.html")
+                    if target_p is not None:
+                        _atomic_write_text(target_p, m_html.group(1), encoding="utf-8")
+                        written_files.append({"path": "work_app/index.html", "lines": len(m_html.group(1).splitlines()), "bytes": len(m_html.group(1))})
+
+            # Real Syntax / AST verification on every written file + permanent mistake memory check
+            import ast as _ast
+            verify_errors: List[Dict[str, Any]] = []
+            for wf in written_files:
+                fp = _safe_resolve_under(ws_dir, wf["path"])
+                if not fp or not fp.exists():
+                    continue
+                src_txt = fp.read_text(encoding="utf-8", errors="replace")
+                ext = fp.suffix.lower()
+                if ext == ".py":
+                    try:
+                        _ast.parse(src_txt, filename=wf["path"])
+                    except SyntaxError as se:
+                        verify_errors.append({"file": wf["path"], "line": int(se.lineno or 1), "message": f"Python SyntaxError: {se.msg}"})
+                elif ext == ".json":
+                    try:
+                        json.loads(src_txt)
+                    except Exception as je:
+                        verify_errors.append({"file": wf["path"], "line": 1, "message": f"JSON Error: {je}"})
+                elif ext in (".js", ".mjs"):
+                    try:
+                        pr = subprocess.run(["node", "--check", str(fp)], capture_output=True, text=True, timeout=5)
+                        if pr.returncode != 0:
+                            verify_errors.append({"file": wf["path"], "line": 1, "message": (pr.stderr or "JS SyntaxError")[:220]})
+                    except Exception:
+                        pass
+
+            for ve in verify_errors:
+                aura_db.record_mistake_lesson(
+                    uid,
+                    error_signature=f"{ve['file']}:{ve['message']}"[:150],
+                    root_cause=ve["message"],
+                    verified_fix="Flagged by Work IDE real-time verifier for immediate patch.",
+                    prevention_rule=f"Avoid `{ve['message'][:80]}` when writing {ve['file']}.",
+                    project_scope=ve["file"],
+                )
+
+            preview_entry = next((wf["path"] for wf in written_files if wf["path"].lower().endswith((".html", ".htm"))), "")
+            tools_used = list(getattr(brain, "last_tools", []) or [])
+            for wf in written_files:
+                tools_used.append({"name": "edit_file", "output": f"Wrote {wf['path']} ({wf['lines']} lines)"})
+            if preview_entry:
+                tools_used.append({"name": "live_preview", "output": f"/api/workspace/preview/{preview_entry}"})
+            aura_db.save_message(uid, thread_id, "assistant", reply, tools_used)
+
+            self._send_json({
+                "success": True,
+                "reply": reply,
+                "thread_id": thread_id,
+                "written_files": written_files,
+                "verify_errors": verify_errors,
+                "verified_clean": len(verify_errors) == 0,
+                "preview_entry": preview_entry,
+                "preview_url": f"/api/workspace/preview/{preview_entry}" if preview_entry else "",
+                "tools": tools_used,
+                "quota": quota_status,
+                "membership": mem,
+                "lessons_count": len(aura_db.list_mistake_lessons(uid, limit=30)),
             })
 
         elif path == "/api/pro/context_files":

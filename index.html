@@ -5776,6 +5776,43 @@
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.28), rgba(248, 250, 252, 0.16));
             color: #ffffff;
         }
+        /* UNMISTAKABLE NIGHT-AND-DAY TIER SOVEREIGN RIBBON & BROADCAST BANNER */
+        .aura-broadcast-banner {
+            display: none; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 7px 16px; font-size: 12px; font-weight: 600; z-index: 6;
+            background: linear-gradient(90deg, rgba(229,193,123,0.18), rgba(15,19,29,0.92));
+            border-bottom: 1px solid rgba(229,193,123,0.42); color: #fef3c7;
+            backdrop-filter: blur(14px);
+        }
+        .aura-tier-ribbon {
+            display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+            padding: 6px 16px; font-size: 11px; font-family: var(--font-code, monospace); z-index: 5;
+            backdrop-filter: blur(14px);
+        }
+        html[data-aura-tier="tier_3"] .aura-tier-ribbon {
+            display: flex;
+            background: linear-gradient(90deg, rgba(229,193,123,0.16), rgba(24,18,12,0.88), rgba(229,193,123,0.12));
+            border-bottom: 1px solid rgba(229,193,123,0.38); color: #f6dca3;
+        }
+        html[data-aura-tier="tier_4"] .aura-tier-ribbon {
+            display: flex;
+            background: linear-gradient(90deg, rgba(59,130,246,0.22), rgba(10,18,36,0.9), rgba(96,165,250,0.16));
+            border-bottom: 1px solid rgba(96,165,250,0.45); color: #dbeafe;
+        }
+        html[data-aura-tier="tier_5"] .aura-tier-ribbon {
+            display: flex;
+            background: linear-gradient(90deg, rgba(248,250,252,0.14), rgba(8,14,26,0.92), rgba(56,189,248,0.2));
+            border-bottom: 1px solid rgba(248,250,252,0.36); color: #ffffff;
+            box-shadow: 0 4px 24px rgba(56,189,248,0.16);
+        }
+        html[data-aura-tier="tier_3"] .welcome-hero h1 { background: linear-gradient(135deg,#fff,#f3d79b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        html[data-aura-tier="tier_4"] .welcome-hero h1 { background: linear-gradient(135deg,#fff,#93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        html[data-aura-tier="tier_5"] .welcome-hero h1 { background: linear-gradient(135deg,#ffffff,#7dd3fc,#e2e8f0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tier-ribbon-btn {
+            height: 22px; padding: 0 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22);
+            background: rgba(255,255,255,0.08); color: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer;
+        }
+        .tier-ribbon-btn:hover { background: rgba(255,255,255,0.18); }
         .settings-shell-header {
             background: linear-gradient(90deg, rgba(229, 193, 123, 0.08), rgba(14, 17, 25, 0.6)) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
@@ -6072,6 +6109,18 @@
                 </button>
             </div>
         </header>
+
+        <!-- Global Owner Broadcast Banner (Controlled live by @ig.ahmed.irl) -->
+        <div id="auraGlobalBroadcastBanner" class="aura-broadcast-banner" role="status">
+            <span id="auraBroadcastText"></span>
+            <button type="button" onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:inherit;cursor:pointer;font-weight:800;font-size:13px;">✕</button>
+        </div>
+
+        <!-- Exclusive Subscriber Luxury Telemetry Ribbon (Visibly transforms Plus / Pro / Ultra!) -->
+        <div id="auraTierRibbon" class="aura-tier-ribbon">
+            <span id="auraTierRibbonLabel">AURA PREMIUM ACTIVE</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;" id="auraTierRibbonActions"></div>
+        </div>
 
         <!-- Live Floating Wallpaper & Ambient Studio Popover -->
         <div class="wallpaper-quick-popover" id="wallpaperQuickPopover" role="dialog" aria-label="Wallpaper Studio" onclick="event.stopPropagation()">
@@ -7866,6 +7915,7 @@
                         <button type="button" class="admin-tab-btn" id="admTabBtn_creator" onclick="switchAdminCenterTab('creator')">Timed Key Creator</button>
                         <button type="button" class="admin-tab-btn" id="admTabBtn_keys" onclick="switchAdminCenterTab('keys')">All Keys &amp; Timers</button>
                         <button type="button" class="admin-tab-btn" id="admTabBtn_reports" onclick="switchAdminCenterTab('reports')">Complaints &amp; Plans</button>
+                        <button type="button" class="admin-tab-btn" id="admTabBtn_system" onclick="switchAdminCenterTab('system')">Broadcast &amp; System</button>
                         <button type="button" class="admin-tab-btn" id="admTabBtn_audit" onclick="switchAdminCenterTab('audit')">Audit Log</button>
                     </div>
 
@@ -7982,7 +8032,26 @@
                         <div id="admCtrReportsListWrap" style="display:flex; flex-direction:column; gap:10px;"></div>
                     </div>
 
-                    <!-- TAB 5: AUDIT LOG -->
+                    <!-- TAB 5: GLOBAL BROADCAST & SYSTEM SUPER-ADMIN -->
+                    <div class="admin-center-pane" id="admTabPane_system">
+                        <div style="padding:14px; border-radius:11px; background:#12151d; border:1px solid rgba(229,193,123,0.3); display:flex; flex-direction:column; gap:10px;">
+                            <div style="font-size:11.5px; font-weight:700; color:#e5c17b; text-transform:uppercase; letter-spacing:0.06em;">Global Live Broadcast Banner (Instant Notice to All AURA Users)</div>
+                            <input id="admBroadcastMsgInput" type="text" maxlength="300" placeholder="e.g. AURA Ultra v25 is LIVE! Message +91 9640875528 for instant Plus/Pro/Ultra keys." style="margin:0;">
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                <select id="admBroadcastLevel" style="width:150px; margin:0;">
+                                    <option value="gold">Luxury Gold</option>
+                                    <option value="info">Info Sapphire</option>
+                                    <option value="warn">Alert Amber</option>
+                                    <option value="critical">Critical Red</option>
+                                </select>
+                                <button type="button" class="settings-btn-primary" onclick="publishAdminBroadcast(true)">Publish Live to All Users</button>
+                                <button type="button" class="settings-btn-ghost" onclick="publishAdminBroadcast(false)" style="color:#fca5a5;">Clear Broadcast</button>
+                            </div>
+                            <div id="admBroadcastStatus" style="font-size:11.5px; color:#6ee7b7; min-height:16px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 6: AUDIT LOG -->
                     <div class="admin-center-pane" id="admTabPane_audit">
                         <div id="admCtrAuditListWrap" style="display:flex; flex-direction:column; gap:6px;"></div>
                     </div>
@@ -14126,6 +14195,58 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             }
         }
 
+        const _VOX_PERSONA_PROFILES = {
+            male_02:      { label: 'VOX Executive', gender: 'male',   pitch: 0.94, rate: 1.04, hints: ['guy', 'prabhat', 'david', 'mark', 'daniel', 'google uk english male', 'male'] },
+            female_01:    { label: 'VOX Studio Neutral', gender: 'female', pitch: 1.05, rate: 1.03, hints: ['aria', 'neerja', 'zira', 'samantha', 'google us english', 'female'] },
+            female_02:    { label: 'VOX Clarisse Studio', gender: 'female', pitch: 1.12, rate: 1.00, hints: ['jenny', 'aria', 'sonia', 'samantha', 'victoria', 'female'] },
+            male_01:      { label: 'VOX London Architect', gender: 'male',   pitch: 0.88, rate: 1.01, hints: ['ryan', 'george', 'daniel', 'arthur', 'uk english male', 'male'] },
+            male_03:      { label: 'VOX Sovereign Baritone', gender: 'male',   pitch: 0.78, rate: 0.97, hints: ['christopher', 'roger', 'david', 'alex', 'male'] },
+            female_03:    { label: 'VOX Tokyo Synth Clear', gender: 'female', pitch: 1.18, rate: 1.08, hints: ['sonia', 'libby', 'nanami', 'zira', 'female'] },
+            male_04:      { label: 'VOX Cyber Analyst', gender: 'male',   pitch: 0.98, rate: 1.12, hints: ['william', 'eric', 'mark', 'james', 'male'] },
+            ultra_cinema: { label: 'VOX Ultra Sovereign Cinema', gender: 'male', pitch: 0.84, rate: 0.99, hints: ['andrew', 'brian', 'guy', 'ryan', 'daniel', 'male'] },
+        };
+
+        function _pickPersonaBrowserVoice(voiceId, langCode) {
+            if (!window.speechSynthesis) return { voice: null, profile: _VOX_PERSONA_PROFILES.male_02 };
+            const prof = _VOX_PERSONA_PROFILES[voiceId] || _VOX_PERSONA_PROFILES.male_02;
+            const voices = window.speechSynthesis.getVoices() || [];
+            if (!voices.length) return { voice: null, profile: prof };
+            const langPrefix = langCode === 'hi' ? 'hi' : (langCode === 'te' ? 'te' : (langCode === 'es' ? 'es' : (langCode === 'fr' ? 'fr' : 'en')));
+            const langPool = voices.filter(v => String(v.lang || '').toLowerCase().startsWith(langPrefix));
+            const pool = langPool.length ? langPool : voices;
+            for (const hint of prof.hints) {
+                const hit = pool.find(v => String(v.name || '').toLowerCase().includes(hint));
+                if (hit) return { voice: hit, profile: prof };
+            }
+            const neural = pool.find(v => /natural|online|neural|google/i.test(v.name || ''));
+            return { voice: neural || pool[0], profile: prof };
+        }
+
+        function _speakSinglePersonaBrowser(text, prefs, onEnd) {
+            if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
+                if (onEnd) onEnd(false);
+                return;
+            }
+            try { window.speechSynthesis.cancel(); } catch (_) {}
+            const { voice, profile } = _pickPersonaBrowserVoice(prefs.voice_id, prefs.language);
+            const utt = new SpeechSynthesisUtterance(String(text || '').trim());
+            if (voice) utt.voice = voice;
+            utt.lang = prefs.language === 'hi' ? 'hi-IN' : (prefs.language === 'te' ? 'te-IN' : (prefs.language === 'es' ? 'es-ES' : (prefs.language === 'fr' ? 'fr-FR' : (voice && voice.lang) || 'en-US')));
+            utt.pitch = profile.pitch;
+            utt.rate = profile.rate;
+            utt.volume = 1.0;
+            utt.onend = () => { if (onEnd) onEnd(true); };
+            utt.onerror = () => { if (onEnd) onEnd(false); };
+            setTimeout(() => {
+                try {
+                    window.speechSynthesis.resume();
+                    window.speechSynthesis.speak(utt);
+                } catch (_) {
+                    if (onEnd) onEnd(false);
+                }
+            }, 35);
+        }
+
         async function testVoiceStudioSynthesis() {
             const txtEl = document.getElementById('voiceStudioSampleText');
             const statusEl = document.getElementById('voiceStudioStatus');
@@ -14135,61 +14256,57 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             const text = txtEl.value.trim();
             if (!text) return;
             const prefs = getVoicePreferences();
+            const prof = _VOX_PERSONA_PROFILES[prefs.voice_id] || _VOX_PERSONA_PROFILES.male_02;
             if (btn) btn.disabled = true;
             statusEl.style.color = '#7dd3fc';
-            statusEl.textContent = 'Synthesizing voice sample...';
+            statusEl.textContent = `Activating ${prof.label}...`;
             try {
-                const res = await apiFetch('/v1/speech', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text,
-                        language: prefs.language,
-                        voice_id: prefs.voice_id,
-                        engine: prefs.engine,
-                        commercial_only: prefs.commercial_only
-                    })
-                });
-                const data = await safeParseJson(res);
-                if (!res.ok || !data.success || !data.speech) {
-                    throw new Error((data && (data.error || data.detail)) || 'Synthesis failed');
-                }
-                const sp = data.speech;
-                if (sp.engine === 'fallback_pcm' || sp.provider_voice === 'pcm_silence') {
-                    statusEl.style.color = '#93c5fd';
-                    statusEl.textContent = 'Using device browser speech synthesis (cloud neural idle).';
-                    if (window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
-                        const utt = new SpeechSynthesisUtterance(text);
-                        const v = _pickPreferredVoice();
-                        if (v) utt.voice = v;
-                        window.speechSynthesis.cancel();
-                        window.speechSynthesis.speak(utt);
-                    }
-                    return;
-                }
-                let blob = null;
-                if (data.audio_base64) {
+                // Try fast cloud neural TTS (1.2s cap); if serverless cloud TTS returns silent fallback_pcm or errors, play crisp Persona Browser Neural Voice instantly!
+                let cloudPlayed = false;
+                if (!window._voxCloudTtsFailedUntil || Date.now() > window._voxCloudTtsFailedUntil) {
+                    const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    const tmr = ac ? setTimeout(() => ac.abort(), 1400) : null;
                     try {
-                        const binStr = atob(data.audio_base64);
-                        const bytes = new Uint8Array(binStr.length);
-                        for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-                        blob = new Blob([bytes], { type: data.content_type || sp.content_type || 'audio/mpeg' });
-                    } catch (_) { blob = null; }
+                        const res = await apiFetch('/v1/speech', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            signal: ac ? ac.signal : undefined,
+                            body: JSON.stringify({
+                                text,
+                                language: prefs.language,
+                                voice_id: prefs.voice_id,
+                                engine: prefs.engine,
+                                commercial_only: prefs.commercial_only
+                            })
+                        });
+                        if (tmr) clearTimeout(tmr);
+                        const data = await safeParseJson(res);
+                        const sp = data && data.speech;
+                        if (res.ok && data && data.success && sp && sp.engine !== 'fallback_pcm' && sp.provider_voice !== 'pcm_silence' && data.audio_base64) {
+                            const binStr = atob(data.audio_base64);
+                            const bytes = new Uint8Array(binStr.length);
+                            for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                            const blob = new Blob([bytes], { type: data.content_type || sp.content_type || 'audio/mpeg' });
+                            player.src = URL.createObjectURL(blob);
+                            player.style.display = 'block';
+                            await player.play();
+                            statusEl.style.color = '#6ee7b7';
+                            statusEl.textContent = `✓ Playing ${prof.label} via Cloud HD (${sp.engine} • ${sp.latency_ms}ms)`;
+                            cloudPlayed = true;
+                        } else {
+                            window._voxCloudTtsFailedUntil = Date.now() + 300000;
+                        }
+                    } catch (_) {
+                        if (tmr) clearTimeout(tmr);
+                        window._voxCloudTtsFailedUntil = Date.now() + 300000;
+                    }
                 }
-                if (!blob) {
-                    const audioRes = await apiFetch(sp.audio_url);
-                    if (!audioRes.ok) throw new Error('Audio stream load failed');
-                    blob = await audioRes.blob();
+                if (!cloudPlayed) {
+                    player.style.display = 'none';
+                    statusEl.style.color = '#6ee7b7';
+                    statusEl.textContent = `✓ Playing ${prof.label} (Instant Neural Voice · Pitch ${prof.pitch} · Speed ${prof.rate}x)`;
+                    _speakSinglePersonaBrowser(text, prefs);
                 }
-                const objUrl = URL.createObjectURL(blob);
-                player.src = objUrl;
-                player.style.display = 'block';
-                player.play().catch(() => {});
-                statusEl.style.color = '#6ee7b7';
-                statusEl.textContent = `Engine: ${sp.engine} (${sp.provider_voice}) • Lang: ${sp.language} • ${sp.latency_ms}ms • ${(sp.bytes_len / 1024).toFixed(1)} KB`;
-            } catch (err) {
-                statusEl.style.color = '#fca5a5';
-                statusEl.textContent = 'Error: ' + err.message;
             } finally {
                 if (btn) btn.disabled = false;
             }
@@ -14257,18 +14374,22 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (onDone) onDone();
                 return;
             }
-            const voice = _pickPreferredVoice();
             const prefs = getVoicePreferences();
+            const { voice, profile } = _pickPersonaBrowserVoice(prefs.voice_id, prefs.language);
+            try { window.speechSynthesis.cancel(); } catch (_) {}
             let idx = 0;
             function speakNext() {
                 if (genId !== voiceHudState._speechGen || !voiceHudState.open || voiceHudState.muted || idx >= chunks.length) {
                     if (genId === voiceHudState._speechGen && onDone) onDone();
                     return;
                 }
-                const utt = new SpeechSynthesisUtterance(chunks[idx++]);
+                const line = chunks[idx++];
+                _setVoxCaption(line);
+                const utt = new SpeechSynthesisUtterance(line);
                 if (voice) utt.voice = voice;
-                utt.lang = prefs.language === 'hi' ? 'hi-IN' : 'en-US';
-                utt.rate = 1.02;
+                utt.lang = prefs.language === 'hi' ? 'hi-IN' : ((voice && voice.lang) || 'en-US');
+                utt.pitch = profile.pitch;
+                utt.rate = profile.rate;
                 utt.onend = () => speakNext();
                 utt.onerror = () => speakNext();
                 try {
@@ -14278,7 +14399,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     if (onDone) onDone();
                 }
             }
-            speakNext();
+            setTimeout(speakNext, 25);
         }
 
         async function _fetchSentenceCloudAudio(sentenceText, prefs, signal) {
@@ -14315,14 +14436,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
         async function _fetchSentenceCloudAudioFast(sentenceText, prefs, signal) {
             if (window.AuraOfflineMobile && window.AuraOfflineMobile.isOfflineNow()) return null;
-            if (prefs.engine === 'kokoro') {
-                return _fetchSentenceCloudAudio(sentenceText, prefs, signal).catch(() => null);
-            }
-            // Race cloud neural TTS against a 1500ms budget so VOX NEVER stalls silently on slow Wi-Fi!
-            return Promise.race([
+            if (window._voxCloudTtsFailedUntil && Date.now() < window._voxCloudTtsFailedUntil) return null;
+            // Ultra-fast 600ms race budget; if cloud TTS is unavailable/slow on Vercel, cache failure & speak INSTANTLY (<50ms)!
+            const res = await Promise.race([
                 _fetchSentenceCloudAudio(sentenceText, prefs, signal).catch(() => null),
-                new Promise(resolve => setTimeout(() => resolve(null), 1500))
+                new Promise(resolve => setTimeout(() => resolve(null), 600))
             ]);
+            if (!res) {
+                window._voxCloudTtsFailedUntil = Date.now() + 300000;
+            }
+            return res;
         }
 
         async function _speakVoiceSentences(plainSpeech, onDone) {
@@ -14394,11 +14517,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (!overlay) return;
             overlay.style.display = 'flex';
             voiceHudState.open = true;
-            _setVoiceHudMode(jarvisClientState.halted ? 'halted' : 'standby', jarvisClientState.halted ? 'KILL SWITCH ENGAGED • READ-ONLY' : 'VOX READY • Tap Start Call or Type');
-            _setVoxCaption('Tap Start Call to talk live with VOX.');
+            _setVoiceHudMode('standby', 'VOX LIVE READY • Tap Start Call or Speak Now');
+            _setVoxCaption('Tap Start Call — VOX responds in real time.');
             if (!voiceHudState.animFrame) _drawVoiceOrbFrame();
-            if (autoStart && !voiceHudState.callActive && !jarvisClientState.halted) {
-                setTimeout(() => startVoiceCallSession(), 120);
+            if (autoStart && !voiceHudState.callActive) {
+                setTimeout(() => startVoiceCallSession(), 90);
             }
         }
 
@@ -15410,10 +15533,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 } else {
                     applyCuratedWallpaper('modcar_01');
                 }
-                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.42';
+                if (!localStorage.getItem('aura_wp_dim_v2_calibrated')) {
+                    localStorage.setItem('aura_wallpaper_dim', '0.26');
+                    localStorage.setItem('aura_wallpaper_blur', '0');
+                    localStorage.setItem('aura_wp_dim_v2_calibrated', '1');
+                }
+                const savedDim = localStorage.getItem('aura_wallpaper_dim') || '0.26';
                 updateWallpaperDim(savedDim);
                 const savedBlur = localStorage.getItem('aura_wallpaper_blur') || '0';
                 updateWallpaperBlur(savedBlur);
+                if (typeof loadGlobalBroadcastBanner === 'function') loadGlobalBroadcastBanner();
                 const savedMotion = localStorage.getItem('aura_wallpaper_scroll_intensity') || '1.0';
                 updateWallpaperScrollMotion(savedMotion);
                 syncWallpaperAutomationUI();
@@ -15668,6 +15797,41 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
             renderMembershipTierMatrix();
             updateAdminKeyVaultVisibility();
+
+            // 1. Update Night-and-Day Exclusive Subscriber Luxury Telemetry Ribbon!
+            const ribLbl = document.getElementById('auraTierRibbonLabel');
+            const ribActs = document.getElementById('auraTierRibbonActions');
+            if (ribLbl && ribActs && rank >= 3) {
+                if (rank >= 5) {
+                    ribLbl.textContent = `✦ ${activeMembershipState.is_owner_auto ? 'OWNER · AURA ULTRA ∞' : 'AURA ULTRA FLAGSHIP'} · ANTIGRAVITY + CODEX · 100 POWERS ACTIVE`;
+                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="if(window.AuraUltra100) window.AuraUltra100.open()">100 Ultra Powers</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="setAuraWorkspaceMode('work')">Antigravity Work IDE</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="toggleAgentWorkspace('browser')">Using Browser</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="toggleAgentWorkspace('computer')">Screen Control</button>`;
+                } else if (rank >= 4) {
+                    ribLbl.textContent = `◆ AURA PRO EXECUTIVE · +60% ARCHITECT BRAIN · 6 VOX VOICES · 300/DAY`;
+                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="setAuraWorkspaceMode('work')">Work IDE</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('voice')">6 VOX Voices</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="openApexStudio()">4-Agent War Room</button>`;
+                } else {
+                    ribLbl.textContent = `❖ AURA PLUS ATELIER · +40% ENHANCED BRAIN · 100/DAY · LIVE PREVIEW & LOCALHOST`;
+                    ribActs.innerHTML = `<button type="button" class="tier-ribbon-btn" onclick="setAuraWorkspaceMode('work')">Open Work IDE</button>` +
+                        `<button type="button" class="tier-ribbon-btn" onclick="openModelSettings('appearance')">Plus 4K Wallpapers</button>`;
+                }
+            }
+
+            // 2. AUTO-TRIGGER FULL CELEBRATION POPUP WHEN SUBSCRIBER RECEIVES A GIFT, RENEWAL, OR ACTIVATION!
+            if (rank >= 3 && activeMembershipState.welcome_auto && !activeMembershipState.is_owner_auto) {
+                const seenSig = `aura_seen_sub_pop_${activeMembershipState.key_code || tierId}_${Math.floor(Number(activeMembershipState.expires_at || 0))}`;
+                try {
+                    if (!localStorage.getItem(seenSig)) {
+                        localStorage.setItem(seenSig, '1');
+                        setTimeout(() => {
+                            if (typeof showSubWelcomeModal === 'function') showSubWelcomeModal(activeMembershipState.welcome_auto);
+                        }, 350);
+                    }
+                } catch (_) {}
+            }
         }
 
         function renderMembershipTierMatrix() {
@@ -15947,7 +16111,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         function switchAdminCenterTab(tabName) {
-            const tabs = ['users', 'creator', 'keys', 'reports', 'audit'];
+            const tabs = ['users', 'creator', 'keys', 'reports', 'system', 'audit'];
             tabs.forEach(t => {
                 const btn = document.getElementById('admTabBtn_' + t);
                 const pane = document.getElementById('admTabPane_' + t);
@@ -15958,6 +16122,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 if (tabName === 'users') loadAdminUsersOverview();
                 else if (tabName === 'keys') loadAdminCenterKeysList();
                 else if (tabName === 'reports') loadAdminReportsList();
+                else if (tabName === 'system') loadAdminBroadcastEditor();
                 else if (tabName === 'audit') loadAdminUsersOverview();
             }
         }
@@ -16356,9 +16521,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                         drawerHtml = `<div class="admin-inline-drawer">` +
                             `<span style="font-size:11px; font-weight:700; color:${isGift ? '#f5d0fe' : '#6ee7b7'};">${isGift ? '🎁 Gift Free Plan' : '🔄 Renew / +Time'} → @${escapeHtml(u.username)}:</span>` +
                             `<select id="admUPlan_${safeId}" style="height:30px; font-size:11px; margin:0; min-width:165px;">` +
-                            `<option value="tier_3" ${defTier === 'tier_3' ? 'selected' : ''}>Plan 1 · Sovereign (₹40 · 100/d)</option>` +
-                            `<option value="tier_4" ${defTier === 'tier_4' ? 'selected' : ''}>Plan 2 · Titan (₹99 · 300/d)</option>` +
-                            `<option value="tier_5" ${defTier === 'tier_5' ? 'selected' : ''}>Plan 3 · Apex Omnis (₹199 · Unlim)</option>` +
+                            `<option value="tier_3" ${defTier === 'tier_3' ? 'selected' : ''}>Plan 1 · AURA Plus ($40 · 100/d)</option>` +
+                            `<option value="tier_4" ${defTier === 'tier_4' ? 'selected' : ''}>Plan 2 · AURA Pro ($79 · 300/d)</option>` +
+                            `<option value="tier_5" ${defTier === 'tier_5' ? 'selected' : ''}>Plan 3 · AURA Ultra ($149 · Unlim)</option>` +
                             `</select>` +
                             `<input id="admUVal_${safeId}" type="number" min="1" max="9999" value="${isGift ? 7 : 30}" style="width:68px; height:30px; font-size:11px; margin:0;">` +
                             `<select id="admUUnit_${safeId}" style="height:30px; font-size:11px; margin:0; width:92px;">` +
@@ -16395,12 +16560,89 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     `<button type="button" class="settings-inline-toggle" style="color:#f5d0fe;" onclick="openAdminUserDrawer('${uArg}', 'gift')">Gift Free</button>` +
                     `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="openAdminUserDrawer('${uArg}', 'renew')">Renew / +Time</button>` +
                     (u.subscription_active ? `<button type="button" class="settings-inline-toggle" style="color:#fde68a;" onclick="adminRevokeUserPlan('${uArg}')">Stop Plan</button>` : '') +
+                    `<button type="button" class="settings-inline-toggle" style="color:#93c5fd;" onclick="adminSuperUserAction('${uArg}', 'reset_quota')">Refill Quota</button>` +
+                    (!u.is_owner ? `<button type="button" class="settings-inline-toggle" style="color:#c4b5fd;" onclick="adminSuperUserAction('${uArg}', 'reset_password')">Reset Pwd</button>` : '') +
+                    (!u.is_owner ? `<button type="button" class="settings-inline-toggle" style="color:#cbd5e1;" onclick="adminSuperUserAction('${uArg}', 'force_logout')">Force Logout</button>` : '') +
                     (!u.is_owner ? (u.is_banned
                         ? `<button type="button" class="settings-inline-toggle" style="color:#6ee7b7;" onclick="submitAdminBanUser('${uArg}', false, '${safeId}')">Unban</button>`
-                        : `<button type="button" class="settings-inline-toggle" style="color:#fca5a5;" onclick="openAdminUserDrawer('${uArg}', 'ban')">Ban User</button>`
+                        : `<button type="button" class="settings-inline-toggle" style="color:#fca5a5;" onclick="openAdminUserDrawer('${uArg}', 'ban')">Ban</button>`
                     ) : '') +
+                    (!u.is_owner ? `<button type="button" class="settings-inline-toggle" style="color:#f87171;" onclick="adminSuperUserAction('${uArg}', 'delete')">Delete</button>` : '') +
                     `</div></div>${drawerHtml}</div>`;
             }).join('');
+        }
+
+        async function adminSuperUserAction(username, kind) {
+            if (!getAdminVaultToken()) return;
+            const body = { username };
+            if (kind === 'reset_password') {
+                const np = window.prompt(`Enter new password for @${username} (min 8 chars, letters + numbers):`);
+                if (!np || !np.trim()) return;
+                body.new_password = np.trim();
+            } else if (kind === 'delete') {
+                if (!window.confirm(`Permanently DELETE @${username} and all their chats/sessions?`)) return;
+            }
+            const res = await apiFetch('/api/admin/users/' + kind, {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify(body)
+            });
+            const data = await safeParseJson(res);
+            if (res.status === 403) { lockAdminKeyVault(); return; }
+            if (res.ok && data.success) {
+                if (typeof showBridgeToast === 'function') showBridgeToast(data.message || 'Done!', '#34d399');
+                await refreshAdminCommandCenter();
+            } else if (typeof showBridgeToast === 'function') {
+                showBridgeToast((data && data.error) || 'Action failed', '#f87171');
+            }
+        }
+
+        async function loadGlobalBroadcastBanner() {
+            try {
+                const res = await fetch('/api/system/broadcast', { cache: 'no-store' });
+                const data = await res.json();
+                const bc = data && data.broadcast;
+                const el = document.getElementById('auraGlobalBroadcastBanner');
+                const txt = document.getElementById('auraBroadcastText');
+                if (el && txt && bc && bc.active && bc.message) {
+                    txt.textContent = '✦ LIBERTY NOTICE: ' + bc.message;
+                    el.style.display = 'flex';
+                } else if (el) {
+                    el.style.display = 'none';
+                }
+            } catch (_) {}
+        }
+
+        async function loadAdminBroadcastEditor() {
+            try {
+                const res = await fetch('/api/system/broadcast', { cache: 'no-store' });
+                const data = await res.json();
+                const bc = (data && data.broadcast) || {};
+                const inp = document.getElementById('admBroadcastMsgInput');
+                const lv = document.getElementById('admBroadcastLevel');
+                if (inp) inp.value = bc.message || '';
+                if (lv && bc.level) lv.value = bc.level;
+            } catch (_) {}
+        }
+
+        async function publishAdminBroadcast(active) {
+            const inp = document.getElementById('admBroadcastMsgInput');
+            const lv = document.getElementById('admBroadcastLevel');
+            const st = document.getElementById('admBroadcastStatus');
+            const msg = active ? ((inp ? inp.value : '').trim()) : '';
+            const res = await apiFetch('/api/admin/system/broadcast', {
+                method: 'POST',
+                headers: _adminHeaders(),
+                body: JSON.stringify({ active: Boolean(active && msg), message: msg, level: lv ? lv.value : 'gold' })
+            });
+            const data = await safeParseJson(res);
+            if (res.ok && data.success) {
+                if (st) { st.style.color = '#6ee7b7'; st.textContent = active ? 'Published live to all AURA users!' : 'Broadcast cleared.'; }
+                await loadGlobalBroadcastBanner();
+            } else if (st) {
+                st.style.color = '#fca5a5';
+                st.textContent = (data && data.error) || 'Failed to update broadcast.';
+            }
         }
 
         async function submitAdminUserPlanAction(username, safeId, mode) {

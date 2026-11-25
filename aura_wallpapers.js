@@ -698,7 +698,7 @@
                     const gx = (this.clickX * 100).toFixed(1);
                     const gy = (this.clickY * 100).toFixed(1);
                     const col = isCar ? GLINT_COLORS[this.glintHueIdx % GLINT_COLORS.length] : (this.activeSpec.g || 'rgba(122,162,255,0.2)');
-                    const op = isCar ? (0.14 + this.clickImpulse * 0.42) : (0.08 + this.clickImpulse * 0.25);
+                    const op = isCar ? (0.24 + this.clickImpulse * 0.52) : (0.1 + this.clickImpulse * 0.28);
                     this.glintEl.style.opacity = op.toFixed(3);
                     this.glintEl.style.background = `radial-gradient(circle at ${gx}% ${gy}%, ${col} 0%, transparent 56%)`;
                 }
