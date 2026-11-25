@@ -5712,10 +5712,69 @@
             backdrop-filter: blur(22px) saturate(140%) !important;
         }
         .model-settings-modal {
+            width: min(1060px, 95vw) !important;
+            max-width: 1060px !important;
             background: linear-gradient(165deg, #10131c 0%, #090b10 100%) !important;
             border: 1px solid rgba(255, 255, 255, 0.14) !important;
             box-shadow: 0 40px 120px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
             border-radius: 20px !important;
+        }
+        .settings-field-group select {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            height: 38px !important;
+            padding-right: 28px !important;
+        }
+        .hero-subtitle, #heroGreetingSubtitle {
+            color: rgba(248, 250, 252, 0.92) !important;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.92), 0 1px 4px rgba(0, 0, 0, 0.95) !important;
+        }
+        #settingsWallpaperGrid {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+        }
+        #quickWallpaperGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+        }
+        .wallpaper-thumb {
+            min-height: 76px !important;
+            border-radius: 10px !important;
+        }
+        .wallpaper-thumb-label {
+            background: linear-gradient(180deg, transparent, rgba(5, 7, 11, 0.92)) !important;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95) !important;
+            padding: 12px 7px 5px !important;
+        }
+        .sub-plans-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+        }
+        @media (max-width: 860px) {
+            .sub-plans-grid { grid-template-columns: 1fr !important; }
+            #settingsWallpaperGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
+        .sub-plan-title {
+            white-space: nowrap !important;
+            font-size: 16px !important;
+        }
+        .sub-plan-eyebrow {
+            font-size: 9.5px !important;
+            line-height: 1.35 !important;
+        }
+        .btn-header-ultra {
+            height: 28px; padding: 0 10px; border-radius: 8px;
+            border: 1px solid rgba(56, 189, 248, 0.42);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(248, 250, 252, 0.08));
+            color: #e0f2fe; font-size: 11px; font-weight: 700; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+            transition: all 0.16s ease;
+        }
+        .btn-header-ultra:hover {
+            border-color: rgba(248, 250, 252, 0.75);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.28), rgba(248, 250, 252, 0.16));
+            color: #ffffff;
         }
         .settings-shell-header {
             background: linear-gradient(90deg, rgba(229, 193, 123, 0.08), rgba(14, 17, 25, 0.6)) !important;
@@ -5990,8 +6049,13 @@
                 </button>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                <button type="button" class="nav-icon-btn" id="btnHeaderLiveWorkspace" onclick="toggleAgentWorkspace('browser')" title="AURA Live Browser, Computer Use &amp; Action View" aria-label="AURA Live Browser and Computer Use">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <button type="button" class="btn-header-ultra" id="btnHeaderUltra100" onclick="if(window.AuraUltra100) window.AuraUltra100.open();" title="AURA Ultra — 100 Antigravity Flagship Capabilities">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span class="studio-hide-xs">Ultra 100</span>
+                </button>
+                <button type="button" class="btn-header-studio" id="btnHeaderLiveWorkspace" onclick="toggleAgentWorkspace('browser')" title="AURA Live Browser &amp; Screen Control (Ask-Permission Guarded)" aria-label="AURA Live Browser and Computer Use">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <span class="studio-hide-xs">Browser &amp; Screen</span>
                 </button>
                 <button type="button" class="btn-header-studio" id="btnHeaderStudio" onclick="openApexStudio()" title="Open AURA Engineering Studio (Tiers 1-5)">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -7181,8 +7245,8 @@
                     <div class="settings-tab-pane" id="settingsTab_appearance">
                         <div class="settings-pane-head">
                             <div>
-                                <h3>Appearance &amp; 150 Scroll-Animated Wallpapers</h3>
-                                <p>25 Modified Hypercar Reels (BMW, Ferrari, Pagani, Bugatti + RGB Blinking Headlights &amp; Moving Parts), 25 Realistic Environments, 50 Cyber/Hacker &amp; 50 BMW/Auto worlds.</p>
+                                <h3>Appearance &amp; 170+ Real 4K Living Wallpapers</h3>
+                                <p>100% real 4K DSLR photography across 6 equal collections (Modified Supercars, Nature, Aesthetic, Kids &amp; NASA Space, Hacker Ops &amp; Developer Studio) with Day/Night 10-min auto-cycle &amp; permanent lock.</p>
                             </div>
                         </div>
 
@@ -7199,7 +7263,7 @@
                         <div class="settings-panel-card">
                             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                                 <div class="settings-card-eyebrow">Studio Accent Theme</div>
-                                <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="width:auto; min-width:190px; padding:6px 10px; font-size:12px;">
+                                <select id="themePresetSelect" onchange="applyAuraThemePreset(this.value)" style="display:none;">
                                     <option value="matte">Obsidian Slate (Default)</option>
                                     <option value="obsidian">Sovereign Champagne</option>
                                     <option value="cyan">Titanium Ice</option>
@@ -7437,7 +7501,7 @@
                                         </select>
                                     </div>
                                     <div class="settings-field-group">
-                                        <label for="settingsVoicePersonaSelect">VOX Voice Persona (Pro &amp; Ultra Unlock Extra Voices)</label>
+                                        <label for="settingsVoicePersonaSelect">VOX Voice Persona</label>
                                         <select id="settingsVoicePersonaSelect" onchange="saveVoicePreferences({voice_id:this.value})">
                                             <option value="male_02">VOX Executive (Standard / Plus)</option>
                                             <option value="female_01">VOX Studio Neutral (Standard / Plus)</option>
@@ -8856,6 +8920,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
     <script src="/aura_offline_mobile.js"></script>
     <script src="/aura_work_ide.js"></script>
     <script src="/aura_cinematic_intro.js"></script>
+    <script src="/aura_ultra_100.js"></script>
     <script>
         // Security Initialization: Purge legacy shared/bearer keys from localStorage.
         // Session auth uses HttpOnly; SameSite=Strict cookies + tab sessionStorage token + dynamic CSRF.
@@ -14963,6 +15028,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
             if (window.AuraWallpaperEngine && typeof window.AuraWallpaperEngine.setPreferredAudience === 'function') {
                 window.AuraWallpaperEngine.setPreferredAudience(_wpGalleryCategory);
             }
+            _wpSettingsPageLimit = 24;
             renderWallpaperGalleries();
         }
 
@@ -15015,6 +15081,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
 
         function setWallpaperSearchQuery(q) {
             _wpGalleryQuery = String(q || '').trim().toLowerCase();
+            _wpSettingsPageLimit = 24;
             renderWallpaperGalleries();
         }
 
@@ -15069,7 +15136,11 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     layer.style.opacity = '1';
                 }
             }
-            renderWallpaperGalleries();
+            // Update active highlight in-place (ZERO DOM teardown, ZERO aborted thumbnail fetches!)
+            document.querySelectorAll('.wallpaper-thumb[data-wall-id]').forEach(el => {
+                el.classList.toggle('active', el.getAttribute('data-wall-id') === preset.id);
+            });
+            syncWallpaperAutomationUI();
         }
 
         function deleteCustomWallpaperById(customId, ev) {
@@ -15114,6 +15185,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                 } catch (_) {}
             };
             if (typeof IntersectionObserver !== 'undefined') {
+                const scrollRoot = container.closest('.settings-pane-viewport') || null;
                 const obs = new IntersectionObserver((entries) => {
                     entries.forEach(en => {
                         if (en.isIntersecting) {
@@ -15121,18 +15193,24 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                             obs.unobserve(en.target);
                         }
                     });
-                }, { root: container, rootMargin: '120px' });
+                }, { root: scrollRoot, rootMargin: '160px' });
                 buttons.forEach(b => obs.observe(b));
             } else {
                 buttons.forEach(b => renderOne(b));
             }
         }
 
+        let _wpSettingsPageLimit = 24;
+        function loadMoreSettingsWallpapers() {
+            _wpSettingsPageLimit += 48;
+            renderWallpaperGalleries();
+        }
+
         function renderWallpaperGalleries() {
             const activeId = _getActiveWallpaperId();
             const catalog = _getAllCuratedWallpapers();
 
-            // Settings full 100-wallpaper gallery with Category & Search filtering
+            // Settings paginated 4K gallery (loads 24 sleek cards first -> zero network congestion!)
             const settingsGrid = document.getElementById('settingsWallpaperGrid');
             if (settingsGrid) {
                 const filtered = catalog.filter(w => {
@@ -15143,7 +15221,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     }
                     return true;
                 });
-                settingsGrid.innerHTML = filtered.length ? filtered.map(w => {
+                const visible = filtered.slice(0, _wpSettingsPageLimit);
+                const remaining = Math.max(0, filtered.length - visible.length);
+                settingsGrid.innerHTML = visible.length ? visible.map(w => {
                     const badgeMap = {
                         modcars: ['modcars', 'MOD CAR'],
                         environment: ['environment', 'NATURE'],
@@ -15158,9 +15238,9 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     const fallbackBg = w.preview || `radial-gradient(circle at 50% 35%, ${w.g || 'rgba(122,162,255,0.2)'}, ${w.bg || '#08090c'})`;
                     return `<button type="button" class="wallpaper-thumb ${activeId === w.id ? 'active' : ''}" data-wall-id="${escapeHtml(w.id)}" data-live-wp="${w.engine && w.engine !== 'none' ? '1' : '0'}" onclick="applyCuratedWallpaper('${escapeHtml(w.id)}')" title="${escapeHtml(w.name)} — ${escapeHtml(w.motion || 'Static')}" style="background:${fallbackBg};">` +
                         `<span class="wallpaper-thumb-badge ${badgeCls}">${todTag ? todTag + ' ' : ''}${badgeTxt}</span>` +
-                        `<span class="wallpaper-thumb-label">${escapeHtml(w.name)}<span class="wallpaper-thumb-motion">${escapeHtml(w.motion || '')}</span></span>` +
+                        `<span class="wallpaper-thumb-label">${escapeHtml(w.shortName || w.name)}<span class="wallpaper-thumb-motion">${escapeHtml(w.motion || '')}</span></span>` +
                         `</button>`;
-                }).join('') : '<div style="grid-column:1/-1; font-size:12px; color:#8b93a3; padding:14px; text-align:center;">No matching wallpapers found.</div>';
+                }).join('') + (remaining > 0 ? `<div style="grid-column:1/-1;display:flex;justify-content:center;padding-top:6px;"><button type="button" class="settings-btn-ghost" onclick="loadMoreSettingsWallpapers()">Load More 4K Wallpapers (+${remaining} remaining)</button></div>` : '') : '<div style="grid-column:1/-1; font-size:12px; color:#8b93a3; padding:14px; text-align:center;">No matching wallpapers found.</div>';
                 _hydrateWallpaperThumbs(settingsGrid);
             }
 
@@ -15618,6 +15698,7 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
                     `<div class="sub-plan-price-row"><span class="sub-plan-price">${escapeHtml(t.price_label || '')}</span><span class="sub-plan-duration">/ ${escapeHtml(t.duration_label || '20 Days')}</span></div>` +
                     `<div class="sub-plan-cap">${escapeHtml(capStr)}</div>` +
                     `<ul class="sub-plan-features">${featsHtml}</ul>` +
+                    (t.plan_number === 3 ? `<button type="button" class="settings-btn-ghost" onclick="closeModelSettings(); if(window.AuraUltra100) window.AuraUltra100.open();" style="width:100%; margin-bottom:7px; font-size:11.5px; border-color:rgba(56,189,248,0.45); color:#e0f2fe;">Inspect All 100 Ultra Powers →</button>` : '') +
                     `<a href="${escapeHtml(waUrl)}" target="_blank" rel="noopener noreferrer" class="sub-wa-btn">${isActive ? 'Renew on WhatsApp' : 'Get Key on WhatsApp'}</a>` +
                     `</div>`;
             }).join('');
@@ -17330,6 +17411,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         async function awBrowserAction(action, extra = {}) {
+            if (typeof window.requestAuraActionPermission === 'function' && ['click', 'type', 'press', 'submit'].includes(String(action || '').toLowerCase())) {
+                const curUrl = (awState.browserState && awState.browserState.active_tab && awState.browserState.active_tab.url) || 'Active AI Browser Tab';
+                const perm = await window.requestAuraActionPermission({
+                    category: 'live_browser',
+                    title: 'Allow AURA Live Browser Interaction?',
+                    action: `${String(action).toUpperCase()}${extra.text ? ' "' + String(extra.text).slice(0, 40) + '"' : (extra.element_index ? ' Element #' + extra.element_index : '')}`,
+                    target: curUrl,
+                    risk: action === 'type' || extra.submit ? 'HIGH' : 'MEDIUM',
+                });
+                if (!perm.allowed) return;
+            }
             try {
                 const res = await apiFetch('/api/browser/action', {
                     method: 'POST',
@@ -17543,6 +17635,17 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         async function awComputerControl(command) {
             const goalInp = document.getElementById('awCompGoalInput');
             const goal = goalInp ? goalInp.value.trim() : '';
+            if (command === 'start' && typeof window.requestAuraActionPermission === 'function') {
+                const perm = await window.requestAuraActionPermission({
+                    category: 'screen_control',
+                    title: 'Allow AURA Autonomous Screen Control?',
+                    action: 'START COMPUTER USE / SCREEN AUTOMATION',
+                    target: goal || 'Desktop / Shared Display',
+                    risk: 'HIGH',
+                    forcePrompt: true,
+                });
+                if (!perm.allowed) return;
+            }
             const res = await apiFetch('/api/computer/control', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -17562,6 +17665,16 @@ print("AURA Sandbox Verified:", fibonacci(10))</textarea>
         }
 
         async function awComputerAction(action, payload = {}) {
+            if (typeof window.requestAuraActionPermission === 'function') {
+                const perm = await window.requestAuraActionPermission({
+                    category: 'screen_control',
+                    title: 'Allow AURA Desktop / Screen Action?',
+                    action: String(action || 'action').toUpperCase(),
+                    target: payload.app || payload.text || (typeof payload.x === 'number' ? `Screen (${Math.round(payload.x * 100)}%, ${Math.round(payload.y * 100)}%)` : 'Desktop Screen'),
+                    risk: 'HIGH',
+                });
+                if (!perm.allowed) return;
+            }
             const res = await apiFetch('/api/computer/action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

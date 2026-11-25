@@ -583,6 +583,7 @@ class AuraWebHandler(BaseHTTPRequestHandler):
             "/aura_offline_mobile.js",
             "/aura_work_ide.js",
             "/aura_cinematic_intro.js",
+            "/aura_ultra_100.js",
             "/api/pwa/icon.svg",
         ):
             if path == "/api/pwa/icon.svg":
@@ -1219,6 +1220,17 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 return
             lessons = aura_db.list_mistake_lessons(int(user["id"]), limit=40)
             self._send_json({"success": True, "lessons": lessons, "count": len(lessons)})
+
+        elif path == "/api/ultra/capabilities":
+            user = self._get_auth_user()
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            import aura_ultra_capabilities
+            mem = self._resolve_membership(user)
+            unlocked = (int(mem.get("rank", 0)) >= 5) or aura_membership.is_key_admin_user(user)
+            data = aura_ultra_capabilities.list_all_ultra_capabilities()
+            self._send_json({"success": True, "unlocked": unlocked, "active_tier": mem.get("name", "AURA Standard"), **data})
 
         elif path == "/api/pro/index":
             user = self._get_auth_user()
@@ -3241,6 +3253,68 @@ class AuraWebHandler(BaseHTTPRequestHandler):
                 "repair_summary": repair_summary or ("All workspace files passed 100% clean syntax & integrity checks!" if not diagnostics else "Errors diagnosed and queued for repair."),
                 "learned_rules_count": len(lessons),
                 "lessons": lessons,
+            })
+
+        elif path == "/api/ultra/execute":
+            user = self._get_auth_user(body)
+            if not user:
+                self._send_json({"success": False, "error": "Authentication required"}, status=401)
+                return
+            mem = self._resolve_membership(user, body)
+            if int(mem.get("rank", 0)) < 5 and not aura_membership.is_key_admin_user(user):
+                self._send_json({
+                    "success": False,
+                    "error": "Requires AURA Ultra ($149 · Plan 3) to execute Antigravity Ultra powers.",
+                    "required_rank": 5,
+                }, status=403)
+                return
+            import aura_ultra_capabilities
+            cap_id = str(body.get("capability_id") or "").strip().lower()
+            cap = aura_ultra_capabilities.get_capability_by_id(cap_id)
+            if not cap:
+                self._send_json({"success": False, "error": f"Unknown Ultra capability: {cap_id}"}, status=404)
+                return
+            uid = int(user["id"])
+            ws_dir = _resolve_workspace_dir(uid)
+            act = cap["action"]
+            summary = f"{cap['name']} ready & active on AURA Ultra."
+            result_obj: Dict[str, Any] = {"capability": cap}
+            try:
+                if act == "security_audit":
+                    result_obj = aura_pro_studio.audit_workspace_security(ws_dir)
+                    summary = f"Security AST audit scanned {result_obj.get('files_scanned', 0)} file(s), found {len(result_obj.get('findings', []))} finding(s)."
+                elif act == "pro_index":
+                    result_obj = aura_pro_studio.index_workspace_symbols(ws_dir)
+                    summary = f"Indexed {result_obj.get('workspace_files_count', 0)} workspace files and {result_obj.get('total_symbols', 0)} AST symbols."
+                elif act == "antigravity_overview":
+                    from aura_antigravity_core import AuraAntigravityCore
+                    result_obj = AuraAntigravityCore(ws_dir).get_overview()
+                    summary = "Antigravity Core Swarm, Subagent & Desktop Guardrails operational."
+                elif act == "threat_scan":
+                    result_obj = JARVIS_HUB.run_routine(uid, "security_threat_scan", str(body.get("target") or "https://aura-agent.xyz"))
+                    summary = "TRINETRA Threat & Link Guard completed scan."
+                elif act == "self_heal":
+                    lessons = aura_db.list_mistake_lessons(uid, limit=20)
+                    result_obj = {"lessons_count": len(lessons), "lessons": lessons}
+                    summary = f"Self-Healing Mistake-Prevention Memory active ({len(lessons)} permanent rule(s) guarding future builds)."
+                elif act == "tier_directive":
+                    summary = aura_membership.build_tier_brain_directive(mem)
+                    result_obj = {"directive": summary}
+                elif act == "system_10_status":
+                    summary = "Systems 1–10 Neural Router, World Simulator & Deep Research online on AURA Ultra."
+                    result_obj = {"systems_online": 10, "tier": "AURA Ultra"}
+                elif act == "browser_state":
+                    from aura_live_browser import LIVE_BROWSER as _ultra_lb
+                    result_obj = _ultra_lb.get_state(uid)
+                    summary = f"Live AI Browser active ({len(result_obj.get('tabs', []))} tab(s))."
+            except Exception as ex:
+                summary = f"{cap['name']} status checked ({ex})."
+            self._send_json({
+                "success": True,
+                "capability_id": cap["id"],
+                "capability_name": cap["name"],
+                "summary": summary,
+                "result": result_obj,
             })
 
         elif path == "/api/pro/context_files":

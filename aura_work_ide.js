@@ -259,7 +259,7 @@
                 display: flex; align-items: center; justify-content: center;
             }
             .aw-sidebar {
-                width: 264px; flex-shrink: 0; background: #0e1118; border-right: 1px solid rgba(255,255,255,0.08);
+                width: 220px; flex-shrink: 0; background: #0e1118; border-right: 1px solid rgba(255,255,255,0.08);
                 display: flex; flex-direction: column; min-height: 0;
             }
             .aw-side-head {
@@ -298,17 +298,18 @@
                 display: flex; flex-direction: column;
             }
             .aw-bottom-tabs {
-                height: 32px; padding: 0 10px; display: flex; align-items: center; justify-content: space-between;
-                border-bottom: 1px solid rgba(255,255,255,0.06); gap: 8px;
+                height: 34px; padding: 0 10px; display: flex; align-items: center; justify-content: space-between;
+                border-bottom: 1px solid rgba(255,255,255,0.06); gap: 8px; overflow-x: auto; flex-shrink: 0;
             }
             .aw-btab {
                 height: 24px; padding: 0 9px; border-radius: 6px; border: none; background: transparent;
-                color: #8b95a7; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;
+                color: #8b95a7; font-size: 11px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.04em;
+                white-space: nowrap; flex-shrink: 0;
             }
             .aw-btab.active { background: rgba(255,255,255,0.09); color: #ffffff; }
             .aw-bottom-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px; font-family: var(--font-code, monospace); font-size: 12px; }
             .aw-right {
-                width: 410px; flex-shrink: 0; background: #0e1118; border-left: 1px solid rgba(255,255,255,0.08);
+                width: 340px; flex-shrink: 0; background: #0e1118; border-left: 1px solid rgba(255,255,255,0.08);
                 display: flex; flex-direction: column; min-height: 0;
             }
             .aw-right-tabs {
@@ -420,7 +421,7 @@
                                 <button type="button" class="aw-btab" data-btab="trace" onclick="AuraWorkIDE.setBottomTab('trace')">Agent Trace</button>
                                 <button type="button" class="aw-btab" data-btab="ports" onclick="AuraWorkIDE.setBottomTab('ports')">Localhost Ports</button>
                             </div>
-                            <span id="awEngineStatusTag" style="font-size:10.5px;color:#6ee7b7;font-family:var(--font-code,monospace);">Monaco Engine Ready</span>
+                            <span id="awEngineStatusTag" style="font-size:10.5px;color:#6ee7b7;font-family:var(--font-code,monospace);white-space:nowrap;flex-shrink:0;">Monaco Engine Ready</span>
                         </div>
                         <div class="aw-bottom-body" id="awBottomBody"></div>
                     </div>
@@ -577,9 +578,10 @@
         const initMonaco = () => {
             if (!global.require || !global.require.config) return;
             global.require.config({ paths: { vs: MONACO_CDN_BASE } });
+            const monacoMinRoot = MONACO_CDN_BASE.replace(/\/vs\/?$/, '');
             global.MonacoEnvironment = {
                 getWorkerUrl: function () {
-                    const code = `self.MonacoEnvironment={baseUrl:'${MONACO_CDN_BASE}/'};importScripts('${MONACO_CDN_BASE}/base/worker/workerMain.js');`;
+                    const code = `self.MonacoEnvironment={baseUrl:'${monacoMinRoot}/'};importScripts('${MONACO_CDN_BASE}/base/worker/workerMain.js');`;
                     return URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
                 },
             };
@@ -590,15 +592,16 @@
                 const mount = document.getElementById('awMonacoMount');
                 const fb = document.getElementById('awFallbackEditor');
                 if (fb) fb.style.display = 'none';
+                const showMinimap = Boolean(state.prefs.minimap) && (global.innerWidth || 1280) >= 1440;
                 if (mount) {
                     state.editor = global.monaco.editor.create(mount, {
-                        value: (state.activePath && state.models.get(state.activePath)) ? (state.models.get(state.activePath).content || '') : '// Welcome to AURA WORK — Full 0-Cost VS Code Autonomous IDE\n// Open a file from Explorer or ask AURA Autonomous Agent on the right to build any app or game.\n',
+                        value: (state.activePath && state.models.get(state.activePath)) ? (state.models.get(state.activePath).content || '') : '// AURA WORK — Full 0-Cost VS Code IDE\n// Open a file on the left or run AURA Agent on the right.\n',
                         language: state.activePath ? _detectLang(state.activePath) : 'javascript',
                         theme: state.prefs.theme || 'obsidian-gold',
                         fontSize: Number(state.prefs.fontSize || 13),
                         tabSize: Number(state.prefs.tabSize || 4),
                         wordWrap: state.prefs.wordWrap || 'off',
-                        minimap: { enabled: Boolean(state.prefs.minimap) },
+                        minimap: { enabled: showMinimap },
                         automaticLayout: true,
                         smoothScrolling: true,
                         cursorBlinking: 'smooth',

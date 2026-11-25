@@ -695,12 +695,26 @@ def test_liberty_mega_upgrade_plus_pro_ultra_reports_work_self_heal_and_lifetime
     for marker in (
         'src="/aura_work_ide.js"',
         'src="/aura_cinematic_intro.js"',
+        'src="/aura_ultra_100.js"',
+        'id="btnHeaderUltra100"',
         'id="auraModeSwitcher"',
         'id="settingsTab_workide"',
         'id="settingsTab_reports"',
         'id="admTabPane_reports"',
         "AuraCinematicIntro.play",
+        "requestAuraActionPermission",
         "downloadLifetimeAccountKey",
         "submitUserReportWithPlan",
     ):
         assert marker in html, f"Missing Liberty Mega Upgrade UI marker: {marker}"
+
+    # 7. Verify AURA Ultra 100 Antigravity Capabilities API + strict tier_5/Owner gating
+    st_u_cap, u_cap = _http_json(f"{base}/api/ultra/capabilities", "GET", headers=u_hdrs)
+    assert st_u_cap == 200 and u_cap["total_count"] == 100 and u_cap["pillars_count"] == 10 and u_cap["unlocked"] is False
+    assert _http_json(f"{base}/api/ultra/execute", "POST", {"capability_id": "ultra_061"}, headers=u_hdrs)[0] == 403
+
+    st_a_cap, a_cap = _http_json(f"{base}/api/ultra/capabilities", "GET", headers=a_hdrs)
+    assert st_a_cap == 200 and a_cap["unlocked"] is True and len(a_cap["capabilities"]) == 100
+    for cid in ("ultra_002", "ultra_031", "ultra_042", "ultra_044", "ultra_061"):
+        st_ex, ex_res = _http_json(f"{base}/api/ultra/execute", "POST", {"capability_id": cid}, headers=a_hdrs)
+        assert st_ex == 200 and ex_res["success"] and ex_res["capability_id"] == cid
