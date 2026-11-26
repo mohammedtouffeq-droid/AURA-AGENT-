@@ -1909,26 +1909,48 @@ def update_subscription_key(key_code: str, fields: Dict[str, Any]) -> Optional[D
     norm = str(key_code or "").strip().upper()
     if not norm or not fields:
         return None
-    allowed = {
+    allowed_cols = (
         "tier_id", "duration_days", "duration_seconds", "timer_mode", "is_gift",
         "status", "bound_user_id", "bound_username",
         "activated_at", "expires_at", "note", "renew_count",
-    }
-    sets = []
-    vals = []
-    for k, v in fields.items():
-        if k in allowed:
-            sets.append(f"{k} = ?")
-            vals.append(v)
-    if not sets:
+    )
+    if not any(k in fields for k in allowed_cols):
         return None
-    sets.append("updated_at = ?")
-    vals.append(time.time())
-    vals.append(norm)
     conn = get_connection()
     c = conn.cursor()
     try:
-        c.execute(f"UPDATE subscription_keys SET {', '.join(sets)} WHERE key_code = ?", tuple(vals))
+        c.execute("SELECT * FROM subscription_keys WHERE key_code = ?", (norm,))
+        existing = c.fetchone()
+        if not existing:
+            return None
+        merged = dict(existing)
+        for col in allowed_cols:
+            if col in fields:
+                merged[col] = fields[col]
+        now_ts = time.time()
+        c.execute(
+            """UPDATE subscription_keys
+               SET tier_id = ?, duration_days = ?, duration_seconds = ?, timer_mode = ?,
+                   is_gift = ?, status = ?, bound_user_id = ?, bound_username = ?,
+                   activated_at = ?, expires_at = ?, note = ?, renew_count = ?, updated_at = ?
+               WHERE key_code = ?""",
+            (
+                merged.get("tier_id"),
+                merged.get("duration_days"),
+                merged.get("duration_seconds"),
+                merged.get("timer_mode"),
+                merged.get("is_gift"),
+                merged.get("status"),
+                merged.get("bound_user_id"),
+                merged.get("bound_username"),
+                merged.get("activated_at"),
+                merged.get("expires_at"),
+                merged.get("note"),
+                merged.get("renew_count"),
+                now_ts,
+                norm,
+            ),
+        )
         conn.commit()
         c.execute("SELECT * FROM subscription_keys WHERE key_code = ?", (norm,))
         row = c.fetchone()
@@ -2847,17 +2869,30 @@ def list_user_reports(user_id: Optional[int] = None, status: Optional[str] = Non
     conn = get_connection()
     c = conn.cursor()
     try:
-        clauses = []
-        params: List[Any] = []
-        if user_id is not None:
-            clauses.append("user_id = ?")
-            params.append(int(user_id))
-        if status and str(status).strip().lower() not in ("", "all"):
-            clauses.append("status = ?")
-            params.append(str(status).strip().lower())
-        where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
-        params.append(max(1, min(int(limit or 100), 300)))
-        c.execute(f"SELECT * FROM user_reports {where_sql} ORDER BY created_at DESC LIMIT ?", tuple(params))
+        status_clean = str(status).strip().lower() if status else ""
+        if status_clean == "all":
+            status_clean = ""
+        row_limit = max(1, min(int(limit or 100), 300))
+        if user_id is not None and status_clean:
+            c.execute(
+                "SELECT * FROM user_reports WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT ?",
+                (int(user_id), status_clean, row_limit),
+            )
+        elif user_id is not None:
+            c.execute(
+                "SELECT * FROM user_reports WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+                (int(user_id), row_limit),
+            )
+        elif status_clean:
+            c.execute(
+                "SELECT * FROM user_reports WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+                (status_clean, row_limit),
+            )
+        else:
+            c.execute(
+                "SELECT * FROM user_reports ORDER BY created_at DESC LIMIT ?",
+                (row_limit,),
+            )
         return [_row_to_report_dict(r) for r in c.fetchall()]
     finally:
         conn.close()
